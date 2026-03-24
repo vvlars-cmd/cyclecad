@@ -29,6 +29,9 @@ let isAnimating = false;
 let gridHelper = null;
 let axisLines = null;
 let referencePlanes = {};
+let groundPlane = null;
+let selectionOutline = null;
+let hemiLight = null;
 
 // Camera animation state
 let cameraAnimationState = {
@@ -181,6 +184,10 @@ function setupLighting() {
   const fillLight = new THREE.DirectionalLight(COLORS.fill, 0.3);
   fillLight.position.set(-100, 50, -100);
   scene.add(fillLight);
+
+  // Hemisphere light for natural environment feel (sky blue → ground grey)
+  hemiLight = new THREE.HemisphereLight(0x4488cc, 0x222222, 0.25);
+  scene.add(hemiLight);
 }
 
 // ============================================================================
@@ -237,6 +244,16 @@ function setupGridAndOrigin() {
 
   axisLines = new THREE.LineSegments(axisGeometry, axisMaterial);
   scene.add(axisLines);
+
+  // Ground shadow plane (invisible but receives shadows)
+  const groundGeom = new THREE.PlaneGeometry(GRID_SIZE * 2, GRID_SIZE * 2);
+  const groundMat = new THREE.ShadowMaterial({ opacity: 0.15 });
+  groundPlane = new THREE.Mesh(groundGeom, groundMat);
+  groundPlane.rotation.x = -Math.PI / 2;
+  groundPlane.position.y = -0.01; // Just below grid to avoid z-fighting
+  groundPlane.receiveShadow = true;
+  groundPlane.userData.isGround = true;
+  scene.add(groundPlane);
 
   // Create reference planes (semi-transparent quads)
   createReferencePlanes();
@@ -426,6 +443,13 @@ function calculateOptimalDistance() {
  */
 export function addToScene(object) {
   if (scene) {
+    // Auto-enable shadows on meshes
+    object.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
     scene.add(object);
   }
 }
@@ -514,6 +538,62 @@ export function toggleWireframe(enabled) {
       }
     });
   }
+}
+
+// ============================================================================
+// Selection Highlighting
+// ============================================================================
+
+/**
+ * Highlight a mesh with a colored outline/glow effect
+ * @param {THREE.Mesh} mesh - Mesh to highlight
+ * @param {number} color - Highlight color (default: blue)
+ */
+export function highlightMesh(mesh, color = 0x58a6ff) {
+  // Remove existing highlight
+  clearHighlight();
+
+  if (!mesh || !mesh.geometry) return;
+
+  // Create outline using scaled clone with BackSide rendering
+  const outlineMat = new THREE.MeshBasicMaterial({
+    color: color,
+    side: THREE.BackSide,
+    transparent: true,
+    opacity: 0.4,
+  });
+
+  selectionOutline = new THREE.Mesh(mesh.geometry.clone(), outlineMat);
+  selectionOutline.scale.copy(mesh.scale).multiplyScalar(1.03);
+  selectionOutline.position.copy(mesh.position);
+  selectionOutline.rotation.copy(mesh.rotation);
+  selectionOutline.userData.isHighlight = true;
+  scene.add(selectionOutline);
+}
+
+/**
+ * Clear the current selection highlight
+ */
+export function clearHighlight() {
+  if (selectionOutline) {
+    scene.remove(selectionOutline);
+    if (selectionOutline.geometry) selectionOutline.geometry.dispose();
+    if (selectionOutline.material) selectionOutline.material.dispose();
+    selectionOutline = null;
+  }
+}
+
+/**
+ * Enable castShadow on a mesh (call after adding to scene)
+ * @param {THREE.Object3D} object - Object to enable shadows on
+ */
+export function enableShadows(object) {
+  object.traverse((child) => {
+    if (child.isMesh) {
+      child.castShadow = true;
+      child.receiveShadow = true;
+    }
+  });
 }
 
 // ============================================================================
@@ -664,4 +744,7 @@ export function dispose() {
   gridHelper = null;
   axisLines = null;
   referencePlanes = {};
+  groundPlane = null;
+  selectionOutline = null;
+  hemiLight = null;
 }

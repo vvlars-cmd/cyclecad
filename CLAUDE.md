@@ -7,7 +7,7 @@ SACHIN (vvlars@googlemail.com, GitHub: vvlars-cmd). Building cycleCAD — open-s
 | Repo | Local Path | GitHub | npm | What |
 |------|-----------|--------|-----|------|
 | **ExplodeView** | `~/explodeview` | `vvlars-cmd/explodeview` | `explodeview` v1.0.5 | 3D CAD **viewer** for STEP files. 19,000+ line monolith app.js |
-| **cycleCAD** | `~/cyclecad` | `vvlars-cmd/cyclecad` | `cyclecad` v0.1.3 | Parametric 3D CAD **modeler**. 15 modular JS files. This is the active project. |
+| **cycleCAD** | `~/cyclecad` | `vvlars-cmd/cyclecad` | `cyclecad` v0.1.3 | Parametric 3D CAD **modeler**. 19 modular JS files, 18,800+ lines. This is the active project. |
 
 **IMPORTANT**: These are SEPARATE repos. When Sachin says "cyclecad" he means `~/cyclecad`, NOT `~/explodeview/docs/cyclecad/`. I made this mistake once and was corrected.
 
@@ -58,11 +58,15 @@ SACHIN (vvlars@googlemail.com, GitHub: vvlars-cmd). Building cycleCAD — open-s
 | File | Lines | What |
 |------|-------|------|
 | `index.html` | 14K | Landing page for cyclecad.com |
-| `app/index.html` | 1,852 | Main CAD app — HTML + inline script wiring all modules |
+| `app/index.html` | 3,156 | Main CAD app — HTML + inline script wiring all 17 modules |
 | `app/js/app.js` | 794 | App state, mode management, history, save/load |
-| `app/js/viewport.js` | 667 | Three.js r170 scene, camera, lights, grid, OrbitControls, views |
+| `app/js/viewport.js` | 751 | Three.js r170 scene, camera, lights, shadows, grid, selection highlight, OrbitControls, views |
 | `app/js/sketch.js` | 899 | 2D canvas overlay, line/rect/circle/arc, grid snapping, constraints |
 | `app/js/operations.js` | 1,078 | Extrude, revolve, fillet, chamfer, boolean, shell, pattern |
+| `app/js/constraint-solver.js` | 1,047 | 2D constraint solver: 12 types, iterative relaxation, DOF analysis |
+| `app/js/advanced-ops.js` | 763 | Sweep, loft, sheet metal (bend/flange/tab/slot/unfold), spring, thread |
+| `app/js/assembly.js` | 1,103 | Assembly workspace: components, mate constraints, joints, explode/collapse |
+| `app/js/dxf-export.js` | 1,174 | DXF export: 2D sketch, 3D projection, multi-view engineering drawing |
 | `app/js/params.js` | 523 | Parameter editor, material selector (Steel/Al/ABS/Brass/Ti/Nylon) |
 | `app/js/tree.js` | 479 | Feature tree panel with rename, suppress, delete, context menus |
 | `app/js/inventor-parser.js` | 1,138 | OLE2/CFB binary parser for .ipt/.iam, 26 feature types, assembly constraints |
@@ -137,6 +141,11 @@ Located at `~/cyclecad/example/DUO Durchgehend Inventor/` (gitignored — too la
 - 3D viewport (Three.js r170, OrbitControls, preset views, grid, wireframe, fit-to-all)
 - 2D sketch engine (line, rect, circle, arc, polyline, grid snap, constraint detection)
 - Parametric operations (extrude, revolve, fillet, chamfer, boolean, shell, pattern)
+- **Constraint solver** (12 types: coincident, horizontal, vertical, parallel, perpendicular, tangent, equal, fixed, concentric, symmetric, distance, angle)
+- **Sweep** (profile along path with twist, scale interpolation, helix/line/arc paths)
+- **Loft** (between profiles with automatic resampling, circle/rect/hexagon)
+- **Sheet metal** (bend with k-factor, flange, tab, slot, unfold flat pattern)
+- **Spring & thread generators** (helical sweep, screw thread geometry)
 - Feature tree (rename, suppress, delete, context menus)
 - Parameter editor (real-time updates, 6 materials with density data)
 - Export (STL ASCII+binary, OBJ, glTF 2.0, cycleCAD JSON)
@@ -144,12 +153,14 @@ Located at `~/cyclecad/example/DUO Durchgehend Inventor/` (gitignored — too la
 - Inventor parsing (OLE2/CFB, 26 feature types, constraints, metadata)
 - Assembly resolver (reference extraction, path resolution, BOM)
 - Project loader (.ipj parsing, folder indexing, file categorization)
-- Project browser (tree UI, search, categories, stats)
+- Project browser (tree UI + inline left panel, search, categories, stats)
+- DUO manifest loader (474 files, instant load without File System Access API)
 - Rebuild guides (cycleCAD + Fusion 360, per-step time estimates, HTML export)
 - Reverse engineering (STL import, geometry analysis, feature inference)
 - Keyboard shortcuts (25+)
 - Undo/redo (history snapshots, Ctrl+Z/Y)
 - Welcome splash with quick actions
+- Left panel tabs (Model Tree / Project Browser)
 - Dark theme UI (VS Code-style CSS variables)
 
 ### STUBS/APPROXIMATIONS
@@ -158,15 +169,14 @@ Located at `~/cyclecad/example/DUO Durchgehend Inventor/` (gitignored — too la
 - STEP export shows error (needs OpenCascade.js)
 - Revolve doesn't fully rebuild on param change
 - History restore is basic (feature list only, no geometry serialization)
+- Bend/flange apply to selected mesh with default bend line (not edge-selected)
 
 ### NOT YET BUILT
-- Constraint solver for sketches
-- Sweep, loft operations
-- Sheet metal tools
-- Assembly workspace (joint placement, motion)
 - Real-time collaboration
-- DXF/DWG export
 - Plugin API
+- STEP import via OpenCascade.js
+- DWG export (DXF is done)
+- Assembly workspace joint editing UI (module is built, needs UI panel)
 
 ## Competitive Landscape
 | Competitor | What | Our Edge |

@@ -1410,6 +1410,26 @@
           <span class="toolbar-icon">💾</span>
           <span class="toolbar-label">STEP</span>
         </button>
+        <button class="toolbar-button" id="export-dxf" title="Export DXF (2D Drawing)">
+          <span class="toolbar-icon">📐</span>
+          <span class="toolbar-label">DXF</span>
+        </button>
+        <button class="toolbar-button" id="export-multiview" title="Multi-View Engineering Drawing (DXF)">
+          <span class="toolbar-icon">📄</span>
+          <span class="toolbar-label">Drawing</span>
+        </button>
+      </div>
+
+      <!-- Assembly Tools -->
+      <div class="toolbar-group">
+        <button class="toolbar-button" id="tool-assembly" title="Assembly Workspace" style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);">
+          <span class="toolbar-icon">&#9881;</span>
+          <span class="toolbar-label">Assembly</span>
+        </button>
+        <button class="toolbar-button" id="tool-explode" title="Explode/Collapse Assembly">
+          <span class="toolbar-icon">&#11043;</span>
+          <span class="toolbar-label">Explode</span>
+        </button>
       </div>
 
       <!-- Reverse Engineer -->
@@ -1587,6 +1607,8 @@
     import { generateGuide, renderGuide, exportGuideHTML } from './js/rebuild-guide.js';
     import { solveConstraints, addConstraint, removeConstraint, autoDetectConstraints, isFullyConstrained, getAllConstraints, clearAllConstraints } from './js/constraint-solver.js';
     import { createSweep, createLoft, createBend, createFlange, createTab, createSlot, unfoldSheetMetal, createSpring, createThread } from './js/advanced-ops.js';
+    import Assembly from './js/assembly.js';
+    import { exportSketchToDXF, exportProjectionToDXF, exportMultiViewDXF, export3DDXF, downloadDXF } from './js/dxf-export.js';
 
     // ========== Application State ==========
     const APP = {
@@ -1597,6 +1619,7 @@
       history: [],
       historyIndex: -1,
       project: null,  // Current Inventor project
+      assembly: null,  // Assembly workspace instance
     };
 
     // ========== Initialization ==========
@@ -1608,6 +1631,9 @@
         initViewport('viewport-container');
         document.getElementById('kernel-status').classList.add('ready');
         document.getElementById('kernel-status-text').textContent = 'Ready';
+
+        // 1b. Initialize assembly workspace
+        APP.assembly = new Assembly(getScene());
 
         // 2. Initialize feature tree
         const treeContainer = document.getElementById('feature-tree');
@@ -1994,7 +2020,27 @@
 
       // Export
       bind('export-stl', () => doExportSTL());
-      bind('export-step', () => updateStatus('STEP export: coming soon'));
+      bind('export-step', () => updateStatus('STEP export requires OpenCascade.js — coming soon'));
+      bind('export-dxf', () => {
+        if (APP.features.length === 0) { updateStatus('No geometry to export'); return; }
+        try {
+          const mesh = APP.features[APP.features.length - 1].mesh;
+          if (!mesh) { updateStatus('Select a feature with geometry'); return; }
+          const dxf = exportProjectionToDXF(mesh, 'front', { hiddenLines: true });
+          downloadDXF(dxf, 'cyclecad-export.dxf');
+          updateStatus('DXF exported: front view projection');
+        } catch (err) { updateStatus('DXF export failed: ' + err.message); console.error(err); }
+      });
+      bind('export-multiview', () => {
+        if (APP.features.length === 0) { updateStatus('No geometry to export'); return; }
+        try {
+          const mesh = APP.features[APP.features.length - 1].mesh;
+          if (!mesh) { updateStatus('Select a feature with geometry'); return; }
+          const dxf = exportMultiViewDXF(mesh, { titleBlock: true, title: 'cycleCAD Part', author: 'cycleCAD', company: 'cycleWASH' });
+          downloadDXF(dxf, 'cyclecad-drawing.dxf');
+          updateStatus('Multi-view engineering drawing exported');
+        } catch (err) { updateStatus('Drawing export failed: ' + err.message); console.error(err); }
+      });
 
       // Edit
       bind('btn-undo', () => { undo(); });
@@ -2102,6 +2148,32 @@
       bind('tool-unfold', () => {
         if (APP.features.length === 0) { updateStatus('No features to unfold'); return; }
         updateStatus('Sheet metal unfold: select a bent part, then define bend lines');
+      });
+
+      // Assembly
+      let assemblyMode = false;
+      bind('tool-assembly', () => {
+        assemblyMode = !assemblyMode;
+        if (assemblyMode) {
+          updateStatus('Assembly mode ON — click parts to add to assembly. Right-click for mate constraints.');
+          document.getElementById('tool-assembly').style.background = 'rgba(139,92,246,0.3)';
+        } else {
+          updateStatus('Assembly mode OFF');
+          document.getElementById('tool-assembly').style.background = 'rgba(139,92,246,0.1)';
+        }
+      });
+
+      let exploded = false;
+      bind('tool-explode', () => {
+        if (!APP.assembly) return;
+        exploded = !exploded;
+        if (exploded) {
+          APP.assembly.explodeAssembly(2.0);
+          updateStatus('Assembly exploded — click again to collapse');
+        } else {
+          APP.assembly.collapseAssembly();
+          updateStatus('Assembly collapsed');
+        }
       });
     }
 

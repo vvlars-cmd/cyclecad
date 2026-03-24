@@ -98,12 +98,40 @@
     </div>
   </div>
 
+  <!-- Example chips -->
+  <div id="example-chips" style="position:absolute;bottom:118px;left:50%;transform:translateX(-50%);z-index:11;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:720px;">
+    <button class="chip" onclick="fillExample('build a cylinder 50mm diameter 80mm tall in steel')">cylinder</button>
+    <button class="chip" onclick="fillExample('gear 24 teeth module 2.5 in brass')">gear</button>
+    <button class="chip" onclick="fillExample('bracket 120x60 4 M8 holes 15mm from edge fillet 8')">bracket</button>
+    <button class="chip" onclick="fillExample('hex bolt M12 40mm long')">hex bolt</button>
+    <button class="chip" onclick="fillExample('flange 100mm diameter inner 40 6 M6 holes')">flange</button>
+    <button class="chip" onclick="fillExample('tube outer 50 inner 40 height 80 in aluminum')">tube</button>
+    <button class="chip" onclick="fillExample('sphere radius 30 in titanium')">sphere</button>
+    <button class="chip" onclick="fillExample('add a hole radius 8')">+ hole</button>
+    <button class="chip" onclick="fillExample('fillet 5')">+ fillet</button>
+    <button class="chip" onclick="fillExample('shell thickness 2')">+ shell</button>
+    <button class="chip" onclick="fillExample('pattern circular 6 copies')">+ pattern</button>
+    <button class="chip" onclick="fillExample('change material to steel')">material</button>
+    <button class="chip" onclick="fillExample('validate')">validate</button>
+    <button class="chip" onclick="fillExample('export stl')">export</button>
+  </div>
+  <style>
+    .chip { padding:5px 12px;border:1px solid rgba(255,255,255,0.12);border-radius:16px;background:rgba(18,34,64,0.8);color:var(--muted);font-size:11px;cursor:pointer;transition:all 0.15s;font-family:inherit; }
+    .chip:hover { background:rgba(46,134,222,0.2);color:var(--text);border-color:rgba(46,134,222,0.4); }
+  </style>
+
   <!-- Voice input bar -->
-  <div id="voice-bar" style="position:absolute;bottom:70px;left:50%;transform:translateX(-50%);z-index:11;display:flex;align-items:center;gap:10px;background:rgba(18,34,64,0.95);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:8px 16px;min-width:500px;max-width:700px;">
+  <div id="voice-bar" style="position:absolute;bottom:70px;left:50%;transform:translateX(-50%);z-index:11;display:flex;align-items:center;gap:10px;background:rgba(18,34,64,0.95);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:8px 16px;min-width:500px;max-width:720px;">
     <button id="btn-mic" onclick="toggleVoice()" style="width:40px;height:40px;border-radius:50%;border:2px solid var(--coral);background:transparent;color:var(--coral);font-size:18px;cursor:pointer;transition:all 0.2s;flex-shrink:0;">🎤</button>
-    <input id="voice-input" type="text" placeholder="Step 1: &quot;build a cylinder 50mm diameter 80 tall&quot; → Step 2: &quot;add a hole radius 10&quot; → Step 3: &quot;export stl&quot;" style="flex:1;background:transparent;border:none;color:var(--text);font-size:14px;font-family:inherit;outline:none;" onkeydown="if(event.key==='Enter')executeVoiceCommand()">
-    <button onclick="executeVoiceCommand()" style="padding:8px 16px;border:none;border-radius:8px;background:linear-gradient(135deg,var(--gold),var(--blue));color:#000;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0;">Build It</button>
+    <input id="voice-input" type="text" placeholder="Describe what to build or modify..." style="flex:1;background:transparent;border:none;color:var(--text);font-size:14px;font-family:inherit;outline:none;" onkeydown="if(event.key==='Enter')executeVoiceCommand()">
+    <button onclick="executeVoiceCommand()" style="padding:8px 16px;border:none;border-radius:8px;background:linear-gradient(135deg,var(--gold),var(--blue));color:#000;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0;">Go</button>
     <div id="voice-status" style="position:absolute;top:-22px;left:16px;font-size:11px;color:var(--dim);"></div>
+  </div>
+
+  <!-- Feature count badge -->
+  <div id="feature-badge" style="position:absolute;bottom:70px;right:20px;z-index:11;display:none;background:rgba(18,34,64,0.95);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--muted);max-width:180px;">
+    <div style="color:var(--gold);font-weight:600;margin-bottom:4px;">FEATURES</div>
+    <div id="feature-list" style="line-height:1.6;"></div>
   </div>
 
   <div class="controls">
@@ -571,6 +599,11 @@
       if (/chamfer/.test(t)) return 'chamfer';
       if (/add\s*(a\s*)?(slot|groove|channel)/.test(t)) return 'slot';
       if (/add\s*(a\s*)?(boss|peg|pin|post)/.test(t)) return 'boss';
+      if (/shell|hollow\s*out|thin\s*wall/.test(t)) return 'shell';
+      if (/pattern|array|copies|repeat/.test(t)) return 'pattern';
+      if (/counterbore|counter\s*bore|c'?bore/.test(t)) return 'counterbore';
+      if (/thread|tap/.test(t)) return 'thread';
+      if (/mirror|symmetr/.test(t)) return 'mirror';
       // If a known shape word is present → create new
       if (detectShape(t)) return 'create';
       // Default: try to create
@@ -598,6 +631,11 @@
         holeOffset: parseNum(t, /(\d+)\s*mm?\s*from\s*(?:the\s*)?edge/) || 10,
         posX: parseNum(t, /(?:at|x)\s*(-?\d+(?:\.\d+)?)/) || 0,
         posZ: parseNum(t, /(?:,\s*|y\s*)(-?\d+(?:\.\d+)?)/) || 0,
+        shellThick: parseNum(t, /shell\s*(?:thickness\s*)?(\d+(?:\.\d+)?)/, /thick(?:ness)?\s*(\d+(?:\.\d+)?)/, /(\d+(?:\.\d+)?)\s*mm?\s*(?:shell|wall)/) || 0,
+        copies: parseNum(t, /(\d+)\s*cop(?:y|ies)/, /(\d+)\s*times/, /pattern\s*(?:of\s*)?(\d+)/) || 0,
+        patternType: /circular|radial|around/.test(t) ? 'circular' : (/linear|row|line/.test(t) ? 'linear' : 'circular'),
+        spacing: parseNum(t, /spacing\s*(\d+(?:\.\d+)?)/, /(\d+(?:\.\d+)?)\s*mm?\s*(?:apart|spacing)/) || 0,
+        threadPitch: parseNum(t, /pitch\s*(\d+(?:\.\d+)?)/, /(\d+(?:\.\d+)?)\s*mm?\s*pitch/) || 0,
       };
     }
 
@@ -823,6 +861,105 @@
       return { steps, clearScene: false };
     }
 
+    function buildShellSteps(text, t, ex) {
+      const steps = [];
+      if (!sceneState.shape) {
+        steps.push({ type: 'agent', text: '⚠️ No part yet. Create something first.' });
+        return { steps, clearScene: false };
+      }
+      const thick = ex.shellThick || ex.thick || 2;
+      steps.push({ type: 'agent', text: `🎤 "${text}"` });
+      steps.push({ type: 'divider' });
+      steps.push({ type: 'agent', text: `🥚 Shell — hollow out with ${thick}mm wall thickness` });
+      steps.push({ type: 'cmd', method: 'ops.shell', params: { target: 'main', thickness: thick }, mesh: 'shell' });
+      steps.push({ type: 'delay', ms: 200 });
+      sceneState.dims.shellThick = thick;
+      sceneState.features.push(`Shell t=${thick}`);
+      steps.push({ type: 'agent', text: `✅ Shelled. ${sceneState.features.length} features. Keep going!` });
+      return { steps, clearScene: false };
+    }
+
+    function buildPatternSteps(text, t, ex) {
+      const steps = [];
+      if (!sceneState.shape) {
+        steps.push({ type: 'agent', text: '⚠️ No part yet. Create something first.' });
+        return { steps, clearScene: false };
+      }
+      const copies = ex.copies || 6;
+      const pType = ex.patternType || 'circular';
+      const spacing = ex.spacing || 30;
+      steps.push({ type: 'agent', text: `🎤 "${text}"` });
+      steps.push({ type: 'divider' });
+      steps.push({ type: 'agent', text: `🔄 ${pType.charAt(0).toUpperCase() + pType.slice(1)} pattern — ${copies} copies` });
+      steps.push({ type: 'cmd', method: 'ops.pattern', params: { target: 'main', type: pType, copies, spacing }, mesh: 'pattern' });
+      steps.push({ type: 'delay', ms: 200 });
+      sceneState.dims.patternCopies = copies;
+      sceneState.dims.patternType = pType;
+      sceneState.features.push(`${pType} pattern ×${copies}`);
+      steps.push({ type: 'agent', text: `✅ Pattern applied. ${sceneState.features.length} features. Keep going!` });
+      return { steps, clearScene: false };
+    }
+
+    function buildCounterboreSteps(text, t, ex) {
+      const steps = [];
+      if (!sceneState.shape) {
+        steps.push({ type: 'agent', text: '⚠️ No part yet. Create something first.' });
+        return { steps, clearScene: false };
+      }
+      const boreR = ex.diameter ? ex.diameter / 2 : (ex.radius || 6);
+      const headR = boreR * 1.6;
+      const headDepth = ex.thick || 4;
+      const px = ex.posX || 0, pz = ex.posZ || 0;
+      const py = (sceneState.dims.h || 10) / 2;
+      sceneState.holeIdx++;
+      const name = `cbore${sceneState.holeIdx}`;
+      steps.push({ type: 'agent', text: `🎤 "${text}"` });
+      steps.push({ type: 'divider' });
+      steps.push({ type: 'agent', text: `🔩 Counterbore: ø${boreR * 2}mm through + ø${headR * 2}mm × ${headDepth}mm pocket` });
+      steps.push({ type: 'cmd', method: 'ops.cut', params: { shape: 'cylinder', radius: boreR, height: (sceneState.dims.h || 10) + 2, x: px, z: pz }, mesh: `hole${sceneState.holeIdx}`, pos: [px, py, pz] });
+      steps.push({ type: 'cmd', method: 'ops.cut', params: { shape: 'cylinder', radius: headR, height: headDepth, x: px, z: pz, counterbore: true }, mesh: name, pos: [px, (sceneState.dims.h || 10) - headDepth / 2, pz] });
+      steps.push({ type: 'delay', ms: 200 });
+      sceneState.features.push(`Counterbore ø${boreR * 2} at (${px},${pz})`);
+      steps.push({ type: 'agent', text: `✅ Counterbore added. ${sceneState.features.length} features. Keep going!` });
+      return { steps, clearScene: false };
+    }
+
+    function buildThreadSteps(text, t, ex) {
+      const steps = [];
+      if (!sceneState.shape) {
+        steps.push({ type: 'agent', text: '⚠️ No part yet. Create something first.' });
+        return { steps, clearScene: false };
+      }
+      const pitch = ex.threadPitch || 1.5;
+      const threadR = ex.diameter ? ex.diameter / 2 : (ex.radius || (sceneState.dims.r || 10));
+      steps.push({ type: 'agent', text: `🎤 "${text}"` });
+      steps.push({ type: 'divider' });
+      steps.push({ type: 'agent', text: `🔩 Thread: ø${threadR * 2}mm, pitch ${pitch}mm` });
+      steps.push({ type: 'cmd', method: 'ops.thread', params: { target: 'main', radius: threadR, pitch, external: true }, mesh: 'thread' });
+      steps.push({ type: 'delay', ms: 200 });
+      sceneState.dims.threadPitch = pitch;
+      sceneState.features.push(`Thread p=${pitch} ø${threadR * 2}`);
+      steps.push({ type: 'agent', text: `✅ Thread applied. ${sceneState.features.length} features. Keep going!` });
+      return { steps, clearScene: false };
+    }
+
+    function buildMirrorSteps(text, t, ex) {
+      const steps = [];
+      if (!sceneState.shape) {
+        steps.push({ type: 'agent', text: '⚠️ No part yet. Create something first.' });
+        return { steps, clearScene: false };
+      }
+      const axis = /[yz]/i.test(t) ? (t.match(/([yz])/i)[1].toUpperCase()) : 'X';
+      steps.push({ type: 'agent', text: `🎤 "${text}"` });
+      steps.push({ type: 'divider' });
+      steps.push({ type: 'agent', text: `🪞 Mirror across ${axis} axis` });
+      steps.push({ type: 'cmd', method: 'ops.mirror', params: { target: 'main', axis }, mesh: 'mirror' });
+      steps.push({ type: 'delay', ms: 200 });
+      sceneState.features.push(`Mirror ${axis}`);
+      steps.push({ type: 'agent', text: `✅ Mirrored. ${sceneState.features.length} features. Keep going!` });
+      return { steps, clearScene: false };
+    }
+
     // ======= EXECUTE =======
     async function executeVoiceCommand() {
       const input = document.getElementById('voice-input');
@@ -848,12 +985,17 @@
       if (intent === 'create') result = buildCreateSteps(text, t, ex);
       else if (intent === 'hole') result = buildHoleSteps(text, t, ex);
       else if (intent === 'fillet') result = buildFilletSteps(text, t, ex);
-      else if (intent === 'chamfer') result = buildFilletSteps(text, t, ex); // reuse fillet visual
+      else if (intent === 'chamfer') result = buildFilletSteps(text, t, ex);
       else if (intent === 'export') result = buildExportSteps(text, t);
       else if (intent === 'validate') result = buildValidateSteps(text);
       else if (intent === 'material') result = buildMaterialSteps(text, t);
       else if (intent === 'boss') result = buildBossSteps(text, t, ex);
-      else result = buildCreateSteps(text, t, ex); // fallback
+      else if (intent === 'shell') result = buildShellSteps(text, t, ex);
+      else if (intent === 'pattern') result = buildPatternSteps(text, t, ex);
+      else if (intent === 'counterbore') result = buildCounterboreSteps(text, t, ex);
+      else if (intent === 'thread') result = buildThreadSteps(text, t, ex);
+      else if (intent === 'mirror') result = buildMirrorSteps(text, t, ex);
+      else result = buildCreateSteps(text, t, ex);
 
       const voiceSteps = result.steps;
       if (result.clearScene) {
@@ -900,6 +1042,7 @@
         }
       }
       running = false;
+      updateFeatureBadge();
     }
 
     function simulateResult(step) {
@@ -913,6 +1056,10 @@
       if (m === 'ops.fillet') return { ok: true, radius: step.params.radius, applied: true };
       if (m === 'ops.material') return { ok: true, material: step.params.material };
       if (m === 'ops.boss') return { ok: true, id: step.mesh };
+      if (m === 'ops.shell') return { ok: true, thickness: step.params.thickness, hollowed: true };
+      if (m === 'ops.pattern') return { ok: true, type: step.params.type, copies: step.params.copies };
+      if (m === 'ops.thread') return { ok: true, pitch: step.params.pitch, external: true };
+      if (m === 'ops.mirror') return { ok: true, axis: step.params.axis, mirrored: true };
       if (m === 'validate.dimensions') return { ok: true, size: sceneState.dims.sizeLabel };
       if (m === 'validate.printability') return { ok: true, printable: true, issues: [] };
       if (m === 'validate.cost') return { ok: true, unitCost: costMap[sceneState.material] || 12.40 };
@@ -1019,6 +1166,104 @@
         if (step.pos) mesh.position.set(step.pos[0], step.pos[1], step.pos[2]);
         window.addMeshToScene(mesh);
       }
+      else if (step.mesh === 'shell') {
+        // Visual shell: make existing part semi-transparent + add inner void
+        const scene = window._scene;
+        const main = scene.getObjectByName('main');
+        if (main && main.isMesh) {
+          main.material.transparent = true;
+          main.material.opacity = 0.35;
+          main.material.depthWrite = false;
+          // Add inner representation (slightly smaller dark shape)
+          const thick = sc.dims.shellThick || 2;
+          let innerGeo;
+          const s = sc.shape;
+          if (s === 'cylinder' || s === 'disk') {
+            innerGeo = new THREE.CylinderGeometry(d.r - thick, d.r - thick, d.h - thick * 2, 48);
+          } else if (s === 'sphere') {
+            innerGeo = new THREE.SphereGeometry(d.r - thick, 48, 32);
+          } else {
+            innerGeo = new THREE.BoxGeometry((d.w || 80) - thick * 2, (d.h || 5) - thick, (d.d || 40) - thick * 2);
+          }
+          const innerMat = new THREE.MeshStandardMaterial({ color: 0x0A1628, metalness: 0, roughness: 1 });
+          const inner = new THREE.Mesh(innerGeo, innerMat);
+          inner.position.copy(main.position);
+          inner.name = 'shell_inner';
+          window.addMeshToScene(inner);
+        }
+      }
+      else if (step.mesh === 'pattern') {
+        // Clone the main part in a circular or linear pattern
+        const scene = window._scene;
+        const main = scene.getObjectByName('main');
+        if (main) {
+          const copies = sc.dims.patternCopies || 6;
+          const pType = sc.dims.patternType || 'circular';
+          const spacing = step.params?.spacing || 30;
+          for (let i = 1; i < copies; i++) {
+            const clone = main.clone();
+            clone.material = main.material.clone();
+            clone.name = `pattern_${i}`;
+            if (pType === 'circular') {
+              const angle = (i / copies) * Math.PI * 2;
+              const rad = Math.max(d.r || 30, (d.w || 80) / 2) * 2.5;
+              clone.position.x = Math.cos(angle) * rad;
+              clone.position.z = Math.sin(angle) * rad;
+              clone.position.y = main.position.y;
+            } else {
+              clone.position.x = main.position.x + i * spacing;
+              clone.position.y = main.position.y;
+              clone.position.z = main.position.z;
+            }
+            window.addMeshToScene(clone);
+          }
+        }
+      }
+      else if (step.mesh === 'thread') {
+        // Visual thread: add a helical line wrapping the part
+        const scene = window._scene;
+        const main = scene.getObjectByName('main');
+        const threadR = d.r || (d.outerR || 15);
+        const threadH = d.h || 40;
+        const pitch = sc.dims.threadPitch || 1.5;
+        const turns = threadH / pitch;
+        const pts = [];
+        for (let i = 0; i <= turns * 36; i++) {
+          const angle = (i / 36) * Math.PI * 2;
+          const y = (i / (turns * 36)) * threadH;
+          pts.push(new THREE.Vector3(Math.cos(angle) * (threadR + 0.5), y, Math.sin(angle) * (threadR + 0.5)));
+        }
+        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+        const mat = new THREE.LineBasicMaterial({ color: 0xD4A843, linewidth: 1 });
+        const line = new THREE.Line(geo, mat);
+        line.name = 'thread_visual';
+        window.addMeshToScene(line);
+      }
+      else if (step.mesh === 'mirror') {
+        // Clone the entire scene content and flip across the axis
+        const scene = window._scene;
+        const toClone = [];
+        scene.traverse(c => { if (c.isMesh && c.name !== 'grid') toClone.push(c); });
+        const axis = step.params?.axis || 'X';
+        toClone.forEach(m => {
+          const clone = m.clone();
+          clone.material = m.material.clone();
+          clone.name = `mirror_${m.name}`;
+          if (axis === 'X') clone.position.x = -clone.position.x;
+          else if (axis === 'Y') clone.position.y = -clone.position.y;
+          else clone.position.z = -clone.position.z;
+          window.addMeshToScene(clone);
+        });
+      }
+      else if (step.mesh && step.mesh.startsWith('cbore')) {
+        // Counterbore pocket — wider shallow hole
+        const r = step.params?.radius || 10;
+        const h = step.params?.height || 4;
+        const geo = new THREE.CylinderGeometry(r, r, h, 24);
+        const mesh = new THREE.Mesh(geo, darkMat);
+        if (step.pos) mesh.position.set(step.pos[0], step.pos[1], step.pos[2]);
+        window.addMeshToScene(mesh);
+      }
       else if (step.mesh === 'recolor') {
         // Change material color on existing part
         const scene = window._scene;
@@ -1035,6 +1280,24 @@
     styleEl.textContent = `@keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(224,85,85,0.4); } 50% { box-shadow: 0 0 0 12px rgba(224,85,85,0); } }`;
     document.head.appendChild(styleEl);
 
+    // ======= UTILITY FUNCTIONS =======
+    function fillExample(text) {
+      const input = document.getElementById('voice-input');
+      input.value = text;
+      input.focus();
+    }
+
+    function updateFeatureBadge() {
+      const badge = document.getElementById('feature-badge');
+      const list = document.getElementById('feature-list');
+      if (!sceneState.features.length) { badge.style.display = 'none'; return; }
+      badge.style.display = 'block';
+      list.innerHTML = sceneState.features.map((f, i) =>
+        `<div style="color:${i === 0 ? 'var(--teal)' : 'var(--muted)'}">${i + 1}. ${f}</div>`
+      ).join('');
+    }
+
+    window.fillExample = fillExample;
     window.toggleVoice = toggleVoice;
     window.executeVoiceCommand = executeVoiceCommand;
 

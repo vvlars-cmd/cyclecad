@@ -3,7 +3,8 @@
  * Wires all modules together and manages application state
  */
 
-import { initViewport, setView, addToScene, removeFromScene, getScene, getCamera } from './viewport.js';
+import { initViewport, setView, addToScene, removeFromScene, getScene, getCamera, toggleGrid as vpToggleGrid, toggleWireframe as vpToggleWireframe, fitToObject } from './viewport.js';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
 import { startSketch, endSketch, setTool, getEntities } from './sketch.js';
 import { extrudeProfile, createPrimitive, rebuildFeature } from './operations.js';
 import { initChat, parseCADPrompt } from './ai-chat.js';
@@ -645,8 +646,36 @@ function redo() {
 function restoreFromHistory() {
   const state = APP.history[APP.historyIndex];
   if (state) {
-    // TODO: Implement full state restoration
-    console.log('Restore from history:', state);
+    // Clear current scene
+    APP.features.forEach((f) => {
+      if (f.mesh) removeFromScene(f.mesh);
+    });
+
+    // Restore features from history state
+    APP.features = [];
+    if (state.features && Array.isArray(state.features)) {
+      state.features.forEach((featureData) => {
+        try {
+          const primitive = createPrimitive(featureData.type, featureData.params);
+          addToScene(primitive.mesh);
+
+          const feature = {
+            id: featureData.id,
+            name: featureData.name,
+            type: featureData.type,
+            mesh: primitive.mesh,
+            params: featureData.params,
+          };
+
+          APP.features.push(feature);
+          addFeature(feature);
+        } catch (err) {
+          console.warn(`Failed to restore feature ${featureData.name}:`, err);
+        }
+      });
+    }
+
+    updateStatusBar(`Restored state from history (${APP.history.length - APP.historyIndex} steps remaining)`);
   }
 }
 
@@ -683,24 +712,65 @@ function pushHistory() {
  * Toggle grid visibility
  */
 function toggleGrid() {
-  // TODO: Implement grid toggle in viewport
-  console.log('Toggle grid');
+  const btn = document.getElementById('btn-grid');
+  const isCurrentlyVisible = btn ? !btn.classList.contains('active') : true;
+
+  // Call viewport function
+  vpToggleGrid(!isCurrentlyVisible);
+
+  // Update button state
+  if (btn) {
+    btn.classList.toggle('active');
+  }
+
+  updateStatusBar(isCurrentlyVisible ? 'Grid hidden' : 'Grid visible');
 }
 
 /**
  * Toggle wireframe mode
  */
 function toggleWireframe() {
-  // TODO: Implement wireframe toggle in viewport
-  console.log('Toggle wireframe');
+  const btn = document.getElementById('btn-wireframe');
+  const isCurrentlyWireframe = btn ? btn.classList.contains('active') : false;
+
+  // Call viewport function to toggle wireframe on all meshes
+  vpToggleWireframe(!isCurrentlyWireframe);
+
+  // Update button state
+  if (btn) {
+    btn.classList.toggle('active');
+  }
+
+  updateStatusBar(isCurrentlyWireframe ? 'Solid shading' : 'Wireframe mode');
 }
 
 /**
  * Fit all features in view
  */
 function fitAll() {
-  // TODO: Implement fit-all camera animation
-  console.log('Fit all');
+  if (APP.features.length === 0) {
+    updateStatusBar('Nothing to fit');
+    return;
+  }
+
+  // Create a temporary group of all features to fit camera
+  const group = new THREE.Group();
+  APP.features.forEach((f) => {
+    if (f.mesh) {
+      group.add(f.mesh);
+    }
+  });
+
+  // Create a bounding box to check if there's anything to show
+  const box = new THREE.Box3().setFromObject(group);
+  if (box.isEmpty()) {
+    updateStatusBar('No visible features to fit');
+    return;
+  }
+
+  // Fit camera to all features with padding
+  fitToObject(group, 1.3);
+  updateStatusBar('Fit all features');
 }
 
 /**

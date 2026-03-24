@@ -357,142 +357,215 @@ export function createPrimitive(type, params = {}, options = {}) {
 
 /**
  * Apply a fillet (rounded edge) to mesh edges
+ * Creates rounded edges using torus geometry positioned at edge midpoints
  *
  * @param {THREE.Mesh} mesh - Source mesh
- * @param {array} edges - Edge indices or 'all' for all edges
+ * @param {array} edgeIndices - Edge indices (pairs of vertex indices) or 'all' for all edges
  * @param {number} radius - Fillet radius
  * @returns {THREE.Group} Group containing original mesh and fillet geometry
  */
-export function fillet(mesh, edges = 'all', radius = 0.1) {
+export function fillet(mesh, edgeIndices = 'all', radius = 0.1) {
   const group = new THREE.Group();
   group.add(mesh);
 
-  // Get geometry positions and indices
+  // Get geometry
   const geometry = mesh.geometry;
-  const positions = geometry.attributes.position.array;
+  const positionAttr = geometry.attributes.position;
+
+  if (!positionAttr) return group;
+
+  const positions = positionAttr.array;
   const indices = geometry.index ? geometry.index.array : null;
 
-  // Create fillet geometry by adding rounded edges
-  // This is a simplified implementation using a cylinder along each edge
-  const filletGeometry = new THREE.BufferGeometry();
-  const filletVertices = [];
-  const filletIndices = [];
+  // Extract unique edges from geometry
+  const edges = extractEdgesFromGeometry(positions, indices);
 
-  // For box-like geometries, identify and fillet edges
-  if (geometry.type === 'BoxGeometry') {
-    const vertices = [];
-    for (let i = 0; i < positions.length; i += 3) {
-      vertices.push({
-        x: positions[i],
-        y: positions[i + 1],
-        z: positions[i + 2]
-      });
-    }
-
-    // Add fillet at corners using small cylinders or toruses
-    for (let i = 0; i < Math.min(vertices.length, 8); i++) {
-      const v = vertices[i];
-      const torus = new THREE.TorusGeometry(radius, radius * 0.4, 4, 16);
-      const mat = mesh.material;
-      const filletMesh = new THREE.Mesh(torus, mat);
-      filletMesh.position.set(v.x, v.y, v.z);
-      group.add(filletMesh);
-    }
+  // Filter to requested edges
+  let activeEdges = edges;
+  if (edgeIndices !== 'all' && Array.isArray(edgeIndices)) {
+    activeEdges = edgeIndices.map(idx => edges[idx]).filter(e => e);
   }
+
+  // Create rounded geometry for each edge
+  for (const edge of activeEdges) {
+    // Calculate edge midpoint and direction
+    const p1 = new THREE.Vector3(
+      positions[edge.v1 * 3],
+      positions[edge.v1 * 3 + 1],
+      positions[edge.v1 * 3 + 2]
+    );
+    const p2 = new THREE.Vector3(
+      positions[edge.v2 * 3],
+      positions[edge.v2 * 3 + 1],
+      positions[edge.v2 * 3 + 2]
+    );
+
+    const midpoint = p1.clone().add(p2).multiplyScalar(0.5);
+    const edgeDir = p2.clone().sub(p1).normalize();
+
+    // Create torus geometry for rounded edge
+    const torusGeom = new THREE.TorusGeometry(
+      radius,
+      radius * 0.25,
+      8,
+      24
+    );
+
+    // Rotate torus to align with edge direction
+    const quaternion = new THREE.Quaternion();
+    const upVector = new THREE.Vector3(0, 1, 0);
+    if (Math.abs(edgeDir.dot(upVector)) > 0.9) {
+      upVector.set(1, 0, 0);
+    }
+    quaternion.setFromUnitVectors(upVector, edgeDir);
+    torusGeom.applyQuaternion(quaternion);
+    torusGeom.translate(midpoint.x, midpoint.y, midpoint.z);
+
+    const torusMesh = new THREE.Mesh(torusGeom, mesh.material.clone());
+    group.add(torusMesh);
+  }
+
+  // Store parameters for rebuilding
+  group.userData = {
+    operation: 'fillet',
+    edgeIndices,
+    radius,
+    source: mesh
+  };
 
   return group;
 }
 
 /**
  * Apply a chamfer (beveled edge) to mesh edges
+ * Creates angled cut geometry at selected edges
  *
  * @param {THREE.Mesh} mesh - Source mesh
- * @param {array} edges - Edge indices or 'all'
- * @param {number} distance - Chamfer distance
- * @returns {THREE.Mesh} New mesh with chamfered edges
+ * @param {array} edgeIndices - Edge indices (pairs of vertex indices) or 'all'
+ * @param {number} distance - Chamfer distance/size
+ * @returns {THREE.Group} Group with original mesh and chamfer geometry
  */
-export function chamfer(mesh, edges = 'all', distance = 0.1) {
-  const geometry = mesh.geometry.clone();
+export function chamfer(mesh, edgeIndices = 'all', distance = 0.1) {
+  const group = new THREE.Group();
+  group.add(mesh);
 
-  // For BoxGeometry, create a bevel by slightly scaling inward
-  if (geometry.type === 'BoxGeometry') {
-    const positions = geometry.attributes.position.array;
+  const geometry = mesh.geometry;
+  const positionAttr = geometry.attributes.position;
 
-    // Calculate bounding box
-    let minX = Infinity, maxX = -Infinity;
-    let minY = Infinity, maxY = -Infinity;
-    let minZ = Infinity, maxZ = -Infinity;
+  if (!positionAttr) return group;
 
-    for (let i = 0; i < positions.length; i += 3) {
-      minX = Math.min(minX, positions[i]);
-      maxX = Math.max(maxX, positions[i]);
-      minY = Math.min(minY, positions[i + 1]);
-      maxY = Math.max(maxY, positions[i + 1]);
-      minZ = Math.min(minZ, positions[i + 2]);
-      maxZ = Math.max(maxZ, positions[i + 2]);
-    }
+  const positions = positionAttr.array;
+  const indices = geometry.index ? geometry.index.array : null;
 
-    const centerX = (minX + maxX) / 2;
-    const centerY = (minY + maxY) / 2;
-    const centerZ = (minZ + maxZ) / 2;
+  // Extract unique edges
+  const edges = extractEdgesFromGeometry(positions, indices);
 
-    // Chamfer corners by moving vertices inward
-    for (let i = 0; i < positions.length; i += 3) {
-      const x = positions[i];
-      const y = positions[i + 1];
-      const z = positions[i + 2];
-
-      // Check if vertex is at a corner
-      const isCorner = [minX, maxX].includes(x) && [minY, maxY].includes(y) && [minZ, maxZ].includes(z);
-
-      if (isCorner) {
-        // Move toward center
-        positions[i] += (x < centerX ? 1 : -1) * distance;
-        positions[i + 1] += (y < centerY ? 1 : -1) * distance;
-        positions[i + 2] += (z < centerZ ? 1 : -1) * distance;
-      }
-    }
-
-    geometry.attributes.position.needsUpdate = true;
+  // Filter edges
+  let activeEdges = edges;
+  if (edgeIndices !== 'all' && Array.isArray(edgeIndices)) {
+    activeEdges = edgeIndices.map(idx => edges[idx]).filter(e => e);
   }
 
-  geometry.computeVertexNormals();
-  const chamferedMesh = new THREE.Mesh(geometry, mesh.material);
-  chamferedMesh.castShadow = true;
-  chamferedMesh.receiveShadow = true;
+  // Create beveled geometry for each edge
+  for (const edge of activeEdges) {
+    const p1 = new THREE.Vector3(
+      positions[edge.v1 * 3],
+      positions[edge.v1 * 3 + 1],
+      positions[edge.v1 * 3 + 2]
+    );
+    const p2 = new THREE.Vector3(
+      positions[edge.v2 * 3],
+      positions[edge.v2 * 3 + 1],
+      positions[edge.v2 * 3 + 2]
+    );
 
-  return chamferedMesh;
+    const edgeDir = p2.clone().sub(p1).normalize();
+    const edgeLen = p1.distanceTo(p2);
+
+    // Create angled cut (cone-like shape)
+    const coneGeom = new THREE.ConeGeometry(distance, edgeLen, 4, 2);
+
+    // Rotate to align with edge
+    const quaternion = new THREE.Quaternion();
+    const upVector = new THREE.Vector3(0, 1, 0);
+    if (Math.abs(edgeDir.dot(upVector)) > 0.9) {
+      upVector.set(1, 0, 0);
+    }
+    quaternion.setFromUnitVectors(upVector, edgeDir);
+    coneGeom.applyQuaternion(quaternion);
+
+    const midpoint = p1.clone().add(p2).multiplyScalar(0.5);
+    coneGeom.translate(midpoint.x, midpoint.y, midpoint.z);
+
+    const coneMesh = new THREE.Mesh(coneGeom, mesh.material.clone());
+    group.add(coneMesh);
+  }
+
+  // Store parameters
+  group.userData = {
+    operation: 'chamfer',
+    edgeIndices,
+    distance,
+    source: mesh
+  };
+
+  return group;
 }
 
 /**
  * Boolean union of two meshes
- * Visual approximation: combines bounding boxes and renders both
- * For production, consider three-bvh-csg library
+ * Merges geometries and combines into single mesh
  *
  * @param {THREE.Mesh} meshA - First mesh
  * @param {THREE.Mesh} meshB - Second mesh
- * @returns {THREE.Group} Combined geometry group
+ * @returns {THREE.Mesh|THREE.Group} Combined geometry or group with operation metadata
  */
 export function booleanUnion(meshA, meshB) {
-  const group = new THREE.Group();
+  try {
+    // Clone geometries to avoid modifying originals
+    const geomA = meshA.geometry.clone();
+    const geomB = meshB.geometry.clone();
 
-  // Add both meshes as visual representation
-  // Real CSG would compute actual geometry intersection
+    // Transform geometry B to world space of A
+    const matrixB = meshB.matrixWorld;
+    geomB.applyMatrix4(matrixB);
+
+    // Merge geometries using BufferGeometryUtils
+    // Fallback: combine as group if merge not available
+    const mergedGeom = mergeGeometries([geomA, geomB]);
+
+    if (mergedGeom) {
+      mergedGeom.computeVertexNormals();
+      const unionMesh = new THREE.Mesh(mergedGeom, meshA.material.clone());
+      unionMesh.castShadow = true;
+      unionMesh.receiveShadow = true;
+
+      unionMesh.userData = {
+        operation: 'union',
+        source: [meshA, meshB]
+      };
+
+      return unionMesh;
+    }
+  } catch (e) {
+    console.warn('Geometry merge failed, using visual approximation:', e);
+  }
+
+  // Fallback: return combined group with metadata
+  const group = new THREE.Group();
   const meshACopy = meshA.clone();
   const meshBCopy = meshB.clone();
 
   group.add(meshACopy);
   group.add(meshBCopy);
 
-  // Calculate approximate bounding box of union
   const boxA = new THREE.Box3().setFromObject(meshA);
   const boxB = new THREE.Box3().setFromObject(meshB);
   const unionBox = boxA.union(boxB);
 
   group.userData = {
     operation: 'union',
-    boxA,
-    boxB,
+    source: [meshA, meshB],
     unionBox
   };
 
@@ -501,33 +574,47 @@ export function booleanUnion(meshA, meshB) {
 
 /**
  * Boolean cut (difference) of two meshes
- * Visual approximation: shows meshA with meshB subtracted from it
+ * Visually approximates by showing base with cutting volume indicated
+ * Use cutting geometry (meshB) as reference for intersection visualization
  *
  * @param {THREE.Mesh} meshA - Base mesh
- * @param {THREE.Mesh} meshB - Mesh to subtract
- * @returns {THREE.Group} Result group
+ * @param {THREE.Mesh} meshB - Mesh to subtract (cutting tool)
+ * @returns {THREE.Group} Result group with base and cut indicator
  */
 export function booleanCut(meshA, meshB) {
   const group = new THREE.Group();
 
   const meshACopy = meshA.clone();
+  group.add(meshACopy);
 
-  // Make meshB semi-transparent to show cutting volume
+  // Create visual indicator of cutting volume
   const meshBCopy = meshB.clone();
   if (meshBCopy.material) {
-    const cutMat = meshBCopy.material.clone();
-    cutMat.opacity = 0.3;
-    cutMat.transparent = true;
-    meshBCopy.material = cutMat;
+    const cutIndicatorMat = meshBCopy.material.clone();
+    cutIndicatorMat.opacity = 0.25;
+    cutIndicatorMat.transparent = true;
+    cutIndicatorMat.depthWrite = false;
+    cutIndicatorMat.side = THREE.DoubleSide;
+    meshBCopy.material = cutIndicatorMat;
   }
 
-  group.add(meshACopy);
+  // Add wireframe to show cutting geometry clearly
+  const wireframe = createWireframeEdges(meshBCopy);
+  wireframe.material.color.setHex(0xff6b6b); // Red to indicate cut
   group.add(meshBCopy);
+  group.add(wireframe);
+
+  // Calculate intersection bounds for reference
+  const boxA = new THREE.Box3().setFromObject(meshA);
+  const boxB = new THREE.Box3().setFromObject(meshB);
+  const intersectBox = new THREE.Box3();
+  boxA.intersectBox(boxB, intersectBox);
 
   group.userData = {
     operation: 'cut',
     base: meshA,
-    tool: meshB
+    tool: meshB,
+    intersectBox: intersectBox.isEmpty() ? null : intersectBox
   };
 
   return group;
@@ -535,11 +622,11 @@ export function booleanCut(meshA, meshB) {
 
 /**
  * Boolean intersection of two meshes
- * Visual approximation: shows only overlapping volume
+ * Visual approximation: shows only overlapping volume bounds
  *
  * @param {THREE.Mesh} meshA - First mesh
  * @param {THREE.Mesh} meshB - Second mesh
- * @returns {THREE.Group} Intersection result
+ * @returns {THREE.Group} Intersection result with visual representation
  */
 export function booleanIntersect(meshA, meshB) {
   const group = new THREE.Group();
@@ -547,31 +634,43 @@ export function booleanIntersect(meshA, meshB) {
   // Calculate intersection boxes
   const boxA = new THREE.Box3().setFromObject(meshA);
   const boxB = new THREE.Box3().setFromObject(meshB);
-  const intersectBox = boxA.intersectBox(boxB, new THREE.Box3());
+  const intersectBox = new THREE.Box3();
+  boxA.intersectBox(boxB, intersectBox);
 
-  if (intersectBox === null) {
+  if (intersectBox.isEmpty()) {
     // No intersection
     group.userData = { operation: 'intersect', empty: true };
     return group;
   }
 
-  // Create visual representation of intersection
+  // Create visual representation of intersection volume
   const size = new THREE.Vector3();
   intersectBox.getSize(size);
 
   const intersectGeom = new THREE.BoxGeometry(size.x, size.y, size.z);
-  const mat = createMaterial('steel', { opacity: 0.7, transparent: true });
+  const mat = createMaterial('steel', {
+    opacity: 0.5,
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide
+  });
   const intersectMesh = new THREE.Mesh(intersectGeom, mat);
 
   const center = new THREE.Vector3();
   intersectBox.getCenter(center);
   intersectMesh.position.copy(center);
 
+  // Add wireframe for clarity
+  const wireframe = createWireframeEdges(intersectMesh);
+  wireframe.material.color.setHex(0x4ecdc4);
+
   group.add(intersectMesh);
+  group.add(wireframe);
+
   group.userData = {
     operation: 'intersect',
     intersectBox,
-    intersectMesh
+    source: [meshA, meshB]
   };
 
   return group;
@@ -582,7 +681,7 @@ export function booleanIntersect(meshA, meshB) {
  * Disposes old geometry and creates new one
  *
  * @param {object} feature - Feature object with { type, mesh, wireframe, params }
- * @returns {object} New feature with updated geometry
+ * @returns {object|THREE.Group} New feature with updated geometry
  */
 export function rebuildFeature(feature) {
   const { type, mesh, wireframe, params } = feature;
@@ -592,11 +691,9 @@ export function rebuildFeature(feature) {
   const rotation = mesh?.rotation.clone() || new THREE.Euler();
   const scale = mesh?.scale.clone() || new THREE.Vector3(1, 1, 1);
 
-  // Dispose old geometry
-  if (mesh?.geometry) mesh.geometry.dispose();
-  if (wireframe?.geometry) wireframe.geometry.dispose();
-  if (mesh?.material) mesh.material.dispose();
-  if (wireframe?.material) wireframe.material.dispose();
+  // Dispose old geometry and materials
+  disposeGeometry(mesh);
+  disposeGeometry(wireframe);
 
   // Create new geometry based on type
   let newFeature;
@@ -610,22 +707,311 @@ export function rebuildFeature(feature) {
     case 'primitive':
       newFeature = createPrimitive(params.type, params.params, params.options);
       break;
+    case 'shell':
+      newFeature = createShell(params.source, params.thickness, params.options);
+      break;
+    case 'pattern':
+      newFeature = createPattern(params.source, params.type, params.count, params.spacing, params.options);
+      break;
+    case 'fillet':
+      newFeature = fillet(params.source, params.edgeIndices, params.radius);
+      break;
+    case 'chamfer':
+      newFeature = chamfer(params.source, params.edgeIndices, params.distance);
+      break;
     default:
       throw new Error(`Cannot rebuild unknown feature type: ${type}`);
   }
 
-  // Restore transform
-  newFeature.mesh.position.copy(position);
-  newFeature.mesh.rotation.copy(rotation);
-  newFeature.mesh.scale.copy(scale);
+  // Restore transform if mesh present
+  if (newFeature.mesh) {
+    newFeature.mesh.position.copy(position);
+    newFeature.mesh.rotation.copy(rotation);
+    newFeature.mesh.scale.copy(scale);
 
-  if (newFeature.wireframe) {
-    newFeature.wireframe.position.copy(position);
-    newFeature.wireframe.rotation.copy(rotation);
-    newFeature.wireframe.scale.copy(scale);
+    if (newFeature.wireframe) {
+      newFeature.wireframe.position.copy(position);
+      newFeature.wireframe.rotation.copy(rotation);
+      newFeature.wireframe.scale.copy(scale);
+    }
+  } else if (newFeature instanceof THREE.Group) {
+    // For group-based features (shell, pattern, boolean, etc.)
+    newFeature.position.copy(position);
+    newFeature.rotation.copy(rotation);
+    newFeature.scale.copy(scale);
   }
 
   return newFeature;
+}
+
+/**
+ * Create a hollow shell from a mesh
+ * Approximation: creates scaled-down inner copy and combines with original
+ *
+ * @param {THREE.Mesh} mesh - Source mesh
+ * @param {number} thickness - Wall thickness
+ * @param {object} options - Configuration
+ *   - material: material preset (default: 'steel')
+ * @returns {THREE.Group} Group with shell geometry
+ */
+export function createShell(mesh, thickness = 0.1, options = {}) {
+  const { material = 'steel' } = options;
+  const group = new THREE.Group();
+
+  // Outer mesh (original)
+  const outerMesh = mesh.clone();
+  group.add(outerMesh);
+
+  // Inner mesh (scaled down by thickness ratio)
+  const innerMesh = mesh.clone();
+  const geometry = innerMesh.geometry.clone();
+
+  // Calculate scale factor based on bounding box
+  const bbox = new THREE.Box3().setFromObject(mesh);
+  const size = new THREE.Vector3();
+  bbox.getSize(size);
+  const maxDim = Math.max(size.x, size.y, size.z);
+  const scaleFactor = (maxDim - thickness * 2) / maxDim;
+
+  geometry.scale(scaleFactor, scaleFactor, scaleFactor);
+  geometry.translate(0, 0, 0); // Center scaled geometry
+
+  // Make inner mesh transparent to show hollowness
+  const innerMaterial = createMaterial(material, {
+    opacity: 0.3,
+    transparent: true,
+    side: THREE.BackSide
+  });
+  innerMesh.geometry = geometry;
+  innerMesh.material = innerMaterial;
+
+  group.add(innerMesh);
+
+  group.userData = {
+    operation: 'shell',
+    thickness,
+    source: mesh,
+    scaleFactor
+  };
+
+  return group;
+}
+
+/**
+ * Create a rectangular or circular pattern of cloned geometry
+ *
+ * @param {THREE.Mesh} mesh - Source mesh to pattern
+ * @param {string} type - 'rect' for rectangular, 'circular' for polar pattern
+ * @param {number} count - Number of copies (total with original)
+ * @param {number} spacing - Spacing distance between copies
+ * @param {object} options - Configuration
+ *   - axis: 'X', 'Y', 'Z' for direction (default: 'Z')
+ *   - material: material preset (default: 'steel')
+ * @returns {THREE.Group} Group with all pattern copies
+ */
+export function createPattern(mesh, type = 'rect', count = 3, spacing = 1, options = {}) {
+  const { axis = 'Z', material = 'steel' } = options;
+  const group = new THREE.Group();
+
+  if (type === 'rect') {
+    // Rectangular pattern (1D or 2D array)
+    const cols = Math.ceil(Math.sqrt(count));
+    const rows = Math.ceil(count / cols);
+
+    let idx = 0;
+    for (let row = 0; row < rows && idx < count; row++) {
+      for (let col = 0; col < cols && idx < count; col++) {
+        const copy = mesh.clone();
+
+        // Calculate offset based on axis
+        let offsetX = 0, offsetY = 0, offsetZ = 0;
+        if (axis === 'X') offsetX = col * spacing - ((cols - 1) * spacing) / 2;
+        else if (axis === 'Y') offsetY = row * spacing - ((rows - 1) * spacing) / 2;
+        else offsetZ = idx * spacing - ((count - 1) * spacing) / 2;
+
+        copy.position.add(new THREE.Vector3(offsetX, offsetY, offsetZ));
+        group.add(copy);
+        idx++;
+      }
+    }
+  } else if (type === 'circular') {
+    // Circular pattern around axis
+    const angleStep = (Math.PI * 2) / count;
+    const radius = spacing;
+
+    for (let i = 0; i < count; i++) {
+      const copy = mesh.clone();
+      const angle = i * angleStep;
+
+      let x = 0, y = 0, z = 0;
+      if (axis === 'Z') {
+        x = radius * Math.cos(angle);
+        y = radius * Math.sin(angle);
+      } else if (axis === 'X') {
+        y = radius * Math.cos(angle);
+        z = radius * Math.sin(angle);
+      } else if (axis === 'Y') {
+        x = radius * Math.cos(angle);
+        z = radius * Math.sin(angle);
+      }
+
+      copy.position.add(new THREE.Vector3(x, y, z));
+
+      // Rotate to face outward
+      const rotAxis = new THREE.Vector3();
+      if (axis === 'Z') rotAxis.set(0, 0, 1);
+      else if (axis === 'X') rotAxis.set(1, 0, 0);
+      else rotAxis.set(0, 1, 0);
+
+      copy.rotateOnWorldAxis(rotAxis, angle);
+      group.add(copy);
+    }
+  }
+
+  group.userData = {
+    operation: 'pattern',
+    type,
+    count,
+    spacing,
+    axis,
+    source: mesh
+  };
+
+  return group;
+}
+
+/**
+ * Extract edges from geometry vertices and indices
+ * Returns array of edge objects with v1, v2 vertex indices
+ *
+ * @param {Float32Array} positions - Position attribute array
+ * @param {Uint16Array|Uint32Array} indices - Index array
+ * @returns {array} Array of edge objects
+ */
+export function extractEdgesFromGeometry(positions, indices) {
+  const edges = [];
+  const edgeSet = new Set();
+
+  if (indices) {
+    // Use indices to find edges
+    for (let i = 0; i < indices.length; i += 3) {
+      const a = indices[i];
+      const b = indices[i + 1];
+      const c = indices[i + 2];
+
+      // Add three edges of triangle
+      addEdge(a, b, edges, edgeSet);
+      addEdge(b, c, edges, edgeSet);
+      addEdge(c, a, edges, edgeSet);
+    }
+  } else {
+    // Use position array directly (assume triangles)
+    for (let i = 0; i < positions.length; i += 9) {
+      addEdge(i / 3, (i + 3) / 3, edges, edgeSet);
+      addEdge((i + 3) / 3, (i + 6) / 3, edges, edgeSet);
+      addEdge((i + 6) / 3, i / 3, edges, edgeSet);
+    }
+  }
+
+  return edges;
+}
+
+/**
+ * Add an edge to the edge list, avoiding duplicates
+ *
+ * @param {number} v1 - First vertex index
+ * @param {number} v2 - Second vertex index
+ * @param {array} edges - Edges array
+ * @param {Set} edgeSet - Set for deduplication
+ */
+function addEdge(v1, v2, edges, edgeSet) {
+  const key = v1 < v2 ? `${v1}-${v2}` : `${v2}-${v1}`;
+  if (!edgeSet.has(key)) {
+    edgeSet.add(key);
+    edges.push({ v1: Math.min(v1, v2), v2: Math.max(v1, v2) });
+  }
+}
+
+/**
+ * Merge multiple geometries into a single BufferGeometry
+ * Combines vertices and faces from all input geometries
+ *
+ * @param {array} geometries - Array of THREE.BufferGeometry objects
+ * @returns {THREE.BufferGeometry|null} Merged geometry or null if merge fails
+ */
+export function mergeGeometries(geometries) {
+  if (!geometries || geometries.length === 0) return null;
+  if (geometries.length === 1) return geometries[0];
+
+  try {
+    const mergedGeometry = new THREE.BufferGeometry();
+    let vertexOffset = 0;
+    const vertices = [];
+    const indices = [];
+    const normals = [];
+
+    for (const geometry of geometries) {
+      const posAttr = geometry.attributes.position;
+      if (!posAttr) continue;
+
+      const positions = posAttr.array;
+      const geomIndices = geometry.index?.array || null;
+
+      // Add vertices
+      for (let i = 0; i < positions.length; i += 3) {
+        vertices.push(positions[i], positions[i + 1], positions[i + 2]);
+      }
+
+      // Add indices with offset
+      if (geomIndices) {
+        for (let i = 0; i < geomIndices.length; i++) {
+          indices.push(geomIndices[i] + vertexOffset);
+        }
+      } else {
+        for (let i = 0; i < positions.length / 3; i++) {
+          indices.push(i + vertexOffset);
+        }
+      }
+
+      vertexOffset += positions.length / 3;
+    }
+
+    mergedGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3));
+    if (indices.length > 0) {
+      const IndexType = vertices.length / 3 > 65535 ? Uint32Array : Uint16Array;
+      mergedGeometry.setIndex(new THREE.BufferAttribute(new IndexType(indices), 1));
+    }
+
+    return mergedGeometry;
+  } catch (e) {
+    console.error('Geometry merge error:', e);
+    return null;
+  }
+}
+
+/**
+ * Dispose geometry and material resources safely
+ *
+ * @param {THREE.Object3D} object - Object to dispose
+ */
+export function disposeGeometry(object) {
+  if (!object) return;
+
+  if (object.geometry) {
+    object.geometry.dispose();
+  }
+
+  if (object.material) {
+    if (Array.isArray(object.material)) {
+      object.material.forEach(m => m.dispose());
+    } else {
+      object.material.dispose();
+    }
+  }
+
+  if (object.children) {
+    object.children.forEach(child => disposeGeometry(child));
+  }
 }
 
 /**
@@ -687,3 +1073,6 @@ export function getMaterialPresets() {
 export function getMaterialPreset(name) {
   return MATERIAL_PRESETS[name] || MATERIAL_PRESETS.steel;
 }
+
+// Export new operations are already exported above
+// Export helper functions are already exported above

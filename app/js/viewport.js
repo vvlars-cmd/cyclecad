@@ -492,6 +492,30 @@ export function toggleReferencePlanes(visible, plane = null) {
   }
 }
 
+/**
+ * Toggle wireframe mode on all scene meshes
+ * @param {boolean} enabled - Enable/disable wireframe mode
+ */
+export function toggleWireframe(enabled) {
+  if (scene) {
+    scene.traverse((obj) => {
+      // Skip reference planes and grid
+      if (obj.userData && obj.userData.refPlane) return;
+      if (obj === gridHelper || obj === axisLines) return;
+
+      if (obj.material) {
+        if (Array.isArray(obj.material)) {
+          obj.material.forEach((m) => {
+            m.wireframe = enabled !== false;
+          });
+        } else {
+          obj.material.wireframe = enabled !== false;
+        }
+      }
+    });
+  }
+}
+
 // ============================================================================
 // Accessors
 // ============================================================================

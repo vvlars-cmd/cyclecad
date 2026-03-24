@@ -211,14 +211,37 @@
     }
 
     /* ===== Left Panel (Feature Tree) ===== */
-    #left-panel-header {
-      padding: 8px 12px;
+    #left-panel-tabs {
+      display: flex;
       border-bottom: 1px solid var(--border-color);
+    }
+
+    .left-tab {
+      flex: 1;
+      padding: 6px 8px;
+      font-size: 11px;
       font-weight: 600;
-      font-size: 12px;
       color: var(--text-secondary);
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.3px;
+      border-bottom: 2px solid transparent;
+      transition: all var(--transition-fast);
+      text-align: center;
+    }
+
+    .left-tab:hover {
+      color: var(--text-primary);
+      background: var(--bg-tertiary);
+    }
+
+    .left-tab.active {
+      color: var(--accent-blue);
+      border-bottom-color: var(--accent-blue);
+    }
+
+    .left-tab-content {
+      flex: 1;
+      min-height: 0;
     }
 
     #feature-tree {
@@ -227,6 +250,83 @@
       overflow-x: hidden;
       padding: 4px 0;
     }
+
+    /* Inline Project Browser in Left Panel */
+    #inline-project-browser {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-height: 0;
+    }
+
+    .ipb-search-box {
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    #ipb-tree {
+      font-size: 12px;
+    }
+
+    .ipb-folder, .ipb-file {
+      padding: 3px 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: background var(--transition-fast);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ipb-folder:hover, .ipb-file:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .ipb-file.selected {
+      background: rgba(88, 166, 255, 0.15);
+      color: var(--accent-blue);
+    }
+
+    .ipb-toggle {
+      width: 12px;
+      font-size: 8px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+      transition: transform var(--transition-fast);
+      text-align: center;
+    }
+
+    .ipb-toggle.expanded {
+      transform: rotate(90deg);
+    }
+
+    .ipb-children {
+      padding-left: 12px;
+    }
+
+    .ipb-icon {
+      flex-shrink: 0;
+      font-size: 12px;
+    }
+
+    .ipb-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ipb-badge {
+      font-size: 9px;
+      padding: 0 4px;
+      border-radius: 2px;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .ipb-badge-green { background: rgba(63, 185, 80, 0.2); color: var(--accent-green); }
+    .ipb-badge-blue { background: rgba(88, 166, 255, 0.2); color: var(--accent-blue); }
+    .ipb-badge-yellow { background: rgba(210, 153, 34, 0.2); color: var(--accent-yellow); }
 
     #feature-tree::-webkit-scrollbar {
       width: 10px;
@@ -945,6 +1045,236 @@
       }
     }
 
+    /* ===== Project Browser ===== */
+    #project-browser-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      z-index: 500;
+    }
+
+    /* ===== Operation Dialogs ===== */
+    .operation-dialog {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      box-shadow: var(--shadow-lg);
+      z-index: 999;
+      min-width: 340px;
+      display: none;
+      flex-direction: column;
+      animation: slideIn 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .operation-dialog.visible {
+      display: flex;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -48%);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+      }
+    }
+
+    .dialog-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .dialog-title {
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--text-primary);
+    }
+
+    .dialog-close-btn {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 3px;
+      color: var(--text-secondary);
+      transition: all var(--transition-fast);
+      cursor: pointer;
+    }
+
+    .dialog-close-btn:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    .dialog-content {
+      padding: 16px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .dialog-footer {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px;
+      border-top: 1px solid var(--border-color);
+      justify-content: flex-end;
+    }
+
+    .dialog-button {
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all var(--transition-fast);
+      cursor: pointer;
+      border: 1px solid var(--border-color);
+    }
+
+    .dialog-button.primary {
+      background: var(--accent-blue-dark);
+      color: var(--accent-blue);
+      border-color: var(--accent-blue);
+    }
+
+    .dialog-button.primary:hover:not(:disabled) {
+      background: var(--accent-blue);
+      color: #000;
+    }
+
+    .dialog-button.secondary {
+      background: transparent;
+      color: var(--text-primary);
+    }
+
+    .dialog-button.secondary:hover:not(:disabled) {
+      background: var(--bg-tertiary);
+    }
+
+    .dialog-form-group {
+      margin-bottom: 12px;
+    }
+
+    .dialog-form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .dialog-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-bottom: 4px;
+    }
+
+    .dialog-input {
+      width: 100%;
+      padding: 6px 8px;
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 3px;
+      font-size: 11px;
+      transition: border-color var(--transition-fast);
+    }
+
+    .dialog-input:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.1);
+    }
+
+    .dialog-input[type="range"] {
+      width: 100%;
+      height: 6px;
+      padding: 0;
+      cursor: pointer;
+    }
+
+    .dialog-select {
+      width: 100%;
+      padding: 6px 8px;
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 3px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: border-color var(--transition-fast);
+    }
+
+    .dialog-select:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+    }
+
+    .dialog-radio-group {
+      display: flex;
+      gap: 12px;
+      flex-direction: column;
+    }
+
+    .dialog-radio-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .dialog-radio-item input[type="radio"] {
+      cursor: pointer;
+      accent-color: var(--accent-blue);
+    }
+
+    .dialog-radio-item label {
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .dialog-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .dialog-checkbox input[type="checkbox"] {
+      cursor: pointer;
+      accent-color: var(--accent-blue);
+    }
+
+    .dialog-checkbox label {
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .dialog-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.4);
+      z-index: 998;
+      display: none;
+    }
+
+    .dialog-backdrop.visible {
+      display: block;
+    }
+
   </style>
 </head>
 <body>
@@ -1091,11 +1421,26 @@
 
     <!-- Main Content Area -->
     <div id="content">
-      <!-- Left Panel: Feature Tree -->
+      <!-- Left Panel: Feature Tree + Project Browser -->
       <div id="left-panel">
-        <div id="left-panel-header">Model Tree</div>
-        <div id="feature-tree">
-          <!-- Populated by JavaScript -->
+        <div id="left-panel-tabs">
+          <button class="left-tab active" data-left-tab="tree">Model Tree</button>
+          <button class="left-tab" data-left-tab="browser">Project Browser</button>
+        </div>
+        <div id="left-tab-tree" class="left-tab-content" style="display:flex;flex-direction:column;flex:1;min-height:0;">
+          <div id="feature-tree">
+            <!-- Populated by JavaScript -->
+          </div>
+        </div>
+        <div id="left-tab-browser" class="left-tab-content" style="display:none;flex-direction:column;flex:1;min-height:0;">
+          <div id="inline-project-browser">
+            <!-- Inline project browser tree (populated when DUO manifest loads) -->
+            <div class="ipb-search-box">
+              <input type="text" id="ipb-search" placeholder="Search 473 parts..." style="width:100%;padding:6px 8px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:3px;color:var(--text-primary);font-size:11px;">
+            </div>
+            <div id="ipb-stats" style="display:flex;gap:8px;padding:4px 8px;font-size:10px;color:var(--text-secondary);border-bottom:1px solid var(--border-color);"></div>
+            <div id="ipb-tree" style="flex:1;overflow-y:auto;padding:4px 0;min-height:0;"></div>
+          </div>
         </div>
       </div>
 
@@ -1133,6 +1478,7 @@
         <div id="properties-tabs">
           <button class="properties-tab active" data-tab="properties">Properties</button>
           <button class="properties-tab" data-tab="chat">Chat</button>
+          <button class="properties-tab" data-tab="guide">Guide</button>
         </div>
 
         <!-- Properties Content -->
@@ -1143,12 +1489,18 @@
           <div id="tab-chat" style="display: none;">
             <!-- Chat tab populated by JavaScript -->
           </div>
+          <div id="tab-guide" style="display: none;">
+            <!-- Rebuild guide populated by JavaScript -->
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Bottom Status Bar -->
     <div id="statusbar">
+      <div class="statusbar-item" id="status-bar-item">
+        <span id="status-bar">Ready</span>
+      </div>
       <div class="statusbar-item">
         <span class="status-indicator" id="kernel-status"></span>
         <span class="statusbar-label">Kernel:</span>
@@ -1183,6 +1535,7 @@
 
   <!-- Module Loader -->
   <script type="module">
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
     import { initViewport, setView, addToScene, removeFromScene, getScene, getCamera, getControls, toggleGrid as vpToggleGrid, fitToObject } from './js/viewport.js';
     import { startSketch, endSketch, setTool, getEntities, clearSketch } from './js/sketch.js';
     import { extrudeProfile, createPrimitive, rebuildFeature, createMaterial } from './js/operations.js';
@@ -1193,6 +1546,9 @@
     import { initShortcuts } from './js/shortcuts.js';
     import { createReverseEngineerPanel, importFile, analyzeGeometry, reconstructFeatureTree, createWalkthrough } from './js/reverse-engineer.js';
     import { createInventorPanel, parseInventorFile } from './js/inventor-parser.js';
+    import { loadProject, showFolderPicker, parseIPJ } from './js/project-loader.js';
+    import { initProjectBrowser, showBrowser, hideBrowser, setProject, onFileSelect } from './js/project-browser.js';
+    import { generateGuide, renderGuide, exportGuideHTML } from './js/rebuild-guide.js';
 
     // ========== Application State ==========
     const APP = {
@@ -1202,6 +1558,7 @@
       features: [],
       history: [],
       historyIndex: -1,
+      project: null,  // Current Inventor project
     };
 
     // ========== Initialization ==========
@@ -1272,8 +1629,8 @@
           circle: () => setTool('circle'),
           arc: () => setTool('arc'),
           extrude: () => doExtrude(),
-          undo: () => { /* TODO */ },
-          redo: () => { /* TODO */ },
+          undo: () => undo(),
+          redo: () => redo(),
           delete: () => deleteSelected(),
           escape: () => cancelOperation(),
           enter: () => confirmOperation(),
@@ -1285,7 +1642,7 @@
           viewBottom: () => setView('bottom'),
           viewIso: () => setView('iso'),
           toggleGrid: () => vpToggleGrid(),
-          fitAll: () => { /* TODO */ },
+          fitAll: () => fitAll(),
           save: () => saveProject(),
           exportSTL: () => doExportSTL(),
         });
@@ -1293,7 +1650,46 @@
         // 9. Setup welcome splash
         setupWelcome();
 
-        // 10. Hard Refresh button — nukes all caches, service workers, and reloads
+        // 9b. Setup left panel tabs and inline browser
+        setupLeftTabs();
+        setupInlineBrowserClicks();
+
+        // 10. Initialize project browser
+        initProjectBrowser(document.body, {
+          onFileOpen: async (file) => {
+            try {
+              const buffer = file.buffer || await file.arrayBuffer();
+              const result = parseInventorFile(new Uint8Array(buffer));
+              // Add features to tree
+              if (result.features) {
+                result.features.forEach((f, i) => {
+                  addFeature({
+                    id: `inv-${Date.now()}-${i}`,
+                    type: f.type || 'Unknown',
+                    name: f.name || `Feature ${i+1}`,
+                    params: f.parameters || {},
+                    icon: f.icon || '📦'
+                  });
+                });
+              }
+              // Generate rebuild guide
+              const guide = generateGuide(result);
+              // Show guide in right panel
+              const propsContent = document.getElementById('tab-guide');
+              if (propsContent) renderGuide(propsContent, guide);
+              updateStatus(`Opened: ${result.metadata?.fileName || file.name} — ${result.features?.length || 0} features`);
+            } catch (err) {
+              console.error('Failed to open file:', err);
+              updateStatus('Failed to open file: ' + err.message);
+            }
+          },
+          onProjectLoad: (project) => {
+            APP.project = project;
+            updateStatus(`Project loaded: ${project.stats.parts} parts, ${project.stats.assemblies} assemblies`);
+          }
+        });
+
+        // 11. Hard Refresh button — nukes all caches, service workers, and reloads
         const hardRefreshBtn = document.getElementById('btn-hard-refresh');
         if (hardRefreshBtn) hardRefreshBtn.addEventListener('click', async () => {
           hardRefreshBtn.textContent = 'Clearing...';
@@ -1324,6 +1720,217 @@
       }
     }
 
+    // ========== Left Panel Tab Switching ==========
+    function switchLeftTab(tab) {
+      document.querySelectorAll('.left-tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.leftTab === tab);
+      });
+      document.getElementById('left-tab-tree').style.display = tab === 'tree' ? 'flex' : 'none';
+      document.getElementById('left-tab-browser').style.display = tab === 'browser' ? 'flex' : 'none';
+    }
+
+    function setupLeftTabs() {
+      document.querySelectorAll('.left-tab').forEach(tab => {
+        tab.addEventListener('click', () => switchLeftTab(tab.dataset.leftTab));
+      });
+    }
+
+    // ========== Inline Project Browser (Left Panel) ==========
+    let ipbState = { tree: null, expanded: new Set(), searchQuery: '', selectedPath: null };
+
+    function populateInlineBrowser(treeData) {
+      ipbState.tree = treeData;
+      ipbState.expanded.clear();
+      ipbState.searchQuery = '';
+
+      // Auto-expand the first level
+      if (treeData.children) {
+        treeData.children.forEach((child, i) => {
+          if (child.type === 'folder') ipbState.expanded.add('root-' + i);
+        });
+      }
+
+      renderInlineBrowser();
+      updateInlineStats();
+
+      // Wire search
+      const searchEl = document.getElementById('ipb-search');
+      if (searchEl) {
+        let timeout;
+        searchEl.addEventListener('input', (e) => {
+          clearTimeout(timeout);
+          timeout = setTimeout(() => {
+            ipbState.searchQuery = e.target.value.toLowerCase();
+            renderInlineBrowser();
+          }, 200);
+        });
+      }
+    }
+
+    function renderInlineBrowser() {
+      const container = document.getElementById('ipb-tree');
+      if (!container || !ipbState.tree) return;
+      container.innerHTML = renderIPBItems(ipbState.tree.children || [], 'root');
+    }
+
+    function renderIPBItems(items, prefix) {
+      if (!items || items.length === 0) return '';
+      let html = '';
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const nodeId = prefix + '-' + i;
+
+        // Search filter
+        if (ipbState.searchQuery && item.type !== 'folder') {
+          if (!item.name.toLowerCase().includes(ipbState.searchQuery)) continue;
+        }
+
+        // If folder, check if any children match search
+        if (ipbState.searchQuery && item.type === 'folder') {
+          if (!folderHasMatch(item, ipbState.searchQuery)) continue;
+        }
+
+        const icon = getIPBIcon(item);
+        const badge = getIPBBadge(item.category);
+
+        if (item.type === 'folder' && item.children && item.children.length > 0) {
+          const isExp = ipbState.expanded.has(nodeId);
+          html += `<div class="ipb-folder" data-ipb-id="${nodeId}" data-ipb-type="folder">
+            <span class="ipb-toggle ${isExp ? 'expanded' : ''}">&#9654;</span>
+            <span class="ipb-icon">${icon}</span>
+            <span class="ipb-label">${escHTML(item.name)}</span>
+            <span style="margin-left:auto;font-size:9px;color:var(--text-muted);">${item.children.length}</span>
+          </div>`;
+          if (isExp) {
+            html += `<div class="ipb-children">${renderIPBItems(item.children, nodeId)}</div>`;
+          }
+        } else if (item.type !== 'folder') {
+          const sel = ipbState.selectedPath === item.path ? ' selected' : '';
+          html += `<div class="ipb-file${sel}" data-ipb-id="${nodeId}" data-ipb-type="${item.type}" data-ipb-path="${item.path || ''}" data-ipb-name="${escHTML(item.name)}">
+            <span class="ipb-toggle" style="visibility:hidden;">&#8226;</span>
+            <span class="ipb-icon">${icon}</span>
+            <span class="ipb-label">${escHTML(item.name)}</span>
+            ${badge}
+          </div>`;
+        }
+      }
+      return html;
+    }
+
+    function folderHasMatch(folder, query) {
+      if (!folder.children) return false;
+      return folder.children.some(child => {
+        if (child.type === 'folder') return folderHasMatch(child, query);
+        return child.name.toLowerCase().includes(query);
+      });
+    }
+
+    function getIPBIcon(item) {
+      const icons = { ipt: '&#128230;', iam: '&#127959;', idw: '&#128208;', ipj: '&#128203;', folder: '&#128193;' };
+      return icons[item.type] || '&#128196;';
+    }
+
+    function getIPBBadge(category) {
+      if (!category) return '';
+      const map = {
+        custom: '<span class="ipb-badge ipb-badge-green">CUSTOM</span>',
+        standard: '<span class="ipb-badge ipb-badge-blue">STD</span>',
+        vendor: '<span class="ipb-badge ipb-badge-yellow">VENDOR</span>',
+      };
+      return map[category] || '';
+    }
+
+    function escHTML(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function updateInlineStats() {
+      const el = document.getElementById('ipb-stats');
+      if (!el || !APP.project) return;
+      const s = APP.project.stats || {};
+      el.innerHTML = `<span>&#128230; ${s.parts || 0} parts</span><span>&#127959; ${s.assemblies || 0} asms</span><span>&#128196; ${s.total || 0} total</span>`;
+    }
+
+    // Delegated click handler for inline browser
+    function setupInlineBrowserClicks() {
+      const container = document.getElementById('ipb-tree');
+      if (!container) return;
+      container.addEventListener('click', (e) => {
+        const row = e.target.closest('[data-ipb-id]');
+        if (!row) return;
+        const nodeId = row.dataset.ipbId;
+        const nodeType = row.dataset.ipbType;
+
+        if (nodeType === 'folder') {
+          // Toggle expand
+          if (ipbState.expanded.has(nodeId)) {
+            ipbState.expanded.delete(nodeId);
+          } else {
+            ipbState.expanded.add(nodeId);
+          }
+          renderInlineBrowser();
+        } else if (['ipt', 'iam'].includes(nodeType)) {
+          // Select file → show info in guide tab
+          ipbState.selectedPath = row.dataset.ipbPath;
+          renderInlineBrowser();
+          handleFileSelect(row.dataset.ipbName, row.dataset.ipbPath, nodeType);
+        }
+      });
+    }
+
+    function handleFileSelect(name, path, type) {
+      updateStatus(`Selected: ${name}`);
+
+      // Switch right panel to Guide tab and show file info
+      document.querySelectorAll('.properties-tab').forEach(t => t.classList.remove('active'));
+      const guideTabBtn = document.querySelector('[data-tab="guide"]');
+      if (guideTabBtn) guideTabBtn.classList.add('active');
+      document.getElementById('tab-properties').style.display = 'none';
+      document.getElementById('tab-chat').style.display = 'none';
+      document.getElementById('tab-guide').style.display = 'block';
+
+      const guideContainer = document.getElementById('tab-guide');
+      if (!guideContainer) return;
+
+      // Show file info + feature guide placeholder
+      const ext = type.toUpperCase();
+      const category = getFileCategoryFromPath(path);
+      guideContainer.innerHTML = `
+        <div style="padding:12px;display:flex;flex-direction:column;gap:12px;">
+          <div style="font-weight:600;font-size:13px;color:var(--accent-blue);">${escHTML(name)}</div>
+          <div style="font-size:11px;color:var(--text-secondary);">
+            <div><strong>Type:</strong> Inventor ${ext} ${type === 'ipt' ? '(Part)' : '(Assembly)'}</div>
+            <div><strong>Path:</strong> ${escHTML(path)}</div>
+            <div><strong>Category:</strong> ${category}</div>
+          </div>
+          <div style="border-top:1px solid var(--border-color);padding-top:12px;">
+            <div style="font-weight:600;font-size:12px;margin-bottom:8px;">Rebuild Guide</div>
+            <p style="font-size:11px;color:var(--text-secondary);line-height:1.6;">
+              To generate a detailed rebuild guide, import this file using the
+              <strong>Import Inventor</strong> button in the toolbar. The parser will extract
+              features, dimensions, and constraints, then generate step-by-step
+              instructions for recreating the part in cycleCAD or Fusion 360.
+            </p>
+          </div>
+          <div style="border-top:1px solid var(--border-color);padding-top:12px;">
+            <div style="font-weight:600;font-size:12px;margin-bottom:8px;">Quick Actions</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <button onclick="navigator.clipboard.writeText('${escHTML(path)}')" style="padding:6px 10px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:3px;color:var(--text-primary);font-size:11px;text-align:left;cursor:pointer;">&#128203; Copy path</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function getFileCategoryFromPath(path) {
+      if (!path) return 'Unknown';
+      const lp = path.toLowerCase();
+      if (lp.includes('content center') || lp.includes('libraries')) return 'Standard (DIN/ISO)';
+      if (lp.includes('zukaufteile') || lp.includes('igus') || lp.includes('interroll') || lp.includes('rittal')) return 'Vendor / Buy-out';
+      return 'Custom';
+    }
+
     // ========== Toolbar Wiring ==========
     function setupToolbar() {
       const bind = (id, fn) => {
@@ -1341,26 +1948,26 @@
 
       // 3D operations
       bind('tool-extrude', () => doExtrude());
-      bind('tool-revolve', () => updateStatus('Revolve: coming soon'));
-      bind('tool-fillet', () => updateStatus('Fillet: coming soon'));
-      bind('tool-chamfer', () => updateStatus('Chamfer: coming soon'));
-      bind('tool-cut', () => updateStatus('Boolean Cut: coming soon'));
-      bind('tool-union', () => updateStatus('Boolean Union: coming soon'));
+      bind('tool-revolve', () => openDialog('revolve'));
+      bind('tool-fillet', () => openDialog('fillet'));
+      bind('tool-chamfer', () => openDialog('chamfer'));
+      bind('tool-cut', () => openDialog('boolean'));
+      bind('tool-union', () => { document.getElementById('bool-union').checked = true; openDialog('boolean'); });
 
       // Export
       bind('export-stl', () => doExportSTL());
       bind('export-step', () => updateStatus('STEP export: coming soon'));
 
       // Edit
-      bind('btn-undo', () => updateStatus('Undo: coming soon'));
-      bind('btn-redo', () => updateStatus('Redo: coming soon'));
+      bind('btn-undo', () => { undo(); });
+      bind('btn-redo', () => { redo(); });
 
       // Views
       bind('view-front', () => setView('front'));
       bind('view-top', () => setView('top'));
       bind('view-right', () => setView('right'));
       bind('view-iso', () => setView('iso'));
-      bind('view-fit', () => updateStatus('Fit All'));
+      bind('view-fit', () => fitAll());
 
       // Reverse Engineer
       bind('btn-reverse-engineer', () => {
@@ -1387,6 +1994,26 @@
               });
             });
           }
+
+          // Generate rebuild guide
+          try {
+            const guide = generateGuide(parsedData);
+            // Show guide in right panel
+            const guideTab = document.getElementById('tab-guide');
+            if (guideTab) {
+              renderGuide(guideTab, guide);
+              // Switch to guide tab
+              document.querySelectorAll('.properties-tab').forEach(t => t.classList.remove('active'));
+              const guideTabBtn = document.querySelector('[data-tab="guide"]');
+              if (guideTabBtn) guideTabBtn.classList.add('active');
+              document.getElementById('tab-properties').style.display = 'none';
+              document.getElementById('tab-chat').style.display = 'none';
+              guideTab.style.display = 'block';
+            }
+          } catch (err) {
+            console.warn('Failed to generate rebuild guide:', err);
+          }
+
           updateStatus(`Inventor file loaded: ${parsedData.metadata?.fileName || 'unknown'} — ${parsedData.features?.length || 0} features found`);
         });
       });
@@ -1401,6 +2028,7 @@
           const target = tab.getAttribute('data-tab');
           document.getElementById('tab-properties').style.display = target === 'properties' ? 'block' : 'none';
           document.getElementById('tab-chat').style.display = target === 'chat' ? 'flex' : 'none';
+          document.getElementById('tab-guide').style.display = target === 'guide' ? 'block' : 'none';
         });
       });
     }
@@ -1457,10 +2085,56 @@
         if (chatInput) chatInput.focus();
       });
 
-      // DUO Project Browser — open in new tab
+      // DUO Project Browser — load manifest and show browser
       const browserBtn = document.getElementById('btn-open-browser');
-      if (browserBtn) browserBtn.addEventListener('click', () => {
-        window.open('duo-project-browser.html', '_blank');
+      if (browserBtn) browserBtn.addEventListener('click', async () => {
+        try {
+          hide();
+          const spinner = document.getElementById('kernel-spinner');
+          if (spinner) spinner.classList.add('active');
+          updateStatus('Loading DUO project manifest...');
+
+          // Fetch pre-built manifest (no File System Access API needed)
+          const resp = await fetch('duo-manifest.json');
+          if (!resp.ok) throw new Error('Failed to load manifest: ' + resp.status);
+          const manifest = await resp.json();
+
+          // Transform file types: manifest uses type:"file" + ext:".ipt"
+          // but project-browser expects type:"ipt" directly
+          function transformTree(node) {
+            if (node.type === 'file' && node.ext) {
+              node.type = node.ext.replace('.', ''); // ".ipt" → "ipt"
+            }
+            if (node.children) node.children.forEach(transformTree);
+            return node;
+          }
+          transformTree(manifest.tree);
+
+          // Store project data
+          APP.project = manifest;
+
+          // Pass tree root to overlay browser (it needs .children at top level)
+          setProject(manifest.tree);
+
+          // Also populate the inline left-panel browser
+          populateInlineBrowser(manifest.tree);
+
+          // Show browser overlay (dismiss with close button, then left panel has it too)
+          showBrowser();
+
+          // Switch left panel to Project Browser tab
+          switchLeftTab('browser');
+
+          const stats = manifest.stats || {};
+          updateStatus(`DUO project loaded: ${stats.parts || 0} parts, ${stats.assemblies || 0} assemblies, ${stats.total || 0} total files`);
+
+          if (spinner) spinner.classList.remove('active');
+        } catch (err) {
+          console.error('Failed to load DUO project:', err);
+          updateStatus('Failed to load project: ' + err.message);
+          const spinner = document.getElementById('kernel-spinner');
+          if (spinner) spinner.classList.remove('active');
+        }
       });
     }
 
@@ -1512,6 +2186,7 @@
         };
         APP.features.push(feature);
         addFeature(feature);
+        pushHistory();
 
         updateStatus(`Created extrusion: ${h}mm`);
         document.getElementById('mode-indicator').textContent = 'Ready';
@@ -1539,6 +2214,7 @@
         };
         APP.features.push(feature);
         addFeature(feature);
+        pushHistory();
         updateStatus(`Created: ${feature.name}`);
       } catch (err) {
         console.error('AI create failed:', err);
@@ -1569,7 +2245,88 @@
       removeFromScene(APP.selectedFeature.mesh);
       APP.features = APP.features.filter(f => f.id !== APP.selectedFeature.id);
       APP.selectedFeature = null;
+      pushHistory();
       updateStatus('Feature deleted');
+    }
+
+    function undo() {
+      if (APP.historyIndex > 0) {
+        APP.historyIndex--;
+        restoreFromHistory();
+        updateStatus('Undo');
+      } else {
+        updateStatus('Nothing to undo');
+      }
+    }
+
+    function redo() {
+      if (APP.historyIndex < APP.history.length - 1) {
+        APP.historyIndex++;
+        restoreFromHistory();
+        updateStatus('Redo');
+      } else {
+        updateStatus('Nothing to redo');
+      }
+    }
+
+    function restoreFromHistory() {
+      const state = APP.history[APP.historyIndex];
+      if (state) {
+        // Clear current scene
+        APP.features.forEach((f) => {
+          if (f.mesh) removeFromScene(f.mesh);
+        });
+
+        // Restore features from history state
+        APP.features = [];
+        if (state.features && Array.isArray(state.features)) {
+          state.features.forEach((featureData) => {
+            try {
+              const primitive = createPrimitive(featureData.type, featureData.params);
+              addToScene(primitive.mesh);
+
+              const feature = {
+                id: featureData.id,
+                name: featureData.name,
+                type: featureData.type,
+                mesh: primitive.mesh,
+                params: featureData.params,
+              };
+
+              APP.features.push(feature);
+              addFeature(feature);
+            } catch (err) {
+              console.warn(`Failed to restore feature ${featureData.name}:`, err);
+            }
+          });
+        }
+      }
+    }
+
+    function fitAll() {
+      if (APP.features.length === 0) {
+        updateStatus('Nothing to fit');
+        return;
+      }
+
+      // Create a temporary group of all features to fit camera
+      const group = new THREE.Group();
+      APP.features.forEach((f) => {
+        if (f.mesh) {
+          group.add(f.mesh);
+        }
+      });
+
+      // Create a bounding box to check if there's anything to show
+      const box = new THREE.Box3().setFromObject(group);
+      if (box.isEmpty()) {
+        updateStatus('No visible features to fit');
+        return;
+      }
+
+      // Fit camera to all features with padding
+      fitToObject(group, 1.3);
+      updateStatus('Fit all features');
     }
 
     function doExportSTL() {
@@ -1606,6 +2363,32 @@
       if (modeEl && APP.mode === 'idle') modeEl.textContent = 'Ready';
     }
 
+    function pushHistory() {
+      // Trim redo stack if not at end
+      if (APP.historyIndex < APP.history.length - 1) {
+        APP.history = APP.history.slice(0, APP.historyIndex + 1);
+      }
+
+      // Save state snapshot
+      APP.history.push({
+        features: JSON.parse(JSON.stringify(APP.features.map((f) => ({
+          id: f.id,
+          name: f.name,
+          type: f.type,
+          params: f.params,
+        })))),
+        timestamp: Date.now(),
+      });
+
+      APP.historyIndex = APP.history.length - 1;
+
+      // Keep history limited to 50 entries
+      if (APP.history.length > 50) {
+        APP.history.shift();
+        APP.historyIndex--;
+      }
+    }
+
     // ========== FPS Counter ==========
     let frameCount = 0;
     let lastFPSTime = performance.now();
@@ -1630,6 +2413,367 @@
     }
 
     window.cycleCAD = { version: '1.0.0', APP, init };
+
+    // ========== Operation Dialog Management ==========
+    let currentDialogId = null;
+
+    function openDialog(dialogId) {
+      // Close any open dialog first
+      if (currentDialogId) closeDialog(currentDialogId);
+
+      const dialog = document.getElementById(`dialog-${dialogId}`);
+      const backdrop = document.getElementById('dialog-backdrop');
+
+      if (dialog && backdrop) {
+        currentDialogId = dialogId;
+        dialog.classList.add('visible');
+        backdrop.classList.add('visible');
+        updateStatus(`${dialogId.charAt(0).toUpperCase() + dialogId.slice(1)} dialog opened`);
+      }
+    }
+
+    function closeDialog(dialogId) {
+      const dialog = document.getElementById(`dialog-${dialogId}`);
+      const backdrop = document.getElementById('dialog-backdrop');
+
+      if (dialog) {
+        dialog.classList.remove('visible');
+      }
+
+      // Check if any dialog is still visible
+      const visibleDialogs = document.querySelectorAll('.operation-dialog.visible');
+      if (visibleDialogs.length === 0) {
+        if (backdrop) backdrop.classList.remove('visible');
+        currentDialogId = null;
+      }
+    }
+
+    function applyRevolve() {
+      const axis = document.getElementById('revolve-axis').value;
+      const angle = parseFloat(document.getElementById('revolve-angle').value);
+      const direction = document.querySelector('input[name="revolve-direction"]:checked').value;
+
+      try {
+        revolveProfile({ axis, angle, direction });
+        updateStatus(`Revolved: ${angle}° around ${axis.toUpperCase()} axis`);
+        pushHistory();
+        closeDialog('revolve');
+      } catch (err) {
+        updateStatus('Revolve failed: ' + err.message);
+      }
+    }
+
+    function applyFillet() {
+      const radius = parseFloat(document.getElementById('fillet-radius').value);
+      const preview = document.getElementById('fillet-preview').checked;
+
+      try {
+        filletEdges({ radius, preview });
+        updateStatus(`Fillet applied: ${radius}mm radius`);
+        pushHistory();
+        closeDialog('fillet');
+      } catch (err) {
+        updateStatus('Fillet failed: ' + err.message);
+      }
+    }
+
+    function applyChamer() {
+      const distance = parseFloat(document.getElementById('chamfer-distance').value);
+
+      try {
+        chamferEdges({ distance });
+        updateStatus(`Chamfer applied: ${distance}mm`);
+        pushHistory();
+        closeDialog('chamfer');
+      } catch (err) {
+        updateStatus('Chamfer failed: ' + err.message);
+      }
+    }
+
+    function applyBoolean() {
+      const operation = document.querySelector('input[name="boolean-op"]:checked').value;
+
+      try {
+        booleanOperation({ operation });
+        updateStatus(`Boolean ${operation} applied`);
+        pushHistory();
+        closeDialog('boolean');
+      } catch (err) {
+        updateStatus('Boolean operation failed: ' + err.message);
+      }
+    }
+
+    function applyShell() {
+      const thickness = parseFloat(document.getElementById('shell-thickness').value);
+
+      try {
+        shellOperation({ thickness });
+        updateStatus(`Shell created: ${thickness}mm wall thickness`);
+        pushHistory();
+        closeDialog('shell');
+      } catch (err) {
+        updateStatus('Shell failed: ' + err.message);
+      }
+    }
+
+    function updatePatternUI() {
+      const patternType = document.querySelector('input[name="pattern-type"]:checked').value;
+      const rectFields = document.getElementById('pattern-rectangular');
+      const circFields = document.getElementById('pattern-circular');
+
+      if (patternType === 'rectangular') {
+        rectFields.style.display = 'block';
+        circFields.style.display = 'none';
+      } else {
+        rectFields.style.display = 'none';
+        circFields.style.display = 'block';
+      }
+    }
+
+    function applyPattern() {
+      const patternType = document.querySelector('input[name="pattern-type"]:checked').value;
+      let params = { type: patternType };
+
+      try {
+        if (patternType === 'rectangular') {
+          params.countX = parseInt(document.getElementById('pattern-count-x').value);
+          params.countY = parseInt(document.getElementById('pattern-count-y').value);
+          params.spacingX = parseFloat(document.getElementById('pattern-spacing-x').value);
+          params.spacingY = parseFloat(document.getElementById('pattern-spacing-y').value);
+          patternFeature(params);
+          updateStatus(`Rectangular pattern: ${params.countX}×${params.countY}`);
+        } else {
+          params.count = parseInt(document.getElementById('pattern-count').value);
+          params.radius = parseFloat(document.getElementById('pattern-radius').value);
+          params.axis = document.getElementById('pattern-axis').value;
+          patternFeature(params);
+          updateStatus(`Circular pattern: ${params.count} instances`);
+        }
+        pushHistory();
+        closeDialog('pattern');
+      } catch (err) {
+        updateStatus('Pattern failed: ' + err.message);
+      }
+    }
+
+    // Close dialog when backdrop is clicked
+    document.getElementById('dialog-backdrop').addEventListener('click', () => {
+      if (currentDialogId) closeDialog(currentDialogId);
+    });
+
+    // Close dialog on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && currentDialogId) {
+        closeDialog(currentDialogId);
+      }
+    });
+
   </script>
+
+  <!-- Operation Dialogs -->
+  <div class="dialog-backdrop" id="dialog-backdrop"></div>
+
+  <!-- Revolve Dialog -->
+  <div class="operation-dialog" id="dialog-revolve">
+    <div class="dialog-header">
+      <div class="dialog-title">Revolve Profile</div>
+      <div class="dialog-close-btn" onclick="closeDialog('revolve')">✕</div>
+    </div>
+    <div class="dialog-content">
+      <div class="dialog-form-group">
+        <label class="dialog-label">Axis</label>
+        <select class="dialog-select" id="revolve-axis">
+          <option value="z">Z Axis</option>
+          <option value="x">X Axis</option>
+          <option value="y">Y Axis</option>
+        </select>
+      </div>
+      <div class="dialog-form-group">
+        <label class="dialog-label">Angle: <span id="revolve-angle-value">360</span>°</label>
+        <input type="range" class="dialog-input" id="revolve-angle" min="1" max="360" value="360" oninput="document.getElementById('revolve-angle-value').textContent = this.value">
+      </div>
+      <div class="dialog-form-group">
+        <label class="dialog-label">Direction</label>
+        <div class="dialog-radio-group">
+          <div class="dialog-radio-item">
+            <input type="radio" id="revolve-dir-ccw" name="revolve-direction" value="ccw" checked>
+            <label for="revolve-dir-ccw">Counter-Clockwise</label>
+          </div>
+          <div class="dialog-radio-item">
+            <input type="radio" id="revolve-dir-cw" name="revolve-direction" value="cw">
+            <label for="revolve-dir-cw">Clockwise</label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button class="dialog-button secondary" onclick="closeDialog('revolve')">Cancel</button>
+      <button class="dialog-button primary" onclick="applyRevolve()">OK</button>
+    </div>
+  </div>
+
+  <!-- Fillet Dialog -->
+  <div class="operation-dialog" id="dialog-fillet">
+    <div class="dialog-header">
+      <div class="dialog-title">Fillet Edges</div>
+      <div class="dialog-close-btn" onclick="closeDialog('fillet')">✕</div>
+    </div>
+    <div class="dialog-content">
+      <div class="dialog-form-group">
+        <label class="dialog-label">Radius (mm)</label>
+        <input type="number" class="dialog-input" id="fillet-radius" value="3" min="0.1" step="0.1">
+      </div>
+      <div class="dialog-form-group">
+        <div class="dialog-checkbox">
+          <input type="checkbox" id="fillet-preview" checked>
+          <label for="fillet-preview">Preview</label>
+        </div>
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button class="dialog-button secondary" onclick="closeDialog('fillet')">Cancel</button>
+      <button class="dialog-button primary" onclick="applyFillet()">OK</button>
+    </div>
+  </div>
+
+  <!-- Chamfer Dialog -->
+  <div class="operation-dialog" id="dialog-chamfer">
+    <div class="dialog-header">
+      <div class="dialog-title">Chamfer Edges</div>
+      <div class="dialog-close-btn" onclick="closeDialog('chamfer')">✕</div>
+    </div>
+    <div class="dialog-content">
+      <div class="dialog-form-group">
+        <label class="dialog-label">Distance (mm)</label>
+        <input type="number" class="dialog-input" id="chamfer-distance" value="2" min="0.1" step="0.1">
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button class="dialog-button secondary" onclick="closeDialog('chamfer')">Cancel</button>
+      <button class="dialog-button primary" onclick="applyChamer()">OK</button>
+    </div>
+  </div>
+
+  <!-- Boolean Dialog -->
+  <div class="operation-dialog" id="dialog-boolean">
+    <div class="dialog-header">
+      <div class="dialog-title">Boolean Operation</div>
+      <div class="dialog-close-btn" onclick="closeDialog('boolean')">✕</div>
+    </div>
+    <div class="dialog-content">
+      <div class="dialog-form-group">
+        <label class="dialog-label">Operation</label>
+        <div class="dialog-radio-group">
+          <div class="dialog-radio-item">
+            <input type="radio" id="bool-union" name="boolean-op" value="union" checked>
+            <label for="bool-union">Union (Combine)</label>
+          </div>
+          <div class="dialog-radio-item">
+            <input type="radio" id="bool-cut" name="boolean-op" value="cut">
+            <label for="bool-cut">Cut (Subtract)</label>
+          </div>
+          <div class="dialog-radio-item">
+            <input type="radio" id="bool-intersect" name="boolean-op" value="intersect">
+            <label for="bool-intersect">Intersect (Common)</label>
+          </div>
+        </div>
+      </div>
+      <div class="dialog-form-group">
+        <p style="font-size: 11px; color: var(--text-secondary); line-height: 1.6;">
+          <strong>Instructions:</strong> Select the first body, then click OK. Select the second body, then click OK again.
+        </p>
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button class="dialog-button secondary" onclick="closeDialog('boolean')">Cancel</button>
+      <button class="dialog-button primary" onclick="applyBoolean()">OK</button>
+    </div>
+  </div>
+
+  <!-- Shell Dialog -->
+  <div class="operation-dialog" id="dialog-shell">
+    <div class="dialog-header">
+      <div class="dialog-title">Shell (Hollow)</div>
+      <div class="dialog-close-btn" onclick="closeDialog('shell')">✕</div>
+    </div>
+    <div class="dialog-content">
+      <div class="dialog-form-group">
+        <label class="dialog-label">Wall Thickness (mm)</label>
+        <input type="number" class="dialog-input" id="shell-thickness" value="2" min="0.1" step="0.1">
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button class="dialog-button secondary" onclick="closeDialog('shell')">Cancel</button>
+      <button class="dialog-button primary" onclick="applyShell()">OK</button>
+    </div>
+  </div>
+
+  <!-- Pattern Dialog -->
+  <div class="operation-dialog" id="dialog-pattern">
+    <div class="dialog-header">
+      <div class="dialog-title">Pattern Features</div>
+      <div class="dialog-close-btn" onclick="closeDialog('pattern')">✕</div>
+    </div>
+    <div class="dialog-content">
+      <div class="dialog-form-group">
+        <label class="dialog-label">Pattern Type</label>
+        <div class="dialog-radio-group">
+          <div class="dialog-radio-item">
+            <input type="radio" id="pattern-rect" name="pattern-type" value="rectangular" checked onchange="updatePatternUI()">
+            <label for="pattern-rect">Rectangular</label>
+          </div>
+          <div class="dialog-radio-item">
+            <input type="radio" id="pattern-circ" name="pattern-type" value="circular" onchange="updatePatternUI()">
+            <label for="pattern-circ">Circular</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rectangular Pattern Fields -->
+      <div id="pattern-rectangular">
+        <div class="dialog-form-group">
+          <label class="dialog-label">Count X</label>
+          <input type="number" class="dialog-input" id="pattern-count-x" value="3" min="1" step="1">
+        </div>
+        <div class="dialog-form-group">
+          <label class="dialog-label">Count Y</label>
+          <input type="number" class="dialog-input" id="pattern-count-y" value="3" min="1" step="1">
+        </div>
+        <div class="dialog-form-group">
+          <label class="dialog-label">Spacing X (mm)</label>
+          <input type="number" class="dialog-input" id="pattern-spacing-x" value="10" min="0.1" step="0.1">
+        </div>
+        <div class="dialog-form-group">
+          <label class="dialog-label">Spacing Y (mm)</label>
+          <input type="number" class="dialog-input" id="pattern-spacing-y" value="10" min="0.1" step="0.1">
+        </div>
+      </div>
+
+      <!-- Circular Pattern Fields -->
+      <div id="pattern-circular" style="display:none;">
+        <div class="dialog-form-group">
+          <label class="dialog-label">Count</label>
+          <input type="number" class="dialog-input" id="pattern-count" value="6" min="1" step="1">
+        </div>
+        <div class="dialog-form-group">
+          <label class="dialog-label">Radius (mm)</label>
+          <input type="number" class="dialog-input" id="pattern-radius" value="20" min="0.1" step="0.1">
+        </div>
+        <div class="dialog-form-group">
+          <label class="dialog-label">Axis</label>
+          <select class="dialog-select" id="pattern-axis">
+            <option value="z">Z Axis</option>
+            <option value="x">X Axis</option>
+            <option value="y">Y Axis</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button class="dialog-button secondary" onclick="closeDialog('pattern')">Cancel</button>
+      <button class="dialog-button primary" onclick="applyPattern()">OK</button>
+    </div>
+  </div>
+
 </body>
 </html>

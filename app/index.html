@@ -1609,6 +1609,7 @@
     import { createSweep, createLoft, createBend, createFlange, createTab, createSlot, unfoldSheetMetal, createSpring, createThread } from './js/advanced-ops.js';
     import Assembly from './js/assembly.js';
     import { exportSketchToDXF, exportProjectionToDXF, exportMultiViewDXF, export3DDXF, downloadDXF } from './js/dxf-export.js';
+    import { initAgentAPI } from './js/agent-api.js';
 
     // ========== Application State ==========
     const APP = {
@@ -1773,6 +1774,20 @@
           url.searchParams.set('v', Date.now());
           window.location.replace(url.toString());
         });
+
+        // Initialize Agent API — the primary interface
+        const agentImports = await import('./js/agent-api.js');
+        const agentSession = initAgentAPI({
+          viewport: { getCamera, getControls, getScene, getRenderer: () => document.querySelector('#viewport-container canvas')?.getContext ? null : null, setView, fitToObject, addToScene, removeFromScene, toggleGrid: vpToggleGrid, toggleWireframe: (e) => {}, toggleAxisLines: () => {} },
+          sketch: { startSketch, endSketch, setTool, getEntities, clearSketch },
+          operations: { extrudeProfile, createPrimitive, rebuildFeature, createMaterial, fillet: () => {}, chamfer: () => {}, booleanUnion: () => {}, booleanCut: () => {}, booleanIntersect: () => {}, createShell: () => {}, createPattern: () => {}, getMaterialPresets: () => ({ steel: {}, aluminum: {}, plastic: {}, brass: {}, titanium: {}, nylon: {} }) },
+          advancedOps: { createSweep, createLoft, createBend, createFlange, createTab, createSlot, unfoldSheetMetal, createSpring, createThread },
+          exportModule: { exportSTL, exportOBJ, exportJSON, exportSTLBinary: exportSTL, exportGLTF: exportOBJ },
+          appState: APP
+        });
+        console.log(`[Agent API] Ready. Session: ${agentSession.sessionId}`);
+        console.log('[Agent API] Usage: window.cycleCAD.execute({ method: "meta.ping" })');
+        console.log('[Agent API] Schema: window.cycleCAD.getSchema()');
 
         console.log('cycleCAD initialized successfully');
         updateStatus('Ready');

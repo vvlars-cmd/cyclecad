@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>cycleCAD Agent Demo — Watch an AI design a part</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #0A1628; --bg2: #122240; --bg3: #1A2D50;
+      --text: #F0F0E8; --muted: #8B9AB5; --dim: #5A6B85;
+      --gold: #D4A843; --blue: #2E86DE; --teal: #3AAFA9;
+      --purple: #8B6FC0; --warn: #E8963A; --coral: #E05555;
+      --green: #2ECC71;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', -apple-system, sans-serif; min-height: 100vh; }
+
+    .header { padding: 20px 40px; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .header .logo { font-size: 20px; font-weight: 800; }
+    .header .logo .cy { color: var(--gold); }
+    .header .logo .ca { color: var(--blue); }
+    .header .tag { color: var(--muted); font-size: 13px; margin-left: auto; }
+
+    .main { display: grid; grid-template-columns: 1fr 1fr; height: calc(100vh - 65px); }
+
+    /* LEFT: Agent terminal */
+    .terminal { background: #0D1117; border-right: 1px solid rgba(255,255,255,0.06); display: flex; flex-direction: column; }
+    .term-header { padding: 12px 20px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; gap: 10px; }
+    .term-header .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot-r { background: var(--coral); } .dot-y { background: var(--warn); } .dot-g { background: var(--green); }
+    .term-header span { color: var(--muted); font-size: 12px; margin-left: 8px; }
+    .term-body { flex: 1; overflow-y: auto; padding: 20px; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 13px; line-height: 1.8; }
+    .term-body .cmd { color: var(--green); }
+    .term-body .cmd::before { content: '> '; color: var(--dim); }
+    .term-body .res { color: var(--muted); padding-left: 16px; }
+    .term-body .res.ok { color: var(--teal); }
+    .term-body .res.err { color: var(--coral); }
+    .term-body .comment { color: var(--dim); font-style: italic; }
+    .term-body .agent { color: var(--purple); font-weight: 600; }
+    .term-body .divider { border-top: 1px solid rgba(255,255,255,0.06); margin: 12px 0; }
+    .cursor { display: inline-block; width: 8px; height: 16px; background: var(--green); animation: blink 1s step-end infinite; vertical-align: middle; margin-left: 2px; }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* RIGHT: 3D viewport */
+    .viewport { position: relative; background: var(--bg); }
+    .viewport iframe { width: 100%; height: 100%; border: none; }
+    .viewport .overlay { position: absolute; top: 12px; right: 12px; background: rgba(10,22,40,0.85); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px 16px; }
+    .viewport .overlay h4 { font-size: 11px; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+    .viewport .overlay .stat { font-size: 12px; color: var(--muted); margin: 3px 0; }
+    .viewport .overlay .stat b { color: var(--text); }
+
+    /* Controls */
+    .controls { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 10; }
+    .controls button {
+      padding: 10px 24px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-run { background: linear-gradient(135deg, var(--gold), var(--blue)); color: #000; }
+    .btn-run:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-reset { background: var(--bg2); color: var(--muted); border: 1px solid rgba(255,255,255,0.1) !important; }
+    .btn-reset:hover { color: var(--text); }
+    .btn-schema { background: var(--bg2); color: var(--purple); border: 1px solid rgba(139,111,192,0.3) !important; }
+
+    /* Progress bar */
+    .progress { position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background: var(--bg2); }
+    .progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--gold), var(--blue), var(--teal)); transition: width 0.3s; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo"><span class="cy">cycle</span><span class="ca">CAD</span></div>
+    <div style="color:var(--dim);font-size:13px;">Agent Demo</div>
+    <div class="tag">The Agent-First OS for Manufacturing</div>
+  </div>
+
+  <div class="main">
+    <!-- LEFT: Terminal showing agent commands -->
+    <div class="terminal">
+      <div class="term-header">
+        <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+        <span>AI Agent — Bracket Design Task</span>
+      </div>
+      <div class="term-body" id="term"></div>
+      <div class="progress"><div class="progress-bar" id="progress"></div></div>
+    </div>
+
+    <!-- RIGHT: 3D viewport (placeholder) -->
+    <div class="viewport">
+      <canvas id="viewport3d" style="width:100%;height:100%;"></canvas>
+      <div class="overlay" id="stats-overlay" style="display:none;">
+        <h4>Part Stats</h4>
+        <div class="stat">Size: <b id="stat-size">—</b></div>
+        <div class="stat">Material: <b id="stat-mat">—</b></div>
+        <div class="stat">Printable: <b id="stat-print">—</b></div>
+        <div class="stat">Cost: <b id="stat-cost">—</b></div>
+        <div class="stat">Commands: <b id="stat-cmds">0</b></div>
+        <div class="stat">Time: <b id="stat-time">—</b></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Voice input bar -->
+  <div id="voice-bar" style="position:absolute;bottom:70px;left:50%;transform:translateX(-50%);z-index:11;display:flex;align-items:center;gap:10px;background:rgba(18,34,64,0.95);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:8px 16px;min-width:500px;max-width:700px;">
+    <button id="btn-mic" onclick="toggleVoice()" style="width:40px;height:40px;border-radius:50%;border:2px solid var(--coral);background:transparent;color:var(--coral);font-size:18px;cursor:pointer;transition:all 0.2s;flex-shrink:0;">🎤</button>
+    <input id="voice-input" type="text" placeholder="Step 1: &quot;build a cylinder 50mm diameter 80 tall&quot; → Step 2: &quot;add a hole radius 10&quot; → Step 3: &quot;export stl&quot;" style="flex:1;background:transparent;border:none;color:var(--text);font-size:14px;font-family:inherit;outline:none;" onkeydown="if(event.key==='Enter')executeVoiceCommand()">
+    <button onclick="executeVoiceCommand()" style="padding:8px 16px;border:none;border-radius:8px;background:linear-gradient(135deg,var(--gold),var(--blue));color:#000;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0;">Build It</button>
+    <div id="voice-status" style="position:absolute;top:-22px;left:16px;font-size:11px;color:var(--dim);"></div>
+  </div>
+
+  <div class="controls">
+    <button class="btn-run" id="btn-run" onclick="runDemo()">▶ Run Agent Demo</button>
+    <button class="btn-reset" onclick="resetDemo()">↺ Reset</button>
+    <button class="btn-schema" onclick="showSchema()">{ } API Schema</button>
+  </div>
+
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js" } }
+  </script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/controls/OrbitControls.js';
+
+    // ========== Mini 3D viewport ==========
+    const canvas = document.getElementById('viewport3d');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0A1628);
+    const camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+    camera.position.set(60, 50, 80);
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+
+    // Lights
+    scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight.position.set(30, 50, 40);
+    scene.add(dirLight);
+
+    // Grid
+    const grid = new THREE.GridHelper(200, 40, 0x1E3A5F, 0x122240);
+    scene.add(grid);
+
+    // Animate
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+    window.addEventListener('resize', () => {
+      camera.aspect = canvas.clientWidth / canvas.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+    });
+
+    // ========== Expose for demo script ==========
+    window._scene = scene;
+    window._camera = camera;
+    window._renderer = renderer;
+
+    window.addMeshToScene = (mesh) => { scene.add(mesh); };
+    window.clearScene = () => {
+      const toRemove = [];
+      scene.traverse(c => { if (c.isMesh) toRemove.push(c); });
+      toRemove.forEach(m => { scene.remove(m); m.geometry?.dispose(); m.material?.dispose(); });
+    };
+    window.THREE = THREE;
+  </script>
+
+  <script>
+    const term = document.getElementById('term');
+    const progress = document.getElementById('progress');
+    let running = false;
+    let cmdCount = 0;
+    let startTime = 0;
+
+    function addLine(html, cls = '') {
+      const div = document.createElement('div');
+      div.className = cls;
+      div.innerHTML = html;
+      term.appendChild(div);
+      term.scrollTop = term.scrollHeight;
+    }
+
+    function addDivider() {
+      const div = document.createElement('div');
+      div.className = 'divider';
+      term.appendChild(div);
+    }
+
+    function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    function updateStats(data) {
+      document.getElementById('stats-overlay').style.display = 'block';
+      if (data.size) document.getElementById('stat-size').textContent = data.size;
+      if (data.material) document.getElementById('stat-mat').textContent = data.material;
+      if (data.printable !== undefined) document.getElementById('stat-print').textContent = data.printable ? '✅ Yes' : '❌ No';
+      if (data.cost) document.getElementById('stat-cost').textContent = data.cost;
+      document.getElementById('stat-cmds').textContent = cmdCount;
+      document.getElementById('stat-time').textContent = ((Date.now() - startTime) / 1000).toFixed(1) + 's';
+    }
+
+    // ========== Demo Script ==========
+    // This simulates what an AI agent does when it calls cycleCAD's API
+
+    const DEMO_STEPS = [
+      // Agent thinks
+      { type: 'agent', text: '🤖 Agent received task: "Design a mounting bracket for the DUO cycleWASH with 4 M6 bolt holes"' },
+      { type: 'comment', text: '// Agent analyzes requirements: 80×40mm base plate, 5mm thick, aluminum, 4 corner holes' },
+      { type: 'delay', ms: 600 },
+
+      // Phase 1: Sketch
+      { type: 'divider' },
+      { type: 'agent', text: '📐 Phase 1: Sketch the base profile' },
+      { type: 'cmd', method: 'sketch.start', params: { plane: 'XY' } },
+      { type: 'cmd', method: 'sketch.rect', params: { x: -40, y: -20, width: 80, height: 40 } },
+      { type: 'delay', ms: 300 },
+
+      // Phase 2: Extrude
+      { type: 'divider' },
+      { type: 'agent', text: '📦 Phase 2: Extrude to 3D solid' },
+      { type: 'cmd', method: 'ops.extrude', params: { height: 5, material: 'aluminum' }, mesh: 'bracket' },
+      { type: 'delay', ms: 400 },
+
+      // Phase 3: Add bolt holes (primitives positioned at corners)
+      { type: 'divider' },
+      { type: 'agent', text: '🔩 Phase 3: Add 4 M6 bolt holes at corners' },
+      { type: 'cmd', method: 'ops.primitive', params: { shape: 'cylinder', radius: 3.2, height: 6 }, mesh: 'hole1', pos: [-30, 2.5, -12] },
+      { type: 'cmd', method: 'ops.primitive', params: { shape: 'cylinder', radius: 3.2, height: 6 }, mesh: 'hole2', pos: [30, 2.5, -12] },
+      { type: 'cmd', method: 'ops.primitive', params: { shape: 'cylinder', radius: 3.2, height: 6 }, mesh: 'hole3', pos: [-30, 2.5, 12] },
+      { type: 'cmd', method: 'ops.primitive', params: { shape: 'cylinder', radius: 3.2, height: 6 }, mesh: 'hole4', pos: [30, 2.5, 12] },
+      { type: 'delay', ms: 300 },
+
+      // Phase 4: Fillet edges
+      { type: 'divider' },
+      { type: 'agent', text: '✨ Phase 4: Fillet edges for stress relief' },
+      { type: 'cmd', method: 'ops.fillet', params: { target: 'bracket', radius: 15 }, mesh: 'fillet' },
+      { type: 'delay', ms: 300 },
+
+      // Phase 5: Validate
+      { type: 'divider' },
+      { type: 'agent', text: '🔍 Phase 5: Validate for manufacturing' },
+      { type: 'cmd', method: 'validate.dimensions', params: { target: 'bracket' }, stat: 'size' },
+      { type: 'cmd', method: 'validate.printability', params: { target: 'bracket', process: 'CNC' }, stat: 'printable' },
+      { type: 'cmd', method: 'validate.cost', params: { target: 'bracket', process: 'CNC', material: 'aluminum' }, stat: 'cost' },
+      { type: 'delay', ms: 400 },
+
+      // Phase 6: Export
+      { type: 'divider' },
+      { type: 'agent', text: '📤 Phase 6: Export for manufacturing' },
+      { type: 'cmd', method: 'export.stl', params: { filename: 'duo-bracket.stl', binary: true } },
+      { type: 'delay', ms: 200 },
+
+      // Done
+      { type: 'divider' },
+      { type: 'agent', text: '✅ Task complete. Bracket designed, validated, and exported in {TIME}s using {CMDS} API calls.' },
+      { type: 'comment', text: '// No human touched a mouse. No GUI was opened. The agent designed through cycleCAD.' },
+    ];
+
+    async function runDemo() {
+      if (running) return;
+      running = true;
+      cmdCount = 0;
+      startTime = Date.now();
+      document.getElementById('btn-run').disabled = true;
+      document.getElementById('btn-run').textContent = '⏳ Running...';
+      term.innerHTML = '';
+      window.clearScene();
+      document.getElementById('stats-overlay').style.display = 'none';
+
+      const totalSteps = DEMO_STEPS.filter(s => s.type === 'cmd').length;
+      let cmdIdx = 0;
+
+      for (const step of DEMO_STEPS) {
+        if (!running) break;
+
+        if (step.type === 'agent') {
+          let text = step.text
+            .replace('{TIME}', ((Date.now() - startTime) / 1000).toFixed(1))
+            .replace('{CMDS}', cmdCount);
+          addLine(text, 'agent');
+          await delay(200);
+        }
+        else if (step.type === 'comment') {
+          addLine(step.text, 'comment');
+          await delay(100);
+        }
+        else if (step.type === 'divider') {
+          addDivider();
+        }
+        else if (step.type === 'delay') {
+          await delay(step.ms);
+        }
+        else if (step.type === 'cmd') {
+          cmdCount++;
+          cmdIdx++;
+          progress.style.width = (cmdIdx / totalSteps * 100) + '%';
+
+          const cmdStr = `cycleCAD.execute({ method: "${step.method}", params: ${JSON.stringify(step.params)} })`;
+          addLine(cmdStr, 'cmd');
+          await delay(150);
+
+          // Simulate the result
+          const result = simulateCommand(step);
+          const resStr = JSON.stringify(result, null, 0);
+          addLine(`→ ${resStr}`, 'res ok');
+
+          // Update stats
+          if (step.stat === 'size') updateStats({ size: '80 × 40 × 5 mm' });
+          if (step.stat === 'printable') updateStats({ printable: true });
+          if (step.stat === 'cost') updateStats({ cost: '$12.40 (CNC)' });
+          updateStats({ material: 'Aluminum' });
+
+          // Add 3D geometry
+          if (step.mesh) {
+            createMesh(step);
+          }
+
+          await delay(250);
+        }
+      }
+
+      running = false;
+      document.getElementById('btn-run').disabled = false;
+      document.getElementById('btn-run').textContent = '▶ Run Again';
+    }
+
+    function simulateCommand(step) {
+      const m = step.method;
+      if (m === 'sketch.start') return { ok: true, result: { plane: 'XY', status: 'active' } };
+      if (m === 'sketch.rect') return { ok: true, result: { id: 'rect_1', type: 'rect', width: step.params.width, height: step.params.height } };
+      if (m === 'ops.extrude') return { ok: true, result: { id: 'extrude_1', type: 'extrude', height: step.params.height, material: step.params.material, bbox: { width: 80, height: 5, depth: 40 } } };
+      if (m === 'ops.primitive') return { ok: true, result: { id: step.mesh, type: 'cylinder', shape: 'cylinder' } };
+      if (m === 'ops.fillet') return { ok: true, result: { target: 'bracket', radius: step.params.radius, applied: true } };
+      if (m === 'validate.dimensions') return { ok: true, result: { width: 80, height: 5, depth: 40, volume: 16000, fitsInPrintBed: true } };
+      if (m === 'validate.printability') return { ok: true, result: { printable: true, process: 'CNC', issues: [] } };
+      if (m === 'validate.cost') return { ok: true, result: { process: 'CNC', unitCost: 12.40, batchOf100: 892 } };
+      if (m === 'export.stl') return { ok: true, result: { format: 'stl', filename: step.params.filename, featureCount: 5 } };
+      return { ok: true };
+    }
+
+    function createMesh(step) {
+      const THREE = window.THREE;
+      if (step.mesh === 'bracket') {
+        // Main bracket body — sharp box (will be replaced by fillet step)
+        const geo = new THREE.BoxGeometry(80, 5, 40);
+        const mat = new THREE.MeshStandardMaterial({ color: 0xccccdd, metalness: 0.7, roughness: 0.3 });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.y = 2.5;
+        mesh.name = 'bracket';
+        window.addMeshToScene(mesh);
+      }
+      else if (step.mesh === 'fillet') {
+        // Replace sharp bracket with rounded version — visible fillet r=15
+        const scene = window._scene;
+        // Remove old bracket
+        const old = scene.getObjectByName('bracket');
+        if (old) { scene.remove(old); old.geometry?.dispose(); old.material?.dispose(); }
+
+        const r = step.params?.radius || 15; // fillet radius from command
+        const w = 80, h = 5, d = 40;
+        const shape = new THREE.Shape();
+        // Rounded rectangle in XZ plane (we'll extrude along Y)
+        const hw = w / 2, hd = d / 2;
+        shape.moveTo(-hw + r, -hd);
+        shape.lineTo(hw - r, -hd);
+        shape.quadraticCurveTo(hw, -hd, hw, -hd + r);
+        shape.lineTo(hw, hd - r);
+        shape.quadraticCurveTo(hw, hd, hw - r, hd);
+        shape.lineTo(-hw + r, hd);
+        shape.quadraticCurveTo(-hw, hd, -hw, hd - r);
+        shape.lineTo(-hw, -hd + r);
+        shape.quadraticCurveTo(-hw, -hd, -hw + r, -hd);
+
+        const extrudeSettings = { depth: h, bevelEnabled: false, curveSegments: 16 };
+        const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+        // Rotate so extrude goes along Y axis
+        geo.rotateX(-Math.PI / 2);
+        const mat = new THREE.MeshStandardMaterial({ color: 0xccccdd, metalness: 0.7, roughness: 0.3 });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.y = 5; // align with bolt holes
+        mesh.name = 'bracket';
+        window.addMeshToScene(mesh);
+      }
+      else if (step.mesh && step.mesh.startsWith('hole')) {
+        // Bolt holes — dark cylinders subtracted visually
+        const geo = new THREE.CylinderGeometry(3.2, 3.2, 6, 24);
+        const mat = new THREE.MeshStandardMaterial({ color: 0x0A1628, metalness: 0, roughness: 1 });
+        const mesh = new THREE.Mesh(geo, mat);
+        if (step.pos) mesh.position.set(step.pos[0], step.pos[1], step.pos[2]);
+        window.addMeshToScene(mesh);
+      }
+    }
+
+    function resetDemo() {
+      running = false;
+      cmdCount = 0;
+      startTime = 0;
+      sceneState = { shape: null, material: 'aluminum', matClr: 0xccccdd, dims: {}, features: [], holeIdx: 0 };
+      term.innerHTML = '<div class="comment">// Ready. Type a command like "build a cylinder 50mm diameter 80 tall in steel"</div><div class="comment">// Then: "add a hole radius 10" → "fillet 5" → "export stl"</div><div class="comment">// Each command builds on the last. Say "start over" to reset.</div>';
+      window.clearScene();
+      document.getElementById('stats-overlay').style.display = 'none';
+      progress.style.width = '0%';
+      document.getElementById('btn-run').disabled = false;
+      document.getElementById('btn-run').textContent = '▶ Run Agent Demo';
+    }
+
+    function showSchema() {
+      term.innerHTML = '';
+      const schema = {
+        sketch: ['sketch.start', 'sketch.end', 'sketch.line', 'sketch.rect', 'sketch.circle', 'sketch.arc', 'sketch.clear'],
+        ops: ['ops.extrude', 'ops.revolve', 'ops.primitive', 'ops.fillet', 'ops.chamfer', 'ops.boolean', 'ops.shell', 'ops.pattern', 'ops.material', 'ops.sweep', 'ops.loft', 'ops.spring', 'ops.thread', 'ops.bend'],
+        transform: ['transform.move', 'transform.rotate', 'transform.scale'],
+        view: ['view.set', 'view.fit', 'view.wireframe', 'view.grid'],
+        export: ['export.stl', 'export.obj', 'export.gltf', 'export.json'],
+        validate: ['validate.dimensions', 'validate.wallThickness', 'validate.printability', 'validate.cost'],
+        query: ['query.features', 'query.bbox', 'query.materials', 'query.session', 'query.log'],
+        scene: ['scene.clear', 'scene.snapshot'],
+        meta: ['meta.ping', 'meta.version', 'meta.schema']
+      };
+      addLine('📋 cycleCAD Agent API — 46 commands across 9 namespaces', 'agent');
+      addDivider();
+      for (const [ns, methods] of Object.entries(schema)) {
+        addLine(`<span style="color:var(--gold)">${ns}</span> (${methods.length})`, '');
+        methods.forEach(m => addLine(`  ${m}`, 'res'));
+      }
+      addDivider();
+      addLine('Usage: window.cycleCAD.execute({ method: "ops.extrude", params: { height: 10 } })', 'comment');
+      addLine('Full schema: window.cycleCAD.getSchema()', 'comment');
+    }
+
+    // ========== Voice Command System ==========
+    let recognition = null;
+    let isListening = false;
+
+    function toggleVoice() {
+      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        document.getElementById('voice-status').textContent = 'Speech recognition not supported — type your command instead';
+        return;
+      }
+      if (isListening) { stopVoice(); return; }
+
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SR();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      const btn = document.getElementById('btn-mic');
+      const status = document.getElementById('voice-status');
+      const input = document.getElementById('voice-input');
+
+      recognition.onstart = () => {
+        isListening = true;
+        btn.style.background = 'var(--coral)';
+        btn.style.color = '#fff';
+        btn.style.animation = 'pulse 1s ease-in-out infinite';
+        status.textContent = 'Listening...';
+      };
+      recognition.onresult = (e) => {
+        let transcript = '';
+        for (let i = 0; i < e.results.length; i++) transcript = e.results[i][0].transcript;
+        input.value = transcript;
+        if (e.results[0].isFinal) status.textContent = 'Got it! Press "Build It" or Enter.';
+      };
+      recognition.onerror = (e) => {
+        if (e.error === 'not-allowed') {
+          status.textContent = 'Mic needs HTTPS (works on cyclecad.com) — type your command below';
+        } else {
+          status.textContent = 'Mic unavailable — type your command below';
+        }
+        stopVoice();
+      };
+      recognition.onend = () => { stopVoice(); };
+      try { recognition.start(); } catch(err) {
+        document.getElementById('voice-status').textContent = 'Mic blocked — type your command instead';
+        stopVoice();
+      }
+    }
+
+    function stopVoice() {
+      isListening = false;
+      if (recognition) try { recognition.stop(); } catch(e) {}
+      const btn = document.getElementById('btn-mic');
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--coral)';
+      btn.style.animation = 'none';
+    }
+
+    // ========== STATEFUL NLP COMMAND SYSTEM v3 ==========
+    // Iterative: each command builds on the previous.
+    // "build cylinder 50mm diameter 80 tall" → creates cylinder (clears scene)
+    // "add a hole radius 10" → cuts hole into existing part
+    // "fillet 5" → rounds edges
+    // "export stl" → exports (only when asked)
+    // "validate" → checks manufacturing (only when asked)
+    // "change material to steel" → updates material
+    // "start over" / "reset" / "new" → clears everything
+
+    // ---- Persistent scene state ----
+    let sceneState = {
+      shape: null,       // 'cylinder', 'bracket', 'sphere', etc.
+      material: 'aluminum',
+      matClr: 0xccccdd,
+      dims: {},          // shape-specific dimensions
+      features: [],      // log of operations applied
+      holeIdx: 0,        // counter for unique hole names
+    };
+
+    function parseNum(t, ...patterns) {
+      for (const p of patterns) {
+        const m = t.match(p);
+        if (m) return parseFloat(m[1]);
+      }
+      return null;
+    }
+
+    function parseMaterial(t) {
+      if (/steel|stainless/.test(t)) return 'steel';
+      if (/brass/.test(t)) return 'brass';
+      if (/titanium/.test(t)) return 'titanium';
+      if (/copper/.test(t)) return 'copper';
+      if (/abs|plastic/.test(t)) return 'ABS';
+      if (/nylon/.test(t)) return 'nylon';
+      if (/wood/.test(t)) return 'wood';
+      if (/carbon/.test(t)) return 'carbon fiber';
+      return null; // null = don't change
+    }
+
+    function materialColor(mat) {
+      const colors = {
+        aluminum: 0xccccdd, steel: 0x888899, brass: 0xd4a843, titanium: 0xaabbcc,
+        copper: 0xb87333, ABS: 0xe8e8e0, nylon: 0xf0f0e0, wood: 0x8B6914, 'carbon fiber': 0x333333
+      };
+      return colors[mat] || 0xccccdd;
+    }
+
+    const costMap = { aluminum: 12.40, steel: 8.90, brass: 18.50, titanium: 45.00, ABS: 3.20, nylon: 4.80, copper: 22.10, wood: 5.50, 'carbon fiber': 65.00 };
+
+    function detectShape(t) {
+      if (/hollow\s*cylinder|tube|pipe/.test(t)) return 'tube';
+      if (/cylinder|cylind|cylindar/.test(t)) return 'cylinder';
+      if (/disk|disc|puck/.test(t)) return 'disk';
+      if (/sphere|ball/.test(t)) return 'sphere';
+      if (/cone|taper/.test(t)) return 'cone';
+      if (/gear|sprocket/.test(t)) return 'gear';
+      if (/hex\s*bolt|bolt/.test(t)) return 'hexbolt';
+      if (/washer/.test(t)) return 'washer';
+      if (/\bring\b/.test(t)) return 'ring';
+      if (/flange/.test(t)) return 'flange';
+      if (/plate/.test(t)) return 'plate';
+      if (/block|cube/.test(t)) return 'box';
+      if (/bracket|mount/.test(t)) return 'bracket';
+      if (/\d+\s*x\s*\d+/.test(t)) return 'bracket';
+      if (/diameter|radius/.test(t)) return 'cylinder';
+      return null; // unknown — might be a modify command
+    }
+
+    // ---- Detect what KIND of command this is ----
+    function detectIntent(t) {
+      if (/^(start\s*over|reset|clear|new\s*part|new\s*design)/.test(t)) return 'reset';
+      if (/export|save|download/.test(t)) return 'export';
+      if (/validate|check|verify|inspect|analyze/.test(t)) return 'validate';
+      if (/change\s*material|set\s*material|make\s*it\s*(steel|brass|aluminum|titanium|nylon|abs|plastic|copper|wood|carbon)/.test(t)) return 'material';
+      if (/undo/.test(t)) return 'undo';
+      // Modify operations on existing part
+      if (/add\s*(a\s*)?hole|cut\s*(a\s*)?hole|drill|bore|extrude\s*(a\s*)?hole|punch/.test(t)) return 'hole';
+      if (/fillet|round\s*(the\s*)?edge/.test(t)) return 'fillet';
+      if (/chamfer/.test(t)) return 'chamfer';
+      if (/add\s*(a\s*)?(slot|groove|channel)/.test(t)) return 'slot';
+      if (/add\s*(a\s*)?(boss|peg|pin|post)/.test(t)) return 'boss';
+      // If a known shape word is present → create new
+      if (detectShape(t)) return 'create';
+      // Default: try to create
+      return 'create';
+    }
+
+    // ---- Parse dimensions from text ----
+    function extractDims(t) {
+      return {
+        diameter: parseNum(t, /(\d+(?:\.\d+)?)\s*mm?\s*(?:dia|diameter)/, /dia(?:meter)?\s*(?:of\s*)?(\d+(?:\.\d+)?)/, /[øo]\s*(\d+(?:\.\d+)?)/) || 0,
+        radius: parseNum(t, /radius\s*(?:of\s*)?(\d+(?:\.\d+)?)(?:\s*mm)?/, /(\d+(?:\.\d+)?)\s*mm?\s*radius/) || 0,
+        height: parseNum(t, /height\s*(?:of\s*)?(\d+(?:\.\d+)?)(?:\s*mm)?/, /(\d+(?:\.\d+)?)\s*mm?\s*(?:tall|high|height|long|deep)/) || 0,
+        thick: parseNum(t, /(\d+(?:\.\d+)?)\s*mm?\s*thick/, /thick(?:ness)?\s*(?:of\s*)?(\d+(?:\.\d+)?)/) || 0,
+        outerD: parseNum(t, /outer\s*(?:diameter\s*)?(\d+(?:\.\d+)?)/, /od\s*(\d+(?:\.\d+)?)/) || 0,
+        innerD: parseNum(t, /inner\s*(?:diameter\s*)?(\d+(?:\.\d+)?)/, /id\s*(\d+(?:\.\d+)?)/, /bore\s*(\d+(?:\.\d+)?)/) || 0,
+        topD: parseNum(t, /(\d+(?:\.\d+)?)\s*mm?\s*top/, /top\s*(\d+(?:\.\d+)?)/) || 0,
+        baseD: parseNum(t, /(\d+(?:\.\d+)?)\s*mm?\s*base/, /base\s*(\d+(?:\.\d+)?)/) || 0,
+        teeth: parseNum(t, /(\d+)\s*teeth/, /teeth\s*(\d+)/) || 0,
+        modl: parseNum(t, /module\s*(\d+(?:\.\d+)?)/) || 0,
+        mBolt: parseNum(t, /\bm(\d+)\b/) || 0,
+        filletR: parseNum(t, /fillet\s*(?:radius\s*(?:of\s*)?)?(\d+(?:\.\d+)?)/, /round\s*(\d+(?:\.\d+)?)/) || 0,
+        chamferS: parseNum(t, /chamfer\s*(?:of\s*)?(\d+(?:\.\d+)?)/) || 0,
+        dimMatch: t.match(/(\d+)\s*(?:x|by)\s*(\d+)/),
+        holeCountMatch: t.match(/(\d+)\s*(?:m\d+\s*)?(?:bolt\s*)?holes?/),
+        holeOffset: parseNum(t, /(\d+)\s*mm?\s*from\s*(?:the\s*)?edge/) || 10,
+        posX: parseNum(t, /(?:at|x)\s*(-?\d+(?:\.\d+)?)/) || 0,
+        posZ: parseNum(t, /(?:,\s*|y\s*)(-?\d+(?:\.\d+)?)/) || 0,
+      };
+    }
+
+    // ======= STEP BUILDERS per intent =======
+
+    function buildCreateSteps(text, t, ex) {
+      const steps = [];
+      const shape = detectShape(t) || 'bracket';
+      const mat = parseMaterial(t) || 'aluminum';
+      const matClr = materialColor(mat);
+
+      // Update scene state — this is a NEW part
+      sceneState = { shape, material: mat, matClr, dims: {}, features: [], holeIdx: 0 };
+      const d = sceneState.dims;
+
+      if (shape === 'cylinder' || shape === 'disk') {
+        d.r = ex.diameter ? ex.diameter / 2 : (ex.radius || 25);
+        d.h = ex.height || ex.thick || (shape === 'disk' ? 5 : 60);
+        d.sizeLabel = `ø${d.r * 2} × ${d.h}mm`;
+        steps.push({ type: 'agent', text: `🎤 "${text}"` });
+        steps.push({ type: 'comment', text: `// New ${shape}: ø${d.r * 2}mm × ${d.h}mm in ${mat}` });
+        steps.push({ type: 'delay', ms: 300 });
+        steps.push({ type: 'divider' });
+        steps.push({ type: 'agent', text: `📐 Sketch circle ø${d.r * 2}mm` });
+        steps.push({ type: 'cmd', method: 'sketch.start', params: { plane: 'XY' } });
+        steps.push({ type: 'cmd', method: 'sketch.circle', params: { x: 0, y: 0, radius: d.r } });
+        steps.push({ type: 'delay', ms: 200 });
+        steps.push({ type: 'divider' });
+        steps.push({ type: 'agent', text: `📦 Extrude ${d.h}mm in ${mat}` });
+        steps.push({ type: 'cmd', method: 'ops.extrude', params: { height: d.h, material: mat }, mesh: 'main' });
+      }
+      else if (shape === 'tube' || shape === 'ring') {
+        d.outerR = ex.outerD ? ex.outerD / 2 : (ex.diameter ? ex.diameter / 2 : 25);
+        d.innerR = ex.innerD ? ex.innerD / 2 : d.outerR * 0.7;
+        d.h = ex.height || ex.thick || (shape === 'ring' ? 10 : 60);
+        d.sizeLabel = `OD${d.outerR * 2} × ID${d.innerR * 2} × ${d.h}mm`;
+        steps.push({ type: 'agent', text: `🎤 "${text}"` });
+        steps.push({ type: 'comment', text: `// New ${shape}: OD${d.outerR * 2} ID${d.innerR * 2} × ${d.h}mm` });
+        steps.push({ type: 'delay', ms: 300 });
+        steps.push({ type: 'divider' });
+        steps.push({ type: 'cmd', method: 'sketch.start', params: { plane: 'XY' } });
+        steps.push({ type: 'cmd', method: 'sketch.circle', params: { x: 0, y: 0, radius: d.outerR } });
+        steps.push({ type: 'cmd', method: 'sketch.circle', params: { x: 0, y: 0, radius: d.innerR, type: 'inner' } });
+        steps.push({ type: 'cmd', method: 'ops.extrude', params: { height: d.h, hollow: true, material: mat }, mesh: 'main' });
+      }
+      else if (shape === 'sphere') {
+        d.r = ex.diameter ? ex.diameter / 2 : (ex.radius || 30);
+        d.h = d.r * 2;
+        d.sizeLabel = `ø${d.r * 2}mm sphere`;
+        steps.push({ type: 'agent', text: `🎤 "${text}"` });
+        steps.push({ type: 'comment', text: `// New sphere ø${d.r * 2}mm in ${mat}` });
+        steps.push({ type: 'delay', ms: 300 });
+        steps.push({ type: 'cmd', method: 'ops.primitive', params: { shape: 'sphere', radius: d.r, material: mat }, mesh: 'main' });
+      }
+      else if (shape === 'cone') {
+        d.baseR = ex.baseD ? ex.baseD / 2 : (ex.diameter ? ex.diameter / 2 : 25);
+        d.topR = ex.topD ? ex.topD / 2 : 5;
+        d.h = ex.height || 50;
+        d.sizeLabel = `ø${d.baseR * 2}→ø${d.topR * 2} × ${d.h}mm`;
+        steps.push({ type: 'agent', text: `🎤 "${text}"` });
+        steps.push({ type: 'comment', text: `// New cone: base ø${d.baseR * 2} → top ø${d.topR * 2} × ${d.h}mm` });
+        steps.push({ type: 'delay', ms: 300 });
+        steps.push({ type: 'cmd', method: 'sketch.start', params: { plane: 'XY' } });
+        steps.push({ type: 'cmd', method: 'ops.extrude', params: { height: d.h, taper: d.topR, material: mat }, mesh: 'main' });
+      }
+      else if (shape === 'gear') {
+        d.teeth = ex.teeth || 20;
+        d.module = ex.modl || 3;
+        d.r = (d.teeth * d.module) / 2;
+        d.h = ex.thick || ex.height || 10;
+        d.sizeLabel = `${d.teeth}T m${d.module} × ${d.h}mm`;
+        steps.push({ type: 'agent', text: `🎤 "${text}"` });
+        steps.push({ type: 'comment', text: `// Gear: ${d.teeth} teeth, module ${d.module}, ø${d.r * 2}mm` });
+        steps.push({ type: 'delay', ms: 300 });
+        steps.push({ type: 'cmd', method: 'ops.primitive', params: { shape: 'gear', teeth: d.teeth, module: d.module, material: mat }, mesh: 'main' });
+      }
+      else if (shape === 'hexbolt') {
+        d.m = ex.mBolt || 10;
+        d.headR = d.m * 0.9; d.headH = d.m * 0.65;
+        d.shankR = d.m / 2; d.shankH = ex.height || d.m * 2;
+        d.h = d.headH + d.shankH;
+        d.sizeLabel = `M${d.m} × ${d.shankH}mm bolt`;
+        steps.push({ type: 'agent', text: `🎤 "${text}"` });
+        steps.push({ type: 'comment', text: `// Hex bolt M${d.m} × ${d.shankH}mm` });
+        steps.push({ type: 'delay', ms: 300 });
+        steps.push({ type: 'cmd', method: 'ops.primitive', params: { shape: 'hexbolt', size: d.m, length: d.shankH, material: mat }, mesh: 'main' });
+      }
+      else if (shape === 'washer') {
+        d.m = ex.mBolt || 10;
+        d.outerR = d.m * 1.1; d.innerR = d.m / 2 + 0.5;
+        d.h = ex.thick || 2;
+        d.sizeLabel = `M${d.m} washer`;
+        steps.push({ type: 'agent', text: `🎤 "${text}"` });
+        steps.push({ type: 'cmd', method: 'ops.primitive', params: { shape: 'washer', size: d.m, material: mat }, mesh: 'main' });
+      }
+      else {
+        // bracket / plate / box
+        d.w = ex.dimMatch ? parseInt(ex.dimMatch[1]) : 80;
+        d.d = ex.dimMatch ? parseInt(ex.dimMatch[2]) : 40;
+        d.h = ex.thick || ex.height || 5;
+        d.sizeLabel = `${d.w} × ${d.d} × ${d.h}mm`;
+        steps.push({ type: 'agent', text: `🎤 "${text}"` });
+        steps.push({ type: 'comment', text: `// New ${shape}: ${d.w}×${d.d}×${d.h}mm in ${mat}` });
+        steps.push({ type: 'delay', ms: 300 });
+        steps.push({ type: 'divider' });
+        steps.push({ type: 'cmd', method: 'sketch.start', params: { plane: 'XY' } });
+        steps.push({ type: 'cmd', method: 'sketch.rect', params: { x: -d.w / 2, y: -d.d / 2, width: d.w, height: d.d } });
+        steps.push({ type: 'cmd', method: 'ops.extrude', params: { height: d.h, material: mat }, mesh: 'main' });
+      }
+      sceneState.features.push(`Created ${shape}`);
+      steps.push({ type: 'delay', ms: 300 });
+      steps.push({ type: 'agent', text: `✅ ${shape} created. Keep going — add holes, fillets, or say "export".` });
+      return { steps, clearScene: true };
+    }
+
+    function buildHoleSteps(text, t, ex) {
+      const steps = [];
+      if (!sceneState.shape) {
+        steps.push({ type: 'agent', text: '⚠️ No part yet. Create something first — e.g. "build a cylinder 50mm diameter 80 tall"' });
+        return { steps, clearScene: false };
+      }
+      const hr = ex.diameter ? ex.diameter / 2 : (ex.radius || 5);
+      const hh = ex.height || sceneState.dims.h || 20;
+      const px = ex.posX || 0;
+      const pz = ex.posZ || 0;
+      const py = (sceneState.dims.h || hh) / 2;
+      sceneState.holeIdx++;
+      const holeName = `hole${sceneState.holeIdx}`;
+
+      steps.push({ type: 'agent', text: `🎤 "${text}"` });
+      steps.push({ type: 'comment', text: `// Adding hole ø${hr * 2}mm through part at (${px}, ${pz})` });
+      steps.push({ type: 'delay', ms: 200 });
+      steps.push({ type: 'divider' });
+      steps.push({ type: 'agent', text: `🕳️ Extruding cut: ø${hr * 2}mm hole` });
+      steps.push({ type: 'cmd', method: 'ops.cut', params: { shape: 'cylinder', radius: hr, height: hh + 2, x: px, z: pz }, mesh: holeName, pos: [px, py, pz] });
+      steps.push({ type: 'delay', ms: 200 });
+      sceneState.features.push(`Hole ø${hr * 2} at (${px},${pz})`);
+      steps.push({ type: 'agent', text: `✅ Hole added. ${sceneState.features.length} features total. Keep going!` });
+      return { steps, clearScene: false };
+    }
+
+    function buildFilletSteps(text, t, ex) {
+      const steps = [];
+      if (!sceneState.shape) {
+        steps.push({ type: 'agent', text: '⚠️ No part yet. Create something first.' });
+        return { steps, clearScene: false };
+      }
+      const fr = ex.filletR || parseNum(t, /(\d+(?:\.\d+)?)/) || 3;
+      steps.push({ type: 'agent', text: `🎤 "${text}"` });
+      steps.push({ type: 'divider' });
+      steps.push({ type: 'agent', text: `✨ Fillet edges r=${fr}mm` });
+      steps.push({ type: 'cmd', method: 'ops.fillet', params: { target: 'main', radius: fr }, mesh: 'fillet' });
+      steps.push({ type: 'delay', ms: 200 });
+      sceneState.dims.filletR = fr;
+      sceneState.features.push(`Fillet r=${fr}`);
+      steps.push({ type: 'agent', text: `✅ Filleted. ${sceneState.features.length} features. Keep going!` });
+      return { steps, clearScene: false };
+    }
+
+    function buildExportSteps(text, t) {
+      const steps = [];
+      if (!sceneState.shape) {
+        steps.push({ type: 'agent', text: '⚠️ No part to export. Build something first.' });
+        return { steps, clearScene: false };
+      }
+      const fmt = /obj/.test(t) ? 'obj' : (/gltf|glb/.test(t) ? 'gltf' : 'stl');
+      steps.push({ type: 'agent', text: `🎤 "${text}"` });
+      steps.push({ type: 'divider' });
+      steps.push({ type: 'agent', text: `📤 Exporting as ${fmt.toUpperCase()}` });
+      steps.push({ type: 'cmd', method: `export.${fmt}`, params: { filename: `${sceneState.shape}.${fmt}`, binary: true } });
+      steps.push({ type: 'delay', ms: 200 });
+      steps.push({ type: 'agent', text: `✅ Exported ${sceneState.shape}.${fmt}` });
+      return { steps, clearScene: false };
+    }
+
+    function buildValidateSteps(text) {
+      const steps = [];
+      if (!sceneState.shape) {
+        steps.push({ type: 'agent', text: '⚠️ No part to validate. Build something first.' });
+        return { steps, clearScene: false };
+      }
+      steps.push({ type: 'agent', text: `🎤 "${text}"` });
+      steps.push({ type: 'divider' });
+      steps.push({ type: 'agent', text: '🔍 Validating for manufacturing' });
+      steps.push({ type: 'cmd', method: 'validate.dimensions', params: { target: 'main' }, stat: 'size' });
+      steps.push({ type: 'cmd', method: 'validate.printability', params: { target: 'main', process: 'CNC' }, stat: 'printable' });
+      steps.push({ type: 'cmd', method: 'validate.cost', params: { target: 'main', process: 'CNC', material: sceneState.material }, stat: 'cost' });
+      steps.push({ type: 'delay', ms: 300 });
+      steps.push({ type: 'agent', text: '✅ Validation complete.' });
+      return { steps, clearScene: false };
+    }
+
+    function buildMaterialSteps(text, t) {
+      const steps = [];
+      const newMat = parseMaterial(t) || 'aluminum';
+      sceneState.material = newMat;
+      sceneState.matClr = materialColor(newMat);
+      steps.push({ type: 'agent', text: `🎤 "${text}"` });
+      steps.push({ type: 'cmd', method: 'ops.material', params: { material: newMat }, mesh: 'recolor' });
+      steps.push({ type: 'agent', text: `✅ Material changed to ${newMat}. Keep going!` });
+      return { steps, clearScene: false };
+    }
+
+    function buildBossSteps(text, t, ex) {
+      const steps = [];
+      if (!sceneState.shape) {
+        steps.push({ type: 'agent', text: '⚠️ No part yet.' });
+        return { steps, clearScene: false };
+      }
+      const br = ex.diameter ? ex.diameter / 2 : (ex.radius || 5);
+      const bh = ex.height || 15;
+      const px = ex.posX || 0;
+      const pz = ex.posZ || 0;
+      const py = (sceneState.dims.h || 5) + bh / 2;
+      sceneState.holeIdx++;
+      const bossName = `boss${sceneState.holeIdx}`;
+      steps.push({ type: 'agent', text: `🎤 "${text}"` });
+      steps.push({ type: 'divider' });
+      steps.push({ type: 'agent', text: `📌 Adding boss ø${br * 2} × ${bh}mm` });
+      steps.push({ type: 'cmd', method: 'ops.boss', params: { radius: br, height: bh, x: px, z: pz }, mesh: bossName, pos: [px, py, pz] });
+      sceneState.features.push(`Boss ø${br * 2} at (${px},${pz})`);
+      steps.push({ type: 'agent', text: `✅ Boss added. Keep going!` });
+      return { steps, clearScene: false };
+    }
+
+    // ======= EXECUTE =======
+    async function executeVoiceCommand() {
+      const input = document.getElementById('voice-input');
+      const text = input.value.trim();
+      if (!text || running) return;
+      stopVoice();
+      input.value = '';
+
+      const t = text.toLowerCase();
+      const intent = detectIntent(t);
+      const ex = extractDims(t);
+
+      console.log('[cycleCAD NLP]', { intent, text, extracted: ex, sceneState: sceneState.shape });
+
+      // Handle reset
+      if (intent === 'reset') {
+        resetDemo();
+        addLine('🔄 Scene cleared. Start fresh!', 'agent');
+        return;
+      }
+
+      let result;
+      if (intent === 'create') result = buildCreateSteps(text, t, ex);
+      else if (intent === 'hole') result = buildHoleSteps(text, t, ex);
+      else if (intent === 'fillet') result = buildFilletSteps(text, t, ex);
+      else if (intent === 'chamfer') result = buildFilletSteps(text, t, ex); // reuse fillet visual
+      else if (intent === 'export') result = buildExportSteps(text, t);
+      else if (intent === 'validate') result = buildValidateSteps(text);
+      else if (intent === 'material') result = buildMaterialSteps(text, t);
+      else if (intent === 'boss') result = buildBossSteps(text, t, ex);
+      else result = buildCreateSteps(text, t, ex); // fallback
+
+      const voiceSteps = result.steps;
+      if (result.clearScene) {
+        window.clearScene();
+        document.getElementById('stats-overlay').style.display = 'none';
+      }
+
+      // Don't clear terminal — append (iterative)
+      addDivider();
+      running = true;
+      if (!startTime) startTime = Date.now();
+
+      const totalSteps = voiceSteps.filter(s => s.type === 'cmd').length;
+      let localCmdIdx = 0;
+
+      for (const step of voiceSteps) {
+        if (!running) break;
+        if (step.type === 'agent') {
+          addLine(step.text.replace('{TIME}', ((Date.now() - startTime) / 1000).toFixed(1)).replace('{CMDS}', cmdCount), 'agent');
+          await delay(150);
+        } else if (step.type === 'comment') {
+          addLine(step.text, 'comment'); await delay(80);
+        } else if (step.type === 'divider') {
+          addDivider();
+        } else if (step.type === 'delay') {
+          await delay(step.ms);
+        } else if (step.type === 'cmd') {
+          cmdCount++; localCmdIdx++;
+          addLine(`cycleCAD.execute({ method: "${step.method}", params: ${JSON.stringify(step.params)} })`, 'cmd');
+          await delay(120);
+          const res = simulateResult(step);
+          addLine(`→ ${JSON.stringify(res, null, 0)}`, 'res ok');
+          // Update stats
+          if (step.stat === 'size') updateStats({ size: sceneState.dims.sizeLabel || 'computed' });
+          if (step.stat === 'printable') updateStats({ printable: true });
+          if (step.stat === 'cost') updateStats({ cost: `$${(costMap[sceneState.material] || 12.40).toFixed(2)} (CNC)` });
+          updateStats({ material: sceneState.material.charAt(0).toUpperCase() + sceneState.material.slice(1) });
+          document.getElementById('stat-cmds').textContent = cmdCount;
+          document.getElementById('stat-time').textContent = ((Date.now() - startTime) / 1000).toFixed(1) + 's';
+          document.getElementById('stats-overlay').style.display = 'block';
+          // Build 3D
+          if (step.mesh) buildMesh(step);
+          await delay(180);
+        }
+      }
+      running = false;
+    }
+
+    function simulateResult(step) {
+      const m = step.method;
+      if (m === 'sketch.start') return { ok: true, plane: 'XY' };
+      if (m === 'sketch.rect') return { ok: true, id: 'rect_1' };
+      if (m === 'sketch.circle') return { ok: true, id: 'circle_1', radius: step.params.radius };
+      if (m === 'ops.extrude') return { ok: true, id: 'extrude_1', height: step.params.height };
+      if (m === 'ops.primitive') return { ok: true, id: step.mesh, shape: step.params.shape };
+      if (m === 'ops.cut') return { ok: true, id: step.mesh, type: 'hole' };
+      if (m === 'ops.fillet') return { ok: true, radius: step.params.radius, applied: true };
+      if (m === 'ops.material') return { ok: true, material: step.params.material };
+      if (m === 'ops.boss') return { ok: true, id: step.mesh };
+      if (m === 'validate.dimensions') return { ok: true, size: sceneState.dims.sizeLabel };
+      if (m === 'validate.printability') return { ok: true, printable: true, issues: [] };
+      if (m === 'validate.cost') return { ok: true, unitCost: costMap[sceneState.material] || 12.40 };
+      if (m.startsWith('export.')) return { ok: true, filename: step.params.filename };
+      return { ok: true };
+    }
+
+    // ======= 3D MESH BUILDER =======
+    function buildMesh(step) {
+      const THREE = window.THREE;
+      const sc = sceneState;
+      const d = sc.dims;
+      const matOpts = { color: sc.matClr, metalness: 0.7, roughness: 0.3 };
+      const darkMat = new THREE.MeshStandardMaterial({ color: 0x0A1628, metalness: 0, roughness: 1 });
+
+      if (step.mesh === 'main' || step.mesh === 'main_ext') {
+        const scene = window._scene;
+        const old = scene.getObjectByName('main');
+        if (old && step.mesh !== 'main_ext') { scene.remove(old); old.geometry?.dispose(); old.material?.dispose(); }
+
+        let geo, mesh;
+        const s = sc.shape;
+        if (s === 'cylinder' || s === 'disk') {
+          geo = new THREE.CylinderGeometry(d.r, d.r, d.h, 48);
+          mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial(matOpts));
+          mesh.position.y = d.h / 2;
+        } else if (s === 'tube' || s === 'ring' || s === 'washer' || s === 'flange') {
+          const profile = [
+            new THREE.Vector2(d.innerR || d.outerR * 0.7, 0),
+            new THREE.Vector2(d.outerR || 25, 0),
+            new THREE.Vector2(d.outerR || 25, d.h),
+            new THREE.Vector2(d.innerR || d.outerR * 0.7, d.h),
+          ];
+          geo = new THREE.LatheGeometry(profile, 48);
+          mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial(matOpts));
+        } else if (s === 'sphere') {
+          geo = new THREE.SphereGeometry(d.r, 48, 32);
+          mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial(matOpts));
+          mesh.position.y = d.r;
+        } else if (s === 'cone') {
+          geo = new THREE.CylinderGeometry(d.topR, d.baseR, d.h, 48);
+          mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial(matOpts));
+          mesh.position.y = d.h / 2;
+        } else if (s === 'gear') {
+          const gshape = new THREE.Shape();
+          const nt = d.teeth, pitchR = d.r, add = d.module, ded = d.module * 1.25;
+          const ouR = pitchR + add, roR = pitchR - ded;
+          for (let i = 0; i < nt; i++) {
+            const a0 = (i / nt) * Math.PI * 2, a1 = ((i + 0.15) / nt) * Math.PI * 2;
+            const a2 = ((i + 0.35) / nt) * Math.PI * 2, a3 = ((i + 0.5) / nt) * Math.PI * 2;
+            if (i === 0) gshape.moveTo(Math.cos(a0) * roR, Math.sin(a0) * roR);
+            else gshape.lineTo(Math.cos(a0) * roR, Math.sin(a0) * roR);
+            gshape.lineTo(Math.cos(a1) * ouR, Math.sin(a1) * ouR);
+            gshape.lineTo(Math.cos(a2) * ouR, Math.sin(a2) * ouR);
+            gshape.lineTo(Math.cos(a3) * roR, Math.sin(a3) * roR);
+          }
+          gshape.closePath();
+          geo = new THREE.ExtrudeGeometry(gshape, { depth: d.h, bevelEnabled: false });
+          geo.rotateX(-Math.PI / 2);
+          mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial(matOpts));
+          mesh.position.y = d.h;
+        } else if (s === 'hexbolt') {
+          const group = new THREE.Group();
+          const headGeo = new THREE.CylinderGeometry(d.headR, d.headR, d.headH, 6);
+          const hm = new THREE.Mesh(headGeo, new THREE.MeshStandardMaterial(matOpts));
+          hm.position.y = d.shankH + d.headH / 2; group.add(hm);
+          const sg = new THREE.CylinderGeometry(d.shankR, d.shankR, d.shankH, 24);
+          const sm = new THREE.Mesh(sg, new THREE.MeshStandardMaterial(matOpts));
+          sm.position.y = d.shankH / 2; group.add(sm);
+          group.name = 'main';
+          window.addMeshToScene(group); return;
+        } else {
+          geo = new THREE.BoxGeometry(d.w || 80, d.h || 5, d.d || 40);
+          mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial(matOpts));
+          mesh.position.y = (d.h || 5) / 2;
+        }
+        if (mesh) { mesh.name = 'main'; window.addMeshToScene(mesh); }
+      }
+      else if (step.mesh === 'fillet' && (sc.shape === 'bracket' || sc.shape === 'plate' || sc.shape === 'box')) {
+        const scene = window._scene;
+        const old = scene.getObjectByName('main');
+        if (old) { scene.remove(old); old.geometry?.dispose(); old.material?.dispose(); }
+        const fr = Math.min(d.filletR || 3, (d.w || 80) / 2, (d.d || 40) / 2);
+        const hw = (d.w || 80) / 2, hd = (d.d || 40) / 2, h = d.h || 5;
+        const shape = new THREE.Shape();
+        shape.moveTo(-hw + fr, -hd); shape.lineTo(hw - fr, -hd);
+        shape.quadraticCurveTo(hw, -hd, hw, -hd + fr); shape.lineTo(hw, hd - fr);
+        shape.quadraticCurveTo(hw, hd, hw - fr, hd); shape.lineTo(-hw + fr, hd);
+        shape.quadraticCurveTo(-hw, hd, -hw, hd - fr); shape.lineTo(-hw, -hd + fr);
+        shape.quadraticCurveTo(-hw, -hd, -hw + fr, -hd);
+        const geo = new THREE.ExtrudeGeometry(shape, { depth: h, bevelEnabled: false, curveSegments: 16 });
+        geo.rotateX(-Math.PI / 2);
+        const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: sc.matClr, metalness: 0.7, roughness: 0.3 }));
+        mesh.position.y = h; mesh.name = 'main';
+        window.addMeshToScene(mesh);
+      }
+      else if (step.mesh && (step.mesh.startsWith('hole') || step.mesh.startsWith('boss'))) {
+        const isBoss = step.mesh.startsWith('boss');
+        const r = step.params?.radius || 5;
+        const h = step.params?.height || (sc.dims.h || 10) + 2;
+        const geo = new THREE.CylinderGeometry(r, r, h, 24);
+        const mat = isBoss ? new THREE.MeshStandardMaterial({ color: sc.matClr, metalness: 0.7, roughness: 0.3 }) : darkMat;
+        const mesh = new THREE.Mesh(geo, mat);
+        if (step.pos) mesh.position.set(step.pos[0], step.pos[1], step.pos[2]);
+        window.addMeshToScene(mesh);
+      }
+      else if (step.mesh === 'recolor') {
+        // Change material color on existing part
+        const scene = window._scene;
+        scene.traverse(c => {
+          if (c.isMesh && c.material && c.material.color) {
+            c.material.color.setHex(sc.matClr);
+          }
+        });
+      }
+    }
+
+    // Pulse animation for mic button
+    const styleEl = document.createElement('style');
+    styleEl.textContent = `@keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(224,85,85,0.4); } 50% { box-shadow: 0 0 0 12px rgba(224,85,85,0); } }`;
+    document.head.appendChild(styleEl);
+
+    window.toggleVoice = toggleVoice;
+    window.executeVoiceCommand = executeVoiceCommand;
+
+    // Initial state
+    resetDemo();
+
+    window.runDemo = runDemo;
+    window.resetDemo = resetDemo;
+    window.showSchema = showSchema;
+  </script>
+</body>
+</html>

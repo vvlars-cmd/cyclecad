@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>cycleWASH × cycleCAD — Brand Identity</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  :root {
+    /* Shared "cycle" brand colors */
+    --cycle-blue: #58A6FF;
+    --cycle-green: #3FB950;
+    --cycle-dark: #0D1117;
+    --cycle-navy: #161B22;
+    --cycle-card: #1C2333;
+    --cycle-text: #F0F6FC;
+    --cycle-muted: #8B949E;
+    --cycle-purple: #A371F7;
+    --cycle-orange: #F0883E;
+    --cycle-coral: #F85149;
+    --cycle-teal: #39D353;
+
+    /* cycleWASH brand */
+    --wash-primary: #0EA5E9;    /* water blue */
+    --wash-accent: #22D3EE;     /* cyan splash */
+    --wash-glow: #06B6D4;
+
+    /* cycleCAD brand */
+    --cad-primary: #58A6FF;     /* tech blue */
+    --cad-accent: #3FB950;      /* open-source green */
+    --cad-glow: #A371F7;        /* AI purple */
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--cycle-dark);
+    color: var(--cycle-text);
+    overflow-x: hidden;
+  }
+
+  /* === HERO === */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+    padding: 2rem;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -200px; left: -200px;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(14,165,233,0.15) 0%, transparent 70%);
+    animation: pulse1 8s ease-in-out infinite;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -200px; right: -200px;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(88,166,255,0.12) 0%, transparent 70%);
+    animation: pulse2 10s ease-in-out infinite;
+  }
+  @keyframes pulse1 { 0%,100% { transform: scale(1); opacity: 0.6; } 50% { transform: scale(1.2); opacity: 1; } }
+  @keyframes pulse2 { 0%,100% { transform: scale(1.1); opacity: 0.5; } 50% { transform: scale(0.9); opacity: 0.8; } }
+
+  .hero-content { position: relative; z-index: 1; max-width: 900px; }
+
+  /* Circular arrows animation */
+  .cycle-symbol {
+    width: 180px; height: 180px;
+    margin: 0 auto 2rem;
+    position: relative;
+    animation: spinSlow 20s linear infinite;
+  }
+  @keyframes spinSlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  .cycle-symbol svg { width: 100%; height: 100%; }
+
+  .hero h1 {
+    font-size: 3.5rem;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    margin-bottom: 0.5rem;
+  }
+  .hero h1 .wash { color: var(--wash-primary); }
+  .hero h1 .times { color: var(--cycle-muted); font-weight: 300; margin: 0 0.3em; }
+  .hero h1 .cad { color: var(--cad-primary); }
+
+  .hero .tagline {
+    font-size: 1.5rem;
+    font-weight: 300;
+    color: var(--cycle-muted);
+    margin-bottom: 1rem;
+    letter-spacing: 0.02em;
+  }
+  .hero .mission {
+    font-size: 1.15rem;
+    color: var(--cad-accent);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 3rem;
+  }
+
+  /* === BRAND STORY === */
+  .section {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 5rem 2rem;
+  }
+  .section-title {
+    font-size: 2.2rem;
+    font-weight: 800;
+    text-align: center;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+  }
+  .section-subtitle {
+    text-align: center;
+    color: var(--cycle-muted);
+    font-size: 1.1rem;
+    margin-bottom: 3rem;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* Circular Engineering narrative */
+  .circle-narrative {
+    display: flex;
+    align-items: center;
+    gap: 4rem;
+    margin-bottom: 4rem;
+  }
+  .circle-narrative.reverse { flex-direction: row-reverse; }
+  .circle-visual {
+    flex: 0 0 320px;
+    height: 320px;
+    position: relative;
+  }
+  .circle-ring {
+    width: 300px; height: 300px;
+    border: 3px solid;
+    border-radius: 50%;
+    position: absolute;
+    top: 10px; left: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+  .circle-ring.wash-ring {
+    border-color: var(--wash-primary);
+    box-shadow: 0 0 40px rgba(14,165,233,0.15), inset 0 0 40px rgba(14,165,233,0.05);
+  }
+  .circle-ring.cad-ring {
+    border-color: var(--cad-primary);
+    box-shadow: 0 0 40px rgba(88,166,255,0.15), inset 0 0 40px rgba(88,166,255,0.05);
+  }
+  .circle-ring .brand-name {
+    font-size: 1.6rem;
+    font-weight: 800;
+  }
+  .circle-ring .brand-desc {
+    font-size: 0.85rem;
+    color: var(--cycle-muted);
+    margin-top: 0.3rem;
+  }
+  .circle-text { flex: 1; }
+  .circle-text h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.8rem;
+  }
+  .circle-text p {
+    color: var(--cycle-muted);
+    font-size: 1.05rem;
+    line-height: 1.7;
+  }
+  .circle-text .highlight {
+    color: var(--cycle-text);
+    font-weight: 600;
+  }
+
+  /* Arrow connector */
+  .connector {
+    text-align: center;
+    padding: 1rem 0;
+    position: relative;
+  }
+  .connector svg { width: 60px; height: 100px; }
+  .connector .label {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--cycle-card);
+    padding: 0.3rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    color: var(--cad-accent);
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border: 1px solid rgba(63,185,80,0.3);
+  }
+
+  /* === COLOR SYSTEM === */
+  .color-system {
+    background: var(--cycle-navy);
+    padding: 5rem 2rem;
+  }
+  .color-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .color-group h4 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--cycle-muted);
+    margin-bottom: 1rem;
+  }
+  .color-swatch {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid rgba(139,148,158,0.1);
+  }
+  .swatch-box {
+    width: 48px; height: 48px;
+    border-radius: 10px;
+    flex-shrink: 0;
+  }
+  .swatch-info .name { font-weight: 600; font-size: 0.95rem; }
+  .swatch-info .hex { color: var(--cycle-muted); font-size: 0.85rem; font-family: 'SF Mono', monospace; }
+  .swatch-info .use { color: var(--cycle-muted); font-size: 0.8rem; margin-top: 2px; }
+
+  /* === BRAND MARKS === */
+  .brand-marks {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 5rem 2rem;
+  }
+  .marks-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+  }
+  .mark-card {
+    background: var(--cycle-card);
+    border-radius: 16px;
+    padding: 3rem;
+    text-align: center;
+    border: 1px solid rgba(139,148,158,0.1);
+  }
+  .mark-card .logo-text {
+    font-size: 2.8rem;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    margin-bottom: 0.5rem;
+  }
+  .mark-card .logo-sub {
+    font-size: 0.9rem;
+    color: var(--cycle-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+  }
+  .mark-card .logo-tagline {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(139,148,158,0.15);
+    font-size: 1rem;
+    color: var(--cycle-muted);
+    font-style: italic;
+  }
+
+  /* === SHARED DNA === */
+  .shared-dna {
+    background: var(--cycle-navy);
+    padding: 5rem 2rem;
+  }
+  .dna-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .dna-card {
+    background: var(--cycle-card);
+    border-radius: 14px;
+    padding: 2rem;
+    border: 1px solid rgba(139,148,158,0.1);
+    transition: border-color 0.3s;
+  }
+  .dna-card:hover { border-color: var(--cad-primary); }
+  .dna-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .dna-card h4 { font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .dna-card p { color: var(--cycle-muted); font-size: 0.95rem; line-height: 1.6; }
+
+  /* === DEMOCRATIZATION === */
+  .democratization {
+    padding: 6rem 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .democratization::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(circle at 20% 50%, rgba(14,165,233,0.08) 0%, transparent 50%),
+      radial-gradient(circle at 80% 50%, rgba(88,166,255,0.08) 0%, transparent 50%);
+  }
+  .demo-content { position: relative; z-index: 1; max-width: 800px; margin: 0 auto; }
+  .demo-content h2 {
+    font-size: 3rem;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    margin-bottom: 1.5rem;
+    background: linear-gradient(135deg, var(--wash-primary), var(--cad-primary), var(--cad-accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .demo-content p {
+    font-size: 1.2rem;
+    color: var(--cycle-muted);
+    line-height: 1.8;
+    margin-bottom: 1.5rem;
+  }
+  .demo-pillars {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    margin-top: 3rem;
+    flex-wrap: wrap;
+  }
+  .pillar {
+    background: var(--cycle-card);
+    border: 1px solid rgba(139,148,158,0.15);
+    border-radius: 14px;
+    padding: 1.5rem 2rem;
+    min-width: 200px;
+    text-align: center;
+  }
+  .pillar .num {
+    font-size: 2.5rem;
+    font-weight: 900;
+    margin-bottom: 0.3rem;
+  }
+  .pillar .label {
+    font-size: 0.85rem;
+    color: var(--cycle-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  /* === FOOTER === */
+  footer {
+    text-align: center;
+    padding: 3rem 2rem;
+    border-top: 1px solid rgba(139,148,158,0.1);
+  }
+  footer .brands {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+  footer .brands .wash { color: var(--wash-primary); }
+  footer .brands .cad { color: var(--cad-primary); }
+  footer p { color: var(--cycle-muted); font-size: 0.9rem; }
+
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 2.2rem; }
+    .circle-narrative, .circle-narrative.reverse { flex-direction: column; gap: 2rem; }
+    .circle-visual { flex: 0 0 200px; height: 200px; }
+    .circle-ring { width: 180px; height: 180px; top: 10px; left: 10px; }
+    .marks-grid { grid-template-columns: 1fr; }
+    .dna-grid { grid-template-columns: 1fr; }
+    .demo-content h2 { font-size: 2rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== HERO ========== -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="cycle-symbol">
+      <svg viewBox="0 0 200 200">
+        <!-- Circular arrows representing the cycle -->
+        <defs>
+          <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#0EA5E9;stop-opacity:1" />
+            <stop offset="50%" style="stop-color:#58A6FF;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#3FB950;stop-opacity:1" />
+          </linearGradient>
+        </defs>
+        <!-- Three curved arrows forming a cycle -->
+        <path d="M 100 20 A 80 80 0 0 1 169 60" fill="none" stroke="url(#grad1)" stroke-width="4" stroke-linecap="round"/>
+        <polygon points="172,55 165,68 158,55" fill="#58A6FF"/>
+        <path d="M 169 140 A 80 80 0 0 1 31 140" fill="none" stroke="url(#grad1)" stroke-width="4" stroke-linecap="round"/>
+        <polygon points="28,136 35,148 22,148" fill="#3FB950"/>
+        <path d="M 31 60 A 80 80 0 0 1 100 20" fill="none" stroke="url(#grad1)" stroke-width="4" stroke-linecap="round"/>
+        <polygon points="96,17 103,28 90,28" fill="#0EA5E9"/>
+        <!-- Center text -->
+        <text x="100" y="95" text-anchor="middle" fill="#F0F6FC" font-family="Inter, sans-serif" font-weight="800" font-size="22">cycle</text>
+        <text x="100" y="118" text-anchor="middle" fill="#8B949E" font-family="Inter, sans-serif" font-weight="400" font-size="11" letter-spacing="3">ENGINEERING</text>
+      </svg>
+    </div>
+
+    <h1><span class="wash">cycleWASH</span><span class="times">&times;</span><span class="cad">cycleCAD</span></h1>
+    <p class="tagline">Circular Engineering. Open Tools. Zero Barriers.</p>
+    <p class="mission">The OS of Things</p>
+  </div>
+</section>
+
+<!-- ========== BRAND STORY ========== -->
+<section class="section">
+  <h2 class="section-title">One Prefix. One Philosophy.</h2>
+  <p class="section-subtitle">The "cycle" in both brands isn't coincidence — it's the DNA of everything we build. Circular thinking applied to machines, and now to the tools that design them.</p>
+
+  <!-- cycleWASH story -->
+  <div class="circle-narrative">
+    <div class="circle-visual">
+      <div class="circle-ring wash-ring">
+        <span class="brand-name" style="color:var(--wash-primary)">cycleWASH</span>
+        <span class="brand-desc">Circular Engineering</span>
+      </div>
+    </div>
+    <div class="circle-text">
+      <h3 style="color:var(--wash-primary)">Born from Circular Engineering</h3>
+      <p>cycleWASH builds <span class="highlight">industrial bicycle washing machines</span> — real hardware that keeps bikes in circulation longer. The DUO machine has <span class="highlight">473 precision-engineered parts</span> across 6 sub-assemblies, designed in Autodesk Inventor and built in Germany.</p>
+      <p style="margin-top:1rem;">Every part is designed for <span class="highlight">disassembly, repair, and reuse</span>. That's circular engineering — designing products that fight the throwaway economy from the first sketch.</p>
+    </div>
+  </div>
+
+  <!-- Connector -->
+  <div class="connector" style="margin: 2rem 0;">
+    <svg viewBox="0 0 60 100">
+      <line x1="30" y1="0" x2="30" y2="100" stroke="#8B949E" stroke-width="1" stroke-dasharray="4,4"/>
+    </svg>
+    <span class="label">Gave Birth To</span>
+  </div>
+
+  <!-- cycleCAD story -->
+  <div class="circle-narrative reverse">
+    <div class="circle-visual">
+      <div class="circle-ring cad-ring">
+        <span class="brand-name" style="color:var(--cad-primary)">cycleCAD</span>
+        <span class="brand-desc">Democratizing Design</span>
+      </div>
+    </div>
+    <div class="circle-text">
+      <h3 style="color:var(--cad-primary)">The Tool We Needed — Now Free for Everyone</h3>
+      <p>Designing the DUO machine meant fighting <span class="highlight">$4,000/year CAD licenses</span>, proprietary file formats, and tools that lock you into one vendor's ecosystem. We built cycleCAD to solve our own problem — and then open-sourced it.</p>
+      <p style="margin-top:1rem;"><span class="highlight">Browser-based, zero-install, MIT-licensed.</span> The same parametric modeling power that designed a production machine, now accessible to anyone with a web browser. That's the democratization of CAD.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SHARED DNA ========== -->
+<section class="shared-dna">
+  <div style="max-width:1100px; margin:0 auto;">
+    <h2 class="section-title">Shared Brand DNA</h2>
+    <p class="section-subtitle">What makes something a "cycle" product.</p>
+
+    <div class="dna-grid">
+      <div class="dna-card">
+        <div class="dna-icon" style="background:rgba(14,165,233,0.15);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0EA5E9" stroke-width="2" stroke-linecap="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/><circle cx="12" cy="12" r="4"/></svg>
+          </div>
+        <h4>Circular by Design</h4>
+        <p>cycleWASH machines are built for disassembly and repair. cycleCAD's rebuild guides and maintenance tools encode that philosophy into software. Design for longevity, not obsolescence.</p>
+      </div>
+      <div class="dna-card">
+        <div class="dna-icon" style="background:rgba(63,185,80,0.15);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3FB950" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        </div>
+        <h4>Open & Accessible</h4>
+        <p>No gatekeeping. cycleWASH publishes its part data openly. cycleCAD is MIT-licensed, browser-native, zero-cost. The cycle brand stands for removing barriers, not building them.</p>
+      </div>
+      <div class="dna-card">
+        <div class="dna-icon" style="background:rgba(163,113,247,0.15);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A371F7" stroke-width="2" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        </div>
+        <h4>Real-World Proven</h4>
+        <p>cycleCAD isn't academic software — it's born from designing a production machine with 473 parts. Every feature exists because a real engineering team needed it.</p>
+      </div>
+      <div class="dna-card">
+        <div class="dna-icon" style="background:rgba(240,136,62,0.15);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F0883E" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
+        </div>
+        <h4>AI-Native Intelligence</h4>
+        <p>Both products leverage AI: cycleWASH uses smart diagnostics for predictive maintenance. cycleCAD integrates AI for part identification, cost estimation, and natural-language modeling.</p>
+      </div>
+      <div class="dna-card">
+        <div class="dna-icon" style="background:rgba(88,166,255,0.15);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#58A6FF" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <h4>Community-Driven</h4>
+        <p>cycleWASH grew from the bike community. cycleCAD grows from the maker community. Both believe the best products are built with — not just for — their users.</p>
+      </div>
+      <div class="dna-card">
+        <div class="dna-icon" style="background:rgba(57,211,83,0.15);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#39D353" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <h4>German Engineering, Global Reach</h4>
+        <p>Designed in Germany, deployed everywhere. cycleWASH machines operate across Europe. cycleCAD runs in any browser, any country, any language (EN/DE/FR/ES/IT/NL).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== COLOR SYSTEM ========== -->
+<section class="color-system">
+  <div style="max-width:1100px; margin:0 auto;">
+    <h2 class="section-title">Unified Color System</h2>
+    <p class="section-subtitle">A shared palette that adapts to each product's personality while maintaining family recognition.</p>
+
+    <div class="color-grid">
+      <!-- Shared -->
+      <div class="color-group">
+        <h4>Shared Foundation</h4>
+        <div class="color-swatch">
+          <div class="swatch-box" style="background:#0D1117; border:1px solid #30363D;"></div>
+          <div class="swatch-info">
+            <div class="name">Dark Base</div>
+            <div class="hex">#0D1117</div>
+            <div class="use">Backgrounds, both products</div>
+          </div>
+        </div>
+        <div class="color-swatch">
+          <div class="swatch-box" style="background:#161B22;"></div>
+          <div class="swatch-info">
+            <div class="name">Surface</div>
+            <div class="hex">#161B22</div>
+            <div class="use">Cards, panels, elevated surfaces</div>
+          </div>
+        </div>
+        <div class="color-swatch">
+          <div class="swatch-box" style="background:#F0F6FC;"></div>
+          <div class="swatch-info">
+            <div class="name">Text Primary</div>
+            <div class="hex">#F0F6FC</div>
+            <div class="use">Headings, body text</div>
+          </div>
+        </div>
+        <div class="color-swatch">
+          <div class="swatch-box" style="background:#8B949E;"></div>
+          <div class="swatch-info">
+            <div class="name">Text Muted</div>
+            <div class="hex">#8B949E</div>
+            <div class="use">Descriptions, secondary text</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- cycleWASH -->
+      <div class="color-group">
+        <h4>cycleWASH Identity</h4>
+        <div class="color-swatch">
+          <div class="swatch-box" style="background:#0EA5E9;"></div>
+          <div class="swatch-info">
+            <div class="name">Water Blue</div>
+            <div class="hex">#0EA5E9</div>
+            <div class="use">Primary — water, cleaning, freshness</div>
+          </div>
+        </div>
+        <div class="color-swatch">
+          <div class="swatch-box" style="background:#22D3EE;"></div>
+          <div class="swatch-info">
+            <div class="name">Cyan Splash</div>
+            <div class="hex">#22D3EE</div>
+            <div class="use">Accents, hover states, highlights</div>
+          </div>
+        </div>
+        <div class="color-swatch">
+          <div class="swatch-box" style="background:#06B6D4;"></div>
+          <div class="swatch-info">
+            <div class="name">Teal Glow</div>
+            <div class="hex">#06B6D4</div>
+            <div class="use">CTAs, interactive elements</div>
+          </div>
+        </div>
+        <div class="color-swatch">
+          <div class="swatch-box" style="background:linear-gradient(135deg, #0EA5E9, #22D3EE);"></div>
+          <div class="swatch-info">
+            <div class="name">Water Gradient</div>
+            <div class="hex">#0EA5E9 → #22D3EE</div>
+            <div class="use">Hero backgrounds, brand moments</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- cycleCAD -->
+      <div class="color-group">
+        <h4>cycleCAD Identity</h4>
+        <div class="color-swatch">
+          <div class="swatch-box" style="background:#58A6FF;"></div>
+          <div class="swatch-info">
+            <div class="name">Tech Blue</div>
+            <div class="hex">#58A6FF</div>
+            <div class="use">Primary — technology, precision</div>
+          </div>
+        </div>
+        <div class="color-swatch">
+          <div class="swatch-box" style="background:#3FB950;"></div>
+          <div class="swatch-info">
+            <div class="name">Open-Source Green</div>
+            <div class="hex">#3FB950</div>
+            <div class="use">Accent — free, open, accessible</div>
+          </div>
+        </div>
+        <div class="color-swatch">
+          <div class="swatch-box" style="background:#A371F7;"></div>
+          <div class="swatch-info">
+            <div class="name">AI Purple</div>
+            <div class="hex">#A371F7</div>
+            <div class="use">AI features, intelligence, copilot</div>
+          </div>
+        </div>
+        <div class="color-swatch">
+          <div class="swatch-box" style="background:linear-gradient(135deg, #58A6FF, #3FB950);"></div>
+          <div class="swatch-info">
+            <div class="name">CAD Gradient</div>
+            <div class="hex">#58A6FF → #3FB950</div>
+            <div class="use">Hero backgrounds, brand moments</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Semantic -->
+      <div class="color-group">
+        <h4>Shared Semantic Colors</h4>
+        <div class="color-swatch">
+          <div class="swatch-box" style="background:#3FB950;"></div>
+          <div class="swatch-info">
+            <div class="name">Success / Go</div>
+            <div class="hex">#3FB950</div>
+            <div class="use">Confirmations, active states</div>
+          </div>
+        </div>
+        <div class="color-swatch">
+          <div class="swatch-box" style="background:#F0883E;"></div>
+          <div class="swatch-info">
+            <div class="name">Warning / Attention</div>
+            <div class="hex">#F0883E</div>
+            <div class="use">Alerts, maintenance due</div>
+          </div>
+        </div>
+        <div class="color-swatch">
+          <div class="swatch-box" style="background:#F85149;"></div>
+          <div class="swatch-info">
+            <div class="name">Error / Critical</div>
+            <div class="hex">#F85149</div>
+            <div class="use">Errors, urgent maintenance</div>
+          </div>
+        </div>
+        <div class="color-swatch">
+          <div class="swatch-box" style="background:#A371F7;"></div>
+          <div class="swatch-info">
+            <div class="name">AI / Intelligence</div>
+            <div class="hex">#A371F7</div>
+            <div class="use">AI features across both products</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== BRAND MARKS ========== -->
+<section class="brand-marks">
+  <h2 class="section-title">Brand Marks</h2>
+  <p class="section-subtitle">Two products, one family. The lowercase "cycle" prefix and shared dark aesthetic create instant brand recognition.</p>
+
+  <div class="marks-grid">
+    <div class="mark-card">
+      <div class="logo-text" style="color:var(--wash-primary);">cycleWASH</div>
+      <div class="logo-sub">Industrial Bike Care</div>
+      <div class="logo-tagline">"Circular engineering for sustainable mobility"</div>
+    </div>
+    <div class="mark-card">
+      <div class="logo-text" style="color:var(--cad-primary);">cycleCAD</div>
+      <div class="logo-sub">Open-Source Browser CAD</div>
+      <div class="logo-tagline">"Democratizing design for the world"</div>
+    </div>
+  </div>
+
+  <!-- Combined mark -->
+  <div style="margin-top:3rem; text-align:center;">
+    <div class="mark-card" style="max-width:600px; margin:0 auto;">
+      <div style="font-size:0.8rem; text-transform:uppercase; letter-spacing:0.15em; color:var(--cycle-muted); margin-bottom:1.5rem;">Parent Brand</div>
+      <div style="display:flex; align-items:center; justify-content:center; gap:1.5rem; flex-wrap:wrap;">
+        <span style="font-size:2rem; font-weight:900; color:var(--wash-primary);">cycleWASH</span>
+        <span style="font-size:1.5rem; color:var(--cycle-muted); font-weight:300;">|</span>
+        <span style="font-size:2rem; font-weight:900; color:var(--cad-primary);">cycleCAD</span>
+      </div>
+      <div style="margin-top:1rem; font-size:0.85rem; color:var(--cycle-muted);">Shared prefix "cycle" — from Latin <em>cyclus</em>, Greek <em>kyklos</em>: circle, wheel, recurring sequence</div>
+      <div style="margin-top:1.5rem; padding-top:1.5rem; border-top:1px solid rgba(139,148,158,0.15);">
+        <div style="display:flex; gap:2rem; justify-content:center; flex-wrap:wrap;">
+          <div><span style="font-weight:700; color:var(--wash-primary);">cycle</span> + WASH = <span style="color:var(--cycle-muted);">circular bike care</span></div>
+          <div><span style="font-weight:700; color:var(--cad-primary);">cycle</span> + CAD = <span style="color:var(--cycle-muted);">circular design tools</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== DEMOCRATIZATION ========== -->
+<section class="democratization">
+  <div class="demo-content">
+    <h2>The Democratization of CAD</h2>
+    <p>For decades, 3D design has been locked behind thousand-dollar licenses, mandatory installs, and a priesthood of specialists. cycleCAD asks a different question: <strong style="color:var(--cycle-text);">What if everyone could design?</strong></p>
+    <p>What if the product manager could prototype her own idea. The marketer could spin a 3D product shot without waiting two weeks. The sales engineer could customize a demo on the fly. The architect, the scientist, the student — all designing, all building, all from a browser tab.</p>
+    <p style="color:var(--cad-accent); font-weight:600; font-size:1.3rem; margin-top:1.5rem;">CAD for the masses. Omnipresent. Zero barriers. A gift to every profession.</p>
+
+    <div class="demo-pillars">
+      <div class="pillar">
+        <div class="num" style="color:var(--cad-accent);">$0</div>
+        <div class="label">License Cost</div>
+      </div>
+      <div class="pillar">
+        <div class="num" style="color:var(--cad-primary);">0</div>
+        <div class="label">Install Required</div>
+      </div>
+      <div class="pillar">
+        <div class="num" style="color:var(--cycle-purple);">MIT</div>
+        <div class="label">Open Source</div>
+      </div>
+      <div class="pillar">
+        <div class="num" style="color:var(--wash-primary);">6</div>
+        <div class="label">Languages</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== OMNIPRESENT ========== -->
+<section class="shared-dna" style="background:var(--cycle-dark);">
+  <div style="max-width:1100px; margin:0 auto;">
+    <h2 class="section-title" style="background:linear-gradient(135deg, var(--wash-primary), var(--cad-primary), var(--cad-accent)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;">Everyone Is a Designer</h2>
+    <p class="section-subtitle">cycleCAD isn't a tool for engineers. It's a tool for anyone who thinks in three dimensions.</p>
+
+    <div class="dna-grid">
+      <div class="dna-card">
+        <div class="dna-icon" style="background:rgba(88,166,255,0.15);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#58A6FF" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        </div>
+        <h4>Product Managers</h4>
+        <p>Prototype ideas without filing a ticket. Spin up a 3D concept in minutes, share it with a link. Speak the language of design, not just specs.</p>
+      </div>
+      <div class="dna-card">
+        <div class="dna-icon" style="background:rgba(240,136,62,0.15);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F0883E" stroke-width="2" stroke-linecap="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+        </div>
+        <h4>Sales Engineers</h4>
+        <p>Customize a demo live on a call. Swap parts, change materials, export a spec sheet — all from the browser, no CAD license needed.</p>
+      </div>
+      <div class="dna-card">
+        <div class="dna-icon" style="background:rgba(163,113,247,0.15);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A371F7" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        </div>
+        <h4>Marketers</h4>
+        <p>Generate 3D product shots, exploded views, and interactive embeds without a render farm. Create content that sells, directly from the source model.</p>
+      </div>
+      <div class="dna-card">
+        <div class="dna-icon" style="background:rgba(14,165,233,0.15);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0EA5E9" stroke-width="2" stroke-linecap="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        </div>
+        <h4>Scientists & Researchers</h4>
+        <p>Design lab equipment, visualize molecular structures, build custom apparatus. Parametric modeling meets the scientific method.</p>
+      </div>
+      <div class="dna-card">
+        <div class="dna-icon" style="background:rgba(63,185,80,0.15);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3FB950" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+        </div>
+        <h4>Architects & Makers</h4>
+        <p>From furniture to buildings to art installations. Browser-based means you sketch on a tablet at the job site, then refine on your desktop at home.</p>
+      </div>
+      <div class="dna-card">
+        <div class="dna-icon" style="background:rgba(248,81,73,0.15);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F85149" stroke-width="2" stroke-linecap="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+        </div>
+        <h4>Students & Educators</h4>
+        <p>No lab required. No license budget. Every student gets the same professional-grade tools as a Fortune 500 engineer. Just open a URL.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== THE OPERATING SYSTEM ========== -->
+<section class="section" style="text-align:center; padding-bottom:2rem;">
+  <h2 class="section-title">The OS of Things</h2>
+  <p class="section-subtitle" style="max-width:750px;">IoT connected devices to the internet. We connect human intent to manufacturing. cycleCAD is the operating system for physical things — from idea to finished product, just by talking.</p>
+
+  <div style="display:flex; align-items:center; justify-content:center; gap:0.8rem; flex-wrap:wrap; margin:3rem auto; max-width:900px;">
+    <div style="background:var(--cycle-card); border-radius:14px; padding:1.2rem 1.8rem; border:1px solid rgba(163,113,247,0.3); text-align:center;">
+      <div style="font-size:1.8rem; margin-bottom:0.3rem;">💬</div>
+      <div style="font-weight:700; font-size:1rem; color:var(--cycle-purple);">Speak</div>
+      <div style="font-size:0.8rem; color:var(--cycle-muted); margin-top:0.2rem;">"I need a bracket<br/>with 4 bolt holes"</div>
+    </div>
+    <svg width="36" height="20" viewBox="0 0 36 20"><path d="M0 10 L26 10 M21 5 L26 10 L21 15" fill="none" stroke="#8B949E" stroke-width="2"/></svg>
+    <div style="background:var(--cycle-card); border-radius:14px; padding:1.2rem 1.8rem; border:1px solid rgba(88,166,255,0.3); text-align:center;">
+      <div style="font-size:1.8rem; margin-bottom:0.3rem;">🧠</div>
+      <div style="font-weight:700; font-size:1rem; color:var(--cad-primary);">AI Models It</div>
+      <div style="font-size:0.8rem; color:var(--cycle-muted); margin-top:0.2rem;">Parametric CAD<br/>generated instantly</div>
+    </div>
+    <svg width="36" height="20" viewBox="0 0 36 20"><path d="M0 10 L26 10 M21 5 L26 10 L21 15" fill="none" stroke="#8B949E" stroke-width="2"/></svg>
+    <div style="background:var(--cycle-card); border-radius:14px; padding:1.2rem 1.8rem; border:1px solid rgba(240,136,62,0.3); text-align:center;">
+      <div style="font-size:1.8rem; margin-bottom:0.3rem;">⚙️</div>
+      <div style="font-weight:700; font-size:1rem; color:var(--cycle-orange);">Validate</div>
+      <div style="font-size:0.8rem; color:var(--cycle-muted); margin-top:0.2rem;">DFM check, cost<br/>estimate, tolerance</div>
+    </div>
+    <svg width="36" height="20" viewBox="0 0 36 20"><path d="M0 10 L26 10 M21 5 L26 10 L21 15" fill="none" stroke="#8B949E" stroke-width="2"/></svg>
+    <div style="background:var(--cycle-card); border-radius:14px; padding:1.2rem 1.8rem; border:1px solid rgba(63,185,80,0.3); text-align:center;">
+      <div style="font-size:1.8rem; margin-bottom:0.3rem;">🏭</div>
+      <div style="font-weight:700; font-size:1rem; color:var(--cad-accent);">Manufacture</div>
+      <div style="font-size:0.8rem; color:var(--cycle-muted); margin-top:0.2rem;">G-code, DXF, STEP<br/>sent to factory</div>
+    </div>
+  </div>
+
+  <p style="font-size:1.1rem; color:var(--cycle-muted); max-width:700px; margin:0 auto; line-height:1.7;">No mouse required. No training needed. No license purchased. Just describe what you need, and cycleCAD handles the rest — from parametric geometry to manufacturing output. <strong style="color:var(--cycle-text);">The full cycle, from idea to reality.</strong></p>
+</section>
+
+<!-- ========== MACHINES CREATE MACHINES ========== -->
+<section class="democratization" style="padding: 6rem 2rem 4rem;">
+  <div class="demo-content" style="max-width:850px;">
+    <div style="margin-bottom:2rem;">
+      <svg width="80" height="80" viewBox="0 0 80 80" style="opacity:0.9;">
+        <defs>
+          <linearGradient id="loopGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#0EA5E9"/>
+            <stop offset="33%" style="stop-color:#58A6FF"/>
+            <stop offset="66%" style="stop-color:#A371F7"/>
+            <stop offset="100%" style="stop-color:#3FB950"/>
+          </linearGradient>
+        </defs>
+        <circle cx="40" cy="40" r="35" fill="none" stroke="url(#loopGrad)" stroke-width="3" stroke-dasharray="8,4"/>
+        <text x="40" y="38" text-anchor="middle" fill="#F0F6FC" font-family="Inter" font-weight="800" font-size="13">AI</text>
+        <text x="40" y="52" text-anchor="middle" fill="#A371F7" font-family="Inter" font-weight="400" font-size="8" letter-spacing="2">LOOP</text>
+      </svg>
+    </div>
+    <h2 style="font-size:2.5rem;">Machines Creating Machines</h2>
+    <p style="font-size:1.15rem; margin-top:1.5rem;">Here's the endgame: if AI can do CAD, then a machine can design its own replacement parts. Its own upgrades. Its own next generation.</p>
+    <p style="font-size:1.15rem;">A cycleWASH machine scans its worn brush assembly. The AI copilot in cycleCAD analyzes the geometry, identifies the wear pattern, redesigns the part for longer life, generates the G-code, and sends it to the 3D printer on the factory floor. No human touched a mouse.</p>
+    <p style="font-size:1.15rem;"><strong style="color:var(--cycle-text);">That's the true cycle.</strong> Machine → AI understands the machine → AI improves the design → better machine. Circular engineering at the speed of thought.</p>
+    <p style="font-size:1.15rem; margin-top:1rem;"><strong style="color:var(--cad-accent);">Humans tell what they want. Machines produce the parts, assemble them, and deliver the final product.</strong> No drawings. No factories full of people interpreting blueprints. Just intent in, product out. cycleCAD is the bridge between human imagination and autonomous manufacturing.</p>
+
+    <div style="margin-top:3rem; display:flex; align-items:center; justify-content:center; gap:1rem; flex-wrap:wrap;">
+      <div style="text-align:center; padding:1rem 1.5rem; background:var(--cycle-card); border-radius:12px; border:1px solid rgba(163,113,247,0.3);">
+        <div style="font-size:1.5rem; font-weight:800; color:var(--cycle-purple);">Human</div>
+        <div style="font-size:0.8rem; color:var(--cycle-muted);">says what they want</div>
+      </div>
+      <svg width="36" height="20" viewBox="0 0 36 20"><path d="M0 10 L26 10 M21 5 L26 10 L21 15" fill="none" stroke="#8B949E" stroke-width="2"/></svg>
+      <div style="text-align:center; padding:1rem 1.5rem; background:var(--cycle-card); border-radius:12px; border:1px solid rgba(88,166,255,0.3);">
+        <div style="font-size:1.5rem; font-weight:800; color:var(--cad-primary);">cycleCAD</div>
+        <div style="font-size:0.8rem; color:var(--cycle-muted);">designs & validates</div>
+      </div>
+      <svg width="36" height="20" viewBox="0 0 36 20"><path d="M0 10 L26 10 M21 5 L26 10 L21 15" fill="none" stroke="#8B949E" stroke-width="2"/></svg>
+      <div style="text-align:center; padding:1rem 1.5rem; background:var(--cycle-card); border-radius:12px; border:1px solid rgba(240,136,62,0.3);">
+        <div style="font-size:1.5rem; font-weight:800; color:var(--cycle-orange);">Machines</div>
+        <div style="font-size:0.8rem; color:var(--cycle-muted);">produce the parts</div>
+      </div>
+      <svg width="36" height="20" viewBox="0 0 36 20"><path d="M0 10 L26 10 M21 5 L26 10 L21 15" fill="none" stroke="#8B949E" stroke-width="2"/></svg>
+      <div style="text-align:center; padding:1rem 1.5rem; background:var(--cycle-card); border-radius:12px; border:1px solid rgba(63,185,80,0.3);">
+        <div style="font-size:1.5rem; font-weight:800; color:var(--cad-accent);">Product</div>
+        <div style="font-size:0.8rem; color:var(--cycle-muted);">assembled & delivered</div>
+      </div>
+    </div>
+    <div style="margin-top:2rem;">
+      <svg width="200" height="30" viewBox="0 0 200 30" style="opacity:0.4;">
+        <path d="M170 25 C 190 25, 200 15, 200 5 L200 0 C200 0, 190 -5, 170 5 L30 5 C10 5, 0 15, 0 25 L0 30 C0 30, 10 35, 30 25 Z" fill="none" stroke="#3FB950" stroke-width="1" stroke-dasharray="4,3"/>
+        <text x="100" y="18" text-anchor="middle" fill="#3FB950" font-family="Inter" font-size="7" letter-spacing="3">CYCLE REPEATS</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ========== FOOTER ========== -->
+<footer>
+  <div class="brands">
+    <span class="wash">cycleWASH</span>
+    <span style="color:var(--cycle-muted); font-weight:300; margin:0 0.5em;">&times;</span>
+    <span class="cad">cycleCAD</span>
+  </div>
+  <p>Circular Engineering. Open Tools. Zero Barriers.</p>
+  <p style="margin-top:0.8rem; font-size:1.1rem; color:var(--cad-accent); font-weight:600; letter-spacing:0.05em;">The New Language. The OS of Things.</p>
+  <p style="margin-top:0.5rem; font-size:0.8rem;">cyclecad.com &mdash; cyclewash.de &mdash; MIT License &mdash; Made in Germany</p>
+</footer>
+
+</body>
+</html>

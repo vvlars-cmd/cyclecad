@@ -13,7 +13,7 @@ SACHIN (vvlars@googlemail.com, GitHub: vvlars-cmd). Building cycleCAD — open-s
 
 ## Session History
 
-### Session 2026-03-24 — Hero Image + Major Feature Build
+### Session 2026-03-24 (Early) — Hero Image + Major Feature Build
 
 **Problem evolution:**
 1. Started: Previous session crashed, needed to resume
@@ -23,7 +23,7 @@ SACHIN (vvlars@googlemail.com, GitHub: vvlars-cmd). Building cycleCAD — open-s
 5. Task 4: Import DUO Inventor project → Sachin copied full production Inventor project (482 files) into `~/cyclecad/example/`
 6. Task 5: Build features using the real project data → Massive build session
 
-**What was built (this session):**
+**What was built:**
 
 5 NEW modules (3,540 lines):
 - `project-loader.js` (579 lines) — Parses .ipj project files, indexes entire Inventor folder structures, categorizes files as CUSTOM/STANDARD/VENDOR
@@ -43,22 +43,118 @@ SACHIN (vvlars@googlemail.com, GitHub: vvlars-cmd). Building cycleCAD — open-s
 - Main assembly .iam (9.1 MB) parsed successfully — 47 components found
 - Performance: 2-5ms per file
 
-**Git state at end of session:**
-- Commit ready but BLOCKED by stale `.git/index.lock` — Sachin needs to run:
-  ```
-  cd ~/cyclecad
-  rm -f .git/index.lock
-  git add .gitignore MASTERPLAN.md app/index.html app/js/app.js app/js/operations.js app/js/viewport.js app/js/assembly-resolver.js app/js/project-browser.js app/js/project-loader.js app/js/rebuild-guide.js
-  git commit -m "feat: Major update — project loader, assembly resolver, rebuild guides, parametric ops"
-  git push origin main
-  ```
-- npm publish v0.1.4 after push
+### Session 2026-03-24 (Later) — Mobile Viewer + Strategy + Investor Deck
+
+**Problem evolution:**
+1. Resumed from crashed context → picked up where left off
+2. Committed and pushed `app/mobile.html` (1,277 lines) — phone edition for STEP/Inventor files
+3. Sachin pushed to GitHub and published npm v0.1.5 → v0.1.7 (multiple version bumps)
+4. **Strategic pivot**: Sachin asked "what can we do to make this a killer app" → deep competitive analysis
+5. **Key decision**: Merge ExplodeView INTO cycleCAD as "Viewer Mode" — create one unified platform
+6. Sachin requested: "include all the features of onshape in cyclecad"
+7. Built comprehensive competitive analysis HTML with 5 tabs (competitors, feature matrix, differentiation, roadmap, AI copilot plan)
+8. Built 14-slide investor pitch deck (PptxGenJS, dark theme, data-driven) for seed round fundraising
+
+**What was built (this session):**
+- `competitive-analysis.html` — Interactive competitive analysis with tabs for Competitors (9 companies), Feature Matrix (70+ features vs 7 tools), Differentiation, Killer App Roadmap (Phases A-G), AI Copilot architecture
+- `cycleCAD-Investor-Deck.pptx` — 14-slide investor pitch deck: Title, Problem, Solution, Market ($25.3B TAM), Product, Competitive Landscape, Feature Comparison, Traction, Business Model (Free/Pro $19/mo/Enterprise), Technology & Moat, Roadmap, Team, The Ask ($1.5M Seed), Closing
+
+**Strategic decisions made:**
+- ExplodeView merges into cycleCAD as "Viewer Mode" (shared Three.js scene, unified toolbar)
+- npm packages stay separate: `cyclecad` (platform) + `explodeview` (standalone widget)
+- Open-core business model: Free (full modeling + AI), Pro $19/mo (collab + STEP + cloud), Enterprise (self-hosted + SSO)
+- AI Copilot = the MecAgent + Aurorin killer (text-to-CAD, NL editing, smart autocomplete — all free, in-browser)
+- Build priority: STEP import (OpenCascade.js) → ExplodeView merge → AI Copilot → Collaboration → Pro launch
+
+**Competitive intelligence gathered:**
+| Competitor | Funding | Status | Our Edge |
+|-----------|---------|--------|----------|
+| OnShape (PTC) | Acquired by PTC | $1,500/yr | Free, OSS, AI analysis, Inventor import |
+| Aurorin CAD | $500K YC W26 | Alpha, desktop | Browser-native, OSS, 40+ analysis tools |
+| MecAgent | $3M seed | Plugin only | We ARE the tool, not a plugin |
+| Chili3D | OSS | Alpha | Complete platform, not just geometry |
+| bitbybit.dev | Self-funded | v1.0 RC | End-user CAD, not dev platform |
+| FreeCAD | Community | Mature, desktop | Browser, AI, mobile, modern UI |
+
+**Market data:**
+- Global CAD market: $25.3B (2026), growing 20.9% CAGR to $126B by 2030
+- Mechanical CAD: 30.4% of TAM = $7.7B
+- Browser + OSS CAD (SOM): ~$770M
+
+**Git state:**
+- All committed and pushed to main
+- npm: cyclecad v0.1.7 live
+- competitive-analysis.html in repo (not gitignored — it's public marketing material)
+- cycleCAD-Investor-Deck.pptx in repo
+
+### Session 2026-03-24 (Evening) — Agent-First Pivot + Voice-Driven CAD Demo
+
+**Problem evolution:**
+1. Renamed "OS of Things" → "OS of Manufacturing" across deck + landing page
+2. Added $CYCLE token economy slide: Buy → Spend → Earn → Circulate flow
+3. **Major pivot**: "Agent-First OS for Manufacturing" — CAD built for AI agents, not humans. No GUI, no mouse, agents are the only interface.
+4. Updated all branding in `index.html` (landing page) and `build-deck.js` (investor deck) — 5+ instances each
+5. Built `app/js/agent-api.js` (800+ lines) — 55 commands across 10 namespaces, JSON-RPC style, self-describing schema
+6. Built `app/agent-demo.html` — split-screen demo: terminal (left) + 3D viewport (right)
+7. Fixed ExplodeView: part selection no longer auto-opens dialog (shows + button in info band instead), added touch handlers for viewcube rotation
+8. Researched CAD Agent competitors (AgentCAD, MecAgent, Zoo Zookeeper) — applied visual feedback loop pattern + design review AI
+9. **Major feature**: Iterative voice/text command system — NLP parser that understands 12+ shape types, stateful scene (build → add hole → fillet → export as separate commands)
+
+**What was built/modified:**
+- `app/js/agent-api.js` (NEW, ~800 lines) — Core Agent API with `window.cycleCAD.execute()`, 10 namespaces, render.snapshot, validate.designReview
+- `app/agent-demo.html` (NEW, ~1100 lines) — Interactive demo with voice commands, NLP parser, Three.js viewport, iterative workflow
+- `app/index.html` — Wired agent-api.js imports + init
+- `index.html` — Fully rebranded landing page: "Agent-First OS for Manufacturing", agent personas, pipeline section
+- `deck/build-deck.js` — Rebuilt investor deck: token economy slide, agent-first messaging, disconnected-islands visual, pipeline with end-of-life
+- `~/explodeview/docs/demo/app.js` — Part selection + button, viewcube touch handlers
+- `~/explodeview/docs/demo/index.html` — Cache bust v=257
+
+**Agent Demo Voice System (v3 — iterative/stateful):**
+- Intent detection: create, hole, fillet, chamfer, export, validate, material, boss, reset
+- Shape detection: cylinder, disk, tube, sphere, cone, gear, hexbolt, washer, ring, flange, plate, box, bracket
+- Persistent `sceneState` object tracks current part, dimensions, material, features list
+- Terminal accumulates command history (doesn't clear between commands)
+- Export and validate only happen when explicitly requested
+- Patterns: "build cylinder 50mm diameter 80 tall" → "add hole radius 10" → "fillet 5" → "export stl"
+
+**Competitive intelligence applied:**
+| Source | Pattern | What we took |
+|--------|---------|-------------|
+| AgentCAD | Cooperative design infra | Agent API architecture, $CYCLE token model |
+| MecAgent | AI copilot for SolidWorks | We ARE the tool, not a plugin — agents built in |
+| Zoo Zookeeper | CAD rendering server | `render.snapshot` + `render.multiview` endpoints |
+| Matsuo Lab CAD Agent | Design review loop | `validate.designReview` auto-analysis with A/B/C/F scoring |
+
+**Key architectural decisions:**
+- Agent API is `window.cycleCAD.execute({ method, params })` — simple JSON-RPC, no auth needed for in-browser
+- Self-describing via `getSchema()` — agents can introspect the full API
+- Demo is standalone HTML (no build step) — works on GitHub Pages
+- Voice uses Web Speech API (needs HTTPS for mic, text input always works)
+- Scene state is in-memory JS object, not persisted (demo only)
+
+**Investor deck updates:**
+- Slide 1: "CAD was built for humans with a mouse. We built it for AI agents with an API."
+- Slide 9: Token economy with 4-step flow + consume/earn cards
+- Slide 12B: Disconnected islands → unified 6-step pipeline (including End of Life)
+- Slide 12C: "Agents Are the Interface" — 6 personas (Any AI Agent, Field Tech, PM, Factory Floor, Agent Swarms, Circular Economy)
+- Closing CTA: "Machines creating machines."
+- Traction updated: 1,500 weekly npm downloads, Day 1/2/3 milestone timeline
+
+**Bugs fixed this session:**
+- Fillet radius too small in demo (was 2, now reads from step params dynamically)
+- Voice mic "Error: not-allowed" on non-HTTPS — now shows friendly fallback message
+- Cylinder not detected from voice — regex `\bcylinder\b` removed strict word boundaries, added "cylindar" typo match
+- Demo rebuilt everything on each voice command — now stateful, only clears on "create" or "start over"
+- Auto-export removed — export only when user says "export"
 
 ## Key Files
 | File | Lines | What |
 |------|-------|------|
-| `index.html` | 14K | Landing page for cyclecad.com |
-| `app/index.html` | 3,156 | Main CAD app — HTML + inline script wiring all 17 modules |
+| `index.html` | 14K | Landing page for cyclecad.com — "Agent-First OS for Manufacturing" branding |
+| `app/index.html` | 3,156 | Main CAD app — HTML + inline script wiring all 17 modules + agent-api |
+| `app/js/agent-api.js` | ~800 | **Agent API**: 55 commands, 10 namespaces, `window.cycleCAD.execute()`, self-describing schema |
+| `app/agent-demo.html` | ~1100 | **Agent Demo**: split-screen terminal+3D, iterative voice/text NLP, 12 shape types, stateful workflow |
+| `deck/build-deck.js` | ~870 | PptxGenJS investor deck builder — Agent-First + token economy + pipeline slides |
 | `app/js/app.js` | 794 | App state, mode management, history, save/load |
 | `app/js/viewport.js` | 751 | Three.js r170 scene, camera, lights, shadows, grid, selection highlight, OrbitControls, views |
 | `app/js/sketch.js` | 899 | 2D canvas overlay, line/rect/circle/arc, grid snapping, constraints |
@@ -82,8 +178,10 @@ SACHIN (vvlars@googlemail.com, GitHub: vvlars-cmd). Building cycleCAD — open-s
 | `MASTERPLAN.md` | ~200 | Full 10-phase roadmap with competitive analysis |
 | `CLAUDE.md` | this file | Conversation memory |
 | `screenshot.png` | 829KB | Hero image for npm/GitHub (2x retina UI mockup) |
+| `competitive-analysis.html` | ~600 | Interactive competitive analysis: 9 competitors, 70+ features, roadmap, AI copilot plan |
+| `cycleCAD-Investor-Deck.pptx` | 14 slides | Seed round pitch deck: dark theme, $1.5M ask, market data, feature comparison |
 | `CNAME` | — | cyclecad.com domain |
-| `package.json` | — | npm config, v0.1.3 |
+| `package.json` | — | npm config, v0.1.7 |
 
 ## DUO Inventor Project
 Located at `~/cyclecad/example/DUO Durchgehend Inventor/` (gitignored — too large for repo).
@@ -179,21 +277,25 @@ Located at `~/cyclecad/example/DUO Durchgehend Inventor/` (gitignored — too la
 - DWG export (DXF is done)
 - Assembly workspace joint editing UI (module is built, needs UI panel)
 
-## Competitive Landscape
-| Competitor | What | Our Edge |
-|-----------|------|----------|
-| Fusion 360 | Cloud CAD, $$$, Autodesk | Free, open-source, opens Inventor natively |
-| MecAgent (MIT) | AI learns CAD from demos | We ship product, not research |
-| VideoCAD | 41K video dataset, AI training | Dataset only, no product. 186-action sequences |
-| AurorInCAD | AI CAD startup | Closed-source, early stage |
-| OnShape | Browser CAD (PTC) | Expensive, enterprise-only |
-| FreeCAD | Desktop open-source | Desktop-only, no AI, no Inventor import |
+## Competitive Landscape (Updated 2026-03-24)
+| Competitor | What | Funding | Our Edge |
+|-----------|------|---------|----------|
+| **OnShape** (PTC) | Browser CAD, $1,500/yr | Acquired by PTC | Free, OSS, AI analysis, Inventor import, maintenance tools |
+| **Fusion 360** (Autodesk) | Desktop+cloud, $545/yr | Autodesk | Browser-native, no install, opens Inventor natively, migration guides |
+| **SolidWorks** (Dassault) | Desktop CAD, $4K+/yr | Dassault | URL that works on any device, zero cost |
+| **Aurorin CAD** | AI-native desktop CAD | $500K YC W26 | OSS, browser-native, 40+ analysis tools from ExplodeView |
+| **MecAgent** | AI copilot plugin for SolidWorks/Inventor | $3M seed | We ARE the tool, not a plugin. Same AI features built-in free |
+| **Chili3D** | OSS browser CAD, OCCT WASM | Community | Complete platform (model+view+analyze), not just geometry engine |
+| **bitbybit.dev** | Dev platform, visual programming | Self-funded | End-user CAD tool, not a developer platform |
+| **FreeCAD** | Desktop OSS CAD | Community | Browser-native, AI-powered, mobile viewer, modern UI |
 
 ## Publishing
-- **npm**: `cyclecad` v0.1.3 published (v0.1.4 pending push)
+- **npm**: `cyclecad` v0.1.7 published, `explodeview` v1.0.2
 - **GitHub**: https://github.com/vvlars-cmd/cyclecad
 - **Domain**: cyclecad.com → GitHub Pages (CNAME in repo)
 - **Hero image**: `screenshot.png` — 2x retina UI mockup, renders on npm + GitHub README
+- **Investor deck**: `cycleCAD-Investor-Deck.pptx` — 14 slides, dark theme, $1.5M seed ask
+- **Competitive analysis**: `competitive-analysis.html` — interactive 5-tab analysis
 
 ## Sachin's Working Style
 - **Fast iteration, minimal questions** — prefers action over clarification
@@ -231,14 +333,42 @@ Located at `~/cyclecad/example/DUO Durchgehend Inventor/` (gitignored — too la
 - **Vim pops up** — use `GIT_EDITOR=true` to skip editor on rebase continue
 - **Swap files** — crash leaves `.COMMIT_EDITMSG.swp`, delete with `rm .git/.COMMIT_EDITMSG.swp`
 
-## Pending / Next Steps
-- [ ] **IMMEDIATE**: Remove git lock, commit, push (commands above)
-- [ ] **npm publish** v0.1.4 after push
-- [ ] Bump package.json to 0.1.4 before publish
-- [ ] Test live site at cyclecad.com/app/ with new features
+## Strategic Vision — The Killer App Roadmap
+
+### Phase A: STEP Import + ExplodeView Merge (Q2 2026) — NEXT
+- [ ] Integrate OpenCascade.js WASM for real STEP import/export
+- [ ] Port ExplodeView as "Viewer Mode" into cycleCAD (shared Three.js scene)
+- [ ] Real B-rep booleans (replace mesh approximations)
+- [ ] Real fillet/chamfer (replace torus/cone approximations)
+- [ ] Bring all 40+ ExplodeView tools into unified toolbar
+
+### Phase B: AI Copilot (Q3 2026)
+- [ ] `app/js/ai-copilot.js` — text-to-CAD, NL editing, smart autocomplete
+- [ ] CAD Action API (maps AI output → geometry operations)
+- [ ] Context engine (understands current selection, feature tree, assembly)
+- [ ] Cost estimation (CNC vs 3D print vs injection molding)
+- [ ] Manufacturability check (DFM analysis)
+
+### Phase C: Collaboration (Q4 2026)
+- [ ] Real-time multi-user editing (WebRTC/CRDT)
+- [ ] Git-style version control with visual diff
+- [ ] Share links (view without login)
+- [ ] Embeddable viewer widget (`<script>` tag)
+- [ ] Comments + task assignment
+
+### Phase D: Pro Launch (Q1 2027)
+- [ ] Pro tier: $19/mo (collab + STEP + cloud + priority AI)
+- [ ] Enterprise tier: custom (self-hosted + SSO + SLA)
+- [ ] Plugin API (FeatureScript equivalent — JS custom features)
+- [ ] Plugin marketplace
+
+### Near-term Tasks
+- [ ] Test live site at cyclecad.com/app/ and cyclecad.com/app/mobile.html
 - [ ] Add DUO project as downloadable demo (ZIP or separate hosting, too big for git)
-- [ ] Phase 5 from MASTERPLAN: Constraint solver, sweep, loft, sheet metal tools
-- [ ] Phase 6: Assembly workspace with joint placement
-- [ ] Phase 7: AI sketch-to-3D, smart autocomplete, design validation
 - [ ] LinkedIn launch post for cycleCAD
-- [ ] Clean up ExplodeView repo lock files too
+- [ ] Clean up ExplodeView repo lock files
+- [ ] Start OpenCascade.js integration research (Chili3D and bitbybit.dev as references)
+- [ ] Consider: commit competitive-analysis.html and investor deck to repo?
+
+# currentDate
+Today's date is 2026-03-24.

@@ -1,33 +1,33 @@
 {
-  "name": "cyclecad",
-  "version": "0.1.1",
-  "description": "Browser-based parametric 3D CAD modeler with AI-powered tools, native Inventor file parsing, and smart assembly management. No install required.",
-  "main": "index.html",
-  "scripts": {
-    "dev": "npx serve . -p 3000",
-    "start": "npx serve . -p 3000"
-  },
-  "keywords": [
-    "cad",
-    "3d",
-    "parametric",
-    "modeler",
-    "browser",
-    "threejs",
-    "inventor",
-    "ai",
-    "assembly",
-    "engineering",
-    "cyclewash"
-  ],
-  "author": "vvlars <vvlars@googlemail.com>",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/vvlars-cmd/cyclecad.git"
-  },
-  "homepage": "https://cyclecad.com",
-  "bugs": {
-    "url": "https://github.com/vvlars-cmd/cyclecad/issues"
-  }
+    "name": "cyclecad",
+    "version": "0.1.2",
+    "description": "Browser-based parametric 3D CAD modeler with AI-powered tools, native Inventor file parsing, and smart assembly management. No install required.",
+    "main": "index.html",
+    "scripts": {
+        "dev": "npx serve . -p 3000",
+        "start": "npx serve . -p 3000"
+    },
+    "keywords": [
+        "cad",
+        "3d",
+        "parametric",
+        "modeler",
+        "browser",
+        "threejs",
+        "inventor",
+        "ai",
+        "assembly",
+        "engineering",
+        "cyclewash"
+    ],
+    "author": "vvlars <vvlars@googlemail.com>",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/vvlars-cmd/cyclecad.git"
+    },
+    "homepage": "https://cyclecad.com",
+    "bugs": {
+        "url": "https://github.com/vvlars-cmd/cyclecad/issues"
+    }
 }

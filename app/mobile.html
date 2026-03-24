@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="cycleCAD Mobile">
+  <meta name="theme-color" content="#0a0e14">
+  <title>cycleCAD Mobile - 3D CAD Viewer</title>
+  <style>
+    :root {
+      --bg-primary: #0a0e14;
+      --bg-secondary: #141a24;
+      --bg-tertiary: #1a2332;
+      --text-primary: #e8eef2;
+      --text-secondary: #8b949e;
+      --accent-blue: #58a6ff;
+      --accent-green: #3fb950;
+      --accent-red: #f85149;
+      --border-color: #30363d;
+      --shadow-color: rgba(0, 0, 0, 0.3);
+      --safe-top: env(safe-area-inset-top, 0);
+      --safe-bottom: env(safe-area-inset-bottom, 0);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top bar */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+      padding: calc(var(--safe-top) + 8px) 16px 8px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      flex-shrink: 0;
+      z-index: 200;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--accent-blue);
+      text-decoration: none;
+    }
+
+    .logo svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .file-name {
+      flex: 1;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin: 0 16px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .menu-btn {
+      width: 40px;
+      height: 40px;
+      border: none;
+      background: none;
+      color: var(--accent-blue);
+      cursor: pointer;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      transition: background 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .menu-btn:active {
+      background: rgba(88, 166, 255, 0.1);
+    }
+
+    /* Viewport */
+    #viewport {
+      flex: 1;
+      width: 100%;
+      touch-action: none;
+      background: linear-gradient(135deg, #0a0e14 0%, #141a24 100%);
+    }
+
+    /* Loading spinner */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 300;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
+    .loading-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid rgba(88, 166, 255, 0.2);
+      border-top-color: var(--accent-blue);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .spinner-text {
+      position: absolute;
+      bottom: 60px;
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+
+    /* Toast notifications */
+    .toast {
+      position: fixed;
+      bottom: calc(16px + var(--safe-bottom));
+      left: 16px;
+      right: 16px;
+      padding: 12px 16px;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 13px;
+      z-index: 250;
+      animation: slideUp 0.3s ease-out;
+      max-width: calc(100% - 32px);
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Floating action button */
+    .fab {
+      position: fixed;
+      bottom: calc(24px + var(--safe-bottom));
+      right: 24px;
+      width: 56px;
+      height: 56px;
+      background: var(--accent-blue);
+      border: none;
+      border-radius: 50%;
+      color: var(--bg-primary);
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 12px var(--shadow-color);
+      z-index: 120;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .fab:active {
+      transform: scale(0.95);
+      box-shadow: 0 2px 6px var(--shadow-color);
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    /* Bottom sheet */
+    .bottom-sheet {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg-secondary);
+      border-radius: 20px 20px 0 0;
+      border: 1px solid var(--border-color);
+      border-bottom: none;
+      max-height: 70vh;
+      display: flex;
+      flex-direction: column;
+      transform: translateY(calc(100% - 48px));
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 100;
+      padding-bottom: var(--safe-bottom);
+    }
+
+    .bottom-sheet.open {
+      transform: translateY(0);
+    }
+
+    .sheet-handle {
+      width: 40px;
+      height: 4px;
+      background: var(--border-color);
+      border-radius: 2px;
+      margin: 12px auto;
+      flex-shrink: 0;
+    }
+
+    .sheet-header {
+      display: flex;
+      border-bottom: 1px solid var(--border-color);
+      flex-shrink: 0;
+    }
+
+    .sheet-tab {
+      flex: 1;
+      padding: 12px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      border: none;
+      background: none;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .sheet-tab.active {
+      color: var(--accent-blue);
+      border-bottom-color: var(--accent-blue);
+    }
+
+    .sheet-content {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 12px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .sheet-section-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 16px 0 8px;
+      padding: 0 4px;
+    }
+
+    .part-item {
+      padding: 12px;
+      background: var(--bg-tertiary);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .part-item:active {
+      background: var(--bg-secondary);
+      border-color: var(--accent-blue);
+    }
+
+    .part-item.selected {
+      background: var(--bg-secondary);
+      border-color: var(--accent-blue);
+      box-shadow: inset 0 0 0 1px var(--accent-blue);
+    }
+
+    .part-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .part-meta {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 13px;
+    }
+
+    .info-row:last-child {
+      border-bottom: none;
+    }
+
+    .info-label {
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .info-value {
+      color: var(--text-primary);
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+      font-size: 12px;
+    }
+
+    .tool-button {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 8px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .tool-button:active {
+      background: var(--bg-secondary);
+      border-color: var(--accent-blue);
+    }
+
+    .tool-toggle {
+      margin-left: auto;
+      width: 40px;
+      height: 24px;
+      background: var(--border-color);
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+      position: relative;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .tool-toggle.on {
+      background: var(--accent-green);
+    }
+
+    .tool-toggle::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 10px;
+      transition: left 0.2s;
+    }
+
+    .tool-toggle.on::after {
+      left: 18px;
+    }
+
+    .feature-tree {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 12px;
+      padding: 8px;
+      background: var(--bg-primary);
+      border-radius: 6px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .feature-item {
+      padding: 4px 0;
+      padding-left: 12px;
+      border-left: 2px solid var(--border-color);
+      margin-left: 0;
+    }
+
+    .feature-icon {
+      display: inline-block;
+      width: 16px;
+      margin-right: 6px;
+      text-align: center;
+    }
+
+    .slider-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: var(--bg-tertiary);
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+
+    .slider-container label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      min-width: 60px;
+      font-weight: 500;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      accent-color: var(--accent-blue);
+      cursor: pointer;
+    }
+
+    .slider-value {
+      font-size: 12px;
+      color: var(--text-primary);
+      min-width: 30px;
+      text-align: right;
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+    }
+
+    /* Color picker */
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .color-swatch {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 8px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .color-swatch:active {
+      transform: scale(0.95);
+    }
+
+    .color-swatch.selected {
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 8px rgba(88, 166, 255, 0.4);
+    }
+
+    /* Scroll styling */
+    .sheet-content::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .sheet-content::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .sheet-content::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 2px;
+    }
+
+    .sheet-content::-webkit-scrollbar-thumb:active {
+      background: var(--text-secondary);
+    }
+
+    /* Fullscreen */
+    canvas:fullscreen {
+      display: block;
+    }
+
+    /* Message panel */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-secondary);
+      text-align: center;
+      padding: 32px 16px;
+    }
+
+    .empty-state-icon {
+      font-size: 40px;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+
+    .empty-state-text {
+      font-size: 13px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <!-- Top bar -->
+  <div class="top-bar">
+    <a href="https://cyclecad.com" class="logo">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/>
+      </svg>
+      cycleCAD
+    </a>
+    <div class="file-name" id="fileName">No file loaded</div>
+    <button class="menu-btn" id="menuBtn">⋮</button>
+  </div>
+
+  <!-- Viewport -->
+  <canvas id="viewport"></canvas>
+
+  <!-- Loading overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div style="position: relative; display: flex; flex-direction: column; align-items: center;">
+      <div class="spinner"></div>
+      <div class="spinner-text" id="loadingText">Parsing file...</div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toastContainer"></div>
+
+  <!-- Floating action button -->
+  <button class="fab" id="fabButton" title="Open file">+</button>
+
+  <!-- File input -->
+  <input type="file" id="fileInput" accept=".step,.stp,.ipt,.iam" />
+
+  <!-- Bottom sheet -->
+  <div class="bottom-sheet" id="bottomSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <button class="sheet-tab active" data-tab="parts">Parts</button>
+      <button class="sheet-tab" data-tab="info">Info</button>
+      <button class="sheet-tab" data-tab="tools">Tools</button>
+    </div>
+    <div class="sheet-content" id="sheetContent">
+      <!-- Parts tab content -->
+      <div id="partsTab" class="tab-content">
+        <div class="empty-state">
+          <div class="empty-state-icon">📁</div>
+          <div class="empty-state-text">No file loaded<br>Tap + to open a file</div>
+        </div>
+      </div>
+      <!-- Info tab content -->
+      <div id="infoTab" class="tab-content" style="display: none;">
+        <div class="empty-state">
+          <div class="empty-state-icon">ℹ️</div>
+          <div class="empty-state-text">Load a file to see details</div>
+        </div>
+      </div>
+      <!-- Tools tab content -->
+      <div id="toolsTab" class="tab-content" style="display: none;">
+        <div class="sheet-section-title">Display</div>
+        <button class="tool-button" id="wireframeBtn">
+          <span>Wireframe</span>
+          <button class="tool-toggle" onclick="event.stopPropagation()"></button>
+        </button>
+        <button class="tool-button" id="screenshotBtn">
+          <span>📸 Screenshot</span>
+        </button>
+
+        <div class="sheet-section-title">Background</div>
+        <div class="color-grid" id="colorGrid">
+          <div class="color-swatch selected" data-color="#0a0e14" style="background: #0a0e14;"></div>
+          <div class="color-swatch" data-color="#ffffff" style="background: #ffffff;"></div>
+          <div class="color-swatch" data-color="#2d3748" style="background: #2d3748;"></div>
+          <div class="color-swatch" data-color="#1a365d" style="background: #1a365d;"></div>
+          <div class="color-swatch" data-color="#22543d" style="background: #22543d;"></div>
+        </div>
+
+        <div class="sheet-section-title">Explode</div>
+        <div class="slider-container">
+          <label>Explode</label>
+          <input type="range" id="explodeSlider" min="0" max="1" step="0.01" value="0" />
+          <div class="slider-value" id="explodeValue">0%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script async src="https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/occt-import-js.js"></script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // ============ STATE ============
+    const state = {
+      scene: null,
+      camera: null,
+      renderer: null,
+      controls: null,
+      currentFile: null,
+      currentMeshes: [],
+      selectedMesh: null,
+      isWireframe: false,
+      explodeAmount: 0,
+      meshCenters: [],
+      occtLoaded: false,
+    };
+
+    // ============ INITIALIZATION ============
+    function initRenderer() {
+      const canvas = document.getElementById('viewport');
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+
+      state.renderer = new THREE.WebGLRenderer({
+        canvas,
+        antialias: true,
+        alpha: false,
+        precision: 'highp',
+        powerPreference: 'high-performance'
+      });
+      state.renderer.setSize(width, height);
+      state.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      state.renderer.shadowMap.enabled = true;
+      state.renderer.shadowMap.type = THREE.PCFSoftShadowShadowMap;
+      state.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      state.renderer.toneMappingExposure = 1;
+      state.renderer.setClearColor(0x0a0e14, 1);
+
+      state.scene = new THREE.Scene();
+      state.scene.background = new THREE.Color(0x0a0e14);
+
+      // Camera
+      const fov = 50;
+      const aspect = width / height;
+      state.camera = new THREE.PerspectiveCamera(fov, aspect, 0.1, 10000);
+      state.camera.position.set(200, 150, 250);
+
+      // Lighting
+      const ambLight = new THREE.AmbientLight(0xffffff, 0.5);
+      state.scene.add(ambLight);
+
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      dirLight.position.set(300, 300, 200);
+      dirLight.castShadow = true;
+      dirLight.shadow.mapSize.width = 2048;
+      dirLight.shadow.mapSize.height = 2048;
+      dirLight.shadow.camera.far = 1000;
+      state.scene.add(dirLight);
+
+      const hemiLight = new THREE.HemisphereLight(0x87ceeb, 0x545454, 0.4);
+      state.scene.add(hemiLight);
+
+      // Ground plane
+      const groundGeo = new THREE.PlaneGeometry(5000, 5000);
+      const groundMat = new THREE.ShadowMaterial({ opacity: 0.2 });
+      const ground = new THREE.Mesh(groundGeo, groundMat);
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.y = -500;
+      ground.receiveShadow = true;
+      state.scene.add(ground);
+
+      // Controls
+      state.controls = new OrbitControls(state.camera, canvas);
+      state.controls.enableDamping = true;
+      state.controls.dampingFactor = 0.05;
+      state.controls.autoRotate = false;
+      state.controls.touches = {
+        ONE: THREE.TOUCH.ROTATE,
+        TWO: THREE.TOUCH.DOLLY_PAN,
+      };
+
+      // Handle window resize
+      window.addEventListener('resize', () => onWindowResize());
+
+      // Raycaster for selection
+      window._raycaster = new THREE.Raycaster();
+      window._mouse = new THREE.Vector2();
+
+      // Click handler
+      canvas.addEventListener('click', (e) => onCanvasClick(e));
+
+      // Animate
+      animate();
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      state.controls.update();
+
+      // Update explode
+      if (state.explodeAmount > 0) {
+        state.currentMeshes.forEach((mesh, idx) => {
+          const center = state.meshCenters[idx];
+          if (center) {
+            const offset = center.clone().normalize().multiplyScalar(state.explodeAmount * 50);
+            mesh.position.copy(center).add(offset);
+          }
+        });
+      } else {
+        state.currentMeshes.forEach((mesh, idx) => {
+          const center = state.meshCenters[idx];
+          if (center) mesh.position.copy(center);
+        });
+      }
+
+      state.renderer.render(state.scene, state.camera);
+    }
+
+    function onWindowResize() {
+      const width = window.innerWidth;
+      const height = window.innerHeight - 56; // subtract top bar
+      state.camera.aspect = width / height;
+      state.camera.updateProjectionMatrix();
+      state.renderer.setSize(width, height);
+    }
+
+    // ============ CANVAS INTERACTION ============
+    function onCanvasClick(event) {
+      if (!state.currentMeshes.length) return;
+
+      const canvas = document.getElementById('viewport');
+      const rect = canvas.getBoundingClientRect();
+      window._mouse.x = ((event.clientX - rect.left) / canvas.clientWidth) * 2 - 1;
+      window._mouse.y = -((event.clientY - rect.top) / canvas.clientHeight) * 2 + 1;
+
+      window._raycaster.setFromCamera(window._mouse, state.camera);
+      const intersects = window._raycaster.intersectObjects(state.currentMeshes);
+
+      if (intersects.length > 0) {
+        selectMesh(intersects[0].object);
+      }
+    }
+
+    function selectMesh(mesh) {
+      if (state.selectedMesh) {
+        state.selectedMesh.layers.disable(1);
+      }
+
+      state.selectedMesh = mesh;
+      mesh.layers.enable(1);
+
+      // Update parts list UI
+      const idx = state.currentMeshes.indexOf(mesh);
+      document.querySelectorAll('.part-item').forEach((el, i) => {
+        el.classList.toggle('selected', i === idx);
+      });
+
+      showToast(`Selected: ${mesh.userData.name || `Part ${idx + 1}`}`);
+    }
+
+    // ============ FILE HANDLING ============
+    async function handleFileSelect(file) {
+      if (!file) return;
+
+      showLoading(true, 'Reading file...');
+      state.currentFile = file;
+      document.getElementById('fileName').textContent = file.name;
+
+      try {
+        const buffer = await file.arrayBuffer();
+        const ext = file.name.toLowerCase().split('.').pop();
+
+        if (ext === 'step' || ext === 'stp') {
+          await loadSTEPFile(buffer);
+        } else if (ext === 'ipt' || ext === 'iam') {
+          loadInventorFile(buffer, file.name);
+        } else {
+          throw new Error('Unsupported file format');
+        }
+
+        showLoading(false);
+        showToast(`Loaded: ${file.name}`);
+      } catch (err) {
+        showLoading(false);
+        showToast(`Error: ${err.message}`, 'error');
+        console.error(err);
+      }
+    }
+
+    async function loadSTEPFile(buffer) {
+      showLoading(true, 'Parsing STEP file...');
+
+      // Wait for occt-import-js to load
+      let occt;
+      let retries = 0;
+      while (!window.occtimportjs && retries < 50) {
+        await new Promise(r => setTimeout(r, 100));
+        retries++;
+      }
+
+      if (!window.occtimportjs) {
+        throw new Error('STEP parser library failed to load');
+      }
+
+      occt = await window.occtimportjs();
+      showLoading(true, 'Converting to 3D...');
+
+      const result = occt.ReadStepFile(new Uint8Array(buffer), null);
+      clearScene();
+
+      let partIndex = 0;
+      result.meshes.forEach((meshData) => {
+        const geometry = new THREE.BufferGeometry();
+
+        if (meshData.attributes.position) {
+          geometry.setAttribute('position',
+            new THREE.BufferAttribute(new Float32Array(meshData.attributes.position.array), 3));
+        }
+
+        if (meshData.attributes.normal) {
+          geometry.setAttribute('normal',
+            new THREE.BufferAttribute(new Float32Array(meshData.attributes.normal.array), 3));
+        } else {
+          geometry.computeVertexNormals();
+        }
+
+        if (meshData.index) {
+          geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(meshData.index.array), 1));
+        }
+
+        // Handle per-face coloring
+        if (meshData.brep_faces && meshData.brep_faces.length > 0) {
+          const materials = [];
+          const defaultColor = meshData.color ?
+            new THREE.Color(meshData.color[0], meshData.color[1], meshData.color[2]) :
+            new THREE.Color(0.8, 0.8, 0.85);
+
+          meshData.brep_faces.forEach((face, i) => {
+            const faceColor = face.color ?
+              new THREE.Color(face.color[0], face.color[1], face.color[2]) :
+              defaultColor;
+            materials.push(new THREE.MeshPhongMaterial({
+              color: faceColor,
+              side: THREE.DoubleSide,
+              shininess: 100,
+              shadowMap: { type: THREE.PCFSoftShadowShadowMap }
+            }));
+            const firstTriangle = face.first;
+            const lastTriangle = face.last + 1;
+            geometry.addGroup(firstTriangle * 3, (lastTriangle - firstTriangle) * 3, i);
+          });
+          const mesh = new THREE.Mesh(geometry, materials);
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          mesh.userData.name = `Part ${partIndex + 1}`;
+          mesh.userData.type = 'brep_face';
+          state.scene.add(mesh);
+          state.currentMeshes.push(mesh);
+        } else {
+          const color = meshData.color ?
+            new THREE.Color(meshData.color[0], meshData.color[1], meshData.color[2]) :
+            new THREE.Color(0.8, 0.8, 0.85);
+          const material = new THREE.MeshPhongMaterial({
+            color,
+            side: THREE.DoubleSide,
+            shininess: 100
+          });
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          mesh.userData.name = `Part ${partIndex + 1}`;
+          mesh.userData.type = 'mesh';
+          state.scene.add(mesh);
+          state.currentMeshes.push(mesh);
+        }
+
+        partIndex++;
+      });
+
+      state.meshCenters = state.currentMeshes.map(() => new THREE.Vector3());
+      fitToView();
+      updatePartsList();
+      updateInfoPanel();
+    }
+
+    function loadInventorFile(buffer, filename) {
+      clearScene();
+
+      const data = new Uint8Array(buffer);
+      const isOLE2 = data[0] === 0xd0 && data[1] === 0xcf;
+
+      if (!isOLE2) {
+        showToast('Not a valid Inventor file', 'error');
+        return;
+      }
+
+      // Extract text for feature detection
+      const text = extractStringFromBuffer(data);
+      const features = detectFeatures(text);
+
+      // Create placeholder mesh
+      const geometry = new THREE.BoxGeometry(100, 100, 100);
+      const material = new THREE.MeshPhongMaterial({
+        color: 0x58a6ff,
+        opacity: 0.7,
+        transparent: true
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.userData.name = filename;
+      mesh.userData.type = 'inventor';
+      mesh.userData.features = features;
+      mesh.castShadow = true;
+      state.scene.add(mesh);
+      state.currentMeshes.push(mesh);
+      state.meshCenters.push(new THREE.Vector3());
+
+      fitToView();
+      updatePartsList();
+      updateInfoPanel();
+
+      showToast('Inventor file loaded. For 3D preview, export as STEP from Inventor.', 'info');
+    }
+
+    function extractStringFromBuffer(data) {
+      let text = '';
+      for (let i = 0; i < data.length; i++) {
+        const char = String.fromCharCode(data[i]);
+        if (char >= ' ' && char <= '~') {
+          text += char;
+        } else if (text.length > 0 && text[text.length - 1] !== ' ') {
+          text += ' ';
+        }
+      }
+      return text;
+    }
+
+    function detectFeatures(text) {
+      const features = [];
+      const featureMap = {
+        'ExtrudeFeature': '🟫 Extrude',
+        'RevolveFeature': '🔄 Revolve',
+        'FilletFeature': '🔘 Fillet',
+        'ChamferFeature': '📐 Chamfer',
+        'SketchFeature': '📝 Sketch',
+        'BooleanFeature': '✏️ Boolean',
+        'ShellFeature': '🎁 Shell',
+        'WorkPlane': '✈️ Work Plane',
+        'WorkAxis': '📏 Work Axis',
+      };
+
+      for (const [key, label] of Object.entries(featureMap)) {
+        if (text.includes(key)) features.push(label);
+      }
+
+      return features.length > 0 ? features : ['📦 Part'];
+    }
+
+    function clearScene() {
+      state.currentMeshes.forEach(mesh => {
+        state.scene.remove(mesh);
+        if (mesh.geometry) mesh.geometry.dispose();
+        if (Array.isArray(mesh.material)) {
+          mesh.material.forEach(m => m.dispose());
+        } else {
+          mesh.material.dispose();
+        }
+      });
+      state.currentMeshes = [];
+      state.meshCenters = [];
+      state.selectedMesh = null;
+    }
+
+    function fitToView() {
+      const box = new THREE.Box3();
+      state.currentMeshes.forEach(mesh => box.expandByObject(mesh));
+
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const fov = state.camera.fov * (Math.PI / 180);
+      let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+      cameraZ *= 1.5;
+
+      const center = box.getCenter(new THREE.Vector3());
+      state.camera.position.copy(center);
+      state.camera.position.z += cameraZ;
+      state.camera.lookAt(center);
+      state.controls.target.copy(center);
+      state.controls.update();
+    }
+
+    // ============ UI UPDATES ============
+    function updatePartsList() {
+      const container = document.getElementById('partsTab');
+      if (state.currentMeshes.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📁</div>
+            <div class="empty-state-text">No parts loaded</div>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '<div class="sheet-section-title">Parts (' + state.currentMeshes.length + ')</div>';
+      state.currentMeshes.forEach((mesh, idx) => {
+        const isSelected = mesh === state.selectedMesh;
+        html += `
+          <div class="part-item ${isSelected ? 'selected' : ''}" data-index="${idx}">
+            <div class="part-name">${mesh.userData.name || `Part ${idx + 1}`}</div>
+            <div class="part-meta">${mesh.userData.type}</div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+
+      container.querySelectorAll('.part-item').forEach((el) => {
+        el.addEventListener('click', () => {
+          const idx = parseInt(el.dataset.index);
+          selectMesh(state.currentMeshes[idx]);
+        });
+      });
+    }
+
+    function updateInfoPanel() {
+      const container = document.getElementById('infoTab');
+      if (state.currentMeshes.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">ℹ️</div>
+            <div class="empty-state-text">Load a file to see details</div>
+          </div>
+        `;
+        return;
+      }
+
+      const mesh = state.selectedMesh || state.currentMeshes[0];
+      const box = new THREE.Box3().expandByObject(mesh);
+      const size = box.getSize(new THREE.Vector3());
+
+      let html = `
+        <div class="sheet-section-title">File</div>
+        <div class="info-row">
+          <span class="info-label">Name</span>
+          <span class="info-value">${state.currentFile?.name || 'Unknown'}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Size</span>
+          <span class="info-value">${formatBytes(state.currentFile?.size || 0)}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Parts</span>
+          <span class="info-value">${state.currentMeshes.length}</span>
+        </div>
+
+        <div class="sheet-section-title">Selected Part</div>
+        <div class="info-row">
+          <span class="info-label">Name</span>
+          <span class="info-value">${mesh.userData.name || 'Part'}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Type</span>
+          <span class="info-value">${mesh.userData.type}</span>
+        </div>
+
+        <div class="sheet-section-title">Dimensions</div>
+        <div class="info-row">
+          <span class="info-label">X</span>
+          <span class="info-value">${size.x.toFixed(1)} mm</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Y</span>
+          <span class="info-value">${size.y.toFixed(1)} mm</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Z</span>
+          <span class="info-value">${size.z.toFixed(1)} mm</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Volume</span>
+          <span class="info-value">${(size.x * size.y * size.z).toFixed(0)} mm³</span>
+        </div>
+      `;
+
+      if (mesh.userData.features && mesh.userData.features.length > 0) {
+        html += `
+          <div class="sheet-section-title">Features</div>
+          <div class="feature-tree">
+            ${mesh.userData.features.map(f => `<div class="feature-item">${f}</div>`).join('')}
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+    }
+
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return (bytes / Math.pow(k, i)).toFixed(1) + ' ' + sizes[i];
+    }
+
+    // ============ TOOLS ============
+    function toggleWireframe() {
+      state.isWireframe = !state.isWireframe;
+      state.currentMeshes.forEach(mesh => {
+        if (Array.isArray(mesh.material)) {
+          mesh.material.forEach(m => m.wireframe = state.isWireframe);
+        } else {
+          mesh.material.wireframe = state.isWireframe;
+        }
+      });
+      document.querySelector('#toolsTab .tool-toggle').classList.toggle('on', state.isWireframe);
+    }
+
+    function takeScreenshot() {
+      const link = document.createElement('a');
+      link.download = `cyclecad-${Date.now()}.png`;
+      link.href = document.getElementById('viewport').toDataURL('image/png');
+      link.click();
+      showToast('Screenshot saved');
+    }
+
+    function setBackgroundColor(color) {
+      const c = new THREE.Color(color);
+      state.renderer.setClearColor(c, 1);
+      state.scene.background = c;
+      document.querySelectorAll('.color-swatch').forEach(el => {
+        el.classList.toggle('selected', el.dataset.color === color);
+      });
+    }
+
+    // ============ UI HELPERS ============
+    function showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = message;
+      document.getElementById('toastContainer').appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    function showLoading(show, text = 'Loading...') {
+      const overlay = document.getElementById('loadingOverlay');
+      if (show) {
+        overlay.classList.add('active');
+        document.getElementById('loadingText').textContent = text;
+      } else {
+        overlay.classList.remove('active');
+      }
+    }
+
+    // ============ BOTTOM SHEET ============
+    let sheetDragging = false;
+    let sheetStartY = 0;
+    const sheet = document.getElementById('bottomSheet');
+
+    sheet.addEventListener('touchstart', (e) => {
+      sheetDragging = true;
+      sheetStartY = e.touches[0].clientY;
+    });
+
+    sheet.addEventListener('touchmove', (e) => {
+      if (!sheetDragging) return;
+      const delta = e.touches[0].clientY - sheetStartY;
+      if (delta > 0) {
+        sheet.style.transform = `translateY(calc(100% - 48px + ${delta}px))`;
+      }
+    });
+
+    sheet.addEventListener('touchend', (e) => {
+      sheetDragging = false;
+      const delta = e.changedTouches[0].clientY - sheetStartY;
+      if (delta > 50) {
+        sheet.classList.remove('open');
+      } else {
+        sheet.classList.add('open');
+      }
+      sheet.style.transform = '';
+    });
+
+    document.querySelectorAll('.sheet-tab').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.sheet-tab').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab + 'Tab').style.display = 'block';
+      });
+    });
+
+    // ============ EVENT LISTENERS ============
+    document.getElementById('fabButton').addEventListener('click', () => {
+      document.getElementById('fileInput').click();
+    });
+
+    document.getElementById('fileInput').addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        handleFileSelect(e.target.files[0]);
+        sheet.classList.add('open');
+      }
+    });
+
+    document.getElementById('wireframeBtn').addEventListener('click', toggleWireframe);
+    document.getElementById('screenshotBtn').addEventListener('click', takeScreenshot);
+
+    document.querySelectorAll('.color-swatch').forEach((swatch) => {
+      swatch.addEventListener('click', () => {
+        setBackgroundColor(swatch.dataset.color);
+      });
+    });
+
+    document.getElementById('explodeSlider').addEventListener('input', (e) => {
+      state.explodeAmount = parseFloat(e.target.value);
+      document.getElementById('explodeValue').textContent = Math.round(state.explodeAmount * 100) + '%';
+    });
+
+    document.getElementById('menuBtn').addEventListener('click', () => {
+      sheet.classList.toggle('open');
+    });
+
+    // Drag and drop
+    document.getElementById('viewport').addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+
+    document.getElementById('viewport').addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.dataTransfer.files.length > 0) {
+        handleFileSelect(e.dataTransfer.files[0]);
+      }
+    });
+
+    // Initialize
+    initRenderer();
+    showToast('Tap + to load a 3D file (STEP, IPT, or IAM)');
+  </script>
+</body>
+</html>

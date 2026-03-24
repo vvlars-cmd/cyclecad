@@ -67,6 +67,7 @@ SACHIN (vvlars@googlemail.com, GitHub: vvlars-cmd). Building cycleCAD — open-s
 | `app/js/advanced-ops.js` | 763 | Sweep, loft, sheet metal (bend/flange/tab/slot/unfold), spring, thread |
 | `app/js/assembly.js` | 1,103 | Assembly workspace: components, mate constraints, joints, explode/collapse |
 | `app/js/dxf-export.js` | 1,174 | DXF export: 2D sketch, 3D projection, multi-view engineering drawing |
+| `app/mobile.html` | 1,277 | **Phone edition**: mobile-first 3D viewer for .step/.stp/.ipt/.iam. occt-import-js + touch controls |
 | `app/js/params.js` | 523 | Parameter editor, material selector (Steel/Al/ABS/Brass/Ti/Nylon) |
 | `app/js/tree.js` | 479 | Feature tree panel with rename, suppress, delete, context menus |
 | `app/js/inventor-parser.js` | 1,138 | OLE2/CFB binary parser for .ipt/.iam, 26 feature types, assembly constraints |

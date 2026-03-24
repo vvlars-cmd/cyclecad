@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0a0a0f; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+.frame {
+  width: 1280px; height: 720px; background: #141418; border-radius: 12px; overflow: hidden;
+  box-shadow: 0 0 80px rgba(255,149,32,0.08), 0 0 0 1px rgba(255,255,255,0.06);
+  display: grid; grid-template-columns: 240px 1fr 280px; grid-template-rows: 44px 1fr 28px;
+}
+/* Title bar */
+.titlebar {
+  grid-column: 1/-1; background: #1a1a20; display: flex; align-items: center; padding: 0 16px;
+  border-bottom: 1px solid #2a2a35; gap: 12px;
+}
+.dots { display: flex; gap: 6px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; }
+.dot-r { background: #ff5f57; }
+.dot-y { background: #febc2e; }
+.dot-g { background: #28c840; }
+.titlebar-text { color: #888; font-size: 12px; margin-left: 12px; }
+.titlebar-logo { color: #ff9520; font-weight: 700; font-size: 14px; margin-left: auto; }
+.titlebar-logo span { color: #a0a0b4; font-weight: 400; }
+
+/* Toolbar */
+.toolbar {
+  grid-column: 1/-1; background: #1c1c22; display: flex; align-items: center; padding: 0 12px; gap: 2px;
+  border-bottom: 1px solid #2a2a35; grid-row: 2; height: 38px;
+}
+.tool-btn {
+  padding: 5px 10px; border-radius: 5px; color: #a0a0b4; font-size: 11px; display: flex; align-items: center; gap: 4px;
+}
+.tool-btn:hover, .tool-active { background: rgba(255,149,32,0.12); color: #ff9520; }
+.tool-sep { width: 1px; height: 20px; background: #2a2a35; margin: 0 6px; }
+
+/* Left panel - Model Tree */
+.tree-panel {
+  background: #161619; border-right: 1px solid #2a2a35; padding: 12px; overflow: hidden;
+  grid-row: 3/5;
+}
+.tree-title { color: #ff9520; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+.tree-item { color: #a0a0b4; font-size: 11px; padding: 4px 0 4px 8px; border-left: 2px solid transparent; display: flex; align-items: center; gap: 6px; }
+.tree-item.active { color: #ff9520; border-left-color: #ff9520; background: rgba(255,149,32,0.06); }
+.tree-item .icon { font-size: 10px; }
+.tree-sub { padding-left: 16px; }
+.tree-assembly { color: #5aabff; font-weight: 500; }
+
+/* Viewport */
+.viewport {
+  background: linear-gradient(180deg, #1a1a24 0%, #12121a 50%, #0e0e16 100%);
+  position: relative; grid-row: 3/5; overflow: hidden;
+}
+.grid-lines {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+.axis-x { position: absolute; top: 55%; left: 10%; right: 20%; height: 1px; background: linear-gradient(90deg, transparent, #ff4444 40%, #ff444488); }
+.axis-z { position: absolute; top: 20%; bottom: 10%; left: 55%; width: 1px; background: linear-gradient(transparent, #44ff44 40%, #44ff4488); }
+.axis-y { position: absolute; top: 40%; left: 35%; width: 200px; height: 1px; background: #4444ff88; transform: rotate(-30deg); }
+
+/* 3D Object mockup - gear/mechanical part */
+.part-group { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+.part-main {
+  width: 280px; height: 200px; border: 2px solid rgba(255,149,32,0.4);
+  background: linear-gradient(135deg, rgba(255,149,32,0.08), rgba(90,171,255,0.05));
+  border-radius: 8px; transform: perspective(800px) rotateX(15deg) rotateY(-20deg);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 30px rgba(255,149,32,0.1);
+  position: relative; overflow: hidden;
+}
+.part-wireframe {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(45deg, rgba(255,149,32,0.15) 1px, transparent 1px),
+    linear-gradient(-45deg, rgba(90,171,255,0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+.part-highlight {
+  position: absolute; top: 30%; left: 20%; width: 60%; height: 40%;
+  border: 1.5px solid #ff9520; border-radius: 4px;
+  box-shadow: 0 0 15px rgba(255,149,32,0.3);
+}
+
+/* Secondary parts */
+.part-2 {
+  position: absolute; top: 15%; right: 15%; width: 120px; height: 90px;
+  border: 1.5px solid rgba(90,171,255,0.4);
+  background: linear-gradient(135deg, rgba(90,171,255,0.06), transparent);
+  border-radius: 6px; transform: perspective(600px) rotateX(10deg) rotateY(-15deg);
+}
+.part-3 {
+  position: absolute; bottom: 18%; left: 12%; width: 100px; height: 70px;
+  border: 1.5px solid rgba(90,171,255,0.3);
+  background: linear-gradient(135deg, rgba(90,171,255,0.04), transparent);
+  border-radius: 6px; transform: perspective(600px) rotateX(20deg) rotateY(-10deg);
+}
+
+/* Dimension lines */
+.dim-line {
+  position: absolute; display: flex; align-items: center; color: #5aabff; font-size: 9px;
+}
+.dim-h { top: 82%; left: 25%; width: 200px; border-top: 1px solid #5aabff55; text-align: center; padding-top: 4px; }
+.dim-v { top: 25%; right: 22%; height: 150px; border-left: 1px solid #5aabff55; writing-mode: vertical-rl; padding-left: 6px; }
+
+/* Annotations */
+.annotation {
+  position: absolute; background: rgba(255,149,32,0.9); color: #fff; font-size: 9px; font-weight: 600;
+  padding: 3px 8px; border-radius: 10px; white-space: nowrap;
+}
+.ann-1 { top: 30%; left: 60%; }
+.ann-2 { top: 55%; right: 25%; }
+
+/* Corner cube */
+.view-cube {
+  position: absolute; top: 12px; right: 12px; width: 50px; height: 50px;
+  border: 1px solid rgba(255,149,32,0.3); background: rgba(255,149,32,0.05);
+  border-radius: 4px; display: flex; align-items: center; justify-content: center;
+  color: #ff9520; font-size: 8px; font-weight: 600;
+}
+
+/* Status badges */
+.viewport-badge {
+  position: absolute; bottom: 12px; left: 12px; display: flex; gap: 8px;
+}
+.badge {
+  background: rgba(255,149,32,0.12); border: 1px solid rgba(255,149,32,0.25);
+  color: #ff9520; font-size: 9px; padding: 3px 8px; border-radius: 4px;
+}
+.badge-blue { background: rgba(90,171,255,0.1); border-color: rgba(90,171,255,0.25); color: #5aabff; }
+
+/* Right panel - Properties */
+.props-panel {
+  background: #161619; border-left: 1px solid #2a2a35; padding: 12px; overflow: hidden;
+  grid-row: 3/5;
+}
+.props-title { color: #ff9520; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+.props-section { margin-bottom: 14px; }
+.props-label { color: #72728a; font-size: 10px; margin-bottom: 4px; }
+.props-value { color: #e0e0e8; font-size: 12px; font-weight: 500; }
+.props-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #1e1e28; }
+.props-row-label { color: #72728a; font-size: 10px; }
+.props-row-val { color: #e0e0e8; font-size: 10px; }
+.ai-badge { background: linear-gradient(135deg, #ff9520, #ff6010); color: #fff; font-size: 9px; padding: 2px 8px; border-radius: 8px; display: inline-block; margin-top: 8px; }
+.mcmaster-link { color: #5aabff; font-size: 10px; text-decoration: underline; margin-top: 6px; display: block; }
+
+/* Chat preview */
+.chat-preview { margin-top: 16px; padding: 10px; background: #1c1c22; border-radius: 8px; border: 1px solid #2a2a35; }
+.chat-msg { font-size: 10px; color: #a0a0b4; margin-bottom: 6px; }
+.chat-ai { color: #ff9520; }
+.chat-input { background: #141418; border: 1px solid #2a2a35; border-radius: 4px; padding: 6px 8px; color: #72728a; font-size: 10px; width: 100%; margin-top: 4px; }
+
+/* Status bar */
+.statusbar {
+  grid-column: 1/-1; background: #1a1a20; border-top: 1px solid #2a2a35;
+  display: flex; align-items: center; padding: 0 12px; gap: 16px;
+  color: #72728a; font-size: 10px;
+}
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: #28c840; }
+.status-item { display: flex; align-items: center; gap: 4px; }
+</style>
+</head>
+<body>
+<div class="frame">
+  <!-- Title Bar -->
+  <div class="titlebar">
+    <div class="dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
+    <span class="titlebar-text">cycleCAD — DUO_Assembly.iam</span>
+    <span class="titlebar-logo">cycle<span>CAD</span></span>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="tool-btn tool-active">&#9998; Sketch</div>
+    <div class="tool-btn">&#9585; Line</div>
+    <div class="tool-btn">&#9711; Circle</div>
+    <div class="tool-sep"></div>
+    <div class="tool-btn">&#11014; Extrude</div>
+    <div class="tool-btn">&#8634; Revolve</div>
+    <div class="tool-btn">&#9644; Fillet</div>
+    <div class="tool-btn">&#9135; Cut</div>
+    <div class="tool-btn">+ Union</div>
+    <div class="tool-sep"></div>
+    <div class="tool-btn">&#128207; Measure</div>
+    <div class="tool-btn">&#9986; Section</div>
+    <div class="tool-btn">&#128204; Annotate</div>
+    <div class="tool-sep"></div>
+    <div class="tool-btn" style="color:#ff9520">&#9733; AI Identify</div>
+    <div class="tool-btn" style="color:#ff9520">&#9881; Smart BOM</div>
+    <div class="tool-btn" style="color:#ff9520">&#128172; Chat</div>
+  </div>
+
+  <!-- Left: Model Tree -->
+  <div class="tree-panel">
+    <div class="tree-title">Model Tree</div>
+    <div class="tree-item tree-assembly">&#128230; DUO Assembly</div>
+    <div class="tree-sub">
+      <div class="tree-item active">&#9654; Frame</div>
+      <div class="tree-sub">
+        <div class="tree-item active">&nbsp;&nbsp;&#9632; Rahmen_Seite</div>
+        <div class="tree-item">&nbsp;&nbsp;&#9632; Traeger_Hoehe1</div>
+        <div class="tree-item">&nbsp;&nbsp;&#9632; Quertraeger</div>
+        <div class="tree-item">&nbsp;&nbsp;&#9632; Bodenplatte</div>
+      </div>
+      <div class="tree-item">&#9654; Brush System</div>
+      <div class="tree-sub">
+        <div class="tree-item">&nbsp;&nbsp;&#9632; Leistenbuerstenblech</div>
+        <div class="tree-item">&nbsp;&nbsp;&#9632; Buerstenhalter_L</div>
+        <div class="tree-item">&nbsp;&nbsp;&#9632; Buerstenhalter_R</div>
+      </div>
+      <div class="tree-item">&#9654; Drive System</div>
+      <div class="tree-item">&#9654; Water Circuit</div>
+      <div class="tree-item">&#9654; Electronics</div>
+      <div class="tree-item">&#9654; Housing</div>
+    </div>
+    <div style="margin-top: 16px; padding: 8px; background: #1c1c22; border-radius: 6px; border: 1px solid #2a2a35;">
+      <div style="color: #72728a; font-size: 9px; margin-bottom: 4px;">ASSEMBLY</div>
+      <div style="color: #e0e0e8; font-size: 18px; font-weight: 700;">473</div>
+      <div style="color: #72728a; font-size: 9px;">parts loaded</div>
+    </div>
+  </div>
+
+  <!-- Center: Viewport -->
+  <div class="viewport">
+    <div class="grid-lines"></div>
+    <div class="axis-x"></div>
+    <div class="axis-z"></div>
+    <div class="axis-y"></div>
+
+    <div class="part-group">
+      <div class="part-main">
+        <div class="part-wireframe"></div>
+        <div class="part-highlight"></div>
+      </div>
+    </div>
+    <div class="part-2"></div>
+    <div class="part-3"></div>
+
+    <div class="dim-h">← 842.5 mm →</div>
+    <div class="dim-v">↑ 635.2 mm</div>
+
+    <div class="annotation ann-1">Rahmen_Seite</div>
+    <div class="annotation ann-2" style="background: rgba(90,171,255,0.9);">M8 Bolt × 12</div>
+
+    <div class="view-cube">FRONT</div>
+
+    <div class="viewport-badge">
+      <div class="badge">473 Parts</div>
+      <div class="badge">6 Assemblies</div>
+      <div class="badge badge-blue">AI Identified</div>
+    </div>
+  </div>
+
+  <!-- Right: Properties -->
+  <div class="props-panel">
+    <div class="props-title">Properties</div>
+
+    <div class="props-section">
+      <div class="props-label">Selected Part</div>
+      <div class="props-value">Rahmen_Seite</div>
+      <div class="ai-badge">AI: Structural Frame</div>
+    </div>
+
+    <div class="props-section">
+      <div class="props-label">Dimensions</div>
+      <div class="props-row"><span class="props-row-label">Width</span><span class="props-row-val">842.5 mm</span></div>
+      <div class="props-row"><span class="props-row-label">Height</span><span class="props-row-val">635.2 mm</span></div>
+      <div class="props-row"><span class="props-row-label">Depth</span><span class="props-row-val">3.0 mm</span></div>
+      <div class="props-row"><span class="props-row-label">Volume</span><span class="props-row-val">1,604 cm³</span></div>
+    </div>
+
+    <div class="props-section">
+      <div class="props-label">Material</div>
+      <div class="props-value" style="font-size:11px">Stainless Steel 304</div>
+      <div class="props-row"><span class="props-row-label">Est. Weight</span><span class="props-row-val">12.8 kg</span></div>
+      <div class="props-row"><span class="props-row-label">Est. Cost</span><span class="props-row-val">~$45.00</span></div>
+    </div>
+
+    <a class="mcmaster-link">&#128279; Find on McMaster-Carr →</a>
+
+    <div class="props-section" style="margin-top:12px">
+      <div class="props-label">Maintenance</div>
+      <div style="display:flex;gap:4px;margin-top:4px">
+        <div style="flex:1;height:4px;background:#28c840;border-radius:2px"></div>
+        <div style="flex:1;height:4px;background:#28c840;border-radius:2px"></div>
+        <div style="flex:1;height:4px;background:#febc2e;border-radius:2px"></div>
+        <div style="flex:1;height:4px;background:#72728a;border-radius:2px"></div>
+      </div>
+      <div style="color:#72728a;font-size:9px;margin-top:2px">Next service: 8 months</div>
+    </div>
+
+    <div class="chat-preview">
+      <div style="color:#72728a;font-size:9px;margin-bottom:6px">AI ASSISTANT</div>
+      <div class="chat-msg">Show me all steel parts</div>
+      <div class="chat-msg chat-ai">Found 47 steel parts. Highlighting in viewport...</div>
+      <div class="chat-input">Ask about this assembly...</div>
+    </div>
+  </div>
+
+  <!-- Status Bar -->
+  <div class="statusbar">
+    <div class="status-item"><div class="status-dot"></div> Ready</div>
+    <div class="status-item">Mode: Normal</div>
+    <div class="status-item">Units: mm</div>
+    <div class="status-item">Grid: 1.0</div>
+    <div class="status-item">FPS: 60</div>
+    <div class="status-item" style="margin-left:auto; color:#ff9520">cycleCAD v1.0</div>
+  </div>
+</div>
+</body>
+</html>

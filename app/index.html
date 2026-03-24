@@ -1364,6 +1364,42 @@
         </button>
       </div>
 
+      <!-- Advanced Operations -->
+      <div class="toolbar-group">
+        <button class="toolbar-button" id="tool-sweep" title="Sweep (Profile Along Path)">
+          <span class="toolbar-icon">&#8634;</span>
+          <span class="toolbar-label">Sweep</span>
+        </button>
+        <button class="toolbar-button" id="tool-loft" title="Loft (Between Profiles)">
+          <span class="toolbar-icon">&#9651;</span>
+          <span class="toolbar-label">Loft</span>
+        </button>
+        <button class="toolbar-button" id="tool-spring" title="Generate Spring" style="background:rgba(63,185,80,0.08);">
+          <span class="toolbar-icon">&#8635;</span>
+          <span class="toolbar-label">Spring</span>
+        </button>
+        <button class="toolbar-button" id="tool-thread" title="Generate Thread" style="background:rgba(63,185,80,0.08);">
+          <span class="toolbar-icon">&#10038;</span>
+          <span class="toolbar-label">Thread</span>
+        </button>
+      </div>
+
+      <!-- Sheet Metal -->
+      <div class="toolbar-group">
+        <button class="toolbar-button" id="tool-bend" title="Sheet Metal Bend" style="background:rgba(210,153,34,0.08);">
+          <span class="toolbar-icon">&#9484;</span>
+          <span class="toolbar-label">Bend</span>
+        </button>
+        <button class="toolbar-button" id="tool-flange" title="Sheet Metal Flange" style="background:rgba(210,153,34,0.08);">
+          <span class="toolbar-icon">&#9492;</span>
+          <span class="toolbar-label">Flange</span>
+        </button>
+        <button class="toolbar-button" id="tool-unfold" title="Unfold Sheet Metal" style="background:rgba(210,153,34,0.08);">
+          <span class="toolbar-icon">&#9645;</span>
+          <span class="toolbar-label">Unfold</span>
+        </button>
+      </div>
+
       <!-- Export Tools -->
       <div class="toolbar-group">
         <button class="toolbar-button" id="export-stl" title="Export STL">
@@ -1549,6 +1585,8 @@
     import { loadProject, showFolderPicker, parseIPJ } from './js/project-loader.js';
     import { initProjectBrowser, showBrowser, hideBrowser, setProject, onFileSelect } from './js/project-browser.js';
     import { generateGuide, renderGuide, exportGuideHTML } from './js/rebuild-guide.js';
+    import { solveConstraints, addConstraint, removeConstraint, autoDetectConstraints, isFullyConstrained, getAllConstraints, clearAllConstraints } from './js/constraint-solver.js';
+    import { createSweep, createLoft, createBend, createFlange, createTab, createSlot, unfoldSheetMetal, createSpring, createThread } from './js/advanced-ops.js';
 
     // ========== Application State ==========
     const APP = {
@@ -2016,6 +2054,54 @@
 
           updateStatus(`Inventor file loaded: ${parsedData.metadata?.fileName || 'unknown'} — ${parsedData.features?.length || 0} features found`);
         });
+      });
+
+      // Advanced Operations
+      bind('tool-sweep', () => openDialog('sweep'));
+      bind('tool-loft', () => openDialog('loft'));
+      bind('tool-spring', () => {
+        const splash = document.getElementById('welcome-splash');
+        if (splash) splash.classList.add('hidden');
+        const radius = parseFloat(prompt('Spring outer radius (mm):', '10') || '0');
+        const wireR = parseFloat(prompt('Wire radius (mm):', '1.5') || '0');
+        const height = parseFloat(prompt('Spring height (mm):', '40') || '0');
+        const turns = parseFloat(prompt('Number of turns:', '8') || '0');
+        if (!radius || !wireR || !height || !turns) { updateStatus('Cancelled'); return; }
+        try {
+          const mesh = createSpring(radius, wireR, height, turns);
+          addToScene(mesh);
+          const feature = { id: 'feature_' + Date.now(), name: `Spring (R${radius} H${height})`, type: 'spring', mesh, params: { radius, wireR, height, turns } };
+          APP.features.push(feature);
+          addFeature(feature);
+          pushHistory();
+          updateStatus(`Created spring: R${radius}mm, ${turns} turns, H${height}mm`);
+        } catch (err) { updateStatus('Spring failed: ' + err.message); }
+      });
+      bind('tool-thread', () => {
+        const splash = document.getElementById('welcome-splash');
+        if (splash) splash.classList.add('hidden');
+        const outerR = parseFloat(prompt('Thread outer radius (mm):', '5') || '0');
+        const innerR = parseFloat(prompt('Thread inner radius (mm):', '4') || '0');
+        const pitch = parseFloat(prompt('Thread pitch (mm):', '1') || '0');
+        const length = parseFloat(prompt('Thread length (mm):', '20') || '0');
+        if (!outerR || !innerR || !pitch || !length) { updateStatus('Cancelled'); return; }
+        try {
+          const mesh = createThread(outerR, innerR, pitch, length);
+          addToScene(mesh);
+          const feature = { id: 'feature_' + Date.now(), name: `Thread M${outerR*2}x${pitch}`, type: 'thread', mesh, params: { outerR, innerR, pitch, length } };
+          APP.features.push(feature);
+          addFeature(feature);
+          pushHistory();
+          updateStatus(`Created thread: M${outerR*2}x${pitch}, L${length}mm`);
+        } catch (err) { updateStatus('Thread failed: ' + err.message); }
+      });
+
+      // Sheet Metal
+      bind('tool-bend', () => openDialog('bend'));
+      bind('tool-flange', () => openDialog('flange'));
+      bind('tool-unfold', () => {
+        if (APP.features.length === 0) { updateStatus('No features to unfold'); return; }
+        updateStatus('Sheet metal unfold: select a bent part, then define bend lines');
       });
     }
 
@@ -2573,6 +2659,137 @@
       }
     }
 
+    // ========== Advanced Operation Apply Functions ==========
+    function generateProfilePoints(shape, size, segments = 32) {
+      const pts = [];
+      if (shape === 'circle') {
+        for (let i = 0; i < segments; i++) {
+          const a = (i / segments) * Math.PI * 2;
+          pts.push({ x: Math.cos(a) * size, y: Math.sin(a) * size });
+        }
+      } else if (shape === 'rectangle') {
+        const h = size * 0.6;
+        pts.push({ x: -size, y: -h }, { x: size, y: -h }, { x: size, y: h }, { x: -size, y: h });
+      } else if (shape === 'hexagon') {
+        for (let i = 0; i < 6; i++) {
+          const a = (i / 6) * Math.PI * 2;
+          pts.push({ x: Math.cos(a) * size, y: Math.sin(a) * size });
+        }
+      }
+      return pts;
+    }
+
+    function applySweep() {
+      const profileShape = document.getElementById('sweep-profile').value;
+      const profileSize = parseFloat(document.getElementById('sweep-size').value);
+      const pathType = document.getElementById('sweep-path').value;
+      const length = parseFloat(document.getElementById('sweep-length').value);
+      const segments = parseInt(document.getElementById('sweep-segments').value);
+      const twist = parseFloat(document.getElementById('sweep-twist').value);
+
+      const profile = generateProfilePoints(profileShape, profileSize);
+      let path = [];
+
+      if (pathType === 'helix') {
+        const turns = 3;
+        const radius = length / 4;
+        for (let i = 0; i <= segments; i++) {
+          const t = i / segments;
+          const a = t * Math.PI * 2 * turns;
+          path.push({ x: Math.cos(a) * radius, y: Math.sin(a) * radius, z: t * length });
+        }
+      } else if (pathType === 'line') {
+        path = [{ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: length }];
+      } else if (pathType === 'arc') {
+        const arcRadius = length / 2;
+        for (let i = 0; i <= segments; i++) {
+          const a = (i / segments) * Math.PI;
+          path.push({ x: Math.cos(a) * arcRadius - arcRadius, y: 0, z: Math.sin(a) * arcRadius });
+        }
+      }
+
+      try {
+        const mesh = createSweep(profile, path, { segments, twist });
+        addToScene(mesh);
+        const feature = { id: 'feature_' + Date.now(), name: `Sweep (${profileShape})`, type: 'sweep', mesh, params: { profileShape, profileSize, pathType, length, segments, twist } };
+        APP.features.push(feature);
+        addFeature(feature);
+        pushHistory();
+        updateStatus(`Created sweep: ${profileShape} profile along ${pathType} path`);
+        closeDialog('sweep');
+      } catch (err) { updateStatus('Sweep failed: ' + err.message); console.error(err); }
+    }
+
+    function applyLoft() {
+      const startShape = document.getElementById('loft-start').value;
+      const startSize = parseFloat(document.getElementById('loft-start-size').value);
+      const endShape = document.getElementById('loft-end').value;
+      const endSize = parseFloat(document.getElementById('loft-end-size').value);
+      const height = parseFloat(document.getElementById('loft-height').value);
+      const segments = parseInt(document.getElementById('loft-segments').value);
+
+      const profiles = [
+        { points: generateProfilePoints(startShape, startSize), position: { x: 0, y: 0, z: 0 } },
+        { points: generateProfilePoints(endShape, endSize), position: { x: 0, y: 0, z: height } }
+      ];
+
+      try {
+        const mesh = createLoft(profiles, { segments });
+        addToScene(mesh);
+        const feature = { id: 'feature_' + Date.now(), name: `Loft (${startShape}→${endShape})`, type: 'loft', mesh, params: { startShape, startSize, endShape, endSize, height, segments } };
+        APP.features.push(feature);
+        addFeature(feature);
+        pushHistory();
+        updateStatus(`Created loft: ${startShape} to ${endShape}, H${height}mm`);
+        closeDialog('loft');
+      } catch (err) { updateStatus('Loft failed: ' + err.message); console.error(err); }
+    }
+
+    function applyBend() {
+      const angle = parseFloat(document.getElementById('bend-angle').value);
+      const radius = parseFloat(document.getElementById('bend-radius').value);
+      const kFactor = parseFloat(document.getElementById('bend-kfactor').value);
+
+      if (!APP.selectedFeature || !APP.selectedFeature.mesh) {
+        updateStatus('Select a flat plate first, then apply bend');
+        return;
+      }
+
+      try {
+        const bendLine = { start: { x: 0, y: 0, z: 0 }, end: { x: 0, y: 20, z: 0 } };
+        const mesh = createBend(APP.selectedFeature.mesh, bendLine, angle, radius, { kFactor });
+        addToScene(mesh);
+        const feature = { id: 'feature_' + Date.now(), name: `Bend (${angle}°, R${radius})`, type: 'bend', mesh, params: { angle, radius, kFactor } };
+        APP.features.push(feature);
+        addFeature(feature);
+        pushHistory();
+        updateStatus(`Applied bend: ${angle}° with R${radius}mm inner radius`);
+        closeDialog('bend');
+      } catch (err) { updateStatus('Bend failed: ' + err.message); console.error(err); }
+    }
+
+    function applyFlange() {
+      const length = parseFloat(document.getElementById('flange-length').value);
+      const angle = parseFloat(document.getElementById('flange-angle').value);
+
+      if (!APP.selectedFeature || !APP.selectedFeature.mesh) {
+        updateStatus('Select a sheet metal part first, then apply flange');
+        return;
+      }
+
+      try {
+        const edge = { start: { x: -10, y: 0, z: 0 }, end: { x: 10, y: 0, z: 0 } };
+        const mesh = createFlange(APP.selectedFeature.mesh, edge, length, angle);
+        addToScene(mesh);
+        const feature = { id: 'feature_' + Date.now(), name: `Flange (L${length}, ${angle}°)`, type: 'flange', mesh, params: { length, angle } };
+        APP.features.push(feature);
+        addFeature(feature);
+        pushHistory();
+        updateStatus(`Applied flange: L${length}mm at ${angle}°`);
+        closeDialog('flange');
+      } catch (err) { updateStatus('Flange failed: ' + err.message); console.error(err); }
+    }
+
     // Close dialog when backdrop is clicked
     document.getElementById('dialog-backdrop').addEventListener('click', () => {
       if (currentDialogId) closeDialog(currentDialogId);
@@ -2789,6 +3006,148 @@
     <div class="dialog-footer">
       <button class="dialog-button secondary" onclick="closeDialog('pattern')">Cancel</button>
       <button class="dialog-button primary" onclick="applyPattern()">OK</button>
+    </div>
+  </div>
+
+  <!-- Sweep Dialog -->
+  <div class="operation-dialog" id="dialog-sweep">
+    <div class="dialog-header">
+      <div class="dialog-title">Sweep (Profile Along Path)</div>
+      <div class="dialog-close-btn" onclick="closeDialog('sweep')">&#10005;</div>
+    </div>
+    <div class="dialog-content">
+      <div class="dialog-form-group">
+        <label class="dialog-label">Profile Shape</label>
+        <select class="dialog-select" id="sweep-profile">
+          <option value="circle">Circle</option>
+          <option value="rectangle">Rectangle</option>
+          <option value="sketch">From Sketch</option>
+        </select>
+      </div>
+      <div class="dialog-form-group">
+        <label class="dialog-label">Profile Radius / Width (mm)</label>
+        <input type="number" class="dialog-input" id="sweep-size" value="3" min="0.1" step="0.1">
+      </div>
+      <div class="dialog-form-group">
+        <label class="dialog-label">Path Shape</label>
+        <select class="dialog-select" id="sweep-path">
+          <option value="helix">Helix</option>
+          <option value="line">Straight Line</option>
+          <option value="arc">Arc</option>
+        </select>
+      </div>
+      <div class="dialog-form-group">
+        <label class="dialog-label">Path Length (mm)</label>
+        <input type="number" class="dialog-input" id="sweep-length" value="40" min="1" step="1">
+      </div>
+      <div class="dialog-form-group">
+        <label class="dialog-label">Segments</label>
+        <input type="range" class="dialog-range" id="sweep-segments" min="8" max="128" value="64">
+      </div>
+      <div class="dialog-form-group">
+        <label class="dialog-label">Twist (deg/mm)</label>
+        <input type="number" class="dialog-input" id="sweep-twist" value="0" step="0.1">
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button class="dialog-button secondary" onclick="closeDialog('sweep')">Cancel</button>
+      <button class="dialog-button primary" onclick="applySweep()">OK</button>
+    </div>
+  </div>
+
+  <!-- Loft Dialog -->
+  <div class="operation-dialog" id="dialog-loft">
+    <div class="dialog-header">
+      <div class="dialog-title">Loft (Between Profiles)</div>
+      <div class="dialog-close-btn" onclick="closeDialog('loft')">&#10005;</div>
+    </div>
+    <div class="dialog-content">
+      <div class="dialog-form-group">
+        <label class="dialog-label">Start Profile</label>
+        <select class="dialog-select" id="loft-start">
+          <option value="circle">Circle</option>
+          <option value="rectangle">Rectangle</option>
+          <option value="hexagon">Hexagon</option>
+        </select>
+      </div>
+      <div class="dialog-form-group">
+        <label class="dialog-label">Start Size (mm)</label>
+        <input type="number" class="dialog-input" id="loft-start-size" value="10" min="0.1" step="0.1">
+      </div>
+      <div class="dialog-form-group">
+        <label class="dialog-label">End Profile</label>
+        <select class="dialog-select" id="loft-end">
+          <option value="circle">Circle</option>
+          <option value="rectangle">Rectangle</option>
+          <option value="hexagon">Hexagon</option>
+        </select>
+      </div>
+      <div class="dialog-form-group">
+        <label class="dialog-label">End Size (mm)</label>
+        <input type="number" class="dialog-input" id="loft-end-size" value="5" min="0.1" step="0.1">
+      </div>
+      <div class="dialog-form-group">
+        <label class="dialog-label">Height (mm)</label>
+        <input type="number" class="dialog-input" id="loft-height" value="30" min="1" step="1">
+      </div>
+      <div class="dialog-form-group">
+        <label class="dialog-label">Segments</label>
+        <input type="range" class="dialog-range" id="loft-segments" min="4" max="64" value="32">
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button class="dialog-button secondary" onclick="closeDialog('loft')">Cancel</button>
+      <button class="dialog-button primary" onclick="applyLoft()">OK</button>
+    </div>
+  </div>
+
+  <!-- Bend Dialog -->
+  <div class="operation-dialog" id="dialog-bend">
+    <div class="dialog-header">
+      <div class="dialog-title">Sheet Metal Bend</div>
+      <div class="dialog-close-btn" onclick="closeDialog('bend')">&#10005;</div>
+    </div>
+    <div class="dialog-content">
+      <div class="dialog-form-group">
+        <label class="dialog-label">Bend Angle (degrees)</label>
+        <input type="number" class="dialog-input" id="bend-angle" value="90" min="1" max="180" step="1">
+      </div>
+      <div class="dialog-form-group">
+        <label class="dialog-label">Inner Bend Radius (mm)</label>
+        <input type="number" class="dialog-input" id="bend-radius" value="2" min="0.1" step="0.1">
+      </div>
+      <div class="dialog-form-group">
+        <label class="dialog-label">K-Factor</label>
+        <input type="number" class="dialog-input" id="bend-kfactor" value="0.44" min="0.1" max="0.9" step="0.01">
+      </div>
+      <p style="font-size:10px;color:var(--text-muted);margin-top:4px;">Select a flat plate first, then define the bend line by clicking two points.</p>
+    </div>
+    <div class="dialog-footer">
+      <button class="dialog-button secondary" onclick="closeDialog('bend')">Cancel</button>
+      <button class="dialog-button primary" onclick="applyBend()">OK</button>
+    </div>
+  </div>
+
+  <!-- Flange Dialog -->
+  <div class="operation-dialog" id="dialog-flange">
+    <div class="dialog-header">
+      <div class="dialog-title">Sheet Metal Flange</div>
+      <div class="dialog-close-btn" onclick="closeDialog('flange')">&#10005;</div>
+    </div>
+    <div class="dialog-content">
+      <div class="dialog-form-group">
+        <label class="dialog-label">Flange Length (mm)</label>
+        <input type="number" class="dialog-input" id="flange-length" value="15" min="0.1" step="0.1">
+      </div>
+      <div class="dialog-form-group">
+        <label class="dialog-label">Flange Angle (degrees)</label>
+        <input type="number" class="dialog-input" id="flange-angle" value="90" min="1" max="180" step="1">
+      </div>
+      <p style="font-size:10px;color:var(--text-muted);margin-top:4px;">Select an edge on a sheet metal part, then apply the flange.</p>
+    </div>
+    <div class="dialog-footer">
+      <button class="dialog-button secondary" onclick="closeDialog('flange')">Cancel</button>
+      <button class="dialog-button primary" onclick="applyFlange()">OK</button>
     </div>
   </div>
 

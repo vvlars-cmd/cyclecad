@@ -7,7 +7,7 @@ No install required — runs entirely in your browser.
 [![npm version](https://img.shields.io/npm/v/cyclecad.svg)](https://www.npmjs.com/package/cyclecad)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-![cycleCAD Screenshot](https://cyclecad.com/app/assets/screenshot.png)
+![cycleCAD Screenshot](https://raw.githubusercontent.com/vvlars-cmd/cyclecad/main/screenshot.png)
 
 ## Features
 

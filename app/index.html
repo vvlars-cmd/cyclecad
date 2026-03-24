@@ -2094,9 +2094,26 @@
           if (spinner) spinner.classList.add('active');
           updateStatus('Loading DUO project manifest...');
 
-          // Fetch pre-built manifest (no File System Access API needed)
+          // Fetch pre-built manifest (local dev only — not in public repo)
           const resp = await fetch('duo-manifest.json');
-          if (!resp.ok) throw new Error('Failed to load manifest: ' + resp.status);
+          if (!resp.ok) {
+            // Manifest not available (e.g. on public site) — fall back to folder picker
+            if (spinner) spinner.classList.remove('active');
+            updateStatus('DUO manifest not found — use File System Access to open a project folder');
+            try {
+              const handle = await showFolderPicker();
+              if (handle) {
+                const project = await loadProject(handle);
+                APP.project = project;
+                setProject(project);
+                populateInlineBrowser(project);
+                showBrowser();
+                switchLeftTab('browser');
+                updateStatus(`Project loaded: ${project.stats?.parts || 0} parts`);
+              }
+            } catch (e) { updateStatus('Folder selection cancelled'); }
+            return;
+          }
           const manifest = await resp.json();
 
           // Transform file types: manifest uses type:"file" + ext:".ipt"

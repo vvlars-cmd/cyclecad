@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>cycleCAD - Example Parts Gallery</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1f6feb 0%, #388bfd 100%);
+            padding: 3rem 2rem;
+            text-align: center;
+            border-bottom: 1px solid #30363d;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: #ffffff;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        .category {
+            margin-bottom: 4rem;
+        }
+
+        .category-title {
+            font-size: 1.8rem;
+            color: #58a6ff;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #30363d;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card:hover {
+            border-color: #58a6ff;
+            box-shadow: 0 0 20px rgba(88, 166, 255, 0.2);
+            transform: translateY(-4px);
+        }
+
+        .card-preview {
+            background: linear-gradient(135deg, #0d1117 0%, #1c2128 100%);
+            height: 220px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .card-preview svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 10px rgba(88, 166, 255, 0.1));
+        }
+
+        .card-content {
+            padding: 1.5rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #58a6ff;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-subtitle {
+            font-size: 0.95rem;
+            color: #8b949e;
+            margin-bottom: 1rem;
+        }
+
+        .card-prompt {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+            color: #79c0ff;
+            font-family: 'Monaco', 'Courier New', monospace;
+            word-break: break-word;
+        }
+
+        .card-dimensions {
+            font-size: 0.9rem;
+            color: #8b949e;
+            margin-bottom: 1rem;
+        }
+
+        .card-dimensions strong {
+            color: #c9d1d9;
+        }
+
+        .card-button {
+            background: linear-gradient(135deg, #1f6feb 0%, #388bfd 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            margin-top: auto;
+        }
+
+        .card-button:hover {
+            background: linear-gradient(135deg, #388bfd 0%, #1f6feb 100%);
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(31, 111, 235, 0.4);
+        }
+
+        .card-button:active {
+            transform: scale(0.98);
+        }
+
+        .grid-3d {
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><path d="M0 0h40v40H0z" fill="%23161b22"/><path d="M0 0l20 10 20-10M0 40l20-10 20 10M0 0v40M40 0v40" stroke="%23238636" stroke-width="0.5" fill="none"/></svg>')
+                    center/contain;
+        }
+
+        footer {
+            text-align: center;
+            padding: 3rem 2rem;
+            border-top: 1px solid #30363d;
+            color: #8b949e;
+        }
+
+        footer a {
+            color: #58a6ff;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* 3D-like isometric perspective */
+        .iso-3d {
+            perspective: 1000px;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Part-specific SVG styles */
+        .part-cube {
+            width: 120px;
+            height: 120px;
+        }
+
+        .part-cylinder {
+            width: 100px;
+            height: 140px;
+        }
+
+        .part-sphere {
+            width: 120px;
+            height: 120px;
+        }
+
+        .part-plate {
+            width: 140px;
+            height: 90px;
+        }
+
+        .part-bracket {
+            width: 110px;
+            height: 110px;
+        }
+
+        .part-bearing {
+            width: 130px;
+            height: 100px;
+        }
+
+        .part-spacer {
+            width: 100px;
+            height: 100px;
+        }
+
+        @media (max-width: 768px) {
+            .gallery-grid {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 1.5rem;
+            }
+
+            header h1 {
+                font-size: 2rem;
+            }
+
+            .category-title {
+                font-size: 1.4rem;
+            }
+        }
+
+        .breadcrumb {
+            font-size: 0.9rem;
+            color: #8b949e;
+            margin-bottom: 2rem;
+        }
+
+        .breadcrumb a {
+            color: #58a6ff;
+            text-decoration: none;
+        }
+
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>cycleCAD Examples Gallery</h1>
+        <p>Explore what you can create with AI-powered parametric design</p>
+    </header>
+
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="../index.html">cycleCAD</a> / Examples
+        </div>
+
+        <!-- Basic Primitives -->
+        <div class="category">
+            <h2 class="category-title">Basic Primitives</h2>
+            <div class="gallery-grid">
+                <!-- Cube -->
+                <div class="card">
+                    <div class="card-preview grid-3d">
+                        <svg class="part-cube" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+                            <g transform="translate(60, 60)">
+                                <!-- Front face -->
+                                <polygon points="0,-40 40,-20 40,20 0,40" fill="#238636" stroke="#58a6ff" stroke-width="2"/>
+                                <!-- Top face -->
+                                <polygon points="0,-40 -40,-20 0,0 40,-20" fill="#1f6feb" stroke="#58a6ff" stroke-width="2"/>
+                                <!-- Right face -->
+                                <polygon points="40,-20 40,20 0,40 0,0" fill="#0d47a1" stroke="#58a6ff" stroke-width="2"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title">Simple Cube</div>
+                        <div class="card-subtitle">Basic Box Primitive</div>
+                        <div class="card-prompt">50mm cube</div>
+                        <div class="card-dimensions">
+                            <strong>Size:</strong> 50 × 50 × 50 mm
+                        </div>
+                        <a href="../../app.html?create=box&w=50&h=50&d=50" class="card-button">Open in cycleCAD</a>
+                    </div>
+                </div>
+
+                <!-- Cylinder -->
+                <div class="card">
+                    <div class="card-preview grid-3d">
+                        <svg class="part-cylinder" viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg">
+                            <g transform="translate(50, 70)">
+                                <!-- Top ellipse -->
+                                <ellipse cx="0" cy="-35" rx="25" ry="12" fill="#238636" stroke="#58a6ff" stroke-width="2"/>
+                                <!-- Side -->
+                                <rect x="-25" y="-35" width="50" height="70" fill="#1f6feb" stroke="#58a6ff" stroke-width="2"/>
+                                <!-- Bottom ellipse -->
+                                <ellipse cx="0" cy="35" rx="25" ry="12" fill="#0d47a1" stroke="#58a6ff" stroke-width="2"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title">Cylinder</div>
+                        <div class="card-subtitle">Rotational Primitive</div>
+                        <div class="card-prompt">cylinder 30mm radius 60mm tall</div>
+                        <div class="card-dimensions">
+                            <strong>Size:</strong> ⌀60 × 60 mm (R30)
+                        </div>
+                        <a href="../../app.html?create=cylinder&r=30&h=60" class="card-button">Open in cycleCAD</a>
+                    </div>
+                </div>
+
+                <!-- Sphere -->
+                <div class="card">
+                    <div class="card-preview grid-3d">
+                        <svg class="part-sphere" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+                            <g transform="translate(60, 60)">
+                                <circle cx="0" cy="0" r="45" fill="#238636" stroke="#58a6ff" stroke-width="2"/>
+                                <path d="M -45 0 Q 0 -30 45 0" stroke="#1f6feb" stroke-width="2" fill="none" opacity="0.7"/>
+                                <path d="M -45 0 Q 0 30 45 0" stroke="#0d47a1" stroke-width="2" fill="none" opacity="0.7"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title">Sphere</div>
+                        <div class="card-subtitle">Spherical Primitive</div>
+                        <div class="card-prompt">sphere 25mm radius</div>
+                        <div class="card-dimensions">
+                            <strong>Size:</strong> ⌀50 mm (R25)
+                        </div>
+                        <a href="../../app.html?create=sphere&r=25" class="card-button">Open in cycleCAD</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Plates & Brackets -->
+        <div class="category">
+            <h2 class="category-title">Plates & Brackets</h2>
+            <div class="gallery-grid">
+                <!-- Flat Plate -->
+                <div class="card">
+                    <div class="card-preview grid-3d">
+                        <svg class="part-plate" viewBox="0 0 140 90" xmlns="http://www.w3.org/2000/svg">
+                            <g transform="translate(70, 45)">
+                                <polygon points="-60,-30 60,-30 65,-25 65,25 60,30 -60,30 -65,25 -65,-25" fill="#238636" stroke="#58a6ff" stroke-width="2"/>
+                                <line x1="-60" y1="-30" x2="-65" y2="-25" stroke="#1f6feb" stroke-width="1.5"/>
+                                <line x1="60" y1="-30" x2="65" y2="-25" stroke="#1f6feb" stroke-width="1.5"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title">Flat Plate</div>
+                        <div class="card-subtitle">Base Mounting Plate</div>
+                        <div class="card-prompt">plate 100 by 60 by 10</div>
+                        <div class="card-dimensions">
+                            <strong>Size:</strong> 100 × 60 × 10 mm
+                        </div>
+                        <a href="../../app.html?create=box&w=100&h=60&d=10" class="card-button">Open in cycleCAD</a>
+                    </div>
+                </div>
+
+                <!-- Plate with Holes -->
+                <div class="card">
+                    <div class="card-preview grid-3d">
+                        <svg class="part-plate" viewBox="0 0 140 90" xmlns="http://www.w3.org/2000/svg">
+                            <g transform="translate(70, 45)">
+                                <polygon points="-60,-30 60,-30 65,-25 65,25 60,30 -60,30 -65,25 -65,-25" fill="#238636" stroke="#58a6ff" stroke-width="2"/>
+                                <circle cx="-45" cy="-20" r="5" fill="#0d1117" stroke="#58a6ff" stroke-width="1.5"/>
+                                <circle cx="45" cy="-20" r="5" fill="#0d1117" stroke="#58a6ff" stroke-width="1.5"/>
+                                <circle cx="-45" cy="20" r="5" fill="#0d1117" stroke="#58a6ff" stroke-width="1.5"/>
+                                <circle cx="45" cy="20" r="5" fill="#0d1117" stroke="#58a6ff" stroke-width="1.5"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title">Plate with 4 Holes</div>
+                        <div class="card-subtitle">Corner-Mounted Plate</div>
+                        <div class="card-prompt">plate 100x60x10 with 4 corner holes 8mm</div>
+                        <div class="card-dimensions">
+                            <strong>Size:</strong> 100 × 60 × 10 mm<br>
+                            <strong>Holes:</strong> ⌀8 mm (4×)
+                        </div>
+                        <a href="../../app.html?create=plate-holes&w=100&h=60&d=10&hole=8" class="card-button">Open in cycleCAD</a>
+                    </div>
+                </div>
+
+                <!-- L-Bracket -->
+                <div class="card">
+                    <div class="card-preview grid-3d">
+                        <svg class="part-bracket" viewBox="0 0 110 110" xmlns="http://www.w3.org/2000/svg">
+                            <g transform="translate(55, 55)">
+                                <!-- Vertical arm -->
+                                <polygon points="-15,-45 15,-45 18,-42 18,0 -15,0" fill="#238636" stroke="#58a6ff" stroke-width="2"/>
+                                <!-- Horizontal arm -->
+                                <polygon points="-18,0 18,0 18,15 -45,15 -45,-3" fill="#1f6feb" stroke="#58a6ff" stroke-width="2"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title">L-Bracket</div>
+                        <div class="card-subtitle">90° Mounting Bracket</div>
+                        <div class="card-prompt">L bracket 80x40x5mm</div>
+                        <div class="card-dimensions">
+                            <strong>Size:</strong> 80 × 40 mm<br>
+                            <strong>Thickness:</strong> 5 mm
+                        </div>
+                        <a href="../../app.html?create=l-bracket&w=80&h=40&t=5" class="card-button">Open in cycleCAD</a>
+                    </div>
+                </div>
+
+                <!-- Gusset Plate -->
+                <div class="card">
+                    <div class="card-preview grid-3d">
+                        <svg class="part-bracket" viewBox="0 0 110 110" xmlns="http://www.w3.org/2000/svg">
+                            <g transform="translate(55, 55)">
+                                <polygon points="-40,-40 40,-40 40,40 -40,40" fill="#238636" stroke="#58a6ff" stroke-width="2" opacity="0.5"/>
+                                <polygon points="-40,-40 40,-40 -40,40" fill="#1f6feb" stroke="#58a6ff" stroke-width="2"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title">Gusset Plate</div>
+                        <div class="card-subtitle">Triangular Reinforcement</div>
+                        <div class="card-prompt">triangular gusset 60x60x5</div>
+                        <div class="card-dimensions">
+                            <strong>Size:</strong> 60 × 60 mm<br>
+                            <strong>Thickness:</strong> 5 mm
+                        </div>
+                        <a href="../../app.html?create=gusset&w=60&h=60&t=5" class="card-button">Open in cycleCAD</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mechanical Parts -->
+        <div class="category">
+            <h2 class="category-title">Mechanical Parts</h2>
+            <div class="gallery-grid">
+                <!-- Flanged Bearing Housing -->
+                <div class="card">
+                    <div class="card-preview grid-3d">
+                        <svg class="part-bearing" viewBox="0 0 130 100" xmlns="http://www.w3.org/2000/svg">
+                            <g transform="translate(65, 50)">
+                                <!-- Flange -->
+                                <circle cx="0" cy="0" r="35" fill="#238636" stroke="#58a6ff" stroke-width="2"/>
+                                <!-- Housing bore -->
+                                <circle cx="0" cy="0" r="20" fill="#0d1117" stroke="#58a6ff" stroke-width="1.5"/>
+                                <!-- Bolt holes -->
+                                <circle cx="25" cy="0" r="3" fill="#0d1117" stroke="#58a6ff" stroke-width="1"/>
+                                <circle cx="-25" cy="0" r="3" fill="#0d1117" stroke="#58a6ff" stroke-width="1"/>
+                                <circle cx="0" cy="25" r="3" fill="#0d1117" stroke="#58a6ff" stroke-width="1"/>
+                                <circle cx="0" cy="-25" r="3" fill="#0d1117" stroke="#58a6ff" stroke-width="1"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title">Flanged Bearing Housing</div>
+                        <div class="card-subtitle">Precision Bearing Mount</div>
+                        <div class="card-prompt">flanged bearing housing 80mm OD, 50mm bore, 4 bolt holes</div>
+                        <div class="card-dimensions">
+                            <strong>OD:</strong> 80 mm | <strong>Bore:</strong> 50 mm<br>
+                            <strong>Bolt Holes:</strong> 4×
+                        </div>
+                        <a href="../../app.html?create=bearing&od=80&bore=50&bolts=4" class="card-button">Open in cycleCAD</a>
+                    </div>
+                </div>
+
+                <!-- Spacer -->
+                <div class="card">
+                    <div class="card-preview grid-3d">
+                        <svg class="part-spacer" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                            <g transform="translate(50, 50)">
+                                <!-- Outer diameter -->
+                                <circle cx="0" cy="0" r="30" fill="#238636" stroke="#58a6ff" stroke-width="2"/>
+                                <!-- Inner hole -->
+                                <circle cx="0" cy="0" r="15" fill="#0d1117" stroke="#58a6ff" stroke-width="2"/>
+                                <!-- Side depth indicator -->
+                                <path d="M -30 0 L -35 0" stroke="#1f6feb" stroke-width="2"/>
+                                <path d="M 30 0 L 35 0" stroke="#1f6feb" stroke-width="2"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title">Spacer Ring</div>
+                        <div class="card-subtitle">Axial Spacing Component</div>
+                        <div class="card-prompt">spacer 20mm OD 10mm ID 5mm thick</div>
+                        <div class="card-dimensions">
+                            <strong>OD:</strong> 20 mm | <strong>ID:</strong> 10 mm<br>
+                            <strong>Height:</strong> 5 mm
+                        </div>
+                        <a href="../../app.html?create=spacer&od=20&id=10&h=5" class="card-button">Open in cycleCAD</a>
+                    </div>
+                </div>
+
+                <!-- Bushing -->
+                <div class="card">
+                    <div class="card-preview grid-3d">
+                        <svg class="part-cylinder" viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg">
+                            <g transform="translate(50, 70)">
+                                <ellipse cx="0" cy="-30" rx="22" ry="11" fill="#238636" stroke="#58a6ff" stroke-width="2"/>
+                                <rect x="-22" y="-30" width="44" height="60" fill="#1f6feb" stroke="#58a6ff" stroke-width="2"/>
+                                <ellipse cx="0" cy="30" rx="22" ry="11" fill="#0d47a1" stroke="#58a6ff" stroke-width="2"/>
+                                <circle cx="0" cy="-30" r="12" fill="#0d1117" stroke="#58a6ff" stroke-width="1.5"/>
+                                <circle cx="0" cy="30" r="12" fill="#0d1117" stroke="#58a6ff" stroke-width="1.5"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title">Bushing</div>
+                        <div class="card-subtitle">Sleeve Bearing</div>
+                        <div class="card-prompt">bushing 25mm outer 15mm inner 30mm long</div>
+                        <div class="card-dimensions">
+                            <strong>OD:</strong> 25 mm | <strong>ID:</strong> 15 mm<br>
+                            <strong>Length:</strong> 30 mm
+                        </div>
+                        <a href="../../app.html?create=bushing&od=25&id=15&l=30" class="card-button">Open in cycleCAD</a>
+                    </div>
+                </div>
+
+                <!-- Shaft Collar -->
+                <div class="card">
+                    <div class="card-preview grid-3d">
+                        <svg class="part-spacer" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                            <g transform="translate(50, 50)">
+                                <!-- Outer hex -->
+                                <polygon points="0,-28 24,-14 24,14 0,28 -24,14 -24,-14" fill="#238636" stroke="#58a6ff" stroke-width="2"/>
+                                <!-- Inner bore -->
+                                <circle cx="0" cy="0" r="12" fill="#0d1117" stroke="#58a6ff" stroke-width="2"/>
+                                <!-- Set screw indicator -->
+                                <rect x="-3" y="-32" width="6" height="6" fill="#1f6feb" stroke="#58a6ff" stroke-width="1"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title">Shaft Collar</div>
+                        <div class="card-subtitle">Hex Locking Collar</div>
+                        <div class="card-prompt">shaft collar 20mm bore 35mm OD 12mm wide</div>
+                        <div class="card-dimensions">
+                            <strong>Bore:</strong> 20 mm | <strong>OD:</strong> 35 mm<br>
+                            <strong>Width:</strong> 12 mm
+                        </div>
+                        <a href="../../app.html?create=collar&bore=20&od=35&w=12" class="card-button">Open in cycleCAD</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fasteners -->
+        <div class="category">
+            <h2 class="category-title">Fasteners & Hardware</h2>
+            <div class="gallery-grid">
+                <!-- M8 Washer -->
+                <div class="card">
+                    <div class="card-preview grid-3d">
+                        <svg class="part-spacer" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                            <g transform="translate(50, 50)">
+                                <circle cx="0" cy="0" r="25" fill="#999999" stroke="#58a6ff" stroke-width="2"/>
+                                <circle cx="0" cy="0" r="8" fill="#0d1117" stroke="#58a6ff" stroke-width="1.5"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title">M8 Washer</div>
+                        <div class="card-subtitle">Standard Flat Washer</div>
+                        <div class="card-prompt">M8 washer</div>
+                        <div class="card-dimensions">
+                            <strong>Bore:</strong> 8 mm | <strong>OD:</strong> 16 mm<br>
+                            <strong>Thickness:</strong> 1.5 mm
+                        </div>
+                        <a href="../../app.html?create=washer&bore=8&od=16&t=1.5" class="card-button">Open in cycleCAD</a>
+                    </div>
+                </div>
+
+                <!-- Hex Standoff -->
+                <div class="card">
+                    <div class="card-preview grid-3d">
+                        <svg class="part-cylinder" viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg">
+                            <g transform="translate(50, 70)">
+                                <!-- Top hex head -->
+                                <polygon points="0,-40 20,-30 20,-10 0,0 -20,-10 -20,-30" fill="#999999" stroke="#58a6ff" stroke-width="2"/>
+                                <!-- Shaft -->
+                                <rect x="-8" y="0" width="16" height="35" fill="#999999" stroke="#58a6ff" stroke-width="2"/>
+                                <!-- Bottom hex -->
+                                <polygon points="0,35 20,45 20,65 0,75 -20,65 -20,45" fill="#888888" stroke="#58a6ff" stroke-width="2"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title">Hex Standoff</div>
+                        <div class="card-subtitle">M4 Spacer</div>
+                        <div class="card-prompt">hex standoff M4 15mm tall</div>
+                        <div class="card-dimensions">
+                            <strong>Size:</strong> M4 | <strong>Height:</strong> 15 mm<br>
+                            <strong>Material:</strong> Aluminum
+                        </div>
+                        <a href="../../app.html?create=standoff&m=4&h=15" class="card-button">Open in cycleCAD</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Applications -->
+        <div class="category">
+            <h2 class="category-title">Custom Applications</h2>
+            <div class="gallery-grid">
+                <!-- Phone Stand -->
+                <div class="card">
+                    <div class="card-preview grid-3d">
+                        <svg viewBox="0 0 140 120" xmlns="http://www.w3.org/2000/svg">
+                            <g transform="translate(70, 60)">
+                                <!-- Base -->
+                                <rect x="-40" y="20" width="80" height="8" fill="#238636" stroke="#58a6ff" stroke-width="2"/>
+                                <!-- Back support -->
+                                <polygon points="-30,28 -25,28 -25,-20 -35,-20" fill="#1f6feb" stroke="#58a6ff" stroke-width="2"/>
+                                <!-- Phone slot -->
+                                <rect x="-35" y="-15" width="70" height="5" fill="#0d1117" stroke="#58a6ff" stroke-width="1.5"/>
+                                <!-- Center piece -->
+                                <rect x="-2" y="28" width="4" height="15" fill="#238636" stroke="#58a6ff" stroke-width="2"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title">Phone Stand</div>
+                        <div class="card-subtitle">Mobile Device Holder</div>
+                        <div class="card-prompt">phone stand 80mm wide 60mm tall 5mm thick with slot</div>
+                        <div class="card-dimensions">
+                            <strong>Width:</strong> 80 mm | <strong>Height:</strong> 60 mm<br>
+                            <strong>Thickness:</strong> 5 mm
+                        </div>
+                        <a href="../../app.html?create=phone-stand&w=80&h=60&t=5" class="card-button">Open in cycleCAD</a>
+                    </div>
+                </div>
+
+                <!-- Cable Clip -->
+                <div class="card">
+                    <div class="card-preview grid-3d">
+                        <svg viewBox="0 0 140 120" xmlns="http://www.w3.org/2000/svg">
+                            <g transform="translate(70, 60)">
+                                <!-- Base -->
+                                <rect x="-30" y="25" width="60" height="6" fill="#238636" stroke="#58a6ff" stroke-width="2"/>
+                                <!-- Wall mount holes -->
+                                <circle cx="-20" cy="28" r="3" fill="#0d1117" stroke="#58a6ff" stroke-width="1"/>
+                                <circle cx="20" cy="28" r="3" fill="#0d1117" stroke="#58a6ff" stroke-width="1"/>
+                                <!-- Clip arms -->
+                                <path d="M -15 25 Q -18 0 -15 -20" stroke="#1f6feb" stroke-width="4" fill="none"/>
+                                <path d="M 15 25 Q 18 0 15 -20" stroke="#1f6feb" stroke-width="4" fill="none"/>
+                                <!-- Cable cutout -->
+                                <ellipse cx="0" cy="8" rx="8" ry="5" fill="#0d1117" stroke="#58a6ff" stroke-width="1.5"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title">Cable Clip</div>
+                        <div class="card-subtitle">Cable Management</div>
+                        <div class="card-prompt">cable clip for 10mm cable</div>
+                        <div class="card-dimensions">
+                            <strong>Cable Size:</strong> 10 mm | <strong>Length:</strong> 45 mm<br>
+                            <strong>Mounting:</strong> 2× M4 holes
+                        </div>
+                        <a href="../../app.html?create=cable-clip&cable=10&l=45" class="card-button">Open in cycleCAD</a>
+                    </div>
+                </div>
+
+                <!-- Heat Sink Fin Block -->
+                <div class="card">
+                    <div class="card-preview grid-3d">
+                        <svg viewBox="0 0 140 120" xmlns="http://www.w3.org/2000/svg">
+                            <g transform="translate(70, 60)">
+                                <!-- Base block -->
+                                <rect x="-40" y="10" width="80" height="20" fill="#238636" stroke="#58a6ff" stroke-width="2"/>
+                                <!-- Fins -->
+                                <line x1="-30" y1="10" x2="-30" y2="-25" stroke="#1f6feb" stroke-width="3"/>
+                                <line x1="-10" y1="10" x2="-10" y2="-25" stroke="#1f6feb" stroke-width="3"/>
+                                <line x1="10" y1="10" x2="10" y2="-25" stroke="#1f6feb" stroke-width="3"/>
+                                <line x1="30" y1="10" x2="30" y2="-25" stroke="#1f6feb" stroke-width="3"/>
+                                <!-- Mounting holes -->
+                                <circle cx="-35" cy="22" r="2" fill="#0d1117" stroke="#58a6ff" stroke-width="1"/>
+                                <circle cx="35" cy="22" r="2" fill="#0d1117" stroke="#58a6ff" stroke-width="1"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title">Heat Sink Fin Block</div>
+                        <div class="card-subtitle">Thermal Cooling Component</div>
+                        <div class="card-prompt">heat sink 80mm wide 40mm tall with 4 fins 3mm thick</div>
+                        <div class="card-dimensions">
+                            <strong>Width:</strong> 80 mm | <strong>Height:</strong> 40 mm<br>
+                            <strong>Fins:</strong> 4× @ 3 mm thick
+                        </div>
+                        <a href="../../app.html?create=heatsink&w=80&h=40&fins=4&t=3" class="card-button">Open in cycleCAD</a>
+                    </div>
+                </div>
+
+                <!-- Mounting Bracket -->
+                <div class="card">
+                    <div class="card-preview grid-3d">
+                        <svg viewBox="0 0 140 120" xmlns="http://www.w3.org/2000/svg">
+                            <g transform="translate(70, 60)">
+                                <!-- Vertical arm -->
+                                <rect x="-12" y="-40" width="24" height="55" fill="#238636" stroke="#58a6ff" stroke-width="2"/>
+                                <!-- Horizontal base -->
+                                <rect x="-40" y="15" width="80" height="12" fill="#1f6feb" stroke="#58a6ff" stroke-width="2"/>
+                                <!-- Gusset -->
+                                <polygon points="-12,15 -12,8 -20,15" fill="#0d47a1" stroke="#58a6ff" stroke-width="1.5"/>
+                                <!-- Bolt holes -->
+                                <circle cx="-25" cy="21" r="3" fill="#0d1117" stroke="#58a6ff" stroke-width="1"/>
+                                <circle cx="25" cy="21" r="3" fill="#0d1117" stroke="#58a6ff" stroke-width="1"/>
+                                <circle cx="-5" cy="-35" r="3" fill="#0d1117" stroke="#58a6ff" stroke-width="1"/>
+                                <circle cx="5" cy="-35" r="3" fill="#0d1117" stroke="#58a6ff" stroke-width="1"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title">Mounting Bracket</div>
+                        <div class="card-subtitle">Wall/Panel Mount</div>
+                        <div class="card-prompt">mounting bracket 80mm base 60mm tall with 4 bolt holes</div>
+                        <div class="card-dimensions">
+                            <strong>Base:</strong> 80 mm | <strong>Height:</strong> 60 mm<br>
+                            <strong>Holes:</strong> 4× M6
+                        </div>
+                        <a href="../../app.html?create=mount-bracket&base=80&h=60&holes=4" class="card-button">Open in cycleCAD</a>
+                    </div>
+                </div>
+
+                <!-- Filter Housing -->
+                <div class="card">
+                    <div class="card-preview grid-3d">
+                        <svg class="part-cylinder" viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg">
+                            <g transform="translate(50, 70)">
+                                <!-- Outer housing -->
+                                <ellipse cx="0" cy="-35" rx="28" ry="14" fill="#238636" stroke="#58a6ff" stroke-width="2"/>
+                                <rect x="-28" y="-35" width="56" height="70" fill="#1f6feb" stroke="#58a6ff" stroke-width="2"/>
+                                <ellipse cx="0" cy="35" rx="28" ry="14" fill="#0d47a1" stroke="#58a6ff" stroke-width="2"/>
+                                <!-- Inlet port -->
+                                <circle cx="0" cy="-40" r="5" fill="#238636" stroke="#58a6ff" stroke-width="1.5"/>
+                                <!-- Outlet port -->
+                                <circle cx="0" cy="40" r="5" fill="#238636" stroke="#58a6ff" stroke-width="1.5"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title">Filter Housing</div>
+                        <div class="card-subtitle">Cylindrical Filter Canister</div>
+                        <div class="card-prompt">filter housing 60mm diameter 80mm tall inlet outlet ports</div>
+                        <div class="card-dimensions">
+                            <strong>Diameter:</strong> 60 mm | <strong>Height:</strong> 80 mm<br>
+                            <strong>Ports:</strong> 2× (inlet/outlet)
+                        </div>
+                        <a href="../../app.html?create=filter&d=60&h=80" class="card-button">Open in cycleCAD</a>
+                    </div>
+                </div>
+
+                <!-- Enclosure Corner Block -->
+                <div class="card">
+                    <div class="card-preview grid-3d">
+                        <svg class="part-cube" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+                            <g transform="translate(60, 60)">
+                                <!-- Corner block -->
+                                <polygon points="0,-35 35,-15 35,20 0,40" fill="#238636" stroke="#58a6ff" stroke-width="2"/>
+                                <polygon points="0,-35 -35,-15 -35,20 0,40" fill="#1f6feb" stroke="#58a6ff" stroke-width="2"/>
+                                <!-- Bolt holes -->
+                                <circle cx="20" cy="10" r="2.5" fill="#0d1117" stroke="#58a6ff" stroke-width="1"/>
+                                <circle cx="-20" cy="10" r="2.5" fill="#0d1117" stroke="#58a6ff" stroke-width="1"/>
+                                <circle cx="0" cy="25" r="2.5" fill="#0d1117" stroke="#58a6ff" stroke-width="1"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title">Enclosure Corner Block</div>
+                        <div class="card-subtitle">Cabinet Assembly Junction</div>
+                        <div class="card-prompt">corner block 40x40x40mm with 3 mounting holes</div>
+                        <div class="card-dimensions">
+                            <strong>Size:</strong> 40 × 40 × 40 mm<br>
+                            <strong>Mounting Holes:</strong> 3×
+                        </div>
+                        <a href="../../app.html?create=corner-block&w=40&h=40&d=40" class="card-button">Open in cycleCAD</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 cycleCAD by ExplodeView. <a href="../index.html">Back to cycleCAD</a> | <a href="api-reference.html">API Reference</a> | <a href="https://github.com/vvlars-cmd/explodeview">GitHub</a></p>
+    </footer>
+</body>
+</html>

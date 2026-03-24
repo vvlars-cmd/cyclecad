@@ -1,0 +1,1620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Getting Started with cycleCAD - Browser-Based 3D Modeling</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+            background-color: #0d1117;
+            color: #e6edf3;
+            line-height: 1.6;
+        }
+
+        /* Layout */
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            position: sticky;
+            top: 0;
+            width: 250px;
+            height: 100vh;
+            background-color: #161b22;
+            border-right: 1px solid #30363d;
+            overflow-y: auto;
+            padding: 24px 0;
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            padding: 0 16px 16px;
+            border-bottom: 1px solid #30363d;
+            margin-bottom: 16px;
+        }
+
+        .sidebar-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #58a6ff;
+        }
+
+        .sidebar-nav {
+            list-style: none;
+        }
+
+        .sidebar-nav li {
+            padding: 0;
+        }
+
+        .sidebar-nav a {
+            display: block;
+            padding: 8px 16px;
+            color: #e6edf3;
+            text-decoration: none;
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .sidebar-nav a:hover {
+            color: #58a6ff;
+            background-color: #0d1117;
+            border-left-color: #58a6ff;
+        }
+
+        .sidebar-nav a.active {
+            color: #58a6ff;
+            background-color: rgba(88, 166, 255, 0.1);
+            border-left-color: #58a6ff;
+            font-weight: 500;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 0;
+            background: linear-gradient(135deg, #0d1117 0%, #0f1419 100%);
+        }
+
+        .content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 60px 40px;
+        }
+
+        /* Header */
+        .page-header {
+            margin-bottom: 60px;
+            padding-bottom: 40px;
+            border-bottom: 1px solid #30363d;
+        }
+
+        .page-title {
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #58a6ff 0%, #79c0ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .page-subtitle {
+            font-size: 16px;
+            color: #8b949e;
+            margin-top: 8px;
+        }
+
+        /* Sections */
+        section {
+            margin-bottom: 60px;
+            scroll-margin-top: 80px;
+        }
+
+        h2 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #58a6ff;
+            display: flex;
+            align-items: center;
+        }
+
+        h2 .section-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            background-color: rgba(88, 166, 255, 0.1);
+            border: 2px solid #58a6ff;
+            border-radius: 50%;
+            margin-right: 12px;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-top: 24px;
+            margin-bottom: 12px;
+            color: #e6edf3;
+        }
+
+        p, li {
+            font-size: 15px;
+            color: #c9d1d9;
+            margin-bottom: 16px;
+        }
+
+        a {
+            color: #58a6ff;
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+
+        a:hover {
+            border-bottom-color: #58a6ff;
+        }
+
+        /* Lists */
+        ol, ul {
+            margin-left: 24px;
+        }
+
+        li {
+            margin-bottom: 12px;
+        }
+
+        /* Code blocks */
+        .code-block {
+            background-color: #0f1419;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+            overflow-x: auto;
+            font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+            font-size: 13px;
+            color: #79c0ff;
+        }
+
+        /* Steps */
+        .step {
+            background-color: rgba(88, 166, 255, 0.05);
+            border-left: 4px solid #58a6ff;
+            padding: 16px 20px;
+            margin: 16px 0;
+            border-radius: 4px;
+        }
+
+        .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            background-color: #58a6ff;
+            color: #0d1117;
+            border-radius: 50%;
+            font-weight: 700;
+            margin-right: 12px;
+            font-size: 14px;
+        }
+
+        .step-title {
+            font-weight: 600;
+            color: #58a6ff;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .step-description {
+            color: #c9d1d9;
+            margin-left: 40px;
+            margin-top: -28px;
+            padding-top: 0;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 24px 0;
+            font-size: 14px;
+        }
+
+        thead {
+            background-color: rgba(88, 166, 255, 0.1);
+        }
+
+        th {
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            color: #58a6ff;
+            border-bottom: 2px solid #30363d;
+        }
+
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #30363d;
+            color: #c9d1d9;
+        }
+
+        tr:hover {
+            background-color: rgba(88, 166, 255, 0.05);
+        }
+
+        /* Grid layout for shortcuts */
+        .shortcut-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .shortcut-item {
+            background-color: rgba(88, 166, 255, 0.05);
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 13px;
+        }
+
+        .shortcut-key {
+            display: inline-block;
+            background-color: #30363d;
+            color: #79c0ff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: 'Monaco', monospace;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+
+        .shortcut-action {
+            color: #c9d1d9;
+        }
+
+        /* Callout boxes */
+        .callout {
+            background-color: rgba(88, 166, 255, 0.1);
+            border-left: 4px solid #58a6ff;
+            padding: 16px;
+            border-radius: 6px;
+            margin: 24px 0;
+        }
+
+        .callout.tip {
+            border-left-color: #3fb950;
+            background-color: rgba(63, 185, 80, 0.1);
+        }
+
+        .callout.warning {
+            border-left-color: #d29922;
+            background-color: rgba(210, 153, 34, 0.1);
+        }
+
+        .callout.info {
+            border-left-color: #58a6ff;
+            background-color: rgba(88, 166, 255, 0.1);
+        }
+
+        .callout-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .callout.tip .callout-title {
+            color: #3fb950;
+        }
+
+        .callout.warning .callout-title {
+            color: #d29922;
+        }
+
+        .callout.info .callout-title {
+            color: #58a6ff;
+        }
+
+        /* Diagram */
+        .diagram {
+            background-color: #0f1419;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 24px;
+            margin: 24px 0;
+            font-family: 'Monaco', monospace;
+            font-size: 12px;
+            color: #79c0ff;
+            overflow-x: auto;
+            line-height: 1.4;
+        }
+
+        /* Cards for tutorials */
+        .tutorial-card {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 24px;
+            margin: 20px 0;
+        }
+
+        .tutorial-card h4 {
+            color: #58a6ff;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: static;
+                border-right: none;
+                border-bottom: 1px solid #30363d;
+                padding: 16px 0;
+            }
+
+            .content {
+                padding: 40px 20px;
+            }
+
+            .page-title {
+                font-size: 32px;
+            }
+
+            h2 {
+                font-size: 22px;
+            }
+
+            .shortcut-grid {
+                grid-template-columns: 1fr;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 8px 12px;
+            }
+        }
+
+        /* Scrollbar styling */
+        .sidebar::-webkit-scrollbar,
+        .code-block::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .sidebar::-webkit-scrollbar-track,
+        .code-block::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb,
+        .code-block::-webkit-scrollbar-thumb {
+            background-color: #30363d;
+            border-radius: 4px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb:hover,
+        .code-block::-webkit-scrollbar-thumb:hover {
+            background-color: #484f58;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 80px;
+            padding-top: 40px;
+            border-top: 1px solid #30363d;
+            text-align: center;
+            color: #8b949e;
+            font-size: 14px;
+        }
+
+        .footer a {
+            color: #58a6ff;
+        }
+
+        /* Highlight text */
+        .highlight {
+            background-color: rgba(88, 166, 255, 0.2);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        /* Button style */
+        .button-preview {
+            display: inline-block;
+            background-color: #238636;
+            color: #ffffff;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 14px;
+            border: 1px solid #2ea043;
+            cursor: pointer;
+            margin: 8px 8px 8px 0;
+        }
+
+        .button-preview:hover {
+            background-color: #2ea043;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">cycleCAD Docs</div>
+            </div>
+            <nav>
+                <ul class="sidebar-nav">
+                    <li><a href="#welcome" class="nav-link active">Welcome</a></li>
+                    <li><a href="#quick-start" class="nav-link">Quick Start</a></li>
+                    <li><a href="#tutorial-bracket" class="nav-link">Bracket Tutorial</a></li>
+                    <li><a href="#tutorial-ai" class="nav-link">AI-Generated Part</a></li>
+                    <li><a href="#tutorial-spacer" class="nav-link">Complex Part</a></li>
+                    <li><a href="#interface" class="nav-link">Interface Guide</a></li>
+                    <li><a href="#shortcuts" class="nav-link">Keyboard Shortcuts</a></li>
+                    <li><a href="#ai-prompts" class="nav-link">AI Prompt Examples</a></li>
+                    <li><a href="#export" class="nav-link">Export Options</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="content">
+                <!-- Header -->
+                <header class="page-header">
+                    <h1 class="page-title">Getting Started with cycleCAD</h1>
+                    <p class="page-subtitle">Learn browser-based parametric 3D modeling in minutes. No installation required.</p>
+                </header>
+
+                <!-- Section 1: Welcome -->
+                <section id="welcome">
+                    <h2><span class="section-number">1</span> Welcome to cycleCAD</h2>
+                    <p>cycleCAD is a <span class="highlight">browser-based parametric 3D modeler</span> powered by OpenCascade. Create professional-grade CAD models directly in your browser without installing any software.</p>
+
+                    <h3>What You Can Do</h3>
+                    <ul>
+                        <li><strong>Sketch & Extrude:</strong> Draw 2D sketches and extrude them into 3D parts</li>
+                        <li><strong>AI Text-to-3D:</strong> Describe a part in natural language and watch it generate instantly</li>
+                        <li><strong>Import STEP Files:</strong> Load existing CAD designs and modify them parametrically</li>
+                        <li><strong>Export Multiple Formats:</strong> STL (3D printing), OBJ, STEP, and cycleCAD JSON</li>
+                        <li><strong>Parametric Design:</strong> Change dimensions anytime and the model updates automatically</li>
+                    </ul>
+
+                    <div class="callout info">
+                        <div class="callout-title">💡 Zero Installation</div>
+                        <p>cycleCAD runs entirely in your browser. Just open it, start creating, and your models sync to the cloud. Work from any device, any browser.</p>
+                    </div>
+
+                    <h3>Three Ways to Create</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Method</th>
+                                <th>Best For</th>
+                                <th>Skill Level</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Sketch → Extrude</strong></td>
+                                <td>Precise parts with exact dimensions</td>
+                                <td>Beginner to Advanced</td>
+                            </tr>
+                            <tr>
+                                <td><strong>AI Text-to-3D</strong></td>
+                                <td>Quick prototyping, exploration, ideas</td>
+                                <td>Beginner</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Import & Modify</strong></td>
+                                <td>Iterating on existing designs</td>
+                                <td>Intermediate</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- Section 2: Quick Start -->
+                <section id="quick-start">
+                    <h2><span class="section-number">2</span> Quick Start (60 Seconds)</h2>
+                    <p>Follow these steps to create your first 3D part. Estimated time: <span class="highlight">60 seconds</span>.</p>
+
+                    <div class="step">
+                        <div class="step-title">
+                            <span class="step-number">1</span>
+                            Open cycleCAD in your browser
+                        </div>
+                        <div class="step-description">
+                            Navigate to <code>https://cyclecad.com</code> or open it locally. You'll see the welcome screen.
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-title">
+                            <span class="step-number">2</span>
+                            Click "New Sketch" on the welcome screen
+                        </div>
+                        <div class="step-description">
+                            A blank canvas appears. You're now in sketch mode, ready to draw 2D shapes.
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-title">
+                            <span class="step-number">3</span>
+                            Select Rectangle tool (press <span class="highlight">R</span>)
+                        </div>
+                        <div class="step-description">
+                            The rectangle tool is active. The cursor changes to a crosshair. You can also click the Rectangle icon in the toolbar.
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-title">
+                            <span class="step-number">4</span>
+                            Click two points to draw a 50×30mm rectangle
+                        </div>
+                        <div class="step-description">
+                            Click once for the first corner. A dimensions panel appears. Type <code>50</code> for width and <code>30</code> for height. Click the second corner to complete the rectangle.
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-title">
+                            <span class="step-number">5</span>
+                            Press <span class="highlight">Enter</span> to finish the sketch
+                        </div>
+                        <div class="step-description">
+                            The sketch is now complete. The 2D shape is ready to be extruded into 3D.
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-title">
+                            <span class="step-number">6</span>
+                            Click Extrude (or press <span class="highlight">E</span>)
+                        </div>
+                        <div class="step-description">
+                            The extrude tool is activated. You can now define the height of your 3D part.
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-title">
+                            <span class="step-number">7</span>
+                            Enter 20mm height → You have your first 3D part!
+                        </div>
+                        <div class="step-description">
+                            Type <code>20</code> in the height field. Press Enter. Congratulations! You've created a 50×30×20mm solid block. The 3D view shows your part with lighting and shadows.
+                        </div>
+                    </div>
+
+                    <div class="callout tip">
+                        <div class="callout-title">✓ You Did It!</div>
+                        <p>You just created your first parametric 3D model. In the Properties panel on the right, you can click any dimension to edit it and see your model update in real-time. Try changing the width to 60mm—the entire part updates instantly.</p>
+                    </div>
+                </section>
+
+                <!-- Section 3: Bracket Tutorial -->
+                <section id="tutorial-bracket">
+                    <h2><span class="section-number">3</span> Tutorial: Creating a Mounting Bracket</h2>
+                    <p>A practical walkthrough creating a mounting bracket with bolt holes—a common part in mechanical design.</p>
+
+                    <div class="tutorial-card">
+                        <h4>Step 1: Create the Base Sketch</h4>
+                        <ol>
+                            <li>Click <span class="highlight">New Sketch</span> (or press <span class="highlight">Ctrl+N</span>)</li>
+                            <li>Select the <span class="highlight">Rectangle</span> tool (R key)</li>
+                            <li>Draw a rectangle: <strong>80mm wide × 40mm tall</strong></li>
+                            <li>Press <span class="highlight">Enter</span> to finish the sketch</li>
+                        </ol>
+                    </div>
+
+                    <div class="diagram">
+        ┌──────────────────────────────┐
+        │                              │   40mm
+        │         BRACKET              │
+        │         BASE                 │
+        │                              │
+        └──────────────────────────────┘
+                    80mm
+                    </div>
+
+                    <div class="tutorial-card">
+                        <h4>Step 2: Add Bolt Hole Positions</h4>
+                        <ol>
+                            <li>Press <span class="highlight">S</span> to start a new sketch on the base</li>
+                            <li>Use the <span class="highlight">Circle</span> tool (C key) to place 4 circles</li>
+                            <li>Position circles at corners: 8mm diameter each
+                                <ul>
+                                    <li>Top-left: 10mm from edges</li>
+                                    <li>Top-right: 10mm from edges</li>
+                                    <li>Bottom-left: 10mm from edges</li>
+                                    <li>Bottom-right: 10mm from edges</li>
+                                </ul>
+                            </li>
+                            <li>Press <span class="highlight">Enter</span> when done</li>
+                        </ol>
+                    </div>
+
+                    <div class="diagram">
+        •═══════════════════════════════•
+        ║   ⊙            ⊙              ║
+        ║                              ║  40mm
+        ║                              ║
+        ║   ⊙            ⊙              ║
+        •═══════════════════════════════•
+                    80mm
+
+        ⊙ = 8mm bolt holes (4 total)
+        • = Corner reference
+                    </div>
+
+                    <div class="tutorial-card">
+                        <h4>Step 3: Extrude to 3D</h4>
+                        <ol>
+                            <li>Click the base rectangle (now your 2D sketch)</li>
+                            <li>Press <span class="highlight">E</span> to extrude</li>
+                            <li>Enter height: <strong>5mm</strong></li>
+                            <li>The bracket is now 3D with bolt holes cut through</li>
+                        </ol>
+                    </div>
+
+                    <div class="tutorial-card">
+                        <h4>Step 4: Finishing Touches (Optional)</h4>
+                        <ol>
+                            <li>Select all edges (Ctrl+A)</li>
+                            <li>Add a <span class="highlight">Chamfer</span> (0.5mm on edges) for a polished look</li>
+                            <li>Press <span class="highlight">M</span> to switch to move/rotate mode</li>
+                            <li>Rotate the part to inspect it from all angles</li>
+                        </ol>
+                    </div>
+
+                    <div class="callout tip">
+                        <div class="callout-title">🔧 Parametric Magic</div>
+                        <p>Click any dimension in the Properties panel on the right (width, height, hole diameter, etc.) to edit it. Change the hole diameter to 6mm? The entire part updates instantly. This is parametric design—perfect for iterating designs quickly.</p>
+                    </div>
+                </section>
+
+                <!-- Section 4: AI-Generated Part -->
+                <section id="tutorial-ai">
+                    <h2><span class="section-number">4</span> Tutorial: AI-Generated Part</h2>
+                    <p>Let AI do the heavy lifting. Describe a part in plain English, and cycleCAD generates it in seconds.</p>
+
+                    <div class="tutorial-card">
+                        <h4>Step 1: Open AI Chat</h4>
+                        <ol>
+                            <li>Click the <span class="highlight">AI Chat</span> button in the right panel (or press <span class="highlight">?</span>)</li>
+                            <li>A chat window opens on the right side of the screen</li>
+                        </ol>
+                    </div>
+
+                    <div class="tutorial-card">
+                        <h4>Step 2: Describe Your Part</h4>
+                        <p>Type a natural language description in the chat box:</p>
+                        <div class="code-block">
+Create a flanged bearing housing:
+- 80mm outer diameter
+- 50mm bore (center hole)
+- 4 bolt holes at 60mm bolt circle diameter
+- Material: Aluminum
+- Flange thickness: 8mm
+                        </div>
+                    </div>
+
+                    <div class="tutorial-card">
+                        <h4>Step 3: AI Generates Instantly</h4>
+                        <ol>
+                            <li>Press Enter or click Send</li>
+                            <li>The AI analyzes your description in real-time</li>
+                            <li>Within 2-3 seconds, a 3D model appears in the viewport</li>
+                            <li>The part is fully parametric—dimensions appear in the Properties panel</li>
+                        </ol>
+                    </div>
+
+                    <div class="tutorial-card">
+                        <h4>Step 4: Customize the Generated Part</h4>
+                        <ol>
+                            <li>Look at the Properties panel on the right</li>
+                            <li>Click any parameter (outer diameter, bore, bolt hole count, etc.)</li>
+                            <li>Edit the value and press Enter—the 3D model updates instantly</li>
+                            <li>Example: Change bore from 50mm to 55mm. Watch the model update in real-time.</li>
+                        </ol>
+                    </div>
+
+                    <div class="callout tip">
+                        <div class="callout-title">🤖 Be Specific, Be Clear</div>
+                        <p>The more details you provide, the better the AI understands your intent. Include dimensions, materials, hole patterns, and any special features. Vague descriptions like "make a cool housing" may not generate what you expect. Specific descriptions like "cylindrical housing, 50mm OD, 25mm ID, 30mm height, 4 evenly-spaced M3 bolt holes" work best.</p>
+                    </div>
+
+                    <h3>Example Prompts That Work Well</h3>
+                    <ul>
+                        <li>"50mm cube made of steel"</li>
+                        <li>"Cylinder: 30mm radius, 60mm height, hole 8mm down the center"</li>
+                        <li>"Plate 100×60×10mm with 4 corner holes 8mm diameter"</li>
+                        <li>"M8 washer (standard metric)"</li>
+                        <li>"Gear: 40mm diameter, 20 teeth, 5mm bore"</li>
+                        <li>"L-bracket: 50mm legs, 10mm thick, 4 corner holes"</li>
+                    </ul>
+                </section>
+
+                <!-- Section 5: Complex Part -->
+                <section id="tutorial-spacer">
+                    <h2><span class="section-number">5</span> Tutorial: Complex Part (Spacer with Features)</h2>
+                    <p>Create a more advanced part: a cylindrical spacer with a center bore and chamfered edges.</p>
+
+                    <div class="tutorial-card">
+                        <h4>Step 1: Create the Cylinder Base</h4>
+                        <ol>
+                            <li>Press <span class="highlight">Ctrl+N</span> for a new sketch</li>
+                            <li>Select <span class="highlight">Circle</span> tool (C key)</li>
+                            <li>Draw a circle: <strong>30mm diameter</strong> (15mm radius from center)</li>
+                            <li>Press <span class="highlight">Enter</span> to finish the sketch</li>
+                        </ol>
+                    </div>
+
+                    <div class="tutorial-card">
+                        <h4>Step 2: Extrude to Create Cylinder</h4>
+                        <ol>
+                            <li>Press <span class="highlight">E</span> to extrude</li>
+                            <li>Enter height: <strong>15mm</strong></li>
+                            <li>You now have a solid cylinder: 30mm diameter × 15mm tall</li>
+                        </ol>
+                    </div>
+
+                    <div class="tutorial-card">
+                        <h4>Step 3: Add Center Bore</h4>
+                        <ol>
+                            <li>Click the top face of the cylinder (or press <span class="highlight">F</span> for face select)</li>
+                            <li>Press <span class="highlight">S</span> to create a new sketch on the top face</li>
+                            <li>Draw a circle: <strong>10mm diameter</strong></li>
+                            <li>Press <span class="highlight">Enter</span> to finish</li>
+                            <li>Press <span class="highlight">P</span> for Pocket (subtractive extrude)</li>
+                            <li>Enter depth: <strong>15mm</strong> (through the entire part)</li>
+                        </ol>
+                    </div>
+
+                    <div class="diagram">
+        Side View:           Top View (after bore):
+        ┌──────────────┐
+        │              │      ┌────────────────┐
+        │   SPACER     │      │     ○          │
+        │              │      │  30mm OD       │
+        │              │      │    10mm ID     │
+        └──────────────┘      └────────────────┘
+          15mm tall
+                    </div>
+
+                    <div class="tutorial-card">
+                        <h4>Step 4: Add Chamfer to Top Edge</h4>
+                        <ol>
+                            <li>Select the top circular edge (top rim of the bore)</li>
+                            <li>Press <span class="highlight">Shift+C</span> for Chamfer</li>
+                            <li>Enter chamfer distance: <strong>1mm</strong></li>
+                            <li>The sharp edge is now beveled</li>
+                        </ol>
+                    </div>
+
+                    <div class="tutorial-card">
+                        <h4>Step 5: Export as STEP</h4>
+                        <ol>
+                            <li>Click the <span class="highlight">Export</span> button in the top toolbar</li>
+                            <li>Select <span class="highlight">STEP (.step)</span> format</li>
+                            <li>Name your part: <code>spacer_v1.step</code></li>
+                            <li>Click <span class="highlight">Download</span></li>
+                            <li>The file is saved to your computer and can be opened in any CAD software</li>
+                        </ol>
+                    </div>
+
+                    <div class="callout tip">
+                        <div class="callout-title">🎯 Features vs. Sketches</div>
+                        <p>In cycleCAD, <strong>Features</strong> are the operations you apply (Extrude, Pocket, Chamfer, Fillet, etc.). Each feature modifies the geometry step-by-step. The <strong>Feature Tree</strong> on the left shows every operation—click any feature to edit it or use it as a reference.</p>
+                    </div>
+                </section>
+
+                <!-- Section 6: Interface Guide -->
+                <section id="interface">
+                    <h2><span class="section-number">6</span> Interface Guide</h2>
+                    <p>Understand the cycleCAD workspace. Every panel has a purpose.</p>
+
+                    <h3>Left Panel: Feature Tree</h3>
+                    <p>Shows the <strong>history of all operations</strong> you've performed on your model (also called the "Feature Tree" or "Model Tree").</p>
+                    <ul>
+                        <li><strong>Sketch1, Sketch2, …:</strong> 2D sketches you've created</li>
+                        <li><strong>Extrude1, Pocket1, …:</strong> 3D features applied to sketches</li>
+                        <li><strong>Chamfer1, Fillet1, …:</strong> Finishing operations (edge treatments)</li>
+                        <li><strong>Expand/collapse:</strong> Click arrows (▶ ▼) to show/hide sketch details</li>
+                        <li><strong>Edit:</strong> Double-click any feature to edit it</li>
+                        <li><strong>Delete:</strong> Right-click a feature and select Delete to remove it and all dependent features</li>
+                        <li><strong>Visibility:</strong> Click the eye icon next to a feature to hide/show it</li>
+                    </ul>
+
+                    <h3>Center: 3D Viewport</h3>
+                    <p>Your main canvas. This is where you see and manipulate your 3D model in real-time.</p>
+                    <ul>
+                        <li><strong>Left-click + drag:</strong> Rotate the model (arcball rotation)</li>
+                        <li><strong>Right-click + drag:</strong> Pan (move the model side-to-side)</li>
+                        <li><strong>Scroll wheel:</strong> Zoom in and out</li>
+                        <li><strong>Middle-click:</strong> Reset the view to default (fit all)</li>
+                        <li><strong>Press . (period):</strong> Fit selected part in view</li>
+                        <li><strong>Click a face/edge/vertex:</strong> Select it (highlighted in blue/orange)</li>
+                    </ul>
+
+                    <h3>Right Panel: Properties & AI Chat</h3>
+                    <p>Two tabs: <span class="highlight">Properties</span> and <span class="highlight">AI Chat</span>.</p>
+                    <p><strong>Properties Tab:</strong></p>
+                    <ul>
+                        <li>Shows all <strong>editable dimensions</strong> of the selected feature</li>
+                        <li>Examples: width, height, depth, radius, hole diameter, chamfer distance</li>
+                        <li>Click any value to edit it. Press Enter to apply changes.</li>
+                        <li><strong>Material selector:</strong> Choose material (Steel, Aluminum, Plastic, etc.) at the bottom</li>
+                        <li><strong>Mass estimation:</strong> Calculated based on material density and bounding volume</li>
+                    </ul>
+                    <p><strong>AI Chat Tab:</strong></p>
+                    <ul>
+                        <li>Describe parts in plain English</li>
+                        <li>Ask questions about your model ("How much does this weigh?", "Can I 3D print this?")</li>
+                        <li>Chat history is saved for each project</li>
+                    </ul>
+
+                    <h3>Top Toolbar: Tools Organized by Category</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Tools Included</th>
+                                <th>Keyboard Access</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Sketch</strong></td>
+                                <td>Rectangle, Circle, Line, Polygon, Point, Dimension, Constraint</td>
+                                <td>R, C, L, P (in sketch mode)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Features</strong></td>
+                                <td>Extrude, Pocket, Pad, Hole, Chamfer, Fillet</td>
+                                <td>E, K, H, Shift+C, Shift+F</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Boolean</strong></td>
+                                <td>Union, Subtract, Intersect</td>
+                                <td>U, minus, & (on selected bodies)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Transform</strong></td>
+                                <td>Mirror, Pattern, Move, Rotate, Scale</td>
+                                <td>Shift+M, Shift+P, M, Shift+R, Shift+S</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Analyze</strong></td>
+                                <td>Measure, Weight Calc, Stress Preview, BOM</td>
+                                <td>Ctrl+M, W, ?, B</td>
+                            </tr>
+                            <tr>
+                                <td><strong>View</strong></td>
+                                <td>Fit All, Zoom, Pan, Rotate, Wireframe, Shading</td>
+                                <td>V, ., Middle-click, 1-6 (view presets)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Bottom Status Bar</h3>
+                    <ul>
+                        <li><strong>Current mode:</strong> "Sketch Mode", "Feature Mode", "View Mode", etc.</li>
+                        <li><strong>Units:</strong> Millimeters (mm) by default. Change in Preferences (Ctrl+,)</li>
+                        <li><strong>Grid:</strong> Grid spacing and snap settings</li>
+                        <li><strong>Selected element count:</strong> "1 face selected", "3 edges selected", etc.</li>
+                        <li><strong>Coordinate display:</strong> Mouse pointer position in model space</li>
+                    </ul>
+
+                    <div class="callout info">
+                        <div class="callout-title">📐 Coordinate System</div>
+                        <p>cycleCAD uses a standard right-handed 3D coordinate system. The red axis is X (left-right), green is Y (forward-back), and blue is Z (up-down). You can toggle the axes display with <span class="highlight">Ctrl+Shift+A</span>.</p>
+                    </div>
+                </section>
+
+                <!-- Section 7: Keyboard Shortcuts -->
+                <section id="shortcuts">
+                    <h2><span class="section-number">7</span> Keyboard Shortcuts Reference</h2>
+                    <p>Master these shortcuts to work faster. Press <span class="highlight">?</span> anytime to see this cheat sheet in the app.</p>
+
+                    <h3>General Navigation</h3>
+                    <div class="shortcut-grid">
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">Ctrl+N</span>
+                            <span class="shortcut-action">New sketch</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">Ctrl+S</span>
+                            <span class="shortcut-action">Save project</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">Ctrl+O</span>
+                            <span class="shortcut-action">Open project</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">Ctrl+Z</span>
+                            <span class="shortcut-action">Undo</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">Ctrl+Shift+Z</span>
+                            <span class="shortcut-action">Redo</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">?</span>
+                            <span class="shortcut-action">Show shortcuts panel</span>
+                        </div>
+                    </div>
+
+                    <h3>Sketch Tools (Sketch Mode Only)</h3>
+                    <div class="shortcut-grid">
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">R</span>
+                            <span class="shortcut-action">Rectangle tool</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">C</span>
+                            <span class="shortcut-action">Circle tool</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">L</span>
+                            <span class="shortcut-action">Line tool</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">P</span>
+                            <span class="shortcut-action">Polygon tool</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">D</span>
+                            <span class="shortcut-action">Add dimension</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">Enter</span>
+                            <span class="shortcut-action">Finish sketch</span>
+                        </div>
+                    </div>
+
+                    <h3>Feature Tools</h3>
+                    <div class="shortcut-grid">
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">E</span>
+                            <span class="shortcut-action">Extrude</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">K</span>
+                            <span class="shortcut-action">Pocket (subtractive)</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">H</span>
+                            <span class="shortcut-action">Hole wizard</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">Shift+C</span>
+                            <span class="shortcut-action">Chamfer edge</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">Shift+F</span>
+                            <span class="shortcut-action">Fillet edge</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">U</span>
+                            <span class="shortcut-action">Boolean union</span>
+                        </div>
+                    </div>
+
+                    <h3>View Controls</h3>
+                    <div class="shortcut-grid">
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">.</span>
+                            <span class="shortcut-action">Fit selected in view</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">V</span>
+                            <span class="shortcut-action">Fit all in view</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">1</span>
+                            <span class="shortcut-action">Front view</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">2</span>
+                            <span class="shortcut-action">Top view</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">3</span>
+                            <span class="shortcut-action">Side view</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">4</span>
+                            <span class="shortcut-action">Isometric view</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">5</span>
+                            <span class="shortcut-action">Bottom view</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">6</span>
+                            <span class="shortcut-action">Back view</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">W</span>
+                            <span class="shortcut-action">Wireframe toggle</span>
+                        </div>
+                    </div>
+
+                    <h3>Transform Tools</h3>
+                    <div class="shortcut-grid">
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">M</span>
+                            <span class="shortcut-action">Move/drag selected</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">Shift+R</span>
+                            <span class="shortcut-action">Rotate selected</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">Shift+M</span>
+                            <span class="shortcut-action">Mirror</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">Shift+P</span>
+                            <span class="shortcut-action">Pattern (array)</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">Shift+S</span>
+                            <span class="shortcut-action">Scale</span>
+                        </div>
+                    </div>
+
+                    <h3>Analysis & Export</h3>
+                    <div class="shortcut-grid">
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">Ctrl+M</span>
+                            <span class="shortcut-action">Measure distance</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">G</span>
+                            <span class="shortcut-action">Calculate weight</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">B</span>
+                            <span class="shortcut-action">Generate BOM</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">Ctrl+E</span>
+                            <span class="shortcut-action">Export model</span>
+                        </div>
+                    </div>
+
+                    <h3>Selection & Editing</h3>
+                    <div class="shortcut-grid">
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">Ctrl+A</span>
+                            <span class="shortcut-action">Select all</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">Escape</span>
+                            <span class="shortcut-action">Deselect all</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">Delete</span>
+                            <span class="shortcut-action">Delete selected</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-key">Ctrl+D</span>
+                            <span class="shortcut-action">Duplicate selected</span>
+                        </div>
+                    </div>
+
+                    <div class="callout tip">
+                        <div class="callout-title">⚡ Speed Tip: Master E, C, R, P, K</div>
+                        <p>The five most-used shortcuts are <span class="highlight">E</span> (Extrude), <span class="highlight">C</span> (Circle), <span class="highlight">R</span> (Rectangle), <span class="highlight">P</span> (Polygon), and <span class="highlight">K</span> (Pocket). Practice these five, and you'll be 10x faster. Everything else is bonus.</p>
+                    </div>
+                </section>
+
+                <!-- Section 8: AI Prompt Examples -->
+                <section id="ai-prompts">
+                    <h2><span class="section-number">8</span> AI Prompt Examples</h2>
+                    <p>The AI-to-3D feature works best with specific, detailed prompts. Below are 20+ proven examples that generate reliable results.</p>
+
+                    <h3>Simple Geometric Shapes</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Prompt</th>
+                                <th>Result</th>
+                                <th>Time to Generate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>"50mm cube"</td>
+                                <td>Box 50×50×50mm, steel</td>
+                                <td>2-3s</td>
+                            </tr>
+                            <tr>
+                                <td>"Cylinder 30mm radius, 60mm height"</td>
+                                <td>Cylinder Ø30 × 60mm</td>
+                                <td>2-3s</td>
+                            </tr>
+                            <tr>
+                                <td>"Sphere 25mm diameter"</td>
+                                <td>Sphere Ø25mm</td>
+                                <td>2s</td>
+                            </tr>
+                            <tr>
+                                <td>"Rectangular prism: 100mm long, 50mm wide, 25mm tall"</td>
+                                <td>Box 100×50×25mm</td>
+                                <td>2s</td>
+                            </tr>
+                            <tr>
+                                <td>"Torus: 40mm major radius, 10mm minor radius"</td>
+                                <td>Donut torus shape</td>
+                                <td>3s</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Plates with Features</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Prompt</th>
+                                <th>Result</th>
+                                <th>Time to Generate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>"Plate 100×60×10mm with 4 corner holes 8mm diameter"</td>
+                                <td>Rectangular plate with 4 holes</td>
+                                <td>3-4s</td>
+                            </tr>
+                            <tr>
+                                <td>"Circular mounting plate 80mm diameter, 5mm thick, 6 bolt holes evenly spaced on 60mm circle"</td>
+                                <td>Circular plate with pattern</td>
+                                <td>4-5s</td>
+                            </tr>
+                            <tr>
+                                <td>"L-bracket: 50mm legs, 10mm thick, with 4 corner mounting holes M4"</td>
+                                <td>L-shaped bracket</td>
+                                <td>4-5s</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Standard Parts & Fasteners</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Prompt</th>
+                                <th>Result</th>
+                                <th>Time to Generate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>"M8 washer (DIN 125 standard)"</td>
+                                <td>Standard metric washer</td>
+                                <td>2s</td>
+                            </tr>
+                            <tr>
+                                <td>"M6 socket head cap screw, 25mm length"</td>
+                                <td>SHCS fastener</td>
+                                <td>2-3s</td>
+                            </tr>
+                            <tr>
+                                <td>"Spring washer M8"</td>
+                                <td>Lock washer</td>
+                                <td>2s</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Bearings & Housings</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Prompt</th>
+                                <th>Result</th>
+                                <th>Time to Generate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>"Flanged bearing housing: 80mm OD, 50mm bore, 4 bolt holes M6, flange 8mm thick"</td>
+                                <td>Complex housing</td>
+                                <td>5-6s</td>
+                            </tr>
+                            <tr>
+                                <td>"Pillow block bearing housing, aluminum, 40mm bore, base mounting"</td>
+                                <td>Standard bearing mount</td>
+                                <td>4-5s</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Gears & Mechanical Parts</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Prompt</th>
+                                <th>Result</th>
+                                <th>Time to Generate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>"Gear: 40mm pitch diameter, 20 teeth, module 2, 8mm bore"</td>
+                                <td>Simplified spur gear</td>
+                                <td>4-5s</td>
+                            </tr>
+                            <tr>
+                                <td>"Pulley 50mm diameter, 15mm wide, 8mm bore, 3 spokes"</td>
+                                <td>Belt pulley</td>
+                                <td>4-5s</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Spacers & Bushings</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Prompt</th>
+                                <th>Result</th>
+                                <th>Time to Generate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>"Spacer: 30mm OD, 10mm ID, 15mm tall, aluminum"</td>
+                                <td>Hollow cylinder</td>
+                                <td>3-4s</td>
+                            </tr>
+                            <tr>
+                                <td>"Rubber bushing 25mm OD, 12mm ID, 20mm long"</td>
+                                <td>Polymer bushing</td>
+                                <td>3-4s</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Flanges & Adapters</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Prompt</th>
+                                <th>Result</th>
+                                <th>Time to Generate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>"Pipe flange: 100mm OD, 50mm bore, 8 bolt holes M8, 10mm thick"</td>
+                                <td>ANSI flange</td>
+                                <td>5-6s</td>
+                            </tr>
+                            <tr>
+                                <td>"Hose adapter 25mm to 20mm with 90-degree elbow bend"</td>
+                                <td>Elbow connector</td>
+                                <td>4-5s</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="callout warning">
+                        <div class="callout-title">⚠️ AI Limitations</div>
+                        <p>The AI is good at standard, geometric parts but may struggle with complex organic shapes, highly intricate details, or custom non-standard geometries. For those cases, use the sketch → extrude workflow manually. Also, the AI generates "good enough" geometry—tolerances and thread details are simplified for speed.</p>
+                    </div>
+
+                    <h3>Pro Tips for AI Prompts</h3>
+                    <ul>
+                        <li><strong>Be specific with dimensions:</strong> "50mm cube" works better than "a small cube"</li>
+                        <li><strong>Specify material if it matters:</strong> "Aluminum flange" vs. "Steel flange" (affects density/weight)</li>
+                        <li><strong>Use metric units:</strong> Millimeters (mm), Meters (m). Avoid inches.</li>
+                        <li><strong>Describe standard parts by their name:</strong> "M8 bolt", "DIN 125 washer", "ANSI flange" → AI recognizes these</li>
+                        <li><strong>Avoid ambiguous descriptions:</strong> "Make a cool housing" might not give you what you expect. Say "Cylindrical housing, 60mm OD, 40mm ID, 80mm tall, 4 mounting holes"</li>
+                        <li><strong>Iterate if needed:</strong> If the first result isn't perfect, ask the AI to modify: "Add a chamfer to all edges", "Make the bore 2mm larger", "Change material to aluminum"</li>
+                    </ul>
+                </section>
+
+                <!-- Section 9: Export Options -->
+                <section id="export">
+                    <h2><span class="section-number">9</span> Export Options</h2>
+                    <p>cycleCAD supports multiple export formats for different workflows. Export your design for 3D printing, CAD software, manufacturing, or sharing.</p>
+
+                    <h3>STL (Stereolithography)</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Format</th>
+                                <th>Best For</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>.stl</strong> (Binary or ASCII)</td>
+                                <td>3D printing, slicing software</td>
+                                <td>Triangulated mesh. 0.1mm resolution. Supported by Cura, PrusaSlicer, Ultimaker, Formlabs, etc. Binary is smaller; ASCII is human-readable.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p><strong>How to export STL:</strong></p>
+                    <ol>
+                        <li>Click <span class="highlight">Export</span> in the top toolbar</li>
+                        <li>Select <span class="highlight">STL (.stl)</span></li>
+                        <li>Choose Binary or ASCII (Binary is recommended—smaller file size)</li>
+                        <li>Enter filename (e.g., <code>bracket_v1.stl</code>)</li>
+                        <li>Click <span class="highlight">Download</span></li>
+                        <li>Import into your slicer software for 3D printing</li>
+                    </ol>
+
+                    <h3>OBJ (Wavefront)</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Format</th>
+                                <th>Best For</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>.obj</strong></td>
+                                <td>3D software (Blender, Maya, Cinema 4D), game engines</td>
+                                <td>Polygon mesh format. Includes vertex normals for smooth shading. Supported by most 3D software. Files are larger than STL.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p><strong>How to export OBJ:</strong></p>
+                    <ol>
+                        <li>Click <span class="highlight">Export</span> in the top toolbar</li>
+                        <li>Select <span class="highlight">OBJ (.obj)</span></li>
+                        <li>Enter filename</li>
+                        <li>Click <span class="highlight">Download</span></li>
+                        <li>Imports into Blender, Maya, etc. for texturing, rendering, or further editing</li>
+                    </ol>
+
+                    <h3>STEP (ISO 10303-21)</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Format</th>
+                                <th>Best For</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>.step</strong> (also .stp)</td>
+                                <td>CAD software (Fusion 360, SolidWorks, FreeCAD), manufacturing</td>
+                                <td>Parametric geometry interchange. Preserves features and constraints. Best for re-opening and editing in other CAD programs. Requires OpenCascade kernel.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p><strong>How to export STEP:</strong></p>
+                    <ol>
+                        <li>Click <span class="highlight">Export</span> in the top toolbar</li>
+                        <li>Select <span class="highlight">STEP (.step)</span></li>
+                        <li>Enter filename (e.g., <code>bracket_v1.step</code>)</li>
+                        <li>Click <span class="highlight">Download</span></li>
+                        <li>Open in any STEP-compatible CAD software for further modification</li>
+                    </ol>
+
+                    <h3>cycleCAD JSON (Project Archive)</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Format</th>
+                                <th>Best For</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>.cyclecad.json</strong></td>
+                                <td>Saving and reopening projects in cycleCAD</td>
+                                <td>Stores complete project data: sketches, features, parameters, materials, history. Re-open and edit parametrically. Only openable in cycleCAD.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p><strong>How to export cycleCAD JSON:</strong></p>
+                    <ol>
+                        <li>Click <span class="highlight">Export</span> in the top toolbar</li>
+                        <li>Select <span class="highlight">cycleCAD Project (.cyclecad.json)</span></li>
+                        <li>Click <span class="highlight">Download</span></li>
+                        <li>To reopen: Click <span class="highlight">Open Project</span> and select the .cyclecad.json file</li>
+                        <li>All sketches, features, and parameters are restored—full editability</li>
+                    </ol>
+
+                    <h3>PDF (Technical Drawing)</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Format</th>
+                                <th>Best For</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>.pdf</strong></td>
+                                <td>Documentation, sharing blueprints, manufacturing specs</td>
+                                <td>2D orthographic projections (front, top, side views) with dimensions. Includes BOM (Bill of Materials).</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p><strong>How to export PDF:</strong></p>
+                    <ol>
+                        <li>Click <span class="highlight">Export</span> in the top toolbar</li>
+                        <li>Select <span class="highlight">Drawing (PDF)</span></li>
+                        <li>Choose views to include: Front, Top, Side, Isometric (check as needed)</li>
+                        <li>Include BOM? (optional)</li>
+                        <li>Click <span class="highlight">Generate PDF</span></li>
+                        <li>PDF opens in a new tab—save or print as needed</li>
+                    </ol>
+
+                    <div class="callout tip">
+                        <div class="callout-title">📤 Export Best Practices</div>
+                        <ul style="margin-top: 12px; margin-bottom: 0;">
+                            <li><strong>3D Printing?</strong> Use STL. Binary STL is preferred (smaller files).</li>
+                            <li><strong>Sharing with collaborators in other CAD tools?</strong> Use STEP for full editability.</li>
+                            <li><strong>Sending to Blender/Maya for rendering?</strong> Use OBJ.</li>
+                            <li><strong>Want to keep working on this project later?</strong> Export as cycleCAD JSON (preserves parametric features).</li>
+                            <li><strong>Manufacturing or blueprint sharing?</strong> Export as PDF for 2D drawings + BOM.</li>
+                        </ul>
+                    </div>
+
+                    <h3>Batch Export (Export Multiple Parts)</h3>
+                    <p>If your project has multiple bodies or assemblies:</p>
+                    <ol>
+                        <li>Click <span class="highlight">Export</span> in the top toolbar</li>
+                        <li>Select <span class="highlight">Batch Export All Parts</span></li>
+                        <li>Choose format(s): STL, OBJ, STEP, or a combination</li>
+                        <li>Click <span class="highlight">Download All</span></li>
+                        <li>A zip file is created with one file per part, properly named</li>
+                    </ol>
+
+                    <h3>Comparison: Which Format Should I Use?</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Use Case</th>
+                                <th>Format</th>
+                                <th>Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>3D Printing (Cura, PrusaSlicer)</td>
+                                <td>STL</td>
+                                <td>Industry standard, smallest files, all slicers support it</td>
+                            </tr>
+                            <tr>
+                                <td>Render in Blender/Maya</td>
+                                <td>OBJ or STEP</td>
+                                <td>OBJ for mesh editing, STEP for parametric re-import</td>
+                            </tr>
+                            <tr>
+                                <td>Edit in SolidWorks/Fusion 360</td>
+                                <td>STEP</td>
+                                <td>Preserves history and parameters</td>
+                            </tr>
+                            <tr>
+                                <td>Send to manufacturer (CNC/injection mold)</td>
+                                <td>STEP</td>
+                                <td>Full geometry, no approximations</td>
+                            </tr>
+                            <tr>
+                                <td>Continue editing in cycleCAD later</td>
+                                <td>cycleCAD JSON</td>
+                                <td>Preserves all sketches, features, full editability</td>
+                            </tr>
+                            <tr>
+                                <td>2D Blueprint + BOM for docs</td>
+                                <td>PDF</td>
+                                <td>Orthographic views, dimensions, parts list</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="callout info">
+                        <div class="callout-title">💾 Pro Tip: Always Keep the cycleCAD JSON</div>
+                        <p>When you export a project, always also save a copy as cycleCAD JSON. This preserves all your parametric features, sketches, and history. If you ever need to make changes, you can reopen the JSON file in cycleCAD and edit parametrically—much faster than redrawing from an STL or STEP file.</p>
+                    </div>
+                </section>
+
+                <!-- Footer -->
+                <footer class="footer">
+                    <p>cycleCAD Documentation | Browser-Based Parametric 3D Modeling</p>
+                    <p style="margin-top: 12px; font-size: 12px;">
+                        <a href="#">Home</a> •
+                        <a href="#">API Docs</a> •
+                        <a href="#">Community</a> •
+                        <a href="#">Support</a> •
+                        <a href="#">GitHub</a>
+                    </p>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Sidebar navigation sync
+        const navLinks = document.querySelectorAll('.nav-link');
+        const sections = document.querySelectorAll('section');
+
+        function updateActiveLink() {
+            const scrollPosition = window.scrollY + 100;
+
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionBottom = sectionTop + section.offsetHeight;
+
+                if (scrollPosition >= sectionTop && scrollPosition < sectionBottom) {
+                    navLinks.forEach(link => link.classList.remove('active'));
+                    const activeLink = document.querySelector(`a[href="#${section.id}"]`);
+                    if (activeLink) {
+                        activeLink.classList.add('active');
+                    }
+                }
+            });
+        }
+
+        window.addEventListener('scroll', updateActiveLink);
+
+        // Smooth scroll on link click
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = link.getAttribute('href');
+                const targetSection = document.querySelector(targetId);
+                if (targetSection) {
+                    targetSection.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+
+        // Initialize
+        updateActiveLink();
+    </script>
+</body>
+</html>

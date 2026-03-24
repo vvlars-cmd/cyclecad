@@ -1,0 +1,1635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>cycleCAD - Parametric 3D CAD Modeler</title>
+
+  <!-- Import Map for Three.js -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <style>
+    /* ===== CSS Variables & Root ===== */
+    :root {
+      --bg-primary: #1e1e1e;
+      --bg-secondary: #252526;
+      --bg-tertiary: #2d2d30;
+      --border-color: #3e3e42;
+      --text-primary: #e0e0e0;
+      --text-secondary: #a0a0a0;
+      --text-muted: #696969;
+      --accent-blue: #58a6ff;
+      --accent-blue-dark: #1f6feb;
+      --accent-green: #3fb950;
+      --accent-red: #f85149;
+      --accent-yellow: #d29922;
+      --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 8px 16px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 16px 32px rgba(0, 0, 0, 0.5);
+      --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+      --toolbar-height: 48px;
+      --statusbar-height: 36px;
+      --panel-width: 260px;
+      --properties-width: 300px;
+    }
+
+    /* ===== Reset & Globals ===== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif;
+      font-size: 13px;
+      line-height: 1.5;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    button, input, select, textarea {
+      font-family: inherit;
+      font-size: inherit;
+      color: inherit;
+      background: none;
+      border: none;
+      padding: 0;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* ===== Main Layout ===== */
+    #app {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+    }
+
+    #toolbar {
+      height: var(--toolbar-height);
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      gap: 8px;
+      user-select: none;
+      z-index: 100;
+      box-shadow: var(--shadow-sm);
+    }
+
+    #content {
+      flex: 1;
+      display: flex;
+      gap: 0;
+      overflow: hidden;
+    }
+
+    #left-panel {
+      width: var(--panel-width);
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 50;
+    }
+
+    #viewport-container {
+      flex: 1;
+      position: relative;
+      background: var(--bg-primary);
+      overflow: hidden;
+    }
+
+    #viewport {
+      width: 100%;
+      height: 100%;
+    }
+
+    #right-panel {
+      width: var(--properties-width);
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 50;
+    }
+
+    #statusbar {
+      height: var(--statusbar-height);
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      gap: 24px;
+      font-size: 12px;
+      user-select: none;
+      z-index: 100;
+      box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    /* ===== Toolbar Styling ===== */
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      border-right: 1px solid var(--border-color);
+      padding-right: 8px;
+      margin-right: 8px;
+    }
+
+    .toolbar-group:last-child {
+      border-right: none;
+      margin-right: 0;
+      padding-right: 0;
+    }
+
+    .toolbar-button {
+      padding: 6px 8px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      border-radius: 3px;
+      background: transparent;
+      color: var(--text-primary);
+      transition: all var(--transition-fast);
+      white-space: nowrap;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .toolbar-button:hover:not(:disabled) {
+      background: var(--bg-tertiary);
+      color: var(--accent-blue);
+    }
+
+    .toolbar-button.active {
+      background: var(--accent-blue-dark);
+      color: var(--accent-blue);
+    }
+
+    .toolbar-button:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .toolbar-icon {
+      width: 16px;
+      height: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .toolbar-label {
+      font-size: 11px;
+      letter-spacing: 0.3px;
+    }
+
+    /* ===== Left Panel (Feature Tree) ===== */
+    #left-panel-header {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border-color);
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    #feature-tree {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 4px 0;
+    }
+
+    #feature-tree::-webkit-scrollbar {
+      width: 10px;
+    }
+
+    #feature-tree::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    #feature-tree::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 5px;
+    }
+
+    #feature-tree::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+
+    .tree-item {
+      padding: 4px 8px;
+      cursor: pointer;
+      transition: background var(--transition-fast);
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      margin: 1px 4px;
+      border-radius: 3px;
+    }
+
+    .tree-item:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .tree-item.active {
+      background: var(--accent-blue-dark);
+      color: var(--accent-blue);
+    }
+
+    .tree-icon {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+      opacity: 0.7;
+    }
+
+    /* ===== Right Panel (Properties + Chat) ===== */
+    #properties-header {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border-color);
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    #properties-tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border-color);
+      padding: 4px 4px 0 4px;
+    }
+
+    .properties-tab {
+      flex: 1;
+      padding: 6px 8px;
+      background: transparent;
+      color: var(--text-secondary);
+      border-bottom: 2px solid transparent;
+      transition: all var(--transition-fast);
+      font-size: 11px;
+      font-weight: 500;
+      text-align: center;
+    }
+
+    .properties-tab:hover {
+      color: var(--text-primary);
+    }
+
+    .properties-tab.active {
+      color: var(--accent-blue);
+      border-bottom-color: var(--accent-blue);
+    }
+
+    #properties-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+      min-height: 0;
+    }
+
+    #properties-content::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #properties-content::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    #properties-content::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 4px;
+    }
+
+    #properties-content::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+
+    .property-group {
+      margin-bottom: 12px;
+    }
+
+    .property-group-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .property-row {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 6px;
+      align-items: center;
+    }
+
+    .property-label {
+      min-width: 80px;
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .property-input {
+      flex: 1;
+      padding: 4px 6px;
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 3px;
+      font-size: 11px;
+      transition: border-color var(--transition-fast);
+    }
+
+    .property-input:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.1);
+    }
+
+    /* ===== Status Bar ===== */
+    .statusbar-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-secondary);
+    }
+
+    .statusbar-label {
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .statusbar-value {
+      color: var(--text-primary);
+      font-family: "Menlo", "Monaco", "Courier New", monospace;
+      font-size: 11px;
+    }
+
+    .status-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      animation: pulse 2s infinite;
+    }
+
+    .status-indicator.idle {
+      background: var(--text-muted);
+      animation: none;
+    }
+
+    .status-indicator.error {
+      background: var(--accent-red);
+      animation: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* ===== Welcome Splash Screen ===== */
+    #welcome-splash {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      gap: 32px;
+    }
+
+    #welcome-splash.hidden {
+      display: none;
+    }
+
+    .splash-logo {
+      font-size: 48px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .splash-logo-cycle {
+      color: var(--text-primary);
+      font-weight: 400;
+    }
+
+    .splash-logo-cad {
+      color: var(--accent-blue);
+      font-weight: 700;
+    }
+
+    .splash-subtitle {
+      font-size: 14px;
+      color: var(--text-secondary);
+      text-align: center;
+      max-width: 400px;
+    }
+
+    .splash-options {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      max-width: 420px;
+      justify-content: center;
+    }
+
+    .splash-button {
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all var(--transition-base);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 180px;
+      justify-content: center;
+    }
+
+    .splash-button-primary {
+      background: var(--accent-blue);
+      color: #000;
+      box-shadow: 0 4px 12px rgba(88, 166, 255, 0.2);
+    }
+
+    .splash-button-primary:hover {
+      background: #5db3ff;
+      box-shadow: 0 6px 16px rgba(88, 166, 255, 0.3);
+    }
+
+    .splash-button-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+
+    .splash-button-secondary:hover {
+      background: var(--bg-tertiary);
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+    }
+
+    /* ===== Viewport Overlays ===== */
+    #viewport-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      pointer-events: none;
+      padding: 12px;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .mode-indicator {
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid var(--accent-blue);
+      color: var(--accent-blue);
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      width: fit-content;
+      backdrop-filter: blur(4px);
+    }
+
+    .coordinate-display {
+      background: rgba(0, 0, 0, 0.6);
+      color: var(--text-secondary);
+      padding: 6px 8px;
+      border-radius: 3px;
+      font-family: "Menlo", "Monaco", "Courier New", monospace;
+      font-size: 10px;
+      width: fit-content;
+      backdrop-filter: blur(4px);
+    }
+
+    .coordinate-value {
+      color: var(--accent-blue);
+      margin: 0 4px;
+    }
+
+    .snap-indicator {
+      background: rgba(0, 0, 0, 0.6);
+      color: var(--accent-green);
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 500;
+      width: fit-content;
+      display: none;
+      backdrop-filter: blur(4px);
+    }
+
+    .snap-indicator.active {
+      display: block;
+    }
+
+    /* ===== Sketch Canvas Overlay ===== */
+    #sketch-canvas-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: none;
+      z-index: 20;
+      cursor: crosshair;
+    }
+
+    #sketch-canvas-overlay.active {
+      display: block;
+    }
+
+    /* ===== Loading Spinner ===== */
+    #kernel-spinner {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 2000;
+      display: none;
+    }
+
+    #kernel-spinner.active {
+      display: flex;
+    }
+
+    .spinner-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      background: var(--bg-secondary);
+      padding: 32px;
+      border-radius: 8px;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border-color);
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border-color);
+      border-top-color: var(--accent-blue);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .spinner-text {
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    /* ===== Scrollbars Global ===== */
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 5px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+
+    /* ===== Context Menu ===== */
+    #context-menu {
+      position: fixed;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      box-shadow: var(--shadow-lg);
+      z-index: 300;
+      display: none;
+      min-width: 180px;
+    }
+
+    #context-menu.visible {
+      display: block;
+    }
+
+    .context-item {
+      padding: 6px 12px;
+      cursor: pointer;
+      color: var(--text-primary);
+      font-size: 12px;
+      transition: background var(--transition-fast);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .context-item:hover {
+      background: var(--bg-tertiary);
+      color: var(--accent-blue);
+    }
+
+    .context-item.separator {
+      height: 1px;
+      background: var(--border-color);
+      margin: 2px 0;
+      cursor: default;
+    }
+
+    .context-item.separator:hover {
+      background: var(--border-color);
+    }
+
+    /* ===== Modals & Dialogs ===== */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 500;
+      backdrop-filter: blur(2px);
+    }
+
+    .modal-overlay.visible {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      box-shadow: var(--shadow-lg);
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border-color);
+      font-weight: 600;
+      font-size: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-close-btn {
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 18px;
+      cursor: pointer;
+      transition: color var(--transition-fast);
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-close-btn:hover {
+      color: var(--text-primary);
+    }
+
+    .modal-body {
+      padding: 16px;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .modal-footer {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    /* ===== Buttons ===== */
+    .btn {
+      padding: 6px 12px;
+      border-radius: 3px;
+      font-weight: 500;
+      font-size: 12px;
+      transition: all var(--transition-fast);
+      cursor: pointer;
+      border: 1px solid transparent;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-primary {
+      background: var(--accent-blue);
+      color: #000;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #5db3ff;
+      box-shadow: 0 2px 8px rgba(88, 166, 255, 0.2);
+    }
+
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border-color: var(--border-color);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+    }
+
+    .btn-danger {
+      background: var(--accent-red);
+      color: #fff;
+    }
+
+    .btn-danger:hover:not(:disabled) {
+      background: #ff7b72;
+    }
+
+    /* ===== Input Fields ===== */
+    input[type="text"],
+    input[type="number"],
+    textarea,
+    select {
+      padding: 6px 8px;
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 3px;
+      font-size: 12px;
+      transition: border-color var(--transition-fast);
+    }
+
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.1);
+    }
+
+    textarea {
+      resize: none;
+      font-family: "Menlo", "Monaco", "Courier New", monospace;
+    }
+
+    /* ===== Chat Panel ===== */
+    #chat-panel {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+    }
+
+    #chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 0;
+    }
+
+    #chat-messages::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #chat-messages::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 4px;
+    }
+
+    .chat-message {
+      padding: 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .chat-message.user {
+      background: var(--accent-blue-dark);
+      color: var(--text-primary);
+      margin-left: 12px;
+      border: 1px solid var(--accent-blue);
+    }
+
+    .chat-message.assistant {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      margin-right: 12px;
+      border: 1px solid var(--border-color);
+    }
+
+    #chat-input-area {
+      padding: 8px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    #chat-input {
+      flex: 1;
+      padding: 6px 8px;
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 3px;
+      font-size: 11px;
+      resize: none;
+      max-height: 80px;
+    }
+
+    #chat-input:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+    }
+
+    #chat-send-btn {
+      padding: 4px 8px;
+      background: var(--accent-blue);
+      color: #000;
+      border-radius: 3px;
+      font-weight: 600;
+      font-size: 11px;
+      transition: all var(--transition-fast);
+      flex-shrink: 0;
+    }
+
+    #chat-send-btn:hover:not(:disabled) {
+      background: #5db3ff;
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 1280px) {
+      :root {
+        --panel-width: 220px;
+        --properties-width: 260px;
+      }
+    }
+
+    @media (max-width: 1024px) {
+      :root {
+        --panel-width: 200px;
+        --properties-width: 240px;
+      }
+    }
+
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Welcome Splash Screen -->
+    <div id="welcome-splash">
+      <div>
+        <div class="splash-logo">
+          <span class="splash-logo-cycle">cycle</span><span class="splash-logo-cad">CAD</span>
+        </div>
+        <p class="splash-subtitle">Parametric 3D CAD Modeler for the Mechanical Designer</p>
+      </div>
+      <div class="splash-options">
+        <button class="splash-button splash-button-primary" id="btn-empty-project" style="grid-column: 1 / -1;">
+          <span>📦</span> Empty Project
+        </button>
+        <button class="splash-button splash-button-secondary" id="btn-new-sketch">
+          <span>📐</span> New Sketch
+        </button>
+        <button class="splash-button splash-button-secondary" id="btn-import-inventor">
+          <span>🏭</span> Import Inventor
+        </button>
+        <button class="splash-button splash-button-secondary" id="btn-ai-generate">
+          <span>✨</span> AI Generate
+        </button>
+        <button class="splash-button splash-button-secondary" id="btn-open-browser" style="grid-column: 1 / -1; background: rgba(255,140,0,0.1); border-color: rgba(255,140,0,0.3);">
+          <span>📂</span> DUO Project Browser (473 Parts)
+        </button>
+      </div>
+    </div>
+
+    <!-- Top Toolbar -->
+    <div id="toolbar">
+      <!-- Sketch Tools -->
+      <div class="toolbar-group">
+        <button class="toolbar-button" id="tool-sketch" title="Start Sketch (S)">
+          <span class="toolbar-icon">📐</span>
+          <span class="toolbar-label">Sketch</span>
+        </button>
+        <button class="toolbar-button" id="tool-line" title="Draw Line (L)">
+          <span class="toolbar-icon">/</span>
+          <span class="toolbar-label">Line</span>
+        </button>
+        <button class="toolbar-button" id="tool-rect" title="Draw Rectangle (R)">
+          <span class="toolbar-icon">▭</span>
+          <span class="toolbar-label">Rect</span>
+        </button>
+        <button class="toolbar-button" id="tool-circle" title="Draw Circle (C)">
+          <span class="toolbar-icon">⭕</span>
+          <span class="toolbar-label">Circle</span>
+        </button>
+        <button class="toolbar-button" id="tool-arc" title="Draw Arc (A)">
+          <span class="toolbar-icon">⌢</span>
+          <span class="toolbar-label">Arc</span>
+        </button>
+        <button class="toolbar-button" id="tool-dimension" title="Add Dimension (D)">
+          <span class="toolbar-icon">↔</span>
+          <span class="toolbar-label">Dim</span>
+        </button>
+      </div>
+
+      <!-- Modeling Tools -->
+      <div class="toolbar-group">
+        <button class="toolbar-button" id="tool-extrude" title="Extrude (E)">
+          <span class="toolbar-icon">⬆</span>
+          <span class="toolbar-label">Extrude</span>
+        </button>
+        <button class="toolbar-button" id="tool-revolve" title="Revolve">
+          <span class="toolbar-icon">🔄</span>
+          <span class="toolbar-label">Revolve</span>
+        </button>
+        <button class="toolbar-button" id="tool-fillet" title="Fillet">
+          <span class="toolbar-icon">⌒</span>
+          <span class="toolbar-label">Fillet</span>
+        </button>
+        <button class="toolbar-button" id="tool-chamfer" title="Chamfer">
+          <span class="toolbar-icon">⌉</span>
+          <span class="toolbar-label">Chamfer</span>
+        </button>
+        <button class="toolbar-button" id="tool-cut" title="Boolean Cut">
+          <span class="toolbar-icon">−</span>
+          <span class="toolbar-label">Cut</span>
+        </button>
+        <button class="toolbar-button" id="tool-union" title="Boolean Union">
+          <span class="toolbar-icon">+</span>
+          <span class="toolbar-label">Union</span>
+        </button>
+      </div>
+
+      <!-- Export Tools -->
+      <div class="toolbar-group">
+        <button class="toolbar-button" id="export-stl" title="Export STL">
+          <span class="toolbar-icon">💾</span>
+          <span class="toolbar-label">STL</span>
+        </button>
+        <button class="toolbar-button" id="export-step" title="Export STEP">
+          <span class="toolbar-icon">💾</span>
+          <span class="toolbar-label">STEP</span>
+        </button>
+      </div>
+
+      <!-- Reverse Engineer -->
+      <div class="toolbar-group">
+        <button class="toolbar-button" id="btn-reverse-engineer" title="Reverse Engineer a Part (Import STL → Detect Features → Step-by-Step Rebuild Guide)" style="background:rgba(88,166,255,0.12);border:1px solid rgba(88,166,255,0.3);">
+          <span class="toolbar-icon">🔍</span>
+          <span class="toolbar-label">Reverse Engineer</span>
+        </button>
+        <button class="toolbar-button" id="btn-inventor-import" title="Import Autodesk Inventor .ipt/.iam — Parse Native Format" style="background:rgba(255,140,0,0.12);border:1px solid rgba(255,140,0,0.3);">
+          <span class="toolbar-icon">🏭</span>
+          <span class="toolbar-label">Inventor</span>
+        </button>
+      </div>
+
+      <!-- Edit Operations -->
+      <div class="toolbar-group">
+        <button class="toolbar-button" id="btn-undo" title="Undo (Ctrl+Z)">
+          <span class="toolbar-icon">↶</span>
+        </button>
+        <button class="toolbar-button" id="btn-redo" title="Redo (Ctrl+Y)">
+          <span class="toolbar-icon">↷</span>
+        </button>
+      </div>
+
+      <!-- View Buttons -->
+      <div class="toolbar-group">
+        <button class="toolbar-button" id="view-front" title="Front View (V+F)">
+          <span class="toolbar-label">Front</span>
+        </button>
+        <button class="toolbar-button" id="view-top" title="Top View (V+T)">
+          <span class="toolbar-label">Top</span>
+        </button>
+        <button class="toolbar-button" id="view-right" title="Right View (V+R)">
+          <span class="toolbar-label">Right</span>
+        </button>
+        <button class="toolbar-button" id="view-iso" title="Isometric View (V+I)">
+          <span class="toolbar-label">Iso</span>
+        </button>
+        <button class="toolbar-button" id="view-fit" title="Fit All (V)">
+          <span class="toolbar-label">Fit</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Main Content Area -->
+    <div id="content">
+      <!-- Left Panel: Feature Tree -->
+      <div id="left-panel">
+        <div id="left-panel-header">Model Tree</div>
+        <div id="feature-tree">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+
+      <!-- Center: Viewport -->
+      <div id="viewport-container">
+
+        <!-- Viewport Overlays -->
+        <div id="viewport-overlay">
+          <div class="mode-indicator" id="mode-indicator">Ready</div>
+          <div class="coordinate-display">
+            <span>X:</span> <span class="coordinate-value" id="coord-x">0.00</span>
+            <span>Y:</span> <span class="coordinate-value" id="coord-y">0.00</span>
+            <span>Z:</span> <span class="coordinate-value" id="coord-z">0.00</span>
+          </div>
+          <div class="snap-indicator" id="snap-indicator">Snap: Grid</div>
+        </div>
+
+        <!-- Sketch Canvas Overlay -->
+        <canvas id="sketch-canvas-overlay"></canvas>
+
+        <!-- Loading Spinner -->
+        <div id="kernel-spinner">
+          <div class="spinner-container">
+            <div class="spinner"></div>
+            <div class="spinner-text">Loading Kernel...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Panel: Properties + Chat -->
+      <div id="right-panel">
+        <div id="properties-header">Properties</div>
+
+        <!-- Tab Navigation -->
+        <div id="properties-tabs">
+          <button class="properties-tab active" data-tab="properties">Properties</button>
+          <button class="properties-tab" data-tab="chat">Chat</button>
+        </div>
+
+        <!-- Properties Content -->
+        <div id="properties-content">
+          <div id="tab-properties">
+            <!-- Properties populated by JavaScript -->
+          </div>
+          <div id="tab-chat" style="display: none;">
+            <!-- Chat tab populated by JavaScript -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Status Bar -->
+    <div id="statusbar">
+      <div class="statusbar-item">
+        <span class="status-indicator" id="kernel-status"></span>
+        <span class="statusbar-label">Kernel:</span>
+        <span class="statusbar-value" id="kernel-status-text">Idle</span>
+      </div>
+      <div class="statusbar-item">
+        <span class="statusbar-label">Mode:</span>
+        <span class="statusbar-value" id="mode-value">Normal</span>
+      </div>
+      <div class="statusbar-item">
+        <span class="statusbar-label">Units:</span>
+        <span class="statusbar-value" id="units-value">mm</span>
+      </div>
+      <div class="statusbar-item">
+        <span class="statusbar-label">Grid:</span>
+        <span class="statusbar-value" id="grid-value">1.0</span>
+      </div>
+      <div class="statusbar-item">
+        <span class="statusbar-label">FPS:</span>
+        <span class="statusbar-value" id="fps-value">0</span>
+      </div>
+      <div style="margin-left:auto;">
+        <button id="btn-hard-refresh" title="Hard Refresh — Nuke Cache & Reload" style="background:rgba(248,81,73,0.12);border:1px solid rgba(248,81,73,0.3);color:#f85149;font-size:11px;padding:2px 10px;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:4px;">
+          <span style="font-size:12px;">🔄</span> Hard Refresh
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Context Menu -->
+  <div id="context-menu"></div>
+
+  <!-- Module Loader -->
+  <script type="module">
+    import { initViewport, setView, addToScene, removeFromScene, getScene, getCamera, getControls, toggleGrid as vpToggleGrid, fitToObject } from './js/viewport.js';
+    import { startSketch, endSketch, setTool, getEntities, clearSketch } from './js/sketch.js';
+    import { extrudeProfile, createPrimitive, rebuildFeature, createMaterial } from './js/operations.js';
+    import { initChat, parseCADPrompt, addMessage } from './js/ai-chat.js';
+    import { initTree, addFeature, selectFeature, onSelect } from './js/tree.js';
+    import { initParams, showParams, onParamChange } from './js/params.js';
+    import { exportSTL, exportOBJ, exportJSON } from './js/export.js';
+    import { initShortcuts } from './js/shortcuts.js';
+    import { createReverseEngineerPanel, importFile, analyzeGeometry, reconstructFeatureTree, createWalkthrough } from './js/reverse-engineer.js';
+    import { createInventorPanel, parseInventorFile } from './js/inventor-parser.js';
+
+    // ========== Application State ==========
+    const APP = {
+      mode: 'idle',
+      currentSketch: null,
+      selectedFeature: null,
+      features: [],
+      history: [],
+      historyIndex: -1,
+    };
+
+    // ========== Initialization ==========
+    async function init() {
+      try {
+        console.log('Initializing cycleCAD...');
+
+        // 1. Initialize 3D viewport
+        initViewport('viewport-container');
+        document.getElementById('kernel-status').classList.add('ready');
+        document.getElementById('kernel-status-text').textContent = 'Ready';
+
+        // 2. Initialize feature tree
+        const treeContainer = document.getElementById('feature-tree');
+        if (treeContainer) initTree(treeContainer);
+
+        // 3. Initialize properties panel
+        const propsContainer = document.getElementById('tab-properties');
+        if (propsContainer) initParams(propsContainer);
+
+        // 4. Initialize AI chat
+        const chatTab = document.getElementById('tab-chat');
+        if (chatTab) {
+          // Create chat UI structure
+          chatTab.innerHTML = `
+            <div id="chat-messages" style="flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px;min-height:0;"></div>
+            <div style="display:flex;gap:4px;padding:8px;border-top:1px solid var(--border-color);">
+              <input id="chat-input" type="text" placeholder="Describe a part..." style="flex:1;padding:6px 10px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:4px;color:var(--text-primary);font-size:12px;">
+              <button id="chat-send" style="padding:6px 12px;background:var(--accent-blue);color:#fff;border-radius:4px;font-size:12px;">Send</button>
+            </div>
+          `;
+          chatTab.style.display = 'none';
+          chatTab.style.flexDirection = 'column';
+          chatTab.style.height = '100%';
+
+          initChat(
+            document.getElementById('chat-messages'),
+            document.getElementById('chat-input'),
+            document.getElementById('chat-send'),
+            (cmd) => executeParsedPrompt(cmd)
+          );
+        }
+
+        // 5. Wire up toolbar buttons
+        setupToolbar();
+
+        // 6. Wire up tab switching
+        setupTabs();
+
+        // 7. Wire up tree selection → params
+        onSelect((featureId) => {
+          APP.selectedFeature = APP.features.find(f => f.id === featureId);
+          if (APP.selectedFeature) showParams(APP.selectedFeature);
+        });
+
+        onParamChange((paramName, value) => {
+          if (APP.selectedFeature) {
+            APP.selectedFeature.params[paramName] = value;
+            rebuildFeature(APP.selectedFeature);
+          }
+        });
+
+        // 8. Initialize keyboard shortcuts
+        initShortcuts({
+          newSketch: () => startNewSketch(),
+          line: () => setTool('line'),
+          rect: () => setTool('rect'),
+          circle: () => setTool('circle'),
+          arc: () => setTool('arc'),
+          extrude: () => doExtrude(),
+          undo: () => { /* TODO */ },
+          redo: () => { /* TODO */ },
+          delete: () => deleteSelected(),
+          escape: () => cancelOperation(),
+          enter: () => confirmOperation(),
+          viewFront: () => setView('front'),
+          viewBack: () => setView('back'),
+          viewRight: () => setView('right'),
+          viewLeft: () => setView('left'),
+          viewTop: () => setView('top'),
+          viewBottom: () => setView('bottom'),
+          viewIso: () => setView('iso'),
+          toggleGrid: () => vpToggleGrid(),
+          fitAll: () => { /* TODO */ },
+          save: () => saveProject(),
+          exportSTL: () => doExportSTL(),
+        });
+
+        // 9. Setup welcome splash
+        setupWelcome();
+
+        // 10. Hard Refresh button — nukes all caches, service workers, and reloads
+        const hardRefreshBtn = document.getElementById('btn-hard-refresh');
+        if (hardRefreshBtn) hardRefreshBtn.addEventListener('click', async () => {
+          hardRefreshBtn.textContent = 'Clearing...';
+          hardRefreshBtn.style.opacity = '0.6';
+          // Kill service workers
+          if ('serviceWorker' in navigator) {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            for (const r of regs) await r.unregister();
+          }
+          // Kill Cache API caches
+          if ('caches' in window) {
+            const names = await caches.keys();
+            for (const n of names) await caches.delete(n);
+          }
+          // Reload with timestamp cache bust
+          const url = new URL(window.location.href);
+          url.searchParams.set('v', Date.now());
+          window.location.replace(url.toString());
+        });
+
+        console.log('cycleCAD initialized successfully');
+        updateStatus('Ready');
+
+      } catch (error) {
+        console.error('Failed to initialize cycleCAD:', error);
+        document.getElementById('kernel-status').classList.add('error');
+        document.getElementById('kernel-status-text').textContent = 'Error';
+      }
+    }
+
+    // ========== Toolbar Wiring ==========
+    function setupToolbar() {
+      const bind = (id, fn) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('click', fn);
+      };
+
+      // Sketch tools
+      bind('tool-sketch', () => startNewSketch());
+      bind('tool-line', () => { if (APP.mode === 'sketch') setTool('line'); else { startNewSketch(); setTool('line'); } });
+      bind('tool-rect', () => { if (APP.mode === 'sketch') setTool('rect'); else { startNewSketch(); setTool('rect'); } });
+      bind('tool-circle', () => { if (APP.mode === 'sketch') setTool('circle'); else { startNewSketch(); setTool('circle'); } });
+      bind('tool-arc', () => { if (APP.mode === 'sketch') setTool('arc'); else { startNewSketch(); setTool('arc'); } });
+      bind('tool-dimension', () => setTool('dimension'));
+
+      // 3D operations
+      bind('tool-extrude', () => doExtrude());
+      bind('tool-revolve', () => updateStatus('Revolve: coming soon'));
+      bind('tool-fillet', () => updateStatus('Fillet: coming soon'));
+      bind('tool-chamfer', () => updateStatus('Chamfer: coming soon'));
+      bind('tool-cut', () => updateStatus('Boolean Cut: coming soon'));
+      bind('tool-union', () => updateStatus('Boolean Union: coming soon'));
+
+      // Export
+      bind('export-stl', () => doExportSTL());
+      bind('export-step', () => updateStatus('STEP export: coming soon'));
+
+      // Edit
+      bind('btn-undo', () => updateStatus('Undo: coming soon'));
+      bind('btn-redo', () => updateStatus('Redo: coming soon'));
+
+      // Views
+      bind('view-front', () => setView('front'));
+      bind('view-top', () => setView('top'));
+      bind('view-right', () => setView('right'));
+      bind('view-iso', () => setView('iso'));
+      bind('view-fit', () => updateStatus('Fit All'));
+
+      // Reverse Engineer
+      bind('btn-reverse-engineer', () => {
+        const splash = document.getElementById('welcome-splash');
+        if (splash) splash.classList.add('hidden');
+        createReverseEngineerPanel(getScene());
+      });
+
+      // Inventor Import (.ipt / .iam)
+      bind('btn-inventor-import', () => {
+        const splash = document.getElementById('welcome-splash');
+        if (splash) splash.classList.add('hidden');
+        createInventorPanel((parsedData) => {
+          console.log('Inventor file parsed:', parsedData);
+          // Add parsed features to tree
+          if (parsedData.features && parsedData.features.length > 0) {
+            parsedData.features.forEach((f, i) => {
+              addFeature({
+                id: `inv-${i}`,
+                type: f.type || 'Unknown',
+                name: f.name || `Feature ${i + 1}`,
+                params: f.parameters || {},
+                icon: f.icon || '📦'
+              });
+            });
+          }
+          updateStatus(`Inventor file loaded: ${parsedData.metadata?.fileName || 'unknown'} — ${parsedData.features?.length || 0} features found`);
+        });
+      });
+    }
+
+    // ========== Tab Switching ==========
+    function setupTabs() {
+      document.querySelectorAll('.properties-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.properties-tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          const target = tab.getAttribute('data-tab');
+          document.getElementById('tab-properties').style.display = target === 'properties' ? 'block' : 'none';
+          document.getElementById('tab-chat').style.display = target === 'chat' ? 'flex' : 'none';
+        });
+      });
+    }
+
+    // ========== Welcome Splash ==========
+    function setupWelcome() {
+      const splash = document.getElementById('welcome-splash');
+      if (!splash) return;
+
+      const hide = () => splash.classList.add('hidden');
+
+      // Empty Project — just dismiss splash and show empty workspace
+      const emptyBtn = document.getElementById('btn-empty-project');
+      if (emptyBtn) emptyBtn.addEventListener('click', () => {
+        hide();
+        updateStatus('Empty project — use toolbar to sketch, import, or generate');
+      });
+
+      // New Sketch — start sketching immediately
+      const newSketchBtn = document.getElementById('btn-new-sketch');
+      if (newSketchBtn) newSketchBtn.addEventListener('click', () => { hide(); startNewSketch(); });
+
+      // Import Inventor — open the Inventor parser panel
+      const invBtn = document.getElementById('btn-import-inventor');
+      if (invBtn) invBtn.addEventListener('click', () => {
+        hide();
+        createInventorPanel((parsedData) => {
+          console.log('Inventor file parsed:', parsedData);
+          if (parsedData.allFeatures && parsedData.allFeatures.length > 0) {
+            parsedData.allFeatures.forEach((f, i) => {
+              addFeature({
+                id: `inv-${i}`,
+                type: f.type || 'Unknown',
+                name: `${f.icon || '📦'} ${f.type} ${i + 1}`,
+                params: {},
+                icon: f.icon || '📦'
+              });
+            });
+          }
+          updateStatus(`Inventor file loaded: ${parsedData.filename} — ${parsedData.allFeatures?.length || 0} features`);
+        });
+      });
+
+      // AI Generate — switch to chat tab
+      const aiBtn = document.getElementById('btn-ai-generate');
+      if (aiBtn) aiBtn.addEventListener('click', () => {
+        hide();
+        document.querySelectorAll('.properties-tab').forEach(t => t.classList.remove('active'));
+        const chatTabBtn = document.querySelector('[data-tab="chat"]');
+        if (chatTabBtn) chatTabBtn.classList.add('active');
+        document.getElementById('tab-properties').style.display = 'none';
+        document.getElementById('tab-chat').style.display = 'flex';
+        const chatInput = document.getElementById('chat-input');
+        if (chatInput) chatInput.focus();
+      });
+
+      // DUO Project Browser — open in new tab
+      const browserBtn = document.getElementById('btn-open-browser');
+      if (browserBtn) browserBtn.addEventListener('click', () => {
+        window.open('duo-project-browser.html', '_blank');
+      });
+    }
+
+    // ========== Core Operations ==========
+    function startNewSketch() {
+      if (APP.mode === 'sketch') {
+        updateStatus('Finish current sketch first (Enter=extrude, Esc=cancel)');
+        return;
+      }
+      const splash = document.getElementById('welcome-splash');
+      if (splash) splash.classList.add('hidden');
+
+      APP.mode = 'sketch';
+      APP.currentSketch = startSketch('XY', getCamera(), getControls());
+      updateStatus('Sketch mode — L=Line, R=Rect, C=Circle, A=Arc. Enter=Extrude, Esc=Cancel');
+      document.getElementById('mode-indicator').textContent = 'Sketch: XY';
+      document.getElementById('mode-value').textContent = 'Sketch';
+    }
+
+    function doExtrude() {
+      if (APP.mode !== 'sketch') {
+        updateStatus('Start a sketch first');
+        return;
+      }
+      const entities = getEntities();
+      if (!entities || entities.length === 0) {
+        updateStatus('No sketch geometry to extrude — draw something first');
+        return;
+      }
+
+      const height = prompt('Enter extrusion height (mm):', '20');
+      if (height === null) return;
+      const h = parseFloat(height);
+      if (isNaN(h) || h === 0) { updateStatus('Invalid height'); return; }
+
+      try {
+        const mesh = extrudeProfile(entities, h);
+        endSketch();
+        APP.currentSketch = null;
+        APP.mode = 'idle';
+        addToScene(mesh);
+
+        const feature = {
+          id: 'feature_' + Date.now(),
+          name: `Extrusion (${h}mm)`,
+          type: 'extrude',
+          mesh,
+          params: { height: h },
+        };
+        APP.features.push(feature);
+        addFeature(feature);
+
+        updateStatus(`Created extrusion: ${h}mm`);
+        document.getElementById('mode-indicator').textContent = 'Ready';
+        document.getElementById('mode-value').textContent = 'Normal';
+      } catch (err) {
+        console.error('Extrude failed:', err);
+        updateStatus('Extrude failed: ' + err.message);
+      }
+    }
+
+    function executeParsedPrompt(prompt) {
+      try {
+        const splash = document.getElementById('welcome-splash');
+        if (splash) splash.classList.add('hidden');
+
+        const result = createPrimitive(prompt.type || prompt.action, prompt.params || prompt);
+        addToScene(result.mesh || result);
+
+        const feature = {
+          id: 'feature_' + Date.now(),
+          name: prompt.name || prompt.type || prompt.action || 'Part',
+          type: prompt.type || prompt.action,
+          mesh: result.mesh || result,
+          params: prompt.params || prompt,
+        };
+        APP.features.push(feature);
+        addFeature(feature);
+        updateStatus(`Created: ${feature.name}`);
+      } catch (err) {
+        console.error('AI create failed:', err);
+        updateStatus('Failed: ' + err.message);
+      }
+    }
+
+    function cancelOperation() {
+      if (APP.mode === 'sketch') {
+        endSketch();
+        APP.currentSketch = null;
+        APP.mode = 'idle';
+        updateStatus('Sketch cancelled');
+        document.getElementById('mode-indicator').textContent = 'Ready';
+        document.getElementById('mode-value').textContent = 'Normal';
+      }
+    }
+
+    function confirmOperation() {
+      if (APP.mode === 'sketch') {
+        const entities = getEntities();
+        if (entities && entities.length > 0) doExtrude();
+      }
+    }
+
+    function deleteSelected() {
+      if (!APP.selectedFeature) return;
+      removeFromScene(APP.selectedFeature.mesh);
+      APP.features = APP.features.filter(f => f.id !== APP.selectedFeature.id);
+      APP.selectedFeature = null;
+      updateStatus('Feature deleted');
+    }
+
+    function doExportSTL() {
+      if (APP.features.length === 0) { updateStatus('Nothing to export'); return; }
+      try {
+        exportSTL(APP.features);
+        updateStatus('Exported STL');
+      } catch (err) {
+        updateStatus('Export failed: ' + err.message);
+      }
+    }
+
+    function saveProject() {
+      const data = {
+        version: '1.0',
+        timestamp: new Date().toISOString(),
+        features: APP.features.map(f => ({ id: f.id, name: f.name, type: f.type, params: f.params })),
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `cyclecad_project_${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      updateStatus('Project saved');
+    }
+
+    function updateStatus(msg) {
+      const el = document.getElementById('status-bar');
+      if (el) el.textContent = msg;
+      // Also update mode indicator if it exists
+      const modeEl = document.getElementById('mode-indicator');
+      if (modeEl && APP.mode === 'idle') modeEl.textContent = 'Ready';
+    }
+
+    // ========== FPS Counter ==========
+    let frameCount = 0;
+    let lastFPSTime = performance.now();
+    function updateFPS() {
+      frameCount++;
+      const now = performance.now();
+      if (now - lastFPSTime >= 1000) {
+        const fpsEl = document.getElementById('fps-value');
+        if (fpsEl) fpsEl.textContent = frameCount;
+        frameCount = 0;
+        lastFPSTime = now;
+      }
+      requestAnimationFrame(updateFPS);
+    }
+    requestAnimationFrame(updateFPS);
+
+    // ========== Start ==========
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+
+    window.cycleCAD = { version: '1.0.0', APP, init };
+  </script>
+</body>
+</html>

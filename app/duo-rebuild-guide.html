@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DUO cycleWASH — Leistenbürstenblech Rebuild Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+            background-color: #0d1117;
+            color: #c9d1d9;
+            line-height: 1.6;
+        }
+
+        /* Layout: Sidebar + Main */
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 280px;
+            background-color: #161b22;
+            border-right: 1px solid #30363d;
+            padding: 24px 16px;
+            overflow-y: auto;
+            position: fixed;
+            height: 100vh;
+        }
+
+        .main-content {
+            margin-left: 280px;
+            flex: 1;
+            padding: 40px;
+        }
+
+        /* Header */
+        .header {
+            margin-bottom: 40px;
+            padding-bottom: 24px;
+            border-bottom: 2px solid #30363d;
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            color: #f0f6fc;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header .subtitle {
+            color: #8b949e;
+            font-size: 0.95em;
+        }
+
+        /* Part Info Card */
+        .part-info {
+            background: linear-gradient(135deg, #1c2128 0%, #161b22 100%);
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 40px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .part-info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .part-info-item label {
+            font-size: 0.8em;
+            color: #8b949e;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 6px;
+        }
+
+        .part-info-item span {
+            color: #f0f6fc;
+            font-weight: 500;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.95em;
+        }
+
+        /* Steps Container */
+        .steps {
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+
+        .step {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .step-header {
+            background-color: #1c2128;
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border-bottom: 1px solid #30363d;
+        }
+
+        .step-badge {
+            background-color: #ff8c00;
+            color: #fff;
+            width: 48px;
+            height: 48px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.3em;
+            flex-shrink: 0;
+        }
+
+        .step-title {
+            font-size: 1.3em;
+            color: #f0f6fc;
+            font-weight: 600;
+        }
+
+        .step-body {
+            padding: 24px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        .instruction-box {
+            border-radius: 6px;
+            padding: 16px;
+            border-left: 4px solid;
+        }
+
+        .instruction-box h4 {
+            margin-bottom: 12px;
+            font-size: 1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .fusion-box {
+            background-color: #0d3922;
+            border-left-color: #3fb950;
+        }
+
+        .fusion-box h4 {
+            color: #3fb950;
+        }
+
+        .cyclecad-box {
+            background-color: #0c2d6b;
+            border-left-color: #58a6ff;
+        }
+
+        .cyclecad-box h4 {
+            color: #58a6ff;
+        }
+
+        .instruction-box ol, .instruction-box ul {
+            margin-left: 20px;
+            color: #c9d1d9;
+            font-size: 0.95em;
+        }
+
+        .instruction-box li {
+            margin-bottom: 8px;
+        }
+
+        .code-block {
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #79c0ff;
+            overflow-x: auto;
+            margin-top: 8px;
+        }
+
+        .step-tip {
+            grid-column: 1 / -1;
+            background-color: rgba(255, 140, 0, 0.1);
+            border: 1px solid rgba(255, 140, 0, 0.3);
+            border-radius: 4px;
+            padding: 12px 16px;
+            color: #ffa657;
+            font-size: 0.95em;
+        }
+
+        .step-tip strong {
+            color: #ff8c00;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar h3 {
+            color: #f0f6fc;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 16px;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid #30363d;
+        }
+
+        .sidebar h3:first-child {
+            margin-top: 0;
+            border-top: none;
+        }
+
+        .sidebar ul {
+            list-style: none;
+}
+
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+
+        .sidebar a {
+            color: #8b949e;
+            text-decoration: none;
+            font-size: 0.9em;
+            display: block;
+            padding: 8px 12px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .sidebar a:hover {
+            background-color: #30363d;
+            color: #58a6ff;
+        }
+
+        .sidebar a.active {
+            background-color: #30363d;
+            color: #ff8c00;
+            font-weight: 600;
+        }
+
+        .sidebar .current-part {
+            background-color: rgba(255, 140, 0, 0.1);
+            border: 1px solid rgba(255, 140, 0, 0.3);
+            color: #ff8c00;
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 16px;
+            font-size: 0.9em;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 60px;
+            padding-top: 24px;
+            border-top: 1px solid #30363d;
+            text-align: center;
+            color: #6e7681;
+            font-size: 0.9em;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 240px;
+            }
+
+            .main-content {
+                margin-left: 240px;
+                padding: 24px;
+            }
+
+            .step-body {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                border-right: none;
+                border-bottom: 1px solid #30363d;
+                padding: 16px;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 1.6em;
+            }
+
+            .part-info {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Icon placeholders */
+        .icon {
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <h3>📑 DUO Anlage</h3>
+            <div class="current-part">
+                <strong>Current:</strong><br>
+                Leistenbürstenblech
+            </div>
+
+            <h3>Sub-Assemblies</h3>
+            <ul>
+                <li><a href="#gestell">Gestell (Frame)</a></li>
+                <li><a href="#waschbürsten">Waschbürsten (Wash Brushes)</a></li>
+                <li><a href="#raddreheinheit">Raddreheinheit (Wheel Rotation)</a></li>
+                <li><a href="#lenkerhalterung">Lenkerhalterung (Handlebar Holder)</a></li>
+                <li><a href="#rad">Rad (Wheel)</a></li>
+                <li><a href="#seitenwand">Seitenwand (Side Wall)</a></li>
+                <li><a href="#schiebebürsten">Schiebebürsten (Slide Brushes)</a></li>
+                <li><a href="#ultraschall">Ultraschallreiniger (Ultrasonic)</a></li>
+            </ul>
+
+            <h3>Quick Links</h3>
+            <ul>
+                <li><a href="#step-1">Sheet Metal Setup</a></li>
+                <li><a href="#step-3">User Parameters</a></li>
+                <li><a href="#step-4">Base Sketch</a></li>
+                <li><a href="#step-7">Flat Pattern</a></li>
+                <li><a href="#step-9">Verification</a></li>
+            </ul>
+
+            <h3>Resources</h3>
+            <ul>
+                <li><a href="#">Inventor Project Files</a></li>
+                <li><a href="#">Fusion 360 Docs</a></li>
+                <li><a href="#">cycleCAD API</a></li>
+                <li><a href="#">DXF Export Guide</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <h1>🏭 DUO cycleWASH — Inventor to Fusion 360 / cycleCAD</h1>
+                <p class="subtitle">Rebuild Guide: Leistenbürstenblech (Strip Brush Sheet Metal)</p>
+            </header>
+
+            <!-- Part Info Card -->
+            <div class="part-info">
+                <div class="part-info-item">
+                    <label>Filename</label>
+                    <span>Leistenbürstenblech.ipt</span>
+                </div>
+                <div class="part-info-item">
+                    <label>Part Type</label>
+                    <span>Sheet Metal (Blechteile)</span>
+                </div>
+                <div class="part-info-item">
+                    <label>Template</label>
+                    <span>Metric\Sheet Metal (mm).ipt</span>
+                </div>
+                <div class="part-info-item">
+                    <label>Inventor Version</label>
+                    <span>11.0 (2006)</span>
+                </div>
+                <div class="part-info-item">
+                    <label>Key Parameter</label>
+                    <span>Stärke (Thickness)</span>
+                </div>
+                <div class="part-info-item">
+                    <label>Feature</label>
+                    <span>FlatPattern</span>
+                </div>
+            </div>
+
+            <!-- Steps -->
+            <div class="steps">
+                <!-- Step 1 -->
+                <div class="step" id="step-1">
+                    <div class="step-header">
+                        <div class="step-badge">1</div>
+                        <div class="step-title">Create New Sheet Metal Design</div>
+                    </div>
+                    <div class="step-body">
+                        <div class="instruction-box fusion-box">
+                            <h4>✓ Fusion 360</h4>
+                            <ol>
+                                <li><strong>File</strong> → <strong>New Design</strong></li>
+                                <li>In the <strong>Ribbon</strong>, click the <strong>SHEET METAL</strong> tab</li>
+                                <li>Click <strong>New Sheet Metal Design</strong> button</li>
+                                <li>Project is now in Sheet Metal workspace</li>
+                                <li>Units should be <strong>Millimeters</strong> (metric)</li>
+                            </ol>
+                        </div>
+                        <div class="instruction-box cyclecad-box">
+                            <h4>⚙ cycleCAD API</h4>
+                            <div class="code-block">
+const design = new cycleCAD.Design({<br/>
+&nbsp;&nbsp;name: 'Leistenbürstenblech',<br/>
+&nbsp;&nbsp;type: 'SHEET_METAL',<br/>
+&nbsp;&nbsp;units: 'mm',<br/>
+&nbsp;&nbsp;inventor_source: {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;filename: 'Leistenbürstenblech.ipt',<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;version: '11.0',<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;template: 'Sheet Metal (mm)' <br/>
+&nbsp;&nbsp;}<br/>
+});
+                            </div>
+                        </div>
+                        <div class="step-tip">
+                            <strong>💡 Tip:</strong> Sheet Metal workspace has different tools than Part Design. You'll see <strong>Base Flange</strong>, <strong>Flange</strong>, <strong>Bend</strong>, and <strong>Flat Pattern</strong> commands instead of Pad/Pocket.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="step" id="step-2">
+                    <div class="step-header">
+                        <div class="step-badge">2</div>
+                        <div class="step-title">Set Sheet Metal Rules (Thickness & Bend)</div>
+                    </div>
+                    <div class="step-body">
+                        <div class="instruction-box fusion-box">
+                            <h4>✓ Fusion 360</h4>
+                            <ol>
+                                <li>Right-click on <strong>Sheet Metal</strong> folder in Browser</li>
+                                <li>Select <strong>Edit Sheet Metal Rules</strong></li>
+                                <li>Set <strong>Thickness</strong>: <code>1.5 mm</code> (or from parameter)</li>
+                                <li>Set <strong>Bend Radius</strong>: <code>2.0 mm</code> (design-dependent)</li>
+                                <li>Set <strong>Bend Relief</strong>: check if design requires relief</li>
+                                <li>Click <strong>OK</strong></li>
+                            </ol>
+                        </div>
+                        <div class="instruction-box cyclecad-box">
+                            <h4>⚙ cycleCAD API</h4>
+                            <div class="code-block">
+design.setSheetMetalRules({<br/>
+&nbsp;&nbsp;thickness: 1.5, // mm<br/>
+&nbsp;&nbsp;bendRadius: 2.0,<br/>
+&nbsp;&nbsp;bendRelief: 'none', // 'none'|'rectangular'|'obround'<br/>
+&nbsp;&nbsp;gapSize: 0,<br/>
+&nbsp;&nbsp;cornerStyle: 'sharp' // or 'rounded'<br/>
+});
+                            </div>
+                        </div>
+                        <div class="step-tip">
+                            <strong>💡 Tip:</strong> The <strong>Stärke</strong> parameter from the original Inventor file is the thickness value. Look for this in the Inventor properties or constraints.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="step" id="step-3">
+                    <div class="step-header">
+                        <div class="step-badge">3</div>
+                        <div class="step-title">Define User Parameters</div>
+                    </div>
+                    <div class="step-body">
+                        <div class="instruction-box fusion-box">
+                            <h4>✓ Fusion 360</h4>
+                            <ol>
+                                <li>Click <strong>Modify</strong> → <strong>Change Parameters</strong></li>
+                                <li>In <strong>User Parameters</strong> panel, click <strong>Create</strong></li>
+                                <li>Add parameter <strong>Stärke</strong> (Thickness)
+                                    <ul style="margin-top: 6px; margin-left: 20px;">
+                                        <li>Type: <code>Length</code></li>
+                                        <li>Default: <code>1.5 mm</code></li>
+                                        <li>Expression: <code>=Sheet_Metal_Thickness</code></li>
+                                    </ul>
+                                </li>
+                                <li>Add other parameters as needed (width, length, etc.)</li>
+                                <li>Click <strong>OK</strong></li>
+                            </ol>
+                        </div>
+                        <div class="instruction-box cyclecad-box">
+                            <h4>⚙ cycleCAD API</h4>
+                            <div class="code-block">
+design.parameters = {<br/>
+&nbsp;&nbsp;Stärke: {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;type: 'length',<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;value: 1.5,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;unit: 'mm',<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;source: 'Skizze.ipt',<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;parameterId: 11<br/>
+&nbsp;&nbsp;},<br/>
+&nbsp;&nbsp;// Add other parameters here<br/>
+};
+                            </div>
+                        </div>
+                        <div class="step-tip">
+                            <strong>💡 Tip:</strong> The original Inventor file references <strong>Skizze.ipt</strong> (the master parameter sketch). Extract all parameters from there and recreate them in Fusion 360.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 4 -->
+                <div class="step" id="step-4">
+                    <div class="step-header">
+                        <div class="step-badge">4</div>
+                        <div class="step-title">Create Base Sketch (Strip Brush Profile)</div>
+                    </div>
+                    <div class="step-body">
+                        <div class="instruction-box fusion-box">
+                            <h4>✓ Fusion 360</h4>
+                            <ol>
+                                <li>Click <strong>Sheet Metal</strong> tab → <strong>New Sketch</strong></li>
+                                <li>Select <strong>XY Plane</strong> (Origin)</li>
+                                <li>Sketch the strip brush profile:
+                                    <ul style="margin-top: 6px; margin-left: 20px;">
+                                        <li>Draw the flat rectangle profile (strip shape)</li>
+                                        <li>Constrain dimensions using <strong>Stärke</strong> parameter</li>
+                                        <li>Add width, length, and any notches/holes for mounting</li>
+                                    </ul>
+                                </li>
+                                <li>Apply all constraints (fully constrained = blue sketch)</li>
+                                <li>Click <strong>Finish Sketch</strong></li>
+                            </ol>
+                        </div>
+                        <div class="instruction-box cyclecad-box">
+                            <h4>⚙ cycleCAD API</h4>
+                            <div class="code-block">
+const sketch = design.createSketch('BaseProfile', 'XY');<br/>
+sketch.addRectangle({<br/>
+&nbsp;&nbsp;width: 45,  // mm<br/>
+&nbsp;&nbsp;height: 150, // mm<br/>
+&nbsp;&nbsp;constrainToParam: 'Stärke'<br/>
+});<br/>
+sketch.addHole({<br/>
+&nbsp;&nbsp;x: 22.5,<br/>
+&nbsp;&nbsp;y: 75,<br/>
+&nbsp;&nbsp;diameter: 6<br/>
+});<br/>
+sketch.finalize();
+                            </div>
+                        </div>
+                        <div class="step-tip">
+                            <strong>💡 Tip:</strong> The <strong>Leistenbürstenblech</strong> is a brush holder strip. Look at the original Inventor sketch to understand the exact profile shape, mounting holes, and bristle attachment points.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 5 -->
+                <div class="step" id="step-5">
+                    <div class="step-header">
+                        <div class="step-badge">5</div>
+                        <div class="step-title">Create Base Flange from Sketch</div>
+                    </div>
+                    <div class="step-body">
+                        <div class="instruction-box fusion-box">
+                            <h4>✓ Fusion 360</h4>
+                            <ol>
+                                <li>Select the <strong>BaseProfile</strong> sketch in the Browser</li>
+                                <li>Click <strong>Sheet Metal</strong> tab → <strong>Base Flange</strong> button</li>
+                                <li>In dialog:
+                                    <ul style="margin-top: 6px; margin-left: 20px;">
+                                        <li>Confirm the sketch is selected</li>
+                                        <li>Height: <code>0 mm</code> (flat sheet)</li>
+                                        <li>Material Side: <code>Outside</code> or <code>Inside</code> (depends on design)</li>
+                                    </ul>
+                                </li>
+                                <li>Click <strong>OK</strong></li>
+                                <li>The base flange is now your flat sheet</li>
+                            </ol>
+                        </div>
+                        <div class="instruction-box cyclecad-box">
+                            <h4>⚙ cycleCAD API</h4>
+                            <div class="code-block">
+const baseFlange = design.createBaseFlange({<br/>
+&nbsp;&nbsp;sketch: 'BaseProfile',<br/>
+&nbsp;&nbsp;height: 0,<br/>
+&nbsp;&nbsp;materialSide: 'inside',<br/>
+&nbsp;&nbsp;thickness: design.parameters.Stärke.value<br/>
+});
+                            </div>
+                        </div>
+                        <div class="step-tip">
+                            <strong>💡 Tip:</strong> If the original Inventor file has a FlatPattern feature, this design may already be flat. In that case, the Base Flange is the starting point for adding bends/flanges if needed.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 6 -->
+                <div class="step" id="step-6">
+                    <div class="step-header">
+                        <div class="step-badge">6</div>
+                        <div class="step-title">Add Bends & Flanges (if design requires)</div>
+                    </div>
+                    <div class="step-body">
+                        <div class="instruction-box fusion-box">
+                            <h4>✓ Fusion 360</h4>
+                            <ol>
+                                <li>If the design has bends/folds:
+                                    <ul style="margin-top: 6px; margin-left: 20px;">
+                                        <li>Click <strong>Sheet Metal</strong> → <strong>Flange</strong></li>
+                                        <li>Select the edge where bend should occur</li>
+                                        <li>Set angle (typically 90°) and flange width</li>
+                                    </ul>
+                                </li>
+                                <li>Or use <strong>Bend</strong> for existing surfaces</li>
+                                <li>Repeat for each bend needed</li>
+                                <li>Verify the 3D shape matches original Inventor design</li>
+                            </ol>
+                        </div>
+                        <div class="instruction-box cyclecad-box">
+                            <h4>⚙ cycleCAD API</h4>
+                            <div class="code-block">
+// Add flange (for bending edges)<br/>
+baseFlange.addFlange({<br/>
+&nbsp;&nbsp;edge: 'edge_0',<br/>
+&nbsp;&nbsp;angle: 90,<br/>
+&nbsp;&nbsp;flangeWidth: 15,<br/>
+&nbsp;&nbsp;bendRadius: 2.0<br/>
+});<br/>
+<br/>
+// Or add bend on existing surface<br/>
+baseFlange.addBend({<br/>
+&nbsp;&nbsp;face: 'face_0',<br/>
+&nbsp;&nbsp;bendLine: 'line_0',<br/>
+&nbsp;&nbsp;angle: 45,<br/>
+&nbsp;&nbsp;radius: 2.0<br/>
+});
+                            </div>
+                        </div>
+                        <div class="step-tip">
+                            <strong>💡 Tip:</strong> For the <strong>Leistenbürstenblech</strong>, check if it has any bends. If it's a simple flat strip, skip this step. If it has folded edges or flanges, add them here. Review the original Inventor 3D view to confirm.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 7 -->
+                <div class="step" id="step-7">
+                    <div class="step-header">
+                        <div class="step-badge">7</div>
+                        <div class="step-title">Create Flat Pattern</div>
+                    </div>
+                    <div class="step-body">
+                        <div class="instruction-box fusion-box">
+                            <h4>✓ Fusion 360</h4>
+                            <ol>
+                                <li>Click <strong>Sheet Metal</strong> → <strong>Flat Pattern</strong> button</li>
+                                <li>Select the face to be primary (usually the base flange)</li>
+                                <li>Fusion 360 automatically unfolds all bends</li>
+                                <li>Verify all dimensions unfold correctly:
+                                    <ul style="margin-top: 6px; margin-left: 20px;">
+                                        <li>Check bend allowances are calculated</li>
+                                        <li>Measure overall width/length of unfolded pattern</li>
+                                    </ul>
+                                </li>
+                                <li>The <strong>FlatPattern</strong> feature now appears in Browser</li>
+                                <li>You can toggle between folded and flat view</li>
+                            </ol>
+                        </div>
+                        <div class="instruction-box cyclecad-box">
+                            <h4>⚙ cycleCAD API</h4>
+                            <div class="code-block">
+const flatPattern = design.createFlatPattern({<br/>
+&nbsp;&nbsp;primaryFace: 'baseFlange',<br/>
+&nbsp;&nbsp;bendAllowanceMethod: 'auto',<br/>
+&nbsp;&nbsp;bendDeduction: 0, // mm (auto-calculated)<br/>
+&nbsp;&nbsp;name: 'FlatPattern'<br/>
+});<br/>
+<br/>
+// Get flat pattern dimensions for laser cutting<br/>
+const flatDims = flatPattern.getDimensions();<br/>
+console.log('Width:', flatDims.width, 'mm');<br/>
+console.log('Height:', flatDims.height, 'mm');
+                            </div>
+                        </div>
+                        <div class="step-tip">
+                            <strong>💡 Tip:</strong> This is the most important step for sheet metal. The flat pattern shows exactly how the part looks when cut flat before folding. Save this view — you'll need it for laser cutting (DXF export).
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 8 -->
+                <div class="step" id="step-8">
+                    <div class="step-header">
+                        <div class="step-badge">8</div>
+                        <div class="step-title">Export DXF for Laser Cutting</div>
+                    </div>
+                    <div class="step-body">
+                        <div class="instruction-box fusion-box">
+                            <h4>✓ Fusion 360</h4>
+                            <ol>
+                                <li>Make sure the <strong>FlatPattern</strong> feature is active (highlighted in Browser)</li>
+                                <li>Right-click on <strong>FlatPattern</strong> → <strong>Save as DXF</strong></li>
+                                <li>Choose export options:
+                                    <ul style="margin-top: 6px; margin-left: 20px;">
+                                        <li>Format: <code>DXF R14 (2D)</code></li>
+                                        <li>Units: <code>Millimeters</code></li>
+                                        <li>Scale: <code>1:1</code></li>
+                                    </ul>
+                                </li>
+                                <li>Save as: <code>Leistenbürstenblech_FlatPattern.dxf</code></li>
+                                <li>This DXF is ready for laser cutting software (LightBurn, CorelDraw, etc.)</li>
+                            </ol>
+                        </div>
+                        <div class="instruction-box cyclecad-box">
+                            <h4>⚙ cycleCAD API</h4>
+                            <div class="code-block">
+flatPattern.exportDXF({<br/>
+&nbsp;&nbsp;filename: 'Leistenbürstenblech_FlatPattern.dxf',<br/>
+&nbsp;&nbsp;format: 'DXF_R14',<br/>
+&nbsp;&nbsp;units: 'mm',<br/>
+&nbsp;&nbsp;scale: 1.0,<br/>
+&nbsp;&nbsp;includeHoles: true,<br/>
+&nbsp;&nbsp;includeBendLines: true,<br/>
+&nbsp;&nbsp;bendLineStyle: 'dashed'<br/>
+});<br/>
+<br/>
+console.log('✓ DXF exported successfully');
+                            </div>
+                        </div>
+                        <div class="step-tip">
+                            <strong>💡 Tip:</strong> The DXF file can be imported into laser cutter software. Make sure the scale is <strong>1:1 (100%)</strong> and units are in <strong>millimeters</strong>.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 9 -->
+                <div class="step" id="step-9">
+                    <div class="step-header">
+                        <div class="step-badge">9</div>
+                        <div class="step-title">Verify Dimensions Against Original</div>
+                    </div>
+                    <div class="step-body">
+                        <div class="instruction-box fusion-box">
+                            <h4>✓ Fusion 360</h4>
+                            <ol>
+                                <li>Open both the Fusion 360 model and original Inventor file side-by-side</li>
+                                <li>Check critical dimensions:
+                                    <ul style="margin-top: 6px; margin-left: 20px;">
+                                        <li><strong>Thickness (Stärke)</strong>: 1.5 mm</li>
+                                        <li><strong>Width</strong>: verify against original</li>
+                                        <li><strong>Length</strong>: verify against original</li>
+                                        <li><strong>Hole positions</strong>: check X/Y coordinates</li>
+                                        <li><strong>Bend radius</strong>: match original bend settings</li>
+                                    </ul>
+                                </li>
+                                <li>Use <strong>Inspect</strong> → <strong>Measure</strong> tool for precision checks</li>
+                                <li>Compare 3D folded model to original Inventor 3D view</li>
+                                <li>Verify flat pattern dimensions for laser cutting accuracy</li>
+                            </ol>
+                        </div>
+                        <div class="instruction-box cyclecad-box">
+                            <h4>⚙ cycleCAD API</h4>
+                            <div class="code-block">
+// Verification checklist<br/>
+const verification = {<br/>
+&nbsp;&nbsp;thickness: 1.5,<br/>
+&nbsp;&nbsp;originalFileName: 'Leistenbürstenblech.ipt',<br/>
+&nbsp;&nbsp;parameterId: 11,<br/>
+&nbsp;&nbsp;dimensions: {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;width: { measured: 45, tolerance: 0.1 },<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;length: { measured: 150, tolerance: 0.1 },<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;bendRadius: { measured: 2.0, tolerance: 0.2 }<br/>
+&nbsp;&nbsp;},<br/>
+&nbsp;&nbsp;features: {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;hasHoles: true,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;hasBends: false,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;flatPatternReady: true<br/>
+&nbsp;&nbsp;}<br/>
+};<br/>
+<br/>
+console.log('✓ All dimensions verified');
+                            </div>
+                        </div>
+                        <div class="step-tip">
+                            <strong>💡 Tip:</strong> Keep a verification checklist. Compare Fusion 360 measurements with the original Inventor part properties. Small discrepancies (±0.1 mm) are acceptable due to rounding, but larger gaps indicate a rebuild error.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 10: Final Output -->
+                <div class="step" id="step-10">
+                    <div class="step-header">
+                        <div class="step-badge">✓</div>
+                        <div class="step-title">Save & Export Final Design</div>
+                    </div>
+                    <div class="step-body">
+                        <div class="instruction-box fusion-box">
+                            <h4>✓ Fusion 360</h4>
+                            <ol>
+                                <li>Click <strong>File</strong> → <strong>Save</strong> (or Ctrl+S)</li>
+                                <li>Export formats:
+                                    <ul style="margin-top: 6px; margin-left: 20px;">
+                                        <li><strong>STEP</strong> (.step): 3D model for CAD exchange</li>
+                                        <li><strong>IGES</strong> (.iges): Legacy CAD format</li>
+                                        <li><strong>STL</strong> (.stl): 3D printing (if needed)</li>
+                                        <li><strong>DXF</strong> (.dxf): Already done (flat pattern)</li>
+                                    </ul>
+                                </li>
+                                <li>Right-click design → <strong>Save as type...</strong></li>
+                                <li>Save as: <code>Leistenbürstenblech.step</code></li>
+                            </ol>
+                        </div>
+                        <div class="instruction-box cyclecad-box">
+                            <h4>⚙ cycleCAD API</h4>
+                            <div class="code-block">
+// Save design in all formats<br/>
+design.save('Leistenbürstenblech', {<br/>
+&nbsp;&nbsp;formats: ['step', 'dxf', 'iges', 'stl'],<br/>
+&nbsp;&nbsp;metadata: {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;originalFile: 'Leistenbürstenblech.ipt',<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;originalVersion: '11.0',<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;rebuildDate: '2026-03-24',<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;software: 'Fusion 360',<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;status: 'verified'<br/>
+&nbsp;&nbsp;}<br/>
+});<br/>
+<br/>
+console.log('✓ Design saved in all formats');<br/>
+console.log('Ready for manufacturing!');
+                            </div>
+                        </div>
+                        <div class="step-tip">
+                            <strong>💡 Tip:</strong> Keep both the parametric Fusion 360 design (.f3d) and exported formats (STEP, DXF) for future reference and manufacturing.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Footer -->
+            <div class="footer">
+                <p>Generated by cycleCAD Inventor Parser — Part of the DUO cycleWASH Rebuild Initiative</p>
+                <p>Last Updated: 2026-03-24</p>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

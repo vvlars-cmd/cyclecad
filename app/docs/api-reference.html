@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>cycleCAD - API Reference</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            display: flex;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1f6feb 0%, #388bfd 100%);
+            padding: 2rem 2rem;
+            border-bottom: 1px solid #30363d;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(31, 111, 235, 0.2);
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            color: white;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .container {
+            display: flex;
+            margin-top: 120px;
+            min-height: calc(100vh - 120px);
+            width: 100%;
+        }
+
+        aside {
+            width: 280px;
+            background: #161b22;
+            border-right: 1px solid #30363d;
+            padding: 2rem 0;
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+            position: fixed;
+            left: 0;
+            top: 120px;
+            bottom: 0;
+        }
+
+        aside nav {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        aside a {
+            padding: 0.75rem 1.5rem;
+            color: #8b949e;
+            text-decoration: none;
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
+            font-size: 0.95rem;
+        }
+
+        aside a:hover {
+            color: #58a6ff;
+            background: rgba(88, 166, 255, 0.1);
+        }
+
+        aside a.active {
+            color: #58a6ff;
+            border-left-color: #58a6ff;
+            background: rgba(88, 166, 255, 0.05);
+            font-weight: 600;
+        }
+
+        main {
+            flex: 1;
+            margin-left: 280px;
+            padding: 3rem;
+            max-width: 1000px;
+        }
+
+        .section {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        h2 {
+            font-size: 2rem;
+            color: #58a6ff;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #30363d;
+        }
+
+        h3 {
+            font-size: 1.3rem;
+            color: #79c0ff;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        h4 {
+            font-size: 1.1rem;
+            color: #c9d1d9;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+
+        p {
+            margin-bottom: 1rem;
+            color: #c9d1d9;
+        }
+
+        .code-block {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            color: #79c0ff;
+        }
+
+        .code-block code {
+            color: #79c0ff;
+        }
+
+        .parameter {
+            background: #161b22;
+            border-left: 3px solid #238636;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+
+        .parameter-name {
+            color: #79c0ff;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-weight: 600;
+        }
+
+        .parameter-type {
+            color: #238636;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .parameter-desc {
+            color: #8b949e;
+            font-size: 0.95rem;
+            margin-top: 0.5rem;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        th {
+            background: #161b22;
+            color: #58a6ff;
+            padding: 1rem;
+            text-align: left;
+            border: 1px solid #30363d;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 0.75rem 1rem;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+        }
+
+        tr:nth-child(even) {
+            background: #0d1117;
+        }
+
+        tr:hover {
+            background: #1c2128;
+        }
+
+        td code {
+            color: #79c0ff;
+            background: #0d1117;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .example {
+            background: #161b22;
+            border: 1px solid #238636;
+            border-radius: 6px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .example-title {
+            color: #238636;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            font-size: 0.95rem;
+        }
+
+        .example .code-block {
+            margin: 1rem 0 0 0;
+            background: #0d1117;
+        }
+
+        .note {
+            background: rgba(88, 166, 255, 0.1);
+            border-left: 3px solid #58a6ff;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 4px;
+        }
+
+        .note strong {
+            color: #58a6ff;
+        }
+
+        .warning {
+            background: rgba(248, 81, 73, 0.1);
+            border-left: 3px solid #f85149;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 4px;
+        }
+
+        .warning strong {
+            color: #f85149;
+        }
+
+        .command-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .command-list li {
+            background: #161b22;
+            border: 1px solid #30363d;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 6px;
+        }
+
+        .command-list li:hover {
+            border-color: #58a6ff;
+            box-shadow: 0 0 10px rgba(88, 166, 255, 0.1);
+        }
+
+        .command-list code {
+            color: #79c0ff;
+            font-family: 'Monaco', 'Courier New', monospace;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .material-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .material-card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 1rem;
+        }
+
+        .material-card:hover {
+            border-color: #58a6ff;
+        }
+
+        .material-name {
+            color: #58a6ff;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .material-props {
+            font-size: 0.85rem;
+            color: #8b949e;
+        }
+
+        .material-props li {
+            list-style-position: inside;
+            margin-bottom: 0.25rem;
+        }
+
+        .shortcut-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .shortcut-card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 1rem;
+        }
+
+        .shortcut-key {
+            background: #238636;
+            color: white;
+            padding: 0.4rem 0.6rem;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 0.5rem;
+        }
+
+        .shortcut-desc {
+            font-size: 0.9rem;
+            color: #c9d1d9;
+        }
+
+        footer {
+            background: #161b22;
+            border-top: 1px solid #30363d;
+            padding: 2rem;
+            text-align: center;
+            color: #8b949e;
+            margin-left: 280px;
+        }
+
+        footer a {
+            color: #58a6ff;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        .breadcrumb {
+            font-size: 0.9rem;
+            color: #8b949e;
+            margin-bottom: 1rem;
+        }
+
+        .breadcrumb a {
+            color: #58a6ff;
+            text-decoration: none;
+        }
+
+        @media (max-width: 1024px) {
+            aside {
+                width: 220px;
+            }
+
+            main {
+                margin-left: 220px;
+                padding: 2rem;
+            }
+
+            footer {
+                margin-left: 220px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            header {
+                position: relative;
+                padding: 1.5rem 1rem;
+            }
+
+            header h1 {
+                font-size: 1.4rem;
+            }
+
+            .container {
+                margin-top: 0;
+                flex-direction: column;
+            }
+
+            aside {
+                position: relative;
+                width: 100%;
+                max-height: none;
+                border-right: none;
+                border-bottom: 1px solid #30363d;
+                top: 0;
+            }
+
+            aside nav {
+                flex-direction: row;
+                overflow-x: auto;
+                flex-wrap: wrap;
+            }
+
+            aside a {
+                flex: 1;
+                min-width: 150px;
+                border-left: none;
+                border-bottom: 3px solid transparent;
+                padding: 0.75rem 1rem;
+            }
+
+            aside a.active {
+                border-left: none;
+                border-bottom-color: #58a6ff;
+            }
+
+            main {
+                margin-left: 0;
+                max-width: 100%;
+            }
+
+            footer {
+                margin-left: 0;
+            }
+
+            .material-list, .shortcut-grid {
+                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>cycleCAD API Reference</h1>
+        <p>Complete feature and parameter documentation for AI-powered CAD design</p>
+    </header>
+
+    <div class="container">
+        <aside>
+            <nav>
+                <a href="#sketch-tools" class="nav-link active" data-section="sketch-tools">Sketch Tools</a>
+                <a href="#3d-operations" class="nav-link" data-section="3d-operations">3D Operations</a>
+                <a href="#primitives" class="nav-link" data-section="primitives">Primitives</a>
+                <a href="#ai-commands" class="nav-link" data-section="ai-commands">AI Commands</a>
+                <a href="#export-formats" class="nav-link" data-section="export-formats">Export Formats</a>
+                <a href="#materials" class="nav-link" data-section="materials">Materials</a>
+                <a href="#keyboard-shortcuts" class="nav-link" data-section="keyboard-shortcuts">Keyboard Shortcuts</a>
+                <a href="#url-parameters" class="nav-link" data-section="url-parameters">URL Parameters</a>
+            </nav>
+        </aside>
+
+        <main>
+            <div class="breadcrumb">
+                <a href="../index.html">cycleCAD</a> / API Reference
+            </div>
+
+            <!-- Sketch Tools Section -->
+            <div class="section active" id="sketch-tools">
+                <h2>Sketch Tools</h2>
+                <p>Fundamental tools for creating 2D sketches that form the basis for 3D models.</p>
+
+                <h3>Line Tool</h3>
+                <p>Draw straight lines in the sketch plane. Click two points to define start and end positions.</p>
+                <div class="parameter">
+                    <div class="parameter-name">start</div>
+                    <div class="parameter-type">Point {x, y}</div>
+                    <div class="parameter-desc">Starting point coordinates in sketch units (mm)</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">end</div>
+                    <div class="parameter-type">Point {x, y}</div>
+                    <div class="parameter-desc">Ending point coordinates in sketch units (mm)</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">color</div>
+                    <div class="parameter-type">string</div>
+                    <div class="parameter-desc">Line color (default: #58a6ff)</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">weight</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Line thickness in pixels (default: 2)</div>
+                </div>
+                <div class="example">
+                    <div class="example-title">Example: Create a horizontal line</div>
+                    <div class="code-block">draw.line({x: 0, y: 0}, {x: 100, y: 0})</div>
+                </div>
+
+                <h3>Rectangle Tool</h3>
+                <p>Create rectangular shapes by specifying width, height, and position.</p>
+                <div class="parameter">
+                    <div class="parameter-name">width</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Width in millimeters</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">height</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Height in millimeters</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">origin</div>
+                    <div class="parameter-type">Point {x, y}</div>
+                    <div class="parameter-desc">Bottom-left corner position (default: {0, 0})</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">fillColor</div>
+                    <div class="parameter-type">string</div>
+                    <div class="parameter-desc">Fill color (default: none/transparent)</div>
+                </div>
+                <div class="example">
+                    <div class="example-title">Example: 50×100mm rectangle</div>
+                    <div class="code-block">draw.rect({width: 50, height: 100})</div>
+                </div>
+
+                <h3>Circle Tool</h3>
+                <p>Draw circles with specified radius and center point.</p>
+                <div class="parameter">
+                    <div class="parameter-name">radius</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Circle radius in millimeters</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">center</div>
+                    <div class="parameter-type">Point {x, y}</div>
+                    <div class="parameter-desc">Circle center coordinates (default: {0, 0})</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">fillColor</div>
+                    <div class="parameter-type">string</div>
+                    <div class="parameter-desc">Fill color (default: none)</div>
+                </div>
+                <div class="example">
+                    <div class="example-title">Example: 25mm radius circle</div>
+                    <div class="code-block">draw.circle({radius: 25, center: {x: 50, y: 50}})</div>
+                </div>
+
+                <h3>Arc Tool</h3>
+                <p>Create circular arc segments defined by start angle, end angle, and radius.</p>
+                <div class="parameter">
+                    <div class="parameter-name">radius</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Arc radius in millimeters</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">startAngle</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Starting angle in degrees (0-360)</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">endAngle</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Ending angle in degrees (0-360)</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">center</div>
+                    <div class="parameter-type">Point {x, y}</div>
+                    <div class="parameter-desc">Arc center coordinates (default: {0, 0})</div>
+                </div>
+                <div class="example">
+                    <div class="example-title">Example: 90° arc</div>
+                    <div class="code-block">draw.arc({radius: 30, startAngle: 0, endAngle: 90})</div>
+                </div>
+
+                <h3>Polyline Tool</h3>
+                <p>Draw connected line segments by specifying multiple points in sequence.</p>
+                <div class="parameter">
+                    <div class="parameter-name">points</div>
+                    <div class="parameter-type">Point[]</div>
+                    <div class="parameter-desc">Array of points [{x, y}, {x, y}, ...]</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">closed</div>
+                    <div class="parameter-type">boolean</div>
+                    <div class="parameter-desc">Close the path (connect last to first point). Default: false</div>
+                </div>
+                <div class="example">
+                    <div class="example-title">Example: Triangle</div>
+                    <div class="code-block">draw.polyline({
+  points: [{x: 0, y: 0}, {x: 50, y: 0}, {x: 25, y: 43}],
+  closed: true
+})</div>
+                </div>
+            </div>
+
+            <!-- 3D Operations Section -->
+            <div class="section" id="3d-operations">
+                <h2>3D Operations</h2>
+                <p>Transform 2D sketches into 3D geometry with powerful modeling operations.</p>
+
+                <h3>Extrude</h3>
+                <p>Extend a 2D sketch into 3D space along the Z-axis by a specified distance.</p>
+                <div class="parameter">
+                    <div class="parameter-name">sketch</div>
+                    <div class="parameter-type">Sketch</div>
+                    <div class="parameter-desc">Sketch object to extrude</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">distance</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Extrusion distance in millimeters</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">direction</div>
+                    <div class="parameter-type">string</div>
+                    <div class="parameter-desc">Direction: 'up' | 'down' | 'both' (default: 'up')</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">taper</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Taper angle in degrees (0-90, default: 0)</div>
+                </div>
+                <div class="example">
+                    <div class="example-title">Example: Extrude rectangle to height</div>
+                    <div class="code-block">let sketch = draw.rect({width: 50, height: 50});
+solid.extrude(sketch, {distance: 100})</div>
+                </div>
+
+                <h3>Revolve</h3>
+                <p>Rotate a 2D profile around an axis to create rotational geometry (like a lathe operation).</p>
+                <div class="parameter">
+                    <div class="parameter-name">sketch</div>
+                    <div class="parameter-type">Sketch</div>
+                    <div class="parameter-desc">Sketch profile to revolve</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">angle</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Rotation angle in degrees (1-360, default: 360)</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">axis</div>
+                    <div class="parameter-type">string</div>
+                    <div class="parameter-desc">Rotation axis: 'x' | 'y' | 'z' (default: 'y')</div>
+                </div>
+                <div class="example">
+                    <div class="example-title">Example: Create a cone via revolve</div>
+                    <div class="code-block">let profile = draw.line({x: 0, y: 0}, {x: 20, y: 50});
+solid.revolve(profile, {angle: 360, axis: 'y'})</div>
+                </div>
+
+                <h3>Fillet</h3>
+                <p>Round sharp edges with a smooth radius curve.</p>
+                <div class="parameter">
+                    <div class="parameter-name">edges</div>
+                    <div class="parameter-type">Edge[]</div>
+                    <div class="parameter-desc">Array of edges to fillet</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">radius</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Fillet radius in millimeters</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">type</div>
+                    <div class="parameter-type">string</div>
+                    <div class="parameter-desc">Fillet type: 'constant' | 'variable' (default: 'constant')</div>
+                </div>
+                <div class="example">
+                    <div class="example-title">Example: Fillet all top edges</div>
+                    <div class="code-block">solid.fillet({edges: model.topEdges, radius: 2})</div>
+                </div>
+
+                <h3>Chamfer</h3>
+                <p>Create beveled edges with linear transition.</p>
+                <div class="parameter">
+                    <div class="parameter-name">edges</div>
+                    <div class="parameter-type">Edge[]</div>
+                    <div class="parameter-desc">Edges to chamfer</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">distance</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Chamfer distance in millimeters</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">angle</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Chamfer angle in degrees (15-60, default: 45)</div>
+                </div>
+
+                <h3>Boolean Operations</h3>
+                <p>Combine solids using set operations: Union, Subtract, Intersect.</p>
+
+                <h4>Union</h4>
+                <div class="parameter">
+                    <div class="parameter-name">solid1</div>
+                    <div class="parameter-type">Solid</div>
+                    <div class="parameter-desc">First solid to combine</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">solid2</div>
+                    <div class="parameter-type">Solid</div>
+                    <div class="parameter-desc">Second solid to combine</div>
+                </div>
+                <div class="example">
+                    <div class="example-title">Example: Combine two parts</div>
+                    <div class="code-block">let result = solid.union(part1, part2)</div>
+                </div>
+
+                <h4>Subtract (Cut)</h4>
+                <p>Remove the volume of one solid from another.</p>
+                <div class="example">
+                    <div class="example-title">Example: Create a hole</div>
+                    <div class="code-block">let baseBlock = box({w: 100, h: 100, d: 50});
+let hole = cylinder({r: 10, h: 50});
+let result = solid.subtract(baseBlock, hole)</div>
+                </div>
+
+                <h4>Intersect</h4>
+                <p>Keep only the overlapping volume of two solids.</p>
+                <div class="example">
+                    <div class="example-title">Example: Find intersection</div>
+                    <div class="code-block">let intersection = solid.intersect(solid1, solid2)</div>
+                </div>
+            </div>
+
+            <!-- Primitives Section -->
+            <div class="section" id="primitives">
+                <h2>Primitives</h2>
+                <p>Pre-defined geometric shapes for rapid prototyping.</p>
+
+                <h3>Box (Rectangular Solid)</h3>
+                <div class="parameter">
+                    <div class="parameter-name">width</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Width (X) in mm</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">height</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Height (Y) in mm</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">depth</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Depth (Z) in mm</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">center</div>
+                    <div class="parameter-type">Point {x, y, z}</div>
+                    <div class="parameter-desc">Center position (default: {0, 0, 0})</div>
+                </div>
+                <div class="example">
+                    <div class="example-title">Example: 100×60×20mm box</div>
+                    <div class="code-block">prim.box({width: 100, height: 60, depth: 20})</div>
+                </div>
+
+                <h3>Cylinder</h3>
+                <div class="parameter">
+                    <div class="parameter-name">radius</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Cylinder radius in mm</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">height</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Cylinder height in mm</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">segments</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Polygon segments (default: 32)</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">axis</div>
+                    <div class="parameter-type">string</div>
+                    <div class="parameter-desc">Axis of extrusion: 'x' | 'y' | 'z' (default: 'z')</div>
+                </div>
+                <div class="example">
+                    <div class="example-title">Example: 30mm radius, 60mm height</div>
+                    <div class="code-block">prim.cylinder({radius: 30, height: 60})</div>
+                </div>
+
+                <h3>Sphere</h3>
+                <div class="parameter">
+                    <div class="parameter-name">radius</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Sphere radius in mm</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">segments</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Resolution segments (default: 32)</div>
+                </div>
+                <div class="example">
+                    <div class="example-title">Example: 25mm radius sphere</div>
+                    <div class="code-block">prim.sphere({radius: 25})</div>
+                </div>
+
+                <h3>Cone</h3>
+                <div class="parameter">
+                    <div class="parameter-name">baseRadius</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Base radius in mm</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">topRadius</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Top radius (0 for sharp point, default: 0)</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">height</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Cone height in mm</div>
+                </div>
+                <div class="example">
+                    <div class="example-title">Example: 40mm base, 100mm tall cone</div>
+                    <div class="code-block">prim.cone({baseRadius: 40, topRadius: 0, height: 100})</div>
+                </div>
+
+                <h3>Torus</h3>
+                <div class="parameter">
+                    <div class="parameter-name">majorRadius</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Distance from center to tube center in mm</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">minorRadius</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Tube radius in mm</div>
+                </div>
+                <div class="example">
+                    <div class="example-title">Example: Torus ring</div>
+                    <div class="code-block">prim.torus({majorRadius: 50, minorRadius: 10})</div>
+                </div>
+            </div>
+
+            <!-- AI Commands Section -->
+            <div class="section" id="ai-commands">
+                <h2>AI Commands</h2>
+                <p>Natural language commands processed by cycleCAD's AI engine. Describe what you want to create in plain English.</p>
+
+                <div class="note">
+                    <strong>Note:</strong> AI commands are converted to parametric models. Use specific dimensions and features for best results.
+                </div>
+
+                <h3>Supported Command Patterns</h3>
+
+                <h4>Basic Shapes</h4>
+                <ul class="command-list">
+                    <li><code>"50mm cube"</code> → Creates a cubic box</li>
+                    <li><code>"cylinder 30mm radius 60mm tall"</code> → Rotational primitive</li>
+                    <li><code>"sphere 25mm radius"</code> → Spherical shape</li>
+                    <li><code>"cone 40mm base 100mm tall"</code> → Conical shape</li>
+                </ul>
+
+                <h4>Plates & Sheets</h4>
+                <ul class="command-list">
+                    <li><code>"plate 100 by 60 by 10"</code> → Rectangular plate (W×H×D)</li>
+                    <li><code>"plate 100x60x10 with 4 corner holes 8mm"</code> → Plate with corner mounting</li>
+                    <li><code>"sheet 500x300x2 with centered hole 25mm"</code> → Perforated sheet</li>
+                </ul>
+
+                <h4>Brackets & Structural</h4>
+                <ul class="command-list">
+                    <li><code>"L bracket 80x40x5mm"</code> → Right-angle bracket</li>
+                    <li><code>"triangular gusset 60x60x5"</code> → Reinforcement gusset</li>
+                    <li><code>"mounting bracket 80mm base 60mm tall with 4 bolt holes"</code> → Assembly mount</li>
+                </ul>
+
+                <h4>Mechanical Components</h4>
+                <ul class="command-list">
+                    <li><code>"spacer 20mm OD 10mm ID 5mm thick"</code> → Ring spacer</li>
+                    <li><code>"bushing 25mm outer 15mm inner 30mm long"</code> → Cylindrical bushing</li>
+                    <li><code>"bearing housing 80mm OD 50mm bore"</code> → Flanged housing</li>
+                    <li><code>"shaft collar 20mm bore 35mm OD 12mm wide"</code> → Locking collar</li>
+                </ul>
+
+                <h4>Fasteners & Hardware</h4>
+                <ul class="command-list">
+                    <li><code>"M8 washer"</code> → Standard flat washer</li>
+                    <li><code>"hex standoff M4 15mm tall"</code> → Threaded spacer</li>
+                    <li><code>"bolt head M10 20mm long"</code> → Hex bolt</li>
+                </ul>
+
+                <h4>Custom Features</h4>
+                <ul class="command-list">
+                    <li><code>"phone stand 80mm wide 60mm tall 5mm thick with slot"</code> → Device holder</li>
+                    <li><code>"cable clip for 10mm cable"</code> → Cable organizer</li>
+                    <li><code>"heat sink 80mm wide 40mm tall with 4 fins 3mm thick"</code> → Cooling element</li>
+                    <li><code>"filter housing 60mm diameter 80mm tall inlet outlet ports"</code> → Canister body</li>
+                </ul>
+
+                <h3>AI Command Tips</h3>
+                <ul>
+                    <li>Use specific dimensions (mm, mm, mm format)</li>
+                    <li>Include material hints for realistic rendering</li>
+                    <li>Mention mounting points (holes, pockets, slots)</li>
+                    <li>Describe symmetry and repetition</li>
+                    <li>AI fills in standard details (thread forms, standard sizes)</li>
+                </ul>
+            </div>
+
+            <!-- Export Formats Section -->
+            <div class="section" id="export-formats">
+                <h2>Export Formats</h2>
+                <p>Save your designs in multiple industry-standard formats.</p>
+
+                <h3>STL (Stereolithography)</h3>
+                <p><strong>Best for:</strong> 3D printing, CNC machining</p>
+                <div class="parameter">
+                    <div class="parameter-name">format</div>
+                    <div class="parameter-type">string</div>
+                    <div class="parameter-desc">'ascii' | 'binary' (binary is smaller)</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">scale</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Scale factor (1.0 = original size)</div>
+                </div>
+                <div class="example">
+                    <div class="example-title">Example: Export as binary STL</div>
+                    <div class="code-block">model.exportSTL({format: 'binary', scale: 1.0})</div>
+                </div>
+
+                <h3>OBJ (Wavefront)</h3>
+                <p><strong>Best for:</strong> 3D visualization, rendering, animation</p>
+                <div class="parameter">
+                    <div class="parameter-name">includeNormals</div>
+                    <div class="parameter-type">boolean</div>
+                    <div class="parameter-desc">Include vertex normals (default: true)</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">includeMaterials</div>
+                    <div class="parameter-type">boolean</div>
+                    <div class="parameter-desc">Export .mtl material file (default: true)</div>
+                </div>
+                <div class="example">
+                    <div class="example-title">Example: Export as OBJ</div>
+                    <div class="code-block">model.exportOBJ({includeNormals: true, includeMaterials: true})</div>
+                </div>
+
+                <h3>STEP/IGES (CAD Interchange)</h3>
+                <p><strong>Best for:</strong> Professional CAD exchange, parametric history</p>
+                <div class="parameter">
+                    <div class="parameter-name">preserveHistory</div>
+                    <div class="parameter-type">boolean</div>
+                    <div class="parameter-desc">Keep parametric feature tree (default: true)</div>
+                </div>
+                <div class="example">
+                    <div class="example-title">Example: Export as STEP</div>
+                    <div class="code-block">model.exportSTEP({preserveHistory: true})</div>
+                </div>
+
+                <h3>glTF 2.0</h3>
+                <p><strong>Best for:</strong> Web display, AR/VR, game engines</p>
+                <div class="parameter">
+                    <div class="parameter-name">embedded</div>
+                    <div class="parameter-type">boolean</div>
+                    <div class="parameter-desc">Embed textures in .glb file (default: true)</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">compressed</div>
+                    <div class="parameter-type">boolean</div>
+                    <div class="parameter-desc">Use Draco compression (default: true)</div>
+                </div>
+
+                <h3>PLY (Polygon File Format)</h3>
+                <p><strong>Best for:</strong> Point cloud data, mesh analysis</p>
+                <div class="parameter">
+                    <div class="parameter-name">format</div>
+                    <div class="parameter-type">string</div>
+                    <div class="parameter-desc">'ascii' | 'binary' (binary recommended)</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">includeColors</div>
+                    <div class="parameter-type">boolean</div>
+                    <div class="parameter-desc">Include vertex colors (default: true)</div>
+                </div>
+
+                <h3>JSON (Native Format)</h3>
+                <p><strong>Best for:</strong> Saving project state, parametric recovery</p>
+                <div class="parameter">
+                    <div class="parameter-name">compressed</div>
+                    <div class="parameter-type">boolean</div>
+                    <div class="parameter-desc">GZIP compression (default: true)</div>
+                </div>
+                <div class="example">
+                    <div class="example-title">Example: Save project</div>
+                    <div class="code-block">model.exportJSON({compressed: true})</div>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Format</th>
+                                <th>File Size</th>
+                                <th>Editability</th>
+                                <th>Best Use</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>STL</code></td>
+                                <td>Medium</td>
+                                <td>No</td>
+                                <td>3D Printing</td>
+                            </tr>
+                            <tr>
+                                <td><code>OBJ</code></td>
+                                <td>Medium</td>
+                                <td>Limited</td>
+                                <td>Rendering</td>
+                            </tr>
+                            <tr>
+                                <td><code>STEP</code></td>
+                                <td>Large</td>
+                                <td>Yes</td>
+                                <td>CAD Exchange</td>
+                            </tr>
+                            <tr>
+                                <td><code>glTF</code></td>
+                                <td>Small</td>
+                                <td>No</td>
+                                <td>Web/AR</td>
+                            </tr>
+                            <tr>
+                                <td><code>PLY</code></td>
+                                <td>Medium</td>
+                                <td>No</td>
+                                <td>Analysis</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Materials Section -->
+            <div class="section" id="materials">
+                <h2>Materials</h2>
+                <p>Pre-configured material properties for rendering and simulations.</p>
+
+                <div class="material-list">
+                    <div class="material-card">
+                        <div class="material-name">Steel</div>
+                        <ul class="material-props">
+                            <li>Density: 7.85 g/cm³</li>
+                            <li>Color: #666666</li>
+                            <li>Roughness: 0.4</li>
+                        </ul>
+                    </div>
+
+                    <div class="material-card">
+                        <div class="material-name">Aluminum</div>
+                        <ul class="material-props">
+                            <li>Density: 2.70 g/cm³</li>
+                            <li>Color: #cccccc</li>
+                            <li>Roughness: 0.3</li>
+                        </ul>
+                    </div>
+
+                    <div class="material-card">
+                        <div class="material-name">Titanium</div>
+                        <ul class="material-props">
+                            <li>Density: 4.51 g/cm³</li>
+                            <li>Color: #999999</li>
+                            <li>Roughness: 0.35</li>
+                        </ul>
+                    </div>
+
+                    <div class="material-card">
+                        <div class="material-name">Plastic (ABS)</div>
+                        <ul class="material-props">
+                            <li>Density: 1.04 g/cm³</li>
+                            <li>Color: #333333</li>
+                            <li>Roughness: 0.6</li>
+                        </ul>
+                    </div>
+
+                    <div class="material-card">
+                        <div class="material-name">Polycarbonate</div>
+                        <ul class="material-props">
+                            <li>Density: 1.20 g/cm³</li>
+                            <li>Color: #aaaaaa</li>
+                            <li>Roughness: 0.2</li>
+                        </ul>
+                    </div>
+
+                    <div class="material-card">
+                        <div class="material-name">Rubber</div>
+                        <ul class="material-props">
+                            <li>Density: 0.92 g/cm³</li>
+                            <li>Color: #1a1a1a</li>
+                            <li>Roughness: 0.8</li>
+                        </ul>
+                    </div>
+
+                    <div class="material-card">
+                        <div class="material-name">Brass</div>
+                        <ul class="material-props">
+                            <li>Density: 8.47 g/cm³</li>
+                            <li>Color: #b8860b</li>
+                            <li>Roughness: 0.35</li>
+                        </ul>
+                    </div>
+
+                    <div class="material-card">
+                        <div class="material-name">Copper</div>
+                        <ul class="material-props">
+                            <li>Density: 8.96 g/cm³</li>
+                            <li>Color: #b87333</li>
+                            <li>Roughness: 0.3</li>
+                        </ul>
+                    </div>
+
+                    <div class="material-card">
+                        <div class="material-name">Cast Iron</div>
+                        <ul class="material-props">
+                            <li>Density: 7.20 g/cm³</li>
+                            <li>Color: #444444</li>
+                            <li>Roughness: 0.65</li>
+                        </ul>
+                    </div>
+
+                    <div class="material-card">
+                        <div class="material-name">Glass</div>
+                        <ul class="material-props">
+                            <li>Density: 2.50 g/cm³</li>
+                            <li>Color: #e0f0ff</li>
+                            <li>Roughness: 0.1</li>
+                        </ul>
+                    </div>
+
+                    <div class="material-card">
+                        <div class="material-name">Carbon Fiber</div>
+                        <ul class="material-props">
+                            <li>Density: 1.60 g/cm³</li>
+                            <li>Color: #1a1a2e</li>
+                            <li>Roughness: 0.5</li>
+                        </ul>
+                    </div>
+
+                    <div class="material-card">
+                        <div class="material-name">Silicone</div>
+                        <ul class="material-props">
+                            <li>Density: 1.15 g/cm³</li>
+                            <li>Color: #e0d9d3</li>
+                            <li>Roughness: 0.75</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h3>Custom Material Definition</h3>
+                <div class="code-block">let material = {
+  name: "Custom Metal",
+  density: 7.5,      // g/cm³
+  color: "#888888",  // Hex color
+  roughness: 0.4,    // 0-1
+  metallic: true,
+  opacity: 1.0
+}</div>
+            </div>
+
+            <!-- Keyboard Shortcuts Section -->
+            <div class="section" id="keyboard-shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+                <p>Fast keyboard access to common operations.</p>
+
+                <div class="shortcut-grid">
+                    <div class="shortcut-card">
+                        <span class="shortcut-key">Ctrl/Cmd + N</span>
+                        <div class="shortcut-desc">New project</div>
+                    </div>
+                    <div class="shortcut-card">
+                        <span class="shortcut-key">Ctrl/Cmd + O</span>
+                        <div class="shortcut-desc">Open file</div>
+                    </div>
+                    <div class="shortcut-card">
+                        <span class="shortcut-key">Ctrl/Cmd + S</span>
+                        <div class="shortcut-desc">Save project</div>
+                    </div>
+                    <div class="shortcut-card">
+                        <span class="shortcut-key">Ctrl/Cmd + E</span>
+                        <div class="shortcut-desc">Export model</div>
+                    </div>
+                    <div class="shortcut-card">
+                        <span class="shortcut-key">Ctrl/Cmd + Z</span>
+                        <div class="shortcut-desc">Undo</div>
+                    </div>
+                    <div class="shortcut-card">
+                        <span class="shortcut-key">Ctrl/Cmd + Shift + Z</span>
+                        <div class="shortcut-desc">Redo</div>
+                    </div>
+                    <div class="shortcut-card">
+                        <span class="shortcut-key">V</span>
+                        <div class="shortcut-desc">Toggle viewport grid</div>
+                    </div>
+                    <div class="shortcut-card">
+                        <span class="shortcut-key">W</span>
+                        <div class="shortcut-desc">Toggle wireframe</div>
+                    </div>
+                    <div class="shortcut-card">
+                        <span class="shortcut-key">P</span>
+                        <div class="shortcut-desc">Perspective view</div>
+                    </div>
+                    <div class="shortcut-card">
+                        <span class="shortcut-key">T</span>
+                        <div class="shortcut-desc">Front view</div>
+                    </div>
+                    <div class="shortcut-card">
+                        <span class="shortcut-key">G</span>
+                        <div class="shortcut-desc">Top view</div>
+                    </div>
+                    <div class="shortcut-card">
+                        <span class="shortcut-key">D</span>
+                        <div class="shortcut-desc">Right side view</div>
+                    </div>
+                    <div class="shortcut-card">
+                        <span class="shortcut-key">F</span>
+                        <div class="shortcut-desc">Fit all (zoom to fit)</div>
+                    </div>
+                    <div class="shortcut-card">
+                        <span class="shortcut-key">Home</span>
+                        <div class="shortcut-desc">Center view</div>
+                    </div>
+                    <div class="shortcut-card">
+                        <span class="shortcut-key">Mouse Wheel</span>
+                        <div class="shortcut-desc">Zoom in/out</div>
+                    </div>
+                    <div class="shortcut-card">
+                        <span class="shortcut-key">Middle Drag</span>
+                        <div class="shortcut-desc">Pan view</div>
+                    </div>
+                    <div class="shortcut-card">
+                        <span class="shortcut-key">Right Drag</span>
+                        <div class="shortcut-desc">Rotate view</div>
+                    </div>
+                    <div class="shortcut-card">
+                        <span class="shortcut-key">Delete</span>
+                        <div class="shortcut-desc">Delete selected</div>
+                    </div>
+                    <div class="shortcut-card">
+                        <span class="shortcut-key">Escape</span>
+                        <div class="shortcut-desc">Deselect all</div>
+                    </div>
+                    <div class="shortcut-card">
+                        <span class="shortcut-key">?</span>
+                        <div class="shortcut-desc">Show shortcuts help</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- URL Parameters Section -->
+            <div class="section" id="url-parameters">
+                <h2>URL Parameters</h2>
+                <p>Deep-link to cycleCAD with pre-configured models and parameters.</p>
+
+                <h3>Basic URL Structure</h3>
+                <div class="code-block">https://explodeview.com/cyclecad?create=box&w=50&h=30&d=20</div>
+
+                <h3>Global Parameters</h3>
+
+                <div class="parameter">
+                    <div class="parameter-name">create</div>
+                    <div class="parameter-type">string</div>
+                    <div class="parameter-desc">Primitive type: box, cylinder, sphere, cone, torus</div>
+                </div>
+
+                <div class="parameter">
+                    <div class="parameter-name">prompt</div>
+                    <div class="parameter-type">string</div>
+                    <div class="parameter-desc">AI natural language prompt (URL encoded)</div>
+                </div>
+
+                <div class="parameter">
+                    <div class="parameter-name">material</div>
+                    <div class="parameter-type">string</div>
+                    <div class="parameter-desc">Material preset: steel, aluminum, plastic, etc.</div>
+                </div>
+
+                <div class="parameter">
+                    <div class="parameter-name">color</div>
+                    <div class="parameter-type">string</div>
+                    <div class="parameter-desc">Hex color code (e.g., #ff0000 for red)</div>
+                </div>
+
+                <h3>Box Parameters</h3>
+                <div class="code-block">?create=box&w=100&h=60&d=20&material=aluminum&color=#cccccc</div>
+
+                <div class="parameter">
+                    <div class="parameter-name">w</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Width in mm</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">h</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Height in mm</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">d</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Depth in mm</div>
+                </div>
+
+                <h3>Cylinder Parameters</h3>
+                <div class="code-block">?create=cylinder&r=30&h=60</div>
+
+                <div class="parameter">
+                    <div class="parameter-name">r</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Radius in mm</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-name">h</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Height in mm</div>
+                </div>
+
+                <h3>Sphere Parameters</h3>
+                <div class="code-block">?create=sphere&r=25</div>
+
+                <div class="parameter">
+                    <div class="parameter-name">r</div>
+                    <div class="parameter-type">number</div>
+                    <div class="parameter-desc">Radius in mm</div>
+                </div>
+
+                <h3>AI Prompt URL</h3>
+                <div class="code-block">?prompt=plate%20100x60x10%20with%204%20corner%20holes%208mm</div>
+
+                <div class="warning">
+                    <strong>Important:</strong> Spaces and special characters must be URL-encoded. Use %20 for space.
+                </div>
+
+                <h3>Complete Examples</h3>
+
+                <div class="example">
+                    <div class="example-title">Example 1: Steel box</div>
+                    <div class="code-block">https://explodeview.com/cyclecad?create=box&w=100&h=60&d=20&material=steel</div>
+                </div>
+
+                <div class="example">
+                    <div class="example-title">Example 2: Aluminum cylinder</div>
+                    <div class="code-block">https://explodeview.com/cyclecad?create=cylinder&r=30&h=60&material=aluminum</div>
+                </div>
+
+                <div class="example">
+                    <div class="example-title">Example 3: AI-generated part</div>
+                    <div class="code-block">https://explodeview.com/cyclecad?prompt=phone%20stand%2080mm%20wide%2060mm%20tall</div>
+                </div>
+
+                <h3>Parameter Encoding Reference</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Character</th>
+                                <th>Encoded</th>
+                                <th>Character</th>
+                                <th>Encoded</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Space</td>
+                                <td><code>%20</code></td>
+                                <td>×</td>
+                                <td><code>%C3%97</code></td>
+                            </tr>
+                            <tr>
+                                <td>#</td>
+                                <td><code>%23</code></td>
+                                <td>Ø</td>
+                                <td><code>%C3%98</code></td>
+                            </tr>
+                            <tr>
+                                <td>&</td>
+                                <td><code>%26</code></td>
+                                <td>mm</td>
+                                <td><code>mm</code> (no encoding)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <footer>
+        &copy; 2026 cycleCAD by ExplodeView. <a href="../index.html">Back to cycleCAD</a> | <a href="examples.html">Examples</a> | <a href="https://github.com/vvlars-cmd/explodeview">GitHub</a>
+    </footer>
+
+    <script>
+        // Navigation functionality
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+
+                // Update active link
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+
+                // Update active section
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                const sectionId = link.dataset.section;
+                document.getElementById(sectionId).classList.add('active');
+
+                // Scroll to top
+                document.querySelector('main').scrollTop = 0;
+            });
+        });
+    </script>
+</body>
+</html>

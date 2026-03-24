@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DUO cycleWASH Project Browser</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #0d1117;
+            color: #c9d1d9;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Top bar */
+        .top-bar {
+            background-color: #161b22;
+            border-bottom: 1px solid #30363d;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #ff8c00;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stats {
+            display: flex;
+            gap: 24px;
+            font-size: 13px;
+            color: #8b949e;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stat-value {
+            color: #ff8c00;
+            font-weight: 600;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            max-width: 300px;
+            padding: 6px 12px;
+            background-color: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            color: #c9d1d9;
+            font-size: 13px;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #ff8c00;
+            box-shadow: 0 0 0 2px rgba(255, 140, 0, 0.1);
+        }
+
+        /* Main container */
+        .main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 320px;
+            background-color: #161b22;
+            border-right: 1px solid #30363d;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid #30363d;
+            font-size: 12px;
+            font-weight: 600;
+            color: #8b949e;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tree-container {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .tree-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .tree-container::-webkit-scrollbar-track {
+            background-color: transparent;
+        }
+
+        .tree-container::-webkit-scrollbar-thumb {
+            background-color: #30363d;
+            border-radius: 4px;
+        }
+
+        .tree-container::-webkit-scrollbar-thumb:hover {
+            background-color: #484f58;
+        }
+
+        /* Tree styles */
+        .tree-item {
+            list-style: none;
+            padding: 0;
+        }
+
+        .tree-item-label {
+            padding: 6px 8px;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            transition: background-color 0.15s;
+        }
+
+        .tree-item-label:hover {
+            background-color: #262c36;
+        }
+
+        .tree-item-label.selected {
+            background-color: #1f6feb;
+            color: #fff;
+        }
+
+        .tree-toggle {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            cursor: pointer;
+            font-size: 10px;
+            color: #8b949e;
+            user-select: none;
+        }
+
+        .tree-toggle.collapsed::before {
+            content: '▶';
+        }
+
+        .tree-toggle.expanded::before {
+            content: '▼';
+        }
+
+        .tree-toggle.no-toggle {
+            visibility: hidden;
+        }
+
+        .tree-icon {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 14px;
+        }
+
+        .tree-text {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .tree-children {
+            list-style: none;
+            padding-left: 16px;
+        }
+
+        .tree-children.hidden {
+            display: none;
+        }
+
+        /* Content area */
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background-color: #0d1117;
+        }
+
+        .content-empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #6e7681;
+            text-align: center;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .content-empty-icon {
+            font-size: 48px;
+            opacity: 0.5;
+        }
+
+        .content-panel {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .content-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .content-panel::-webkit-scrollbar-track {
+            background-color: transparent;
+        }
+
+        .content-panel::-webkit-scrollbar-thumb {
+            background-color: #30363d;
+            border-radius: 4px;
+        }
+
+        .content-panel::-webkit-scrollbar-thumb:hover {
+            background-color: #484f58;
+        }
+
+        .part-header {
+            margin-bottom: 24px;
+        }
+
+        .part-title {
+            font-size: 28px;
+            font-weight: 600;
+            color: #ff8c00;
+            margin-bottom: 8px;
+            word-break: break-word;
+        }
+
+        .part-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 13px;
+            color: #8b949e;
+            flex-wrap: wrap;
+        }
+
+        .part-section {
+            margin-bottom: 20px;
+        }
+
+        .part-section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #ff8c00;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .part-section-content {
+            padding-left: 16px;
+            border-left: 2px solid #30363d;
+        }
+
+        .part-description {
+            color: #c9d1d9;
+            line-height: 1.6;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .part-parent-path {
+            display: inline-block;
+            background-color: #161b22;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            color: #79c0ff;
+            margin-bottom: 12px;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border: 1px solid #30363d;
+            background-color: #161b22;
+            color: #c9d1d9;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn:hover {
+            background-color: #262c36;
+            border-color: #484f58;
+        }
+
+        .btn-primary {
+            background-color: #ff8c00;
+            color: #000;
+            border-color: #ff8c00;
+        }
+
+        .btn-primary:hover {
+            background-color: #ffb143;
+            border-color: #ffb143;
+        }
+
+        .badge {
+            display: inline-block;
+            background-color: #30363d;
+            color: #c9d1d9;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .badge-assembly {
+            background-color: rgba(255, 140, 0, 0.15);
+            color: #ff8c00;
+            border: 1px solid rgba(255, 140, 0, 0.3);
+        }
+
+        .badge-part {
+            background-color: rgba(88, 166, 255, 0.15);
+            color: #58a6ff;
+            border: 1px solid rgba(88, 166, 255, 0.3);
+        }
+
+        .badge-hardware {
+            background-color: rgba(79, 195, 247, 0.15);
+            color: #4fc3f7;
+            border: 1px solid rgba(79, 195, 247, 0.3);
+        }
+
+        .badge-purchased {
+            background-color: rgba(165, 142, 251, 0.15);
+            color: #d2a8ff;
+            border: 1px solid rgba(165, 142, 251, 0.3);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid #30363d;
+                max-height: 40vh;
+            }
+
+            .content {
+                flex: 1;
+            }
+
+            .stats {
+                gap: 12px;
+                font-size: 12px;
+            }
+
+            .top-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box {
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top bar with stats and search -->
+    <div class="top-bar">
+        <div class="title">
+            📦 DUO cycleWASH Project Browser
+        </div>
+        <div class="stats">
+            <div class="stat-item">
+                <span>Total Parts:</span>
+                <span class="stat-value">473</span>
+            </div>
+            <div class="stat-item">
+                <span>Assemblies:</span>
+                <span class="stat-value">32</span>
+            </div>
+            <div class="stat-item">
+                <span>Sub-Assemblies:</span>
+                <span class="stat-value">8</span>
+            </div>
+            <div class="stat-item">
+                <span>Hardware:</span>
+                <span class="stat-value">~80</span>
+            </div>
+        </div>
+        <input type="text" id="searchBox" class="search-box" placeholder="Search parts...">
+    </div>
+
+    <!-- Main layout -->
+    <div class="main">
+        <!-- Left sidebar: Tree -->
+        <div class="sidebar">
+            <div class="sidebar-header">Project Structure</div>
+            <div class="tree-container">
+                <ul id="tree" class="tree-item"></ul>
+            </div>
+        </div>
+
+        <!-- Right content area -->
+        <div class="content">
+            <div id="contentArea" class="content-empty">
+                <div class="content-empty-icon">🔍</div>
+                <div>Select a part to view details</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // Data structure: DUO cycleWASH Project
+        // ============================================================
+
+        const projectData = {
+            name: 'DUO Anlage',
+            type: 'assembly',
+            children: [
+                {
+                    name: 'Gestell (Frame)',
+                    type: 'folder',
+                    parts: [
+                        { name: 'Lasche1.ipt', type: 'part', size: '256 KB' },
+                        { name: 'Anschraubplatte11.ipt', type: 'part', size: '145 KB' },
+                        { name: 'Befestigung Elektronik.ipt', type: 'part', size: '178 KB' },
+                        { name: 'TrägerHöhe1.ipt', type: 'part', size: '234 KB' },
+                        { name: 'TrägerHöhe1-gespiegelt.ipt', type: 'part', size: '234 KB' },
+                        { name: 'Anschraubplatte3.ipt', type: 'part', size: '142 KB' },
+                        { name: 'DIN EN 10305-5 - Seitenträger1.ipt', type: 'part', size: '567 KB' },
+                        { name: 'DIN EN 10305-5 - Seitenträger2.ipt', type: 'part', size: '589 KB' },
+                        { name: 'DIN EN 10305-5 - Seitenträger3.ipt', type: 'part', size: '567 KB' },
+                        { name: 'DIN EN 10305-5 - Seitenträger4.ipt', type: 'part', size: '589 KB' },
+                        { name: 'TrägerLänge1.ipt', type: 'part', size: '312 KB' },
+                        { name: 'TrägerBreite1.ipt', type: 'part', size: '287 KB' },
+                        { name: 'TrägerHöheWanne.ipt', type: 'part', size: '198 KB' },
+                        { name: 'Abschlussblech Träger1.ipt', type: 'part', size: '156 KB' },
+                        { name: 'DIN EN 10305-5 - Träger Lenkersicherung.ipt', type: 'part', size: '423 KB' },
+                        { name: 'DIN EN 10305-5 - 20 x 20 x 2 - Träger-E-Kette.ipt', type: 'part', size: '356 KB' },
+                        { name: 'DIN EN 10305-5 - Seitenträger2-2.ipt', type: 'part', size: '478 KB' },
+                        { name: 'DIN EN 10305-4 - E235 - 8 x 1 - 300.ipt', type: 'part', size: '289 KB' },
+                        { name: 'Anschraubplatte3_1.ipt', type: 'part', size: '142 KB' },
+                        { name: 'Anschraubplatte2.ipt', type: 'part', size: '134 KB' },
+                        { name: 'DIN EN 10305-5 - Seitenträger1-gebohrt.ipt', type: 'part', size: '534 KB' },
+                    ],
+                    assemblies: [
+                        { name: 'Rahmen_Seite.iam', type: 'assembly' },
+                        { name: 'Rahmen_Seite2.iam', type: 'assembly' },
+                    ]
+                },
+                {
+                    name: 'Waschbürsten (Wash Brushes)',
+                    type: 'folder',
+                    parts: [
+                        { name: 'Bürstenblech unten.ipt', type: 'part', size: '234 KB' },
+                        { name: 'Bürstenblech oben.ipt', type: 'part', size: '234 KB' },
+                        { name: 'bürstenblech1.ipt', type: 'part', size: '198 KB' },
+                        { name: 'bürstenblech2.ipt', type: 'part', size: '210 KB' },
+                        { name: 'Blech Bürstenmodul1.ipt', type: 'part', size: '167 KB' },
+                        { name: 'Blech Bürstenmodul2.ipt', type: 'part', size: '167 KB' },
+                        { name: 'Blech Bürstenmodul3.ipt', type: 'part', size: '167 KB' },
+                        { name: 'Blech Bürstenmodul4.ipt', type: 'part', size: '167 KB' },
+                        { name: 'Blech Bürstenmodul5.ipt', type: 'part', size: '167 KB' },
+                        { name: 'Blech Bürstenmodul6.ipt', type: 'part', size: '167 KB' },
+                        { name: 'Blech Bürstenmodul7.ipt', type: 'part', size: '167 KB' },
+                        { name: 'Riemen1.ipt', type: 'part', size: '145 KB' },
+                        { name: 'Riemen2.ipt', type: 'part', size: '145 KB' },
+                        { name: 'Riemen3.ipt', type: 'part', size: '145 KB' },
+                        { name: 'TrägerWB1.ipt', type: 'part', size: '189 KB' },
+                        { name: 'TrägerWB2.ipt', type: 'part', size: '189 KB' },
+                        { name: 'TrägerWB3.ipt', type: 'part', size: '189 KB' },
+                        { name: 'Anschraubplatte.ipt', type: 'part', size: '134 KB' },
+                        { name: 'Abstandsblech.ipt', type: 'part', size: '98 KB' },
+                        { name: 'Justierblech1.ipt', type: 'part', size: '112 KB' },
+                        { name: 'Initiatorblech.ipt', type: 'part', size: '156 KB' },
+                        { name: 'Initiatorblech2.ipt', type: 'part', size: '156 KB' },
+                        { name: 'Bürsten-Halter.ipt', type: 'part', size: '267 KB' },
+                        { name: 'Blech starrer Riemen.ipt', type: 'part', size: '145 KB' },
+                        { name: 'starrer Riemen2.ipt', type: 'part', size: '156 KB' },
+                        { name: 'Spritzschutz Motor.ipt', type: 'part', size: '187 KB' },
+                        { name: 'Blech Ventilator2.ipt', type: 'part', size: '198 KB' },
+                        { name: 'Blech energiekette2.ipt', type: 'part', size: '201 KB' },
+                        { name: 'Adapter.ipt', type: 'part', size: '112 KB' },
+                    ],
+                    assemblies: [
+                        { name: 'SBG-Bürste Seite1.iam', type: 'assembly' },
+                        { name: 'BG-Bürstenmodul.iam', type: 'assembly' },
+                        { name: 'BG-Bürste Seite1 KD-169051.iam', type: 'assembly' },
+                    ]
+                },
+                {
+                    name: 'Raddreheinheit (Wheel Rotation)',
+                    type: 'folder',
+                    parts: [
+                        { name: 'BlechRaddreheinheit-1-V5.ipt', type: 'part', size: '423 KB' },
+                        { name: 'BlechRaddreheinheit-3-V5.ipt', type: 'part', size: '478 KB' },
+                        { name: 'BlechRaddreheinheit-4-V5.ipt', type: 'part', size: '456 KB' },
+                        { name: 'BlechMotoraufnahme-V4.ipt', type: 'part', size: '334 KB' },
+                        { name: 'BlechWinkel.ipt', type: 'part', size: '201 KB' },
+                        { name: 'BlechWinkel4.ipt', type: 'part', size: '201 KB' },
+                        { name: 'Blech Gelenk Winkel.ipt', type: 'part', size: '189 KB' },
+                        { name: 'Blech Befestigung.ipt', type: 'part', size: '156 KB' },
+                        { name: 'DIN EN 10305-5 - Träger Raddreheinheit1.ipt', type: 'part', size: '345 KB' },
+                    ],
+                    assemblies: [
+                        { name: 'SBG Raddreheinheit-V5.iam', type: 'assembly' },
+                    ]
+                },
+                {
+                    name: 'Lenkerhalterung (Handlebar Holder)',
+                    type: 'folder',
+                    parts: [
+                        { name: 'DIN EN 10305-4 pipe.ipt', type: 'part', size: '267 KB' },
+                        { name: 'Gewindestange.ipt', type: 'part', size: '145 KB' },
+                        { name: 'Lenkerhalterung V1.ipt', type: 'part', size: '298 KB' },
+                    ],
+                    assemblies: [
+                        { name: 'BG-Sattelhalterung-Klemme.iam', type: 'assembly' },
+                        { name: 'BG-Lenkerhalterung-kpl-V1.iam', type: 'assembly' },
+                        { name: 'BG-Lenkerhalterung-Träger.iam', type: 'assembly' },
+                    ]
+                },
+                {
+                    name: 'Rad (Wheel)',
+                    type: 'folder',
+                    parts: [
+                        { name: 'Rollen-Aufnahme_125.ipt', type: 'part', size: '289 KB' },
+                        { name: 'Rolle_Rippe.ipt', type: 'part', size: '156 KB' },
+                        { name: 'Rollen-Platte.ipt', type: 'part', size: '178 KB' },
+                    ],
+                    assemblies: []
+                },
+                {
+                    name: 'Seitenwand (Side Wall)',
+                    type: 'folder',
+                    parts: [
+                        { name: 'Halteblech-Metall.ipt', type: 'part', size: '234 KB' },
+                        { name: 'Parameter Skizze_V3.ipt', type: 'part', size: '89 KB' },
+                    ],
+                    assemblies: []
+                },
+                {
+                    name: 'Schiebebürsten (Slide Brushes)',
+                    type: 'folder',
+                    parts: [
+                        { name: 'Adapter Schiebebürsten.ipt', type: 'part', size: '167 KB' },
+                        { name: 'Verstärkung_01.ipt', type: 'part', size: '134 KB' },
+                        { name: 'Verstärkung_02.ipt', type: 'part', size: '134 KB' },
+                    ],
+                    assemblies: []
+                },
+                {
+                    name: 'Ultraschallreiniger (Ultrasonic Cleaner)',
+                    type: 'folder',
+                    parts: [
+                        { name: 'Gehäuse 3.ipt', type: 'part', size: '567 KB' },
+                        { name: 'Gehäuse 5.ipt', type: 'part', size: '612 KB' },
+                        { name: 'Deckel3.ipt', type: 'part', size: '423 KB' },
+                        { name: 'Deckel5.ipt', type: 'part', size: '467 KB' },
+                        { name: 'GewBolzenM4x8.ipt', type: 'part', size: '45 KB' },
+                        { name: 'Rohr_01.ipt', type: 'part', size: '178 KB' },
+                        { name: 'HYDRA connector.ipt', type: 'part', size: '312 KB' },
+                    ],
+                    assemblies: [
+                        { name: 'Ultraschall analog 3 DG28.iam', type: 'assembly' },
+                        { name: 'Ultraschall analog 5 DG28.iam', type: 'assembly' },
+                        { name: 'Deckel mit Bolzen.iam', type: 'assembly' },
+                    ]
+                },
+            ]
+        };
+
+        // Top-level parts
+        const topLevelParts = [
+            { name: 'Leistenbürstenblech.ipt', type: 'part', size: '267 KB' },
+            { name: 'Skizze_E-Ketten_Halterung.ipt', type: 'part', size: '112 KB' },
+            { name: 'Traeger_50x30_Kompressor.ipt', type: 'part', size: '345 KB' },
+            { name: 'Verkleidung Boden Seite_V4.ipt', type: 'part', size: '534 KB' },
+            { name: 'Verkleidung Boden Seite_V4-2.ipt', type: 'part', size: '534 KB' },
+        ];
+
+        // Purchased parts (Zukaufteile)
+        const purchasedParts = [
+            {
+                name: 'igus',
+                type: 'vendor',
+                description: 'Linear guides, telescopic rail systems'
+            },
+            {
+                name: 'Interroll',
+                type: 'vendor',
+                description: 'Roller conveyor systems'
+            },
+            {
+                name: 'Rittal',
+                type: 'vendor',
+                description: 'Electrical cabinet solutions'
+            },
+            {
+                name: 'WEG Motor',
+                type: 'vendor',
+                description: 'Gear motors'
+            },
+            {
+                name: 'Kipp-Norelem',
+                type: 'vendor',
+                description: 'Clamps, locks, and positioning elements'
+            },
+            {
+                name: 'Zuwa',
+                type: 'vendor',
+                description: 'Pump systems'
+            },
+            {
+                name: 'Elektronik Housing',
+                type: 'vendor',
+                description: 'Electronics enclosure'
+            },
+        ];
+
+        // Standard hardware (Libraries/Content Center)
+        const standardHardware = [
+            { name: 'ISO 4762 Socket Head Cap Screw M3', type: 'hardware' },
+            { name: 'ISO 4762 Socket Head Cap Screw M4', type: 'hardware' },
+            { name: 'ISO 4762 Socket Head Cap Screw M5', type: 'hardware' },
+            { name: 'ISO 4762 Socket Head Cap Screw M6', type: 'hardware' },
+            { name: 'ISO 4762 Socket Head Cap Screw M8', type: 'hardware' },
+            { name: 'ISO 4762 Socket Head Cap Screw M10', type: 'hardware' },
+            { name: 'ISO 4032 Hex Nut M4', type: 'hardware' },
+            { name: 'ISO 4032 Hex Nut M5', type: 'hardware' },
+            { name: 'ISO 4032 Hex Nut M6', type: 'hardware' },
+            { name: 'ISO 4032 Hex Nut M8', type: 'hardware' },
+            { name: 'ISO 4032 Hex Nut M10', type: 'hardware' },
+            { name: 'ISO 7089 Washer 3mm', type: 'hardware' },
+            { name: 'ISO 7089 Washer 4mm', type: 'hardware' },
+            { name: 'ISO 7089 Washer 5mm', type: 'hardware' },
+            { name: 'ISO 7089 Washer 6mm', type: 'hardware' },
+            { name: 'ISO 7089 Washer 8mm', type: 'hardware' },
+            { name: 'ISO 7089 Washer 10mm', type: 'hardware' },
+            { name: 'ISO 10642 Countersunk M4', type: 'hardware' },
+            { name: 'ISO 10642 Countersunk M5', type: 'hardware' },
+            { name: 'ISO 10642 Countersunk M6', type: 'hardware' },
+            { name: 'ISO 7380-1 Button Head Cap M6', type: 'hardware' },
+            { name: 'DIN 6912 Low-Head Cap Screw M4', type: 'hardware' },
+            { name: 'DIN 6912 Low-Head Cap Screw M5', type: 'hardware' },
+            { name: 'DIN 6912 Low-Head Cap Screw M6', type: 'hardware' },
+            { name: 'DIN 6912 Low-Head Cap Screw M8', type: 'hardware' },
+            { name: 'DIN 580 Eye Bolt M8', type: 'hardware' },
+            { name: 'DIN 1587 Cap Nut M4', type: 'hardware' },
+            { name: 'DIN 1587 Cap Nut M5', type: 'hardware' },
+            { name: 'DIN 7349 Heavy Washer 6.4mm', type: 'hardware' },
+            { name: 'Schnorr VS 6 Lock Washer', type: 'hardware' },
+        ];
+
+        // ============================================================
+        // Utility functions
+        // ============================================================
+
+        function getIcon(type) {
+            const icons = {
+                'folder': '📁',
+                'assembly': '🔩',
+                'part': '⚙️',
+                'vendor': '🏭',
+                'hardware': '🔧',
+            };
+            return icons[type] || '📄';
+        }
+
+        function getBadgeClass(type) {
+            const classes = {
+                'assembly': 'badge-assembly',
+                'part': 'badge-part',
+                'hardware': 'badge-hardware',
+                'vendor': 'badge-purchased',
+            };
+            return classes[type] || '';
+        }
+
+        function flattenParts(structure, path = 'DUO Anlage') {
+            let parts = [];
+
+            if (structure.children) {
+                structure.children.forEach((folder, idx) => {
+                    const folderPath = path + ' > ' + folder.name;
+
+                    if (folder.parts) {
+                        folder.parts.forEach(part => {
+                            parts.push({
+                                ...part,
+                                path: folderPath,
+                                parentFolder: folder.name
+                            });
+                        });
+                    }
+
+                    if (folder.assemblies) {
+                        folder.assemblies.forEach(asm => {
+                            parts.push({
+                                ...asm,
+                                path: folderPath,
+                                parentFolder: folder.name
+                            });
+                        });
+                    }
+                });
+            }
+
+            topLevelParts.forEach(part => {
+                parts.push({
+                    ...part,
+                    path: 'DUO Anlage',
+                    parentFolder: 'DUO Anlage'
+                });
+            });
+
+            purchasedParts.forEach(part => {
+                parts.push({
+                    ...part,
+                    path: 'Zukaufteile (Purchased Parts)',
+                    parentFolder: 'Zukaufteile'
+                });
+            });
+
+            standardHardware.forEach(part => {
+                parts.push({
+                    ...part,
+                    path: 'Standard Hardware (Libraries)',
+                    parentFolder: 'Standard Hardware'
+                });
+            });
+
+            return parts;
+        }
+
+        // ============================================================
+        // Rendering
+        // ============================================================
+
+        let allParts = flattenParts(projectData);
+        let selectedPart = null;
+        let expandedFolders = new Set();
+
+        function renderTree(container, data, parent = null) {
+            const ul = document.createElement('ul');
+            ul.className = 'tree-item';
+
+            // Render folders and their contents
+            if (data.children) {
+                data.children.forEach((item, idx) => {
+                    const li = document.createElement('li');
+                    li.className = 'tree-item';
+
+                    const label = document.createElement('div');
+                    label.className = 'tree-item-label';
+                    label.dataset.itemId = `folder-${idx}`;
+
+                    const toggle = document.createElement('div');
+                    toggle.className = 'tree-toggle collapsed';
+                    toggle.onclick = (e) => {
+                        e.stopPropagation();
+                        const childrenContainer = li.querySelector('.tree-children');
+                        const isExpanded = expandedFolders.has(`folder-${idx}`);
+                        if (isExpanded) {
+                            expandedFolders.delete(`folder-${idx}`);
+                            childrenContainer.classList.add('hidden');
+                            toggle.classList.remove('expanded');
+                            toggle.classList.add('collapsed');
+                        } else {
+                            expandedFolders.add(`folder-${idx}`);
+                            childrenContainer.classList.remove('hidden');
+                            toggle.classList.add('expanded');
+                            toggle.classList.remove('collapsed');
+                        }
+                    };
+
+                    const icon = document.createElement('div');
+                    icon.className = 'tree-icon';
+                    icon.textContent = getIcon(item.type);
+
+                    const text = document.createElement('div');
+                    text.className = 'tree-text';
+                    text.textContent = item.name;
+
+                    label.appendChild(toggle);
+                    label.appendChild(icon);
+                    label.appendChild(text);
+
+                    li.appendChild(label);
+
+                    // Children container
+                    const childrenUl = document.createElement('ul');
+                    childrenUl.className = 'tree-children hidden';
+
+                    // Add parts
+                    if (item.parts) {
+                        item.parts.forEach((part, partIdx) => {
+                            const partLi = document.createElement('li');
+                            partLi.className = 'tree-item';
+
+                            const partLabel = document.createElement('div');
+                            partLabel.className = 'tree-item-label';
+                            partLabel.dataset.partId = `${item.name}|${part.name}`;
+                            partLabel.onclick = () => selectPart(part, item.name);
+
+                            const noToggle = document.createElement('div');
+                            noToggle.className = 'tree-toggle no-toggle';
+
+                            const partIcon = document.createElement('div');
+                            partIcon.className = 'tree-icon';
+                            partIcon.textContent = getIcon(part.type);
+
+                            const partText = document.createElement('div');
+                            partText.className = 'tree-text';
+                            partText.textContent = part.name;
+
+                            partLabel.appendChild(noToggle);
+                            partLabel.appendChild(partIcon);
+                            partLabel.appendChild(partText);
+
+                            partLi.appendChild(partLabel);
+                            childrenUl.appendChild(partLi);
+                        });
+                    }
+
+                    // Add assemblies
+                    if (item.assemblies) {
+                        item.assemblies.forEach((asm, asmIdx) => {
+                            const asmLi = document.createElement('li');
+                            asmLi.className = 'tree-item';
+
+                            const asmLabel = document.createElement('div');
+                            asmLabel.className = 'tree-item-label';
+                            asmLabel.dataset.partId = `${item.name}|${asm.name}`;
+                            asmLabel.onclick = () => selectPart(asm, item.name);
+
+                            const noToggle = document.createElement('div');
+                            noToggle.className = 'tree-toggle no-toggle';
+
+                            const asmIcon = document.createElement('div');
+                            asmIcon.className = 'tree-icon';
+                            asmIcon.textContent = getIcon(asm.type);
+
+                            const asmText = document.createElement('div');
+                            asmText.className = 'tree-text';
+                            asmText.textContent = asm.name;
+
+                            asmLabel.appendChild(noToggle);
+                            asmLabel.appendChild(asmIcon);
+                            asmLabel.appendChild(asmText);
+
+                            asmLi.appendChild(asmLabel);
+                            childrenUl.appendChild(asmLi);
+                        });
+                    }
+
+                    li.appendChild(childrenUl);
+                    ul.appendChild(li);
+                });
+            }
+
+            // Top-level parts
+            topLevelParts.forEach((part, idx) => {
+                const li = document.createElement('li');
+                li.className = 'tree-item';
+
+                const label = document.createElement('div');
+                label.className = 'tree-item-label';
+                label.dataset.partId = `topLevel|${part.name}`;
+                label.onclick = () => selectPart(part, 'DUO Anlage');
+
+                const noToggle = document.createElement('div');
+                noToggle.className = 'tree-toggle no-toggle';
+
+                const icon = document.createElement('div');
+                icon.className = 'tree-icon';
+                icon.textContent = getIcon(part.type);
+
+                const text = document.createElement('div');
+                text.className = 'tree-text';
+                text.textContent = part.name;
+
+                label.appendChild(noToggle);
+                label.appendChild(icon);
+                label.appendChild(text);
+
+                li.appendChild(label);
+                ul.appendChild(li);
+            });
+
+            // Purchased parts folder
+            const purchasedLi = document.createElement('li');
+            purchasedLi.className = 'tree-item';
+
+            const purchasedLabel = document.createElement('div');
+            purchasedLabel.className = 'tree-item-label';
+            purchasedLabel.dataset.itemId = 'purchased';
+
+            const purchasedToggle = document.createElement('div');
+            purchasedToggle.className = 'tree-toggle collapsed';
+            purchasedToggle.onclick = (e) => {
+                e.stopPropagation();
+                const childrenContainer = purchasedLi.querySelector('.tree-children');
+                const isExpanded = expandedFolders.has('purchased');
+                if (isExpanded) {
+                    expandedFolders.delete('purchased');
+                    childrenContainer.classList.add('hidden');
+                    purchasedToggle.classList.remove('expanded');
+                    purchasedToggle.classList.add('collapsed');
+                } else {
+                    expandedFolders.add('purchased');
+                    childrenContainer.classList.remove('hidden');
+                    purchasedToggle.classList.add('expanded');
+                    purchasedToggle.classList.remove('collapsed');
+                }
+            };
+
+            const purchasedIcon = document.createElement('div');
+            purchasedIcon.className = 'tree-icon';
+            purchasedIcon.textContent = getIcon('vendor');
+
+            const purchasedText = document.createElement('div');
+            purchasedText.className = 'tree-text';
+            purchasedText.textContent = 'Zukaufteile (Purchased Parts)';
+
+            purchasedLabel.appendChild(purchasedToggle);
+            purchasedLabel.appendChild(purchasedIcon);
+            purchasedLabel.appendChild(purchasedText);
+
+            purchasedLi.appendChild(purchasedLabel);
+
+            const purchasedUl = document.createElement('ul');
+            purchasedUl.className = 'tree-children hidden';
+
+            purchasedParts.forEach((part) => {
+                const partLi = document.createElement('li');
+                partLi.className = 'tree-item';
+
+                const partLabel = document.createElement('div');
+                partLabel.className = 'tree-item-label';
+                partLabel.dataset.partId = `purchased|${part.name}`;
+                partLabel.onclick = () => selectPart(part, 'Zukaufteile');
+
+                const noToggle = document.createElement('div');
+                noToggle.className = 'tree-toggle no-toggle';
+
+                const partIcon = document.createElement('div');
+                partIcon.className = 'tree-icon';
+                partIcon.textContent = getIcon(part.type);
+
+                const partText = document.createElement('div');
+                partText.className = 'tree-text';
+                partText.textContent = part.name;
+
+                partLabel.appendChild(noToggle);
+                partLabel.appendChild(partIcon);
+                partLabel.appendChild(partText);
+
+                partLi.appendChild(partLabel);
+                purchasedUl.appendChild(partLi);
+            });
+
+            purchasedLi.appendChild(purchasedUl);
+            ul.appendChild(purchasedLi);
+
+            // Hardware folder
+            const hardwareLi = document.createElement('li');
+            hardwareLi.className = 'tree-item';
+
+            const hardwareLabel = document.createElement('div');
+            hardwareLabel.className = 'tree-item-label';
+            hardwareLabel.dataset.itemId = 'hardware';
+
+            const hardwareToggle = document.createElement('div');
+            hardwareToggle.className = 'tree-toggle collapsed';
+            hardwareToggle.onclick = (e) => {
+                e.stopPropagation();
+                const childrenContainer = hardwareLi.querySelector('.tree-children');
+                const isExpanded = expandedFolders.has('hardware');
+                if (isExpanded) {
+                    expandedFolders.delete('hardware');
+                    childrenContainer.classList.add('hidden');
+                    hardwareToggle.classList.remove('expanded');
+                    hardwareToggle.classList.add('collapsed');
+                } else {
+                    expandedFolders.add('hardware');
+                    childrenContainer.classList.remove('hidden');
+                    hardwareToggle.classList.add('expanded');
+                    hardwareToggle.classList.remove('collapsed');
+                }
+            };
+
+            const hardwareIcon = document.createElement('div');
+            hardwareIcon.className = 'tree-icon';
+            hardwareIcon.textContent = getIcon('hardware');
+
+            const hardwareText = document.createElement('div');
+            hardwareText.className = 'tree-text';
+            hardwareText.textContent = 'Standard Hardware (Libraries)';
+
+            hardwareLabel.appendChild(hardwareToggle);
+            hardwareLabel.appendChild(hardwareIcon);
+            hardwareLabel.appendChild(hardwareText);
+
+            hardwareLi.appendChild(hardwareLabel);
+
+            const hardwareUl = document.createElement('ul');
+            hardwareUl.className = 'tree-children hidden';
+
+            standardHardware.forEach((part) => {
+                const partLi = document.createElement('li');
+                partLi.className = 'tree-item';
+
+                const partLabel = document.createElement('div');
+                partLabel.className = 'tree-item-label';
+                partLabel.dataset.partId = `hardware|${part.name}`;
+                partLabel.onclick = () => selectPart(part, 'Standard Hardware');
+
+                const noToggle = document.createElement('div');
+                noToggle.className = 'tree-toggle no-toggle';
+
+                const partIcon = document.createElement('div');
+                partIcon.className = 'tree-icon';
+                partIcon.textContent = getIcon(part.type);
+
+                const partText = document.createElement('div');
+                partText.className = 'tree-text';
+                partText.textContent = part.name;
+
+                partLabel.appendChild(noToggle);
+                partLabel.appendChild(partIcon);
+                partLabel.appendChild(partText);
+
+                partLi.appendChild(partLabel);
+                hardwareUl.appendChild(partLi);
+            });
+
+            hardwareLi.appendChild(hardwareUl);
+            ul.appendChild(hardwareLi);
+
+            container.appendChild(ul);
+        }
+
+        function selectPart(part, parentFolder) {
+            selectedPart = { ...part, parentFolder };
+
+            // Update selected styling
+            document.querySelectorAll('.tree-item-label.selected').forEach(el => {
+                el.classList.remove('selected');
+            });
+
+            const partId = parentFolder === 'DUO Anlage' ? `topLevel|${part.name}` :
+                           parentFolder === 'Zukaufteile' ? `purchased|${part.name}` :
+                           parentFolder === 'Standard Hardware' ? `hardware|${part.name}` :
+                           `${parentFolder}|${part.name}`;
+
+            const label = document.querySelector(`[data-part-id="${partId}"]`);
+            if (label) label.classList.add('selected');
+
+            // Update content
+            renderPartDetail(part, parentFolder);
+        }
+
+        function renderPartDetail(part, parentFolder) {
+            const contentArea = document.getElementById('contentArea');
+            contentArea.innerHTML = '';
+
+            const panel = document.createElement('div');
+            panel.className = 'content-panel';
+
+            // Header
+            const header = document.createElement('div');
+            header.className = 'part-header';
+
+            const title = document.createElement('div');
+            title.className = 'part-title';
+            title.textContent = part.name;
+
+            const meta = document.createElement('div');
+            meta.className = 'part-meta';
+
+            const typeBadge = document.createElement('span');
+            typeBadge.className = `badge ${getBadgeClass(part.type)}`;
+            typeBadge.textContent = part.type.charAt(0).toUpperCase() + part.type.slice(1);
+
+            meta.appendChild(typeBadge);
+
+            if (part.size) {
+                const sizeSpan = document.createElement('span');
+                sizeSpan.textContent = `Size: ${part.size}`;
+                meta.appendChild(sizeSpan);
+            }
+
+            if (part.description) {
+                const descSpan = document.createElement('span');
+                descSpan.textContent = `Type: ${part.description}`;
+                meta.appendChild(descSpan);
+            }
+
+            header.appendChild(title);
+            header.appendChild(meta);
+            panel.appendChild(header);
+
+            // Assembly membership
+            if (parentFolder && parentFolder !== 'DUO Anlage' && parentFolder !== 'Zukaufteile' && parentFolder !== 'Standard Hardware') {
+                const section = document.createElement('div');
+                section.className = 'part-section';
+
+                const sectionTitle = document.createElement('div');
+                sectionTitle.className = 'part-section-title';
+                sectionTitle.innerHTML = '📦 Assembly Location';
+
+                const content = document.createElement('div');
+                content.className = 'part-section-content';
+
+                const path = document.createElement('div');
+                path.className = 'part-parent-path';
+                path.textContent = `DUO Anlage > ${parentFolder}`;
+
+                content.appendChild(path);
+                section.appendChild(sectionTitle);
+                section.appendChild(content);
+                panel.appendChild(section);
+            }
+
+            // Details section
+            const detailsSection = document.createElement('div');
+            detailsSection.className = 'part-section';
+
+            const detailsTitle = document.createElement('div');
+            detailsTitle.className = 'part-section-title';
+            detailsTitle.innerHTML = '📋 Details';
+
+            const detailsContent = document.createElement('div');
+            detailsContent.className = 'part-section-content';
+
+            const details = [];
+            details.push(`<div class="part-description"><strong>Name:</strong> ${part.name}</div>`);
+            details.push(`<div class="part-description"><strong>Type:</strong> ${part.type.charAt(0).toUpperCase() + part.type.slice(1)}</div>`);
+
+            if (part.size) {
+                details.push(`<div class="part-description"><strong>File Size:</strong> ${part.size}</div>`);
+            }
+
+            if (part.description) {
+                details.push(`<div class="part-description"><strong>Supplier/Description:</strong> ${part.description}</div>`);
+            }
+
+            if (parentFolder) {
+                details.push(`<div class="part-description"><strong>Parent Assembly:</strong> ${parentFolder}</div>`);
+            }
+
+            detailsContent.innerHTML = details.join('');
+            detailsSection.appendChild(detailsTitle);
+            detailsSection.appendChild(detailsContent);
+            panel.appendChild(detailsSection);
+
+            // Actions
+            const actions = document.createElement('div');
+            actions.className = 'part-section';
+
+            const actionsTitle = document.createElement('div');
+            actionsTitle.className = 'part-section-title';
+            actionsTitle.innerHTML = '⚡ Actions';
+
+            const buttonsContainer = document.createElement('div');
+            buttonsContainer.className = 'buttons';
+
+            const guideBtn = document.createElement('a');
+            guideBtn.className = 'btn btn-primary';
+            guideBtn.href = `duo-rebuild-guide.html#${part.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}`;
+            guideBtn.textContent = '📖 View Rebuild Guide';
+
+            const cadBtn = document.createElement('button');
+            cadBtn.className = 'btn';
+            cadBtn.textContent = '🔧 Open in cycleCAD';
+            cadBtn.onclick = () => {
+                alert(`Opening "${part.name}" in cycleCAD...\n\nThis would integrate with Autodesk Inventor to open the part in the main assembly.`);
+            };
+
+            buttonsContainer.appendChild(guideBtn);
+            buttonsContainer.appendChild(cadBtn);
+
+            actions.appendChild(actionsTitle);
+            actions.appendChild(buttonsContainer);
+            panel.appendChild(actions);
+
+            contentArea.appendChild(panel);
+        }
+
+        // ============================================================
+        // Search functionality
+        // ============================================================
+
+        function filterTree(searchTerm) {
+            searchTerm = searchTerm.toLowerCase();
+
+            if (!searchTerm) {
+                // Show all items
+                document.querySelectorAll('.tree-item-label').forEach(label => {
+                    label.style.display = '';
+                });
+                document.querySelectorAll('.tree-children').forEach(container => {
+                    container.style.display = '';
+                });
+                return;
+            }
+
+            // Filter parts
+            let matchedItems = new Set();
+
+            allParts.forEach(part => {
+                if (part.name.toLowerCase().includes(searchTerm)) {
+                    matchedItems.add(part.name);
+                }
+            });
+
+            // Update visibility
+            document.querySelectorAll('.tree-item-label').forEach(label => {
+                const partId = label.dataset.partId;
+                if (partId) {
+                    const [folder, name] = partId.split('|');
+                    if (matchedItems.has(name)) {
+                        label.style.display = '';
+                        // Make sure parent is visible
+                        let parent = label.closest('.tree-children');
+                        while (parent) {
+                            parent.style.display = '';
+                            parent = parent.parentElement?.closest('.tree-children');
+                        }
+                    } else {
+                        label.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        // ============================================================
+        // Initialization
+        // ============================================================
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const treeContainer = document.getElementById('tree');
+            renderTree(treeContainer, projectData);
+
+            const searchBox = document.getElementById('searchBox');
+            searchBox.addEventListener('input', (e) => {
+                filterTree(e.target.value);
+            });
+
+            // Show initial state
+            const contentArea = document.getElementById('contentArea');
+            contentArea.innerHTML = `
+                <div style="padding: 24px; text-align: center; color: #8b949e;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
+                    <div style="font-size: 16px;">Select a part to view details</div>
+                    <div style="margin-top: 12px; font-size: 13px; color: #6e7681;">
+                        Browse the project tree on the left to explore the DUO cycleWASH structure
+                    </div>
+                </div>
+            `;
+        });
+    </script>
+</body>
+</html>

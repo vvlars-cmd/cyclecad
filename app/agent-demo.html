@@ -1201,8 +1201,8 @@
             const params = {};
             // "50mm diameter" or "diameter 50" or "diameter=50" or "d=50" or "50 mm dia"
             const patterns = [
-              [/(?:diameter|dia|d)\s*[=:]\s*([\d.]+)/i, 'diameter'],
-              [/([\d.]+)\s*(?:mm\s*)?(?:diameter|dia)\b/i, 'diameter'],
+              [/(?:diameter|diam|dia|dieameter|dieamieter|diamter|dimater|d)\s*[=:]\s*([\d.]+)/i, 'diameter'],
+              [/([\d.]+)\s*(?:mm\s*)?(?:diameter|diam|dia|dieameter|dieamieter|diamter|dimater)\b/i, 'diameter'],
               [/(?:height|tall|h|long)\s*[=:]\s*([\d.]+)/i, 'height'],
               [/([\d.]+)\s*(?:mm\s*)?(?:tall|high|height)\b/i, 'height'],
               [/(?:radius|rad|r)\s*[=:]\s*([\d.]+)/i, 'radius'],

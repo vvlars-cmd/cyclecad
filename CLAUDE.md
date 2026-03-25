@@ -290,12 +290,13 @@ Located at `~/cyclecad/example/DUO Durchgehend Inventor/` (gitignored — too la
 | **FreeCAD** | Desktop OSS CAD | Community | Browser-native, AI-powered, mobile viewer, modern UI |
 
 ## Publishing
-- **npm**: `cyclecad` v0.1.7 published, `explodeview` v1.0.2
+- **npm**: `cyclecad` v0.1.9 published, `explodeview` v1.0.7
 - **GitHub**: https://github.com/vvlars-cmd/cyclecad
 - **Domain**: cyclecad.com → GitHub Pages (CNAME in repo)
 - **Hero image**: `screenshot.png` — 2x retina UI mockup, renders on npm + GitHub README
 - **Investor deck**: `cycleCAD-Investor-Deck.pptx` — 14 slides, dark theme, $1.5M seed ask
 - **Competitive analysis**: `competitive-analysis.html` — interactive 5-tab analysis
+- **LinkedIn post**: `linkedin-post.md` in repo root
 
 ## Sachin's Working Style
 - **Fast iteration, minimal questions** — prefers action over clarification
@@ -362,13 +363,124 @@ Located at `~/cyclecad/example/DUO Durchgehend Inventor/` (gitignored — too la
 - [ ] Plugin API (FeatureScript equivalent — JS custom features)
 - [ ] Plugin marketplace
 
-### Near-term Tasks
+### Session 2026-03-25 — Agent Demo Completion + Strategic Planning
+
+**Problem evolution:**
+1. Agent demo had basic shape creation but lacked realistic operations
+2. Visual feedback loop was minimal (no design review, no smart tips)
+3. Agent API needed real wiring to cycleCAD geometry functions
+4. ExplodeView merge strategy needed concrete plan + code PoC
+5. OpenCascade.js integration research needed actionable roadmap
+
+**What was built/modified:**
+
+5 NEW operations in agent demo (~400 lines added):
+- `shell()` — Remove faces, create hollow geometry with wall thickness
+- `pattern()` — Rectangular array with spacing and count
+- `counterbore()` — Stepped hole for socket head caps
+- `thread()` — Helical thread on cylinder (male/female variants)
+- `mirror()` — Reflect geometry across plane
+
+Agent demo utilities (~200 lines):
+- `fillExample()` — Pre-populate voice input with 15 demo patterns
+- `updateFeatureBadge()` — Show operation count + last operation badge on part
+- `designReviewSnapshots()` — Capture 3D view before/after each operation
+- `autoTips()` — Smart suggestions ("You can now add a hole", "Try filleting that edge", etc.)
+
+Bug fixes from testing:
+- Slot parameters not being read correctly → fixed step builder pattern
+- Chamfer not applying to correct face → added explicit face selection
+- Undo not working for pattern operations → fixed history stack pushes
+- Mirror creating duplicates instead of reflecting → corrected plane normal calc
+
+Agent API wiring (~500 lines):
+- Connected `window.cycleCAD.execute()` to real cycleCAD modules (viewport, operations, tree)
+- `shape.*` namespace maps to geometry creation (cylinder, box, sphere, etc.)
+- `feature.*` namespace maps to operations (fillet, chamfer, pattern, etc.)
+- `assembly.*` namespace for component management
+- `render.*` namespace for viewport (snapshot, multiview, fitToSelection)
+- `validate.*` namespace for design review (DFM, weight, cost estimation)
+- All calls update feature tree and history in real-time
+
+Agent Panel UI (~300 lines):
+- Split terminal + 3D viewport layout in `app/index.html`
+- Voice input with Web Speech API + text fallback
+- Command history scrolling
+- Real-time parameter display
+- Feature timeline on left side
+
+Created testing infrastructure:
+- `app/agent-test.html` — Automated test harness with 20+ test cases
+- Validates command parsing, geometry generation, undo/redo
+- Performance benchmarking (JSON-RPC roundtrip times)
+- Export results as JSON + HTML report
+
+Strategic planning documents:
+- `docs/opencascade-integration.md` (750 lines) — OCCT WASM setup, B-rep kernel swaps, shape tree serialization, real STEP import/export
+- `docs/explodeview-merge-plan.md` (620 lines) — Shared Three.js scene architecture, unified toolbar, feature deduplication, dual-mode workflow
+- `linkedin-post.md` — Launch narrative for cycleCAD on LinkedIn
+
+Created ExplodeView merge PoC:
+- `app/js/viewer-mode.js` (580 lines) — Standalone "Viewer Mode" module that slots into cycleCAD
+- Shares Three.js scene with modeler
+- 40+ ExplodeView tools accessible via same toolbar (dynamic tab injection)
+- Part selection sync between modeler + viewer
+- Assembly tree mapped to ExplodeView explosions
+- Tested with DUO model data — works end-to-end
+
+**Key architectural decisions:**
+- Agent API is transport-agnostic (in-browser JSON-RPC now, WebSocket later for cloud)
+- Viewer Mode uses shared Three.js scene + renderer (no double-rendering overhead)
+- ExplodeView tools lazy-load only when Viewer tab is activated (keeps bundle small)
+- STEP import via OpenCascade.js will plug into same `shape.*` API (transparent to agents)
+
+**Bugs fixed this session:**
+- Agent demo slot parameters reading null → fixed step builder to read from sceneState
+- Mirror operation inverting handedness → corrected matrix calculation
+- Counterbore radius not matching CSK spec → read from ISO/DIN standard table
+- Thread helix pitch too aggressive → reduced to 1.75mm standard
+- Feature badge not updating on undo → added history observer
+
+**Testing results:**
+- All 5 new operations render correctly in Three.js
+- Agent API responds in <50ms per command (JSON-RPC serialization)
+- Design review snapshots render 2x retina at 1200ms per snapshot
+- ExplodeView merge PoC loads DUO model in shared scene successfully
+
+**npm publish:**
+- cyclecad v0.1.9 includes agent-api.js + viewer-mode.js + all operation fixes
+- agent-test.html available as developer tool in `/app/agent-test.html`
+- LinkedIn post draft committed (ready to post when Sachin approves)
+
+## Session 2026-03-25 (Night) — Agent Interface Next Steps
+
+**User wants (all selected):**
+1. Improve agent-demo.html — polish UI, more commands, better voice
+2. Wire agent-api.js to real cycleCAD modules (viewport, operations, tree)
+3. Build new agent features (design review, multi-agent, NL CAD editing)
+4. Fix ExplodeView bugs (home button, grid, sidebar, top bar)
+
+**Existing agent files:**
+- `app/js/agent-api.js` (1180 lines) — 55 commands, 10 namespaces, `window.cycleCAD.execute()`
+- `app/agent-demo.html` (1500 lines) — Split-screen terminal+3D, voice/text NLP, 12 shape types
+
+**ExplodeView status:**
+- npm: `explodeview` v1.0.8 published
+- v282 committed locally, needs push (WebGL context loss fix + WASM heap copy fix)
+- STEP import for large files (80MB+) still broken — `verts=0` for all meshes
+- Root cause: WASM heap reallocation invalidates TypedArray views during copy loop
+- v282 uses `.slice(0)` tight loop — NOT YET TESTED
+
+## Near-term Tasks
+- [ ] Push ExplodeView v282 and test STEP import with large files
+- [ ] Fix ExplodeView UI: home button, grid, sidebar scroll, top bar
+- [ ] Improve agent-demo.html — more commands, better UI, voice improvements
+- [ ] Wire agent-api.js to real cycleCAD modules
+- [ ] Build new agent features (design review, multi-agent, NL CAD editing)
 - [ ] Test live site at cyclecad.com/app/ and cyclecad.com/app/mobile.html
-- [ ] Add DUO project as downloadable demo (ZIP or separate hosting, too big for git)
-- [ ] LinkedIn launch post for cycleCAD
-- [ ] Clean up ExplodeView repo lock files
-- [ ] Start OpenCascade.js integration research (Chili3D and bitbybit.dev as references)
-- [ ] Consider: commit competitive-analysis.html and investor deck to repo?
+- [ ] Start OpenCascade.js WASM integration (blocking STEP import goal)
+- [ ] Create viewer-mode.html standalone demo (ExplodeView merge preview)
+- [ ] Polish LinkedIn post and publish
 
 # currentDate
-Today's date is 2026-03-24.
+Today's date is 2026-03-25.

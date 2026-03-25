@@ -57,12 +57,12 @@ SACHIN (vvlars@googlemail.com, GitHub: vvlars-cmd). Building cycleCAD — open-s
 
 **What was built (this session):**
 - `competitive-analysis.html` — Interactive competitive analysis with tabs for Competitors (9 companies), Feature Matrix (70+ features vs 7 tools), Differentiation, Killer App Roadmap (Phases A-G), AI Copilot architecture
-- `cycleCAD-Investor-Deck.pptx` — 14-slide investor pitch deck: Title, Problem, Solution, Market ($25.3B TAM), Product, Competitive Landscape, Feature Comparison, Traction, Business Model (Free/Pro $19/mo/Enterprise), Technology & Moat, Roadmap, Team, The Ask ($1.5M Seed), Closing
+- `cycleCAD-Investor-Deck.pptx` — 14-slide investor pitch deck: Title, Problem, Solution, Market ($25.3B TAM), Product, Competitive Landscape, Feature Comparison, Traction, Business Model (Free/Pro €49/mo/Enterprise), Technology & Moat, Roadmap, Team, The Ask ($1.5M Seed), Closing
 
 **Strategic decisions made:**
 - ExplodeView merges into cycleCAD as "Viewer Mode" (shared Three.js scene, unified toolbar)
 - npm packages stay separate: `cyclecad` (platform) + `explodeview` (standalone widget)
-- Open-core business model: Free (full modeling + AI), Pro $19/mo (collab + STEP + cloud), Enterprise (self-hosted + SSO)
+- Open-core business model: Free (full modeling + AI), Pro €49/mo (collab + STEP + cloud), Enterprise (self-hosted + SSO)
 - AI Copilot = the MecAgent + Aurorin killer (text-to-CAD, NL editing, smart autocomplete — all free, in-browser)
 - Build priority: STEP import (OpenCascade.js) → ExplodeView merge → AI Copilot → Collaboration → Pro launch
 
@@ -358,8 +358,8 @@ Located at `~/cyclecad/example/DUO Durchgehend Inventor/` (gitignored — too la
 - [ ] Comments + task assignment
 
 ### Phase D: Pro Launch (Q1 2027)
-- [ ] Pro tier: $19/mo (collab + STEP + cloud + priority AI)
-- [ ] Enterprise tier: custom (self-hosted + SSO + SLA)
+- [ ] Pro tier: €49/mo (collab + STEP + cloud + priority AI)
+- [ ] Enterprise tier: €299/mo (self-hosted + SSO + SLA)
 - [ ] Plugin API (FeatureScript equivalent — JS custom features)
 - [ ] Plugin marketplace
 
@@ -470,6 +470,16 @@ Created ExplodeView merge PoC:
 - STEP import for large files (80MB+) still broken — `verts=0` for all meshes
 - Root cause: WASM heap reallocation invalidates TypedArray views during copy loop
 - v282 uses `.slice(0)` tight loop — NOT YET TESTED
+
+## Session 2026-03-25 (Late) — Pricing + Cache Reset + NLP Fix
+
+**Pricing updated:** €49/mo Pro, €299/mo Enterprise (matching Stripe products). Added proper pricing section to cyclecad.com landing page with 3 tiers (Free/Pro/Enterprise). Updated all CLAUDE.md references from $19/mo → €49/mo.
+
+**Smart cache reset:** Browser detection (Chrome/Safari/Firefox/Edge) with thorough clearing: Service Workers, Cache API, all IndexedDB databases, OPFS, localStorage, sessionStorage. Safari gets cache-busting URL redirect.
+
+**NLP parser:** Agent-demo.html now handles natural language like "draw circle with 50mm diameter" — intent detection with 30+ action categories, 12 shape types with aliases, typo tolerance (dieamieter, diamter, etc.).
+
+**Version badge:** Larger and more readable (0.85rem, bold, border, text-shadow). Bumped to v0.2.0.
 
 ## Near-term Tasks
 - [ ] Push ExplodeView v282 and test STEP import with large files

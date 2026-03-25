@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>cycleCAD System Architecture</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0c14; color: #e0e4ec; min-height: 100vh; padding: 40px 20px; }
+
+.container { max-width: 1200px; margin: 0 auto; }
+
+h1 { text-align: center; font-size: 28px; margin-bottom: 8px; background: linear-gradient(135deg, #00d4ff, #7b61ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.subtitle { text-align: center; font-size: 14px; color: #6b7b8f; margin-bottom: 40px; }
+
+/* Architecture layers */
+.layer { position: relative; margin-bottom: 24px; }
+.layer-label { position: absolute; left: -10px; top: 50%; transform: translateY(-50%) rotate(-90deg); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #4a5568; font-weight: 600; white-space: nowrap; }
+
+.row { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+
+/* Boxes */
+.box { border-radius: 10px; padding: 16px 20px; text-align: center; position: relative; transition: all 0.3s; min-width: 160px; }
+.box:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+.box h3 { font-size: 14px; margin-bottom: 4px; }
+.box p { font-size: 11px; color: #8892a4; line-height: 1.4; }
+.box .icon { font-size: 24px; margin-bottom: 8px; display: block; }
+
+/* Interface layer (top) */
+.interface { background: linear-gradient(135deg, rgba(0,212,255,0.12), rgba(0,100,200,0.08)); border: 1px solid rgba(0,212,255,0.3); }
+.interface h3 { color: #00d4ff; }
+.interface.agent { background: linear-gradient(135deg, rgba(123,97,255,0.12), rgba(80,50,200,0.08)); border: 1px solid rgba(123,97,255,0.3); }
+.interface.agent h3 { color: #7b61ff; }
+
+/* Core engine */
+.core { background: linear-gradient(135deg, rgba(255,165,0,0.1), rgba(200,100,0,0.06)); border: 1px solid rgba(255,165,0,0.25); }
+.core h3 { color: #ffaa33; }
+
+/* Module layer */
+.module { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); min-width: 120px; padding: 12px 14px; }
+.module h3 { color: #a8b8cc; font-size: 12px; }
+.module p { font-size: 10px; }
+
+/* Storage layer */
+.storage { background: linear-gradient(135deg, rgba(76,175,80,0.1), rgba(40,120,40,0.06)); border: 1px solid rgba(76,175,80,0.25); }
+.storage h3 { color: #66bb6a; }
+
+/* External */
+.external { background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.12); }
+.external h3 { color: #6b7b8f; font-size: 12px; }
+
+/* Arrows */
+.arrow-row { display: flex; justify-content: center; gap: 200px; padding: 8px 0; }
+.arrow { text-align: center; color: #4a5568; font-size: 20px; line-height: 1; }
+.arrow span { display: block; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+
+.arrow-down { text-align: center; color: #4a5568; font-size: 20px; padding: 6px 0; }
+.arrow-down span { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; }
+
+/* Bidirectional connector */
+.connector { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 0; }
+.connector-line { flex: 1; max-width: 200px; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,165,0,0.4), transparent); }
+.connector-label { font-size: 10px; color: #6b7b8f; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
+
+/* Section divider */
+.divider { border: none; border-top: 1px dashed rgba(255,255,255,0.06); margin: 16px 0; }
+
+/* Big interface boxes */
+.interface-group { flex: 1; min-width: 300px; max-width: 500px; border-radius: 12px; padding: 20px; }
+.interface-group.human { background: linear-gradient(135deg, rgba(0,212,255,0.06), rgba(0,100,200,0.03)); border: 1px solid rgba(0,212,255,0.2); }
+.interface-group.ai { background: linear-gradient(135deg, rgba(123,97,255,0.06), rgba(80,50,200,0.03)); border: 1px solid rgba(123,97,255,0.2); }
+.interface-group h2 { font-size: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.interface-group.human h2 { color: #00d4ff; }
+.interface-group.ai h2 { color: #7b61ff; }
+
+.feature-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
+.feature-list li { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 6px 10px; font-size: 11px; color: #a8b8cc; }
+
+.badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 9px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; margin-left: 6px; }
+.badge-human { background: rgba(0,212,255,0.15); color: #00d4ff; border: 1px solid rgba(0,212,255,0.3); }
+.badge-agent { background: rgba(123,97,255,0.15); color: #7b61ff; border: 1px solid rgba(123,97,255,0.3); }
+.badge-both { background: rgba(255,165,0,0.15); color: #ffaa33; border: 1px solid rgba(255,165,0,0.3); }
+
+/* Legend */
+.legend { display: flex; gap: 20px; justify-content: center; margin-top: 30px; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #6b7b8f; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+/* Stats */
+.stats { display: flex; gap: 24px; justify-content: center; margin: 24px 0; flex-wrap: wrap; }
+.stat { text-align: center; }
+.stat .num { font-size: 28px; font-weight: 700; background: linear-gradient(135deg, #00d4ff, #7b61ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.stat .label { font-size: 10px; color: #6b7b8f; text-transform: uppercase; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>cycleCAD System Architecture</h1>
+<p class="subtitle">Dual-Interface CAD Platform — Humans + AI Agents share the same core engine</p>
+
+<div class="stats">
+  <div class="stat"><div class="num">2</div><div class="label">Interfaces</div></div>
+  <div class="stat"><div class="num">19</div><div class="label">Modules</div></div>
+  <div class="stat"><div class="num">55+</div><div class="label">API Commands</div></div>
+  <div class="stat"><div class="num">12</div><div class="label">Shape Types</div></div>
+  <div class="stat"><div class="num">20+</div><div class="label">Operations</div></div>
+  <div class="stat"><div class="num">0</div><div class="label">Dependencies</div></div>
+</div>
+
+<hr class="divider">
+
+<!-- INTERFACE LAYER -->
+<div style="margin-bottom:8px;text-align:center;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#4a5568;font-weight:600;">Interface Layer</div>
+
+<div class="row" style="gap:24px;">
+  <!-- HUMAN UI -->
+  <div class="interface-group human">
+    <h2>
+      <span style="font-size:20px;">🖥️</span> Human Interface (UI)
+      <span class="badge badge-human">Browser GUI</span>
+    </h2>
+    <p style="font-size:12px;color:#8892a4;margin-bottom:12px;">Traditional CAD interface — click, drag, type. Toolbar, panels, viewport, keyboard shortcuts.</p>
+    <ul class="feature-list">
+      <li>3D Viewport (Three.js r170)</li>
+      <li>2D Sketch Canvas</li>
+      <li>Feature Tree Panel</li>
+      <li>Property Editor</li>
+      <li>Tabbed Toolbar (6 tabs)</li>
+      <li>Context Menus</li>
+      <li>25+ Keyboard Shortcuts</li>
+      <li>Drag-and-Drop Import</li>
+      <li>Multi-language (6 langs)</li>
+      <li>Mobile Touch Controls</li>
+      <li>Dark Theme (VS Code-style)</li>
+      <li>Project Browser</li>
+    </ul>
+    <div style="margin-top:12px;padding:10px;background:rgba(0,212,255,0.05);border-radius:6px;border:1px solid rgba(0,212,255,0.1);">
+      <strong style="font-size:11px;color:#00d4ff;">Entry Points:</strong>
+      <p style="font-size:10px;color:#6b7b8f;margin-top:4px;">
+        <code>app/index.html</code> — Main app (3,156 lines)<br>
+        <code>app/mobile.html</code> — Phone edition (1,277 lines)<br>
+        <code>index.html</code> — Landing page (14K lines)
+      </p>
+    </div>
+  </div>
+
+  <!-- AGENT API -->
+  <div class="interface-group ai">
+    <h2>
+      <span style="font-size:20px;">🤖</span> Agent Interface (API)
+      <span class="badge badge-agent">JSON-RPC 2.0</span>
+    </h2>
+    <p style="font-size:12px;color:#8892a4;margin-bottom:12px;">AI-first interface — any LLM sends JSON commands. No GUI needed. Agents are the only interface.</p>
+    <ul class="feature-list">
+      <li>55+ Commands</li>
+      <li>10 Namespaces</li>
+      <li>Self-Describing Schema</li>
+      <li>Voice + NLP Parser</li>
+      <li>12 Shape Types</li>
+      <li>20+ Operations</li>
+      <li>Batch Execution</li>
+      <li>Transaction Support</li>
+      <li>Undo/Redo History</li>
+      <li>Event System (on/off)</li>
+      <li>Design Review Agent</li>
+      <li>Manufacturing Agent</li>
+    </ul>
+    <div style="margin-top:12px;padding:10px;background:rgba(123,97,255,0.05);border-radius:6px;border:1px solid rgba(123,97,255,0.1);">
+      <strong style="font-size:11px;color:#7b61ff;">Entry Points:</strong>
+      <p style="font-size:10px;color:#6b7b8f;margin-top:4px;">
+        <code>app/js/agent-api.js</code> — Core API (1,903 lines)<br>
+        <code>app/agent-demo.html</code> — Interactive demo (1,500+ lines)<br>
+        <code>window.cycleCAD.execute({ method, params })</code>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ARROWS DOWN -->
+<div class="arrow-row">
+  <div class="arrow">↓<span>DOM Events, Clicks, Keys</span></div>
+  <div class="arrow">↓<span>JSON Commands</span></div>
+</div>
+
+<!-- SHARED CORE -->
+<div style="margin-bottom:8px;text-align:center;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#4a5568;font-weight:600;">Shared Core Engine</div>
+
+<div class="row" style="justify-content:center;">
+  <div class="box core" style="min-width:500px;">
+    <span class="icon">⚙️</span>
+    <h3>cycleCAD Core — Shared Geometry & State</h3>
+    <p>Both interfaces call the SAME functions. Same Three.js scene, same feature tree, same undo history.</p>
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+      <span class="badge badge-both">Shared Scene</span>
+      <span class="badge badge-both">Shared State</span>
+      <span class="badge badge-both">Shared History</span>
+    </div>
+  </div>
+</div>
+
+<div class="arrow-down" style="text-align:center;">↓ <span>dispatches to modules</span></div>
+
+<!-- MODULE LAYER -->
+<div style="margin-bottom:8px;text-align:center;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#4a5568;font-weight:600;">Module Layer — 19 ES Modules (Zero Dependencies, CDN Only)</div>
+
+<div class="row" style="gap:8px;">
+  <div class="box module"><h3>viewport.js</h3><p>Three.js scene, camera, lights, OrbitControls</p></div>
+  <div class="box module"><h3>sketch.js</h3><p>2D canvas, line/rect/circle/arc, grid snap</p></div>
+  <div class="box module"><h3>operations.js</h3><p>Extrude, revolve, fillet, chamfer, boolean, shell</p></div>
+  <div class="box module"><h3>advanced-ops.js</h3><p>Sweep, loft, sheet metal, spring, thread</p></div>
+  <div class="box module"><h3>constraint-solver.js</h3><p>12 constraint types, iterative relaxation</p></div>
+</div>
+
+<div class="row" style="gap:8px;margin-top:8px;">
+  <div class="box module"><h3>assembly.js</h3><p>Components, mates, joints, explode</p></div>
+  <div class="box module"><h3>tree.js</h3><p>Feature tree, rename, suppress, context menu</p></div>
+  <div class="box module"><h3>params.js</h3><p>Parameter editor, 6 materials</p></div>
+  <div class="box module"><h3>app.js</h3><p>State, modes, undo/redo history</p></div>
+  <div class="box module"><h3>shortcuts.js</h3><p>25+ keyboard shortcuts</p></div>
+</div>
+
+<div class="row" style="gap:8px;margin-top:8px;">
+  <div class="box module"><h3>inventor-parser.js</h3><p>OLE2/CFB binary parser, 26 features</p></div>
+  <div class="box module"><h3>assembly-resolver.js</h3><p>Parse .iam, resolve paths, BOM</p></div>
+  <div class="box module"><h3>project-loader.js</h3><p>Parse .ipj, index folders</p></div>
+  <div class="box module"><h3>project-browser.js</h3><p>Folder tree UI, search, stats</p></div>
+  <div class="box module"><h3>rebuild-guide.js</h3><p>Step-by-step recreation guides</p></div>
+</div>
+
+<div class="row" style="gap:8px;margin-top:8px;">
+  <div class="box module"><h3>reverse-engineer.js</h3><p>STL import, geometry analysis</p></div>
+  <div class="box module"><h3>ai-chat.js</h3><p>Gemini + Groq + offline NLP</p></div>
+  <div class="box module"><h3>export.js</h3><p>STL, OBJ, glTF, DXF, JSON</p></div>
+  <div class="box module"><h3>dxf-export.js</h3><p>2D/3D DXF engineering drawings</p></div>
+</div>
+
+<div class="arrow-down" style="text-align:center;">↓</div>
+
+<!-- VIEWER MODE (EXPLODEVIEW MERGE) -->
+<div style="margin-bottom:8px;text-align:center;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#4a5568;font-weight:600;">Viewer Mode (ExplodeView Merge — Shared Three.js Scene)</div>
+
+<div class="row">
+  <div class="box" style="background:linear-gradient(135deg,rgba(0,255,136,0.08),rgba(0,180,80,0.04));border:1px solid rgba(0,255,136,0.2);min-width:400px;">
+    <span class="icon">🔍</span>
+    <h3 style="color:#00ff88;">viewer-mode.js — ExplodeView as Viewer Tab</h3>
+    <p>40+ analysis tools from ExplodeView. Explode/collapse, section cut, annotations, measurement, BOM, AI identification, maintenance heatmap, service mode, technical report.</p>
+    <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">
+      <span style="font-size:10px;color:#6b7b8f;background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.15);padding:3px 8px;border-radius:4px;">Explode View</span>
+      <span style="font-size:10px;color:#6b7b8f;background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.15);padding:3px 8px;border-radius:4px;">Section Cut</span>
+      <span style="font-size:10px;color:#6b7b8f;background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.15);padding:3px 8px;border-radius:4px;">AI Part ID</span>
+      <span style="font-size:10px;color:#6b7b8f;background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.15);padding:3px 8px;border-radius:4px;">Maintenance</span>
+      <span style="font-size:10px;color:#6b7b8f;background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.15);padding:3px 8px;border-radius:4px;">Service Mode</span>
+      <span style="font-size:10px;color:#6b7b8f;background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.15);padding:3px 8px;border-radius:4px;">40+ Tools</span>
+    </div>
+  </div>
+</div>
+
+<div class="arrow-down" style="text-align:center;">↓</div>
+
+<!-- STORAGE & EXTERNAL -->
+<div style="margin-bottom:8px;text-align:center;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#4a5568;font-weight:600;">Storage & External Services</div>
+
+<div class="row" style="gap:12px;">
+  <div class="box storage"><h3>IndexedDB</h3><p>GLB cache, model library, settings</p></div>
+  <div class="box storage"><h3>localStorage</h3><p>API keys, preferences, last model</p></div>
+  <div class="box storage"><h3>File System</h3><p>STEP/STL/OBJ import, export downloads</p></div>
+  <div class="box external"><h3>Gemini Flash API</h3><p>AI part identification, chatbot</p></div>
+  <div class="box external"><h3>Groq API</h3><p>Llama 3.1 8B fallback LLM</p></div>
+  <div class="box external"><h3>OpenCascade.js</h3><p>STEP import WASM (planned)</p></div>
+</div>
+
+<hr class="divider" style="margin-top:30px;">
+
+<!-- DATA FLOW -->
+<div style="text-align:center;margin:24px 0;">
+  <h2 style="font-size:18px;color:#ffaa33;margin-bottom:16px;">Data Flow: Human vs Agent</h2>
+  <div style="display:flex;gap:40px;justify-content:center;flex-wrap:wrap;">
+    <!-- Human flow -->
+    <div style="text-align:left;max-width:420px;">
+      <h3 style="color:#00d4ff;font-size:13px;margin-bottom:10px;">🖥️ Human Interface Flow</h3>
+      <div style="font-family:monospace;font-size:11px;line-height:2;color:#8892a4;">
+        <div style="color:#00d4ff;">User clicks "Extrude" button in toolbar</div>
+        <div>→ DOM event listener fires</div>
+        <div>→ <code style="color:#ffaa33;">operations.extrude(params)</code></div>
+        <div>→ Three.js geometry updated in scene</div>
+        <div>→ Feature tree panel re-rendered</div>
+        <div>→ Undo history snapshot saved</div>
+        <div style="color:#66bb6a;">→ User sees result in 3D viewport</div>
+      </div>
+    </div>
+    <!-- Agent flow -->
+    <div style="text-align:left;max-width:420px;">
+      <h3 style="color:#7b61ff;font-size:13px;margin-bottom:10px;">🤖 Agent Interface Flow</h3>
+      <div style="font-family:monospace;font-size:11px;line-height:2;color:#8892a4;">
+        <div style="color:#7b61ff;">Agent sends: { method: "feature.extrude", params: { depth: 50 } }</div>
+        <div>→ <code style="color:#ffaa33;">agent-api.js</code> dispatches command</div>
+        <div>→ <code style="color:#ffaa33;">operations.extrude(params)</code></div>
+        <div>→ Three.js geometry updated in scene</div>
+        <div>→ Feature tree panel re-rendered</div>
+        <div>→ Undo history snapshot saved</div>
+        <div style="color:#66bb6a;">→ Agent receives: { ok: true, result: { entityId: "extrude_1" } }</div>
+      </div>
+    </div>
+  </div>
+  <p style="margin-top:16px;font-size:12px;color:#ffaa33;font-weight:600;">Both paths call the SAME <code>operations.extrude()</code> — one codebase, two interfaces.</p>
+</div>
+
+<hr class="divider">
+
+<!-- API NAMESPACES -->
+<div style="text-align:center;margin:24px 0;">
+  <h2 style="font-size:18px;color:#7b61ff;margin-bottom:16px;">Agent API — 10 Namespaces</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;text-align:left;">
+    <div style="padding:12px;background:rgba(123,97,255,0.05);border:1px solid rgba(123,97,255,0.15);border-radius:8px;">
+      <strong style="color:#7b61ff;font-size:12px;">sketch.*</strong>
+      <p style="font-size:10px;color:#6b7b8f;margin-top:4px;">start, line, rect, circle, arc, close, constrain</p>
+    </div>
+    <div style="padding:12px;background:rgba(123,97,255,0.05);border:1px solid rgba(123,97,255,0.15);border-radius:8px;">
+      <strong style="color:#7b61ff;font-size:12px;">shape.*</strong>
+      <p style="font-size:10px;color:#6b7b8f;margin-top:4px;">cylinder, box, sphere, cone, torus, plate, gear + 5 more</p>
+    </div>
+    <div style="padding:12px;background:rgba(123,97,255,0.05);border:1px solid rgba(123,97,255,0.15);border-radius:8px;">
+      <strong style="color:#7b61ff;font-size:12px;">feature.*</strong>
+      <p style="font-size:10px;color:#6b7b8f;margin-top:4px;">extrude, revolve, fillet, chamfer, shell, pattern, mirror, thread</p>
+    </div>
+    <div style="padding:12px;background:rgba(123,97,255,0.05);border:1px solid rgba(123,97,255,0.15);border-radius:8px;">
+      <strong style="color:#7b61ff;font-size:12px;">boolean.*</strong>
+      <p style="font-size:10px;color:#6b7b8f;margin-top:4px;">union, subtract, intersect</p>
+    </div>
+    <div style="padding:12px;background:rgba(123,97,255,0.05);border:1px solid rgba(123,97,255,0.15);border-radius:8px;">
+      <strong style="color:#7b61ff;font-size:12px;">assembly.*</strong>
+      <p style="font-size:10px;color:#6b7b8f;margin-top:4px;">addComponent, mate, explode, collapse, getBOM</p>
+    </div>
+    <div style="padding:12px;background:rgba(123,97,255,0.05);border:1px solid rgba(123,97,255,0.15);border-radius:8px;">
+      <strong style="color:#7b61ff;font-size:12px;">render.*</strong>
+      <p style="font-size:10px;color:#6b7b8f;margin-top:4px;">snapshot, multiview, fitToSelection, setView</p>
+    </div>
+    <div style="padding:12px;background:rgba(123,97,255,0.05);border:1px solid rgba(123,97,255,0.15);border-radius:8px;">
+      <strong style="color:#7b61ff;font-size:12px;">validate.*</strong>
+      <p style="font-size:10px;color:#6b7b8f;margin-top:4px;">designReview, dfmCheck, costEstimate, weightCalc</p>
+    </div>
+    <div style="padding:12px;background:rgba(123,97,255,0.05);border:1px solid rgba(123,97,255,0.15);border-radius:8px;">
+      <strong style="color:#7b61ff;font-size:12px;">export.*</strong>
+      <p style="font-size:10px;color:#6b7b8f;margin-top:4px;">stl, obj, gltf, step, dxf, json</p>
+    </div>
+    <div style="padding:12px;background:rgba(123,97,255,0.05);border:1px solid rgba(123,97,255,0.15);border-radius:8px;">
+      <strong style="color:#7b61ff;font-size:12px;">ai.*</strong>
+      <p style="font-size:10px;color:#6b7b8f;margin-top:4px;">identifyPart, chatQuery, generateGuide, nlCommand</p>
+    </div>
+    <div style="padding:12px;background:rgba(123,97,255,0.05);border:1px solid rgba(123,97,255,0.15);border-radius:8px;">
+      <strong style="color:#7b61ff;font-size:12px;">session.*</strong>
+      <p style="font-size:10px;color:#6b7b8f;margin-top:4px;">getState, getSchema, ping, undo, redo, clear</p>
+    </div>
+  </div>
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#00d4ff;"></div> Human Interface</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#7b61ff;"></div> Agent Interface</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ffaa33;"></div> Shared Core</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#00ff88;"></div> Viewer Mode (ExplodeView)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#66bb6a;"></div> Storage</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#6b7b8f;"></div> External Services</div>
+</div>
+
+<p style="text-align:center;margin-top:24px;font-size:11px;color:#4a5568;">cycleCAD — Agent-First OS for Manufacturing | cyclecad.com | v0.1.9</p>
+
+</div>
+</body>
+</html>

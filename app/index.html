@@ -2704,20 +2704,67 @@
 
     window.cycleCAD = { version: '1.0.0', APP, init };
 
-    // ========== Hard Reset ==========
+    // ========== Hard Reset (with browser detection) ==========
     const hardResetBtn = document.getElementById('btn-hard-reset');
     if (hardResetBtn) {
-      hardResetBtn.addEventListener('click', () => {
-        if (!confirm('Clear all caches and reload?')) return;
-        if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.getRegistrations().then(regs => { regs.forEach(r => r.unregister()); });
-        }
-        if ('caches' in window) {
-          caches.keys().then(names => { names.forEach(name => caches.delete(name)); });
-        }
+      function detectBrowserCC() {
+        const ua = navigator.userAgent;
+        if (/Edg\//i.test(ua)) return 'Edge';
+        if (/Chrome\//i.test(ua) && !/Edg\//i.test(ua)) return 'Chrome';
+        if (/Safari\//i.test(ua) && !/Chrome\//i.test(ua)) return 'Safari';
+        if (/Firefox\//i.test(ua)) return 'Firefox';
+        return 'Unknown';
+      }
+      hardResetBtn.addEventListener('click', async () => {
+        const browser = detectBrowserCC();
+        const msg = `Clear ALL cached data and reload?\n\nDetected browser: ${browser}\n\nThis will clear:\n• Service Workers\n• Cache API storage\n• IndexedDB databases\n• OPFS storage\n• localStorage & sessionStorage`;
+        if (!confirm(msg)) return;
+        const log = [];
+        // 1. Unregister service workers
+        try {
+          if ('serviceWorker' in navigator) {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            for (const r of regs) await r.unregister();
+            log.push('SW: ' + regs.length);
+          }
+        } catch(e) {}
+        // 2. Cache API
+        try {
+          if ('caches' in window) {
+            const names = await caches.keys();
+            for (const n of names) await caches.delete(n);
+            log.push('Caches: ' + names.length);
+          }
+        } catch(e) {}
+        // 3. IndexedDB — clear all
+        try {
+          if (indexedDB.databases) {
+            const allDBs = await indexedDB.databases();
+            for (const db of allDBs) { if (db.name) indexedDB.deleteDatabase(db.name); }
+            log.push('IDB: ' + allDBs.length);
+          }
+        } catch(e) {}
+        // 4. OPFS
+        try {
+          if (navigator.storage && navigator.storage.getDirectory) {
+            const root = await navigator.storage.getDirectory();
+            for await (const [name] of root.entries()) {
+              try { await root.removeEntry(name, { recursive: true }); } catch(e) {}
+            }
+            log.push('OPFS: cleared');
+          }
+        } catch(e) {}
+        // 5. Storage
         try { localStorage.clear(); } catch(e) {}
         try { sessionStorage.clear(); } catch(e) {}
-        setTimeout(() => { window.location.reload(true); }, 300);
+        log.push('Storage: cleared');
+        console.log('[Hard Reset]', browser, log.join(' | '));
+        // 6. Browser-specific reload
+        if (browser === 'Safari') {
+          window.location.href = window.location.pathname + '?cachebust=' + Date.now();
+        } else {
+          setTimeout(() => { window.location.reload(true); }, 300);
+        }
       });
     }
 
@@ -3421,6 +3468,6 @@
     </div>
   </div>
 
-  <span id="version-badge" style="position:fixed;bottom:8px;left:50%;transform:translateX(-50%);z-index:70;font-size:0.65rem;color:rgba(255,255,255,0.35);letter-spacing:0.08em;white-space:nowrap;padding:3px 10px;user-select:all;pointer-events:auto;font-family:monospace;background:rgba(0,0,0,0.3);border-radius:4px;" title="cycleCAD version">cycleCAD v0.1.9</span>
+  <span id="version-badge" style="position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:70;font-size:0.85rem;color:rgba(255,255,255,0.7);letter-spacing:0.1em;white-space:nowrap;padding:5px 14px;user-select:all;pointer-events:auto;font-family:monospace;font-weight:600;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);border-radius:6px;text-shadow:0 1px 3px rgba(0,0,0,0.5);" title="cycleCAD version">cycleCAD v0.2.0</span>
 </body>
 </html>

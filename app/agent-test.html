@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>cycleCAD Agent API Test Suite</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #1e1e1e;
+      color: #e0e0e0;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #58a6ff;
+      margin-bottom: 10px;
+      font-size: 24px;
+    }
+    .subtitle {
+      color: #a0a0a0;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .card {
+      background: #252526;
+      border: 1px solid #3e3e42;
+      border-radius: 6px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .card-title {
+      font-weight: bold;
+      color: #58a6ff;
+      font-size: 13px;
+    }
+    .card-desc {
+      font-size: 12px;
+      color: #a0a0a0;
+    }
+    .command-display {
+      background: #1e1e1e;
+      border: 1px solid #3e3e42;
+      border-radius: 4px;
+      padding: 12px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 11px;
+      color: #ce9178;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .button-group {
+      display: flex;
+      gap: 8px;
+    }
+    button {
+      flex: 1;
+      padding: 8px 12px;
+      background: #0e639c;
+      color: #fff;
+      border: 1px solid #1f6feb;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: background 150ms;
+    }
+    button:hover {
+      background: #1f6feb;
+    }
+    button.secondary {
+      background: #2d2d30;
+      color: #e0e0e0;
+      border-color: #3e3e42;
+    }
+    button.secondary:hover {
+      background: #3e3e42;
+    }
+    .result {
+      background: #1e1e1e;
+      border: 1px solid #3e3e42;
+      border-radius: 4px;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #4ec9b0;
+      max-height: 200px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .result.error {
+      color: #f48771;
+    }
+    .result.loading {
+      color: #ce9178;
+    }
+    .section {
+      margin-bottom: 40px;
+    }
+    .section-title {
+      font-size: 18px;
+      color: #3fb950;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #3e3e42;
+    }
+    .status {
+      background: #1e3a1f;
+      border: 1px solid #238636;
+      border-radius: 4px;
+      padding: 12px;
+      margin-bottom: 20px;
+      color: #3fb950;
+      font-size: 12px;
+    }
+    .status.error {
+      background: #3f1f1f;
+      border-color: #f85149;
+      color: #f85149;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🤖 cycleCAD Agent API Test Suite</h1>
+    <p class="subtitle">Test the Agent-First OS for Manufacturing. Open the cycleCAD app in another tab, then use these tests.</p>
+
+    <div class="status" id="status">
+      ✓ Test suite loaded. Open /app/ in another tab, then run tests below.
+    </div>
+
+    <!-- Meta Tests -->
+    <div class="section">
+      <div class="section-title">Meta API (Health &amp; Schema)</div>
+      <div class="grid">
+        <div class="card">
+          <div class="card-title">Ping</div>
+          <div class="card-desc">Test API connectivity — should return pong + timestamp</div>
+          <div class="command-display">{ "method": "meta.ping", "params": {} }</div>
+          <div class="button-group">
+            <button onclick="runTest('meta.ping')">Run</button>
+          </div>
+          <div class="result" id="result-ping"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Version Info</div>
+          <div class="card-desc">Get cycleCAD version, modules, and API version</div>
+          <div class="command-display">{ "method": "meta.version", "params": {} }</div>
+          <div class="button-group">
+            <button onclick="runTest('meta.version')">Run</button>
+          </div>
+          <div class="result" id="result-version"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">API Schema</div>
+          <div class="card-desc">Get full API schema with all commands, namespaces, and parameters</div>
+          <div class="command-display">{ "method": "meta.schema", "params": {} }</div>
+          <div class="button-group">
+            <button onclick="runTest('meta.schema')">Run</button>
+          </div>
+          <div class="result" id="result-schema"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sketch Tests -->
+    <div class="section">
+      <div class="section-title">Sketch (2D Drawing)</div>
+      <div class="grid">
+        <div class="card">
+          <div class="card-title">Start Sketch</div>
+          <div class="card-desc">Begin 2D sketch on XY plane</div>
+          <div class="command-display">{ "method": "sketch.start", "params": { "plane": "XY" } }</div>
+          <div class="button-group">
+            <button onclick="runTest('sketch.start')">Run</button>
+          </div>
+          <div class="result" id="result-sketch-start"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Draw Rectangle</div>
+          <div class="card-desc">Draw a 50x30mm rectangle</div>
+          <div class="command-display">{ "method": "sketch.rect", "params": { "width": 50, "height": 30 } }</div>
+          <div class="button-group">
+            <button onclick="runTest('sketch.rect')">Run</button>
+          </div>
+          <div class="result" id="result-sketch-rect"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Draw Circle</div>
+          <div class="card-desc">Draw a 20mm radius circle</div>
+          <div class="command-display">{ "method": "sketch.circle", "params": { "radius": 20 } }</div>
+          <div class="button-group">
+            <button onclick="runTest('sketch.circle')">Run</button>
+          </div>
+          <div class="result" id="result-sketch-circle"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">End Sketch</div>
+          <div class="card-desc">Finish 2D sketch and return all entities</div>
+          <div class="command-display">{ "method": "sketch.end", "params": {} }</div>
+          <div class="button-group">
+            <button onclick="runTest('sketch.end')">Run</button>
+          </div>
+          <div class="result" id="result-sketch-end"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Operations Tests -->
+    <div class="section">
+      <div class="section-title">Operations (3D Modeling)</div>
+      <div class="grid">
+        <div class="card">
+          <div class="card-title">Extrude</div>
+          <div class="card-desc">Extrude current sketch 10mm upward into 3D solid</div>
+          <div class="command-display">{ "method": "ops.extrude", "params": { "height": 10, "material": "steel" } }</div>
+          <div class="button-group">
+            <button onclick="runTest('ops.extrude')">Run</button>
+          </div>
+          <div class="result" id="result-ops-extrude"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Fillet</div>
+          <div class="card-desc">Apply 2mm fillet to edges of a feature (ID: extrude_1)</div>
+          <div class="command-display">{ "method": "ops.fillet", "params": { "target": "extrude_1", "radius": 2 } }</div>
+          <div class="button-group">
+            <button onclick="runTest('ops.fillet')">Run</button>
+          </div>
+          <div class="result" id="result-ops-fillet"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Primitive Box</div>
+          <div class="card-desc">Create a 50×30×20 mm box primitive</div>
+          <div class="command-display">{ "method": "ops.primitive", "params": { "shape": "box", "width": 50, "height": 30, "depth": 20 } }</div>
+          <div class="button-group">
+            <button onclick="runTest('ops.primitive')">Run</button>
+          </div>
+          <div class="result" id="result-ops-primitive"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- View Tests -->
+    <div class="section">
+      <div class="section-title">Viewport (Camera &amp; Display)</div>
+      <div class="grid">
+        <div class="card">
+          <div class="card-title">Set Isometric View</div>
+          <div class="card-desc">Rotate camera to isometric (3D perspective)</div>
+          <div class="command-display">{ "method": "view.set", "params": { "view": "isometric" } }</div>
+          <div class="button-group">
+            <button onclick="runTest('view.iso')">Isometric</button>
+            <button class="secondary" onclick="runTest('view.front')">Front</button>
+          </div>
+          <div class="result" id="result-view"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Fit to View</div>
+          <div class="card-desc">Zoom &amp; center camera to show all features</div>
+          <div class="command-display">{ "method": "view.fit", "params": {} }</div>
+          <div class="button-group">
+            <button onclick="runTest('view.fit')">Run</button>
+          </div>
+          <div class="result" id="result-view-fit"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Toggle Wireframe</div>
+          <div class="card-desc">Toggle wireframe rendering on/off</div>
+          <div class="command-display">{ "method": "view.wireframe", "params": { "enabled": true } }</div>
+          <div class="button-group">
+            <button onclick="runTest('view.wireframe')">Toggle</button>
+          </div>
+          <div class="result" id="result-view-wireframe"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Query Tests -->
+    <div class="section">
+      <div class="section-title">Query (Model Inspection)</div>
+      <div class="grid">
+        <div class="card">
+          <div class="card-title">List Features</div>
+          <div class="card-desc">Get all features in current model</div>
+          <div class="command-display">{ "method": "query.features", "params": {} }</div>
+          <div class="button-group">
+            <button onclick="runTest('query.features')">Run</button>
+          </div>
+          <div class="result" id="result-query-features"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">List Materials</div>
+          <div class="card-desc">Get available material presets (Steel, Aluminum, etc.)</div>
+          <div class="command-display">{ "method": "query.materials", "params": {} }</div>
+          <div class="button-group">
+            <button onclick="runTest('query.materials')">Run</button>
+          </div>
+          <div class="result" id="result-query-materials"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Session Info</div>
+          <div class="card-desc">Get current session ID and command count</div>
+          <div class="command-display">{ "method": "query.session", "params": {} }</div>
+          <div class="button-group">
+            <button onclick="runTest('query.session')">Run</button>
+          </div>
+          <div class="result" id="result-query-session"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Validation Tests -->
+    <div class="section">
+      <div class="section-title">Validation (DFM &amp; Engineering)</div>
+      <div class="grid">
+        <div class="card">
+          <div class="card-title">Design Review</div>
+          <div class="card-desc">Auto-analyze part for manufacturing issues (geometry, wall thickness, aspect ratio)</div>
+          <div class="command-display">{ "method": "validate.designReview", "params": { "target": "extrude_1" } }</div>
+          <div class="button-group">
+            <button onclick="runTest('validate.designReview')">Run</button>
+          </div>
+          <div class="result" id="result-validate-designreview"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Printability Check</div>
+          <div class="card-desc">Check if part fits FDM 3D printer (build volume, wall thickness, aspect ratio)</div>
+          <div class="command-display">{ "method": "validate.printability", "params": { "target": "extrude_1", "process": "FDM" } }</div>
+          <div class="button-group">
+            <button onclick="runTest('validate.printability')">Run</button>
+          </div>
+          <div class="result" id="result-validate-printability"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Cost Estimation</div>
+          <div class="card-desc">Estimate manufacturing cost (material + machine time)</div>
+          <div class="command-display">{ "method": "validate.cost", "params": { "target": "extrude_1", "process": "FDM", "material": "PLA" } }</div>
+          <div class="button-group">
+            <button onclick="runTest('validate.cost')">Run</button>
+          </div>
+          <div class="result" id="result-validate-cost"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Mass Estimation</div>
+          <div class="card-desc">Estimate part weight based on material and volume</div>
+          <div class="command-display">{ "method": "validate.mass", "params": { "target": "extrude_1", "material": "aluminum" } }</div>
+          <div class="button-group">
+            <button onclick="runTest('validate.mass')">Run</button>
+          </div>
+          <div class="result" id="result-validate-mass"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Export Tests -->
+    <div class="section">
+      <div class="section-title">Export (File Output)</div>
+      <div class="grid">
+        <div class="card">
+          <div class="card-title">Export STL</div>
+          <div class="card-desc">Export current model as STL (binary format for 3D printing)</div>
+          <div class="command-display">{ "method": "export.stl", "params": { "filename": "part.stl", "binary": true } }</div>
+          <div class="button-group">
+            <button onclick="runTest('export.stl')">Run</button>
+          </div>
+          <div class="result" id="result-export-stl"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Export JSON</div>
+          <div class="card-desc">Export model as cycleCAD native JSON format</div>
+          <div class="command-display">{ "method": "export.json", "params": { "filename": "model.cyclecad.json" } }</div>
+          <div class="button-group">
+            <button onclick="runTest('export.json')">Run</button>
+          </div>
+          <div class="result" id="result-export-json"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    async function runTest(testId) {
+      const resultEl = document.getElementById(`result-${testId.replace('.', '-')}`);
+      const tests = {
+        'meta.ping': { method: 'meta.ping', params: {} },
+        'meta.version': { method: 'meta.version', params: {} },
+        'meta.schema': { method: 'meta.schema', params: {} },
+        'sketch.start': { method: 'sketch.start', params: { plane: 'XY' } },
+        'sketch.rect': { method: 'sketch.rect', params: { width: 50, height: 30 } },
+        'sketch.circle': { method: 'sketch.circle', params: { radius: 20 } },
+        'sketch.end': { method: 'sketch.end', params: {} },
+        'ops.extrude': { method: 'ops.extrude', params: { height: 10, material: 'steel' } },
+        'ops.fillet': { method: 'ops.fillet', params: { target: 'extrude_1', radius: 2 } },
+        'ops.primitive': { method: 'ops.primitive', params: { shape: 'box', width: 50, height: 30, depth: 20 } },
+        'view.iso': { method: 'view.set', params: { view: 'isometric' } },
+        'view.front': { method: 'view.set', params: { view: 'front' } },
+        'view.fit': { method: 'view.fit', params: {} },
+        'view.wireframe': { method: 'view.wireframe', params: { enabled: true } },
+        'query.features': { method: 'query.features', params: {} },
+        'query.materials': { method: 'query.materials', params: {} },
+        'query.session': { method: 'query.session', params: {} },
+        'validate.designreview': { method: 'validate.designReview', params: { target: 'extrude_1' } },
+        'validate.printability': { method: 'validate.printability', params: { target: 'extrude_1', process: 'FDM' } },
+        'validate.cost': { method: 'validate.cost', params: { target: 'extrude_1', process: 'FDM', material: 'PLA' } },
+        'validate.mass': { method: 'validate.mass', params: { target: 'extrude_1', material: 'aluminum' } },
+        'export.stl': { method: 'export.stl', params: { filename: 'part.stl', binary: true } },
+        'export.json': { method: 'export.json', params: { filename: 'model.cyclecad.json' } },
+      };
+
+      const cmd = tests[testId];
+      if (!cmd) {
+        resultEl.textContent = 'Test not found';
+        resultEl.classList.add('error');
+        return;
+      }
+
+      resultEl.textContent = 'Loading...';
+      resultEl.classList.remove('error');
+      resultEl.classList.add('loading');
+
+      setTimeout(() => {
+        try {
+          if (!window.opener || !window.opener.cycleCAD) {
+            resultEl.textContent = '❌ cycleCAD API not found in parent window. Open /app/ in another tab first.';
+            resultEl.classList.add('error');
+            resultEl.classList.remove('loading');
+            return;
+          }
+
+          const result = window.opener.cycleCAD.execute(cmd);
+          resultEl.textContent = JSON.stringify(result, null, 2);
+          resultEl.classList.remove('loading');
+          if (!result.ok) resultEl.classList.add('error');
+        } catch (e) {
+          resultEl.textContent = `❌ ${e.message}`;
+          resultEl.classList.add('error');
+          resultEl.classList.remove('loading');
+        }
+      }, 100);
+    }
+
+    // Check if cycleCAD is available
+    window.addEventListener('load', () => {
+      if (window.opener && window.opener.cycleCAD) {
+        const status = document.getElementById('status');
+        status.textContent = '✓ Connected to cycleCAD! All tests ready.';
+      } else {
+        const status = document.getElementById('status');
+        status.textContent = '⚠️ cycleCAD not detected. Open /app/ in another tab, then run tests.';
+        status.classList.add('error');
+      }
+    });
+  </script>
+</body>
+</html>

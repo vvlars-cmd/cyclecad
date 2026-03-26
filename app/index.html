@@ -1279,14 +1279,14 @@
 
   <!-- Token Engine — Initialize early so window.cycleCAD.tokens is available -->
   <script src="./js/token-engine.js"></script>
-  <!-- New Architecture Modules -->
-  <script src="./js/material-library.js"></script>
+  <!-- New Architecture Modules (ES modules need type="module") -->
+  <script type="module" src="./js/material-library.js"></script>
   <script src="./js/dfm-analyzer.js"></script>
-  <script src="./js/cam-pipeline.js"></script>
+  <script type="module" src="./js/cam-pipeline.js"></script>
   <script src="./js/connected-fabs.js"></script>
-  <script src="./js/ai-copilot.js"></script>
-  <script src="./js/collaboration.js"></script>
-  <script src="./js/collaboration-ui.js"></script>
+  <script type="module" src="./js/ai-copilot.js"></script>
+  <script type="module" src="./js/collaboration.js"></script>
+  <script type="module" src="./js/collaboration-ui.js"></script>
 </head>
 <body>
   <div id="app">
@@ -3633,6 +3633,6 @@
     </div>
   </div>
 
-  <span id="version-badge" style="position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:70;font-size:0.85rem;color:rgba(255,255,255,0.7);letter-spacing:0.1em;white-space:nowrap;padding:5px 14px;user-select:all;pointer-events:auto;font-family:monospace;font-weight:600;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);border-radius:6px;text-shadow:0 1px 3px rgba(0,0,0,0.5);" title="cycleCAD version">cycleCAD v0.2.2</span>
+  <span id="version-badge" style="position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:70;font-size:0.85rem;color:rgba(255,255,255,0.7);letter-spacing:0.1em;white-space:nowrap;padding:5px 14px;user-select:all;pointer-events:auto;font-family:monospace;font-weight:600;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);border-radius:6px;text-shadow:0 1px 3px rgba(0,0,0,0.5);" title="cycleCAD version">cycleCAD v0.2.4</span>
 </body>
 </html>

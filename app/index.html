@@ -1276,6 +1276,17 @@
     }
 
   </style>
+
+  <!-- Token Engine — Initialize early so window.cycleCAD.tokens is available -->
+  <script src="./js/token-engine.js"></script>
+  <!-- New Architecture Modules -->
+  <script src="./js/material-library.js"></script>
+  <script src="./js/dfm-analyzer.js"></script>
+  <script src="./js/cam-pipeline.js"></script>
+  <script src="./js/connected-fabs.js"></script>
+  <script src="./js/ai-copilot.js"></script>
+  <script src="./js/collaboration.js"></script>
+  <script src="./js/collaboration-ui.js"></script>
 </head>
 <body>
   <div id="app">
@@ -1444,6 +1455,42 @@
         </button>
       </div>
 
+      <!-- Token Balance Indicator -->
+      <div class="toolbar-group">
+        <button class="toolbar-button" id="btn-token-balance" title="View Token Balance & Billing" style="background: linear-gradient(135deg, rgba(88,166,255,0.1), rgba(63,185,80,0.1)); border: 1px solid rgba(88,166,255,0.3);" onclick="document.querySelector('[data-tab=tokens]')?.click()">
+          <span class="toolbar-icon">💰</span>
+          <span class="toolbar-label" id="token-balance-label">1K Tokens</span>
+        </button>
+      </div>
+
+      <!-- AI & Analysis -->
+      <div class="toolbar-group">
+        <button class="toolbar-button" id="btn-ai-copilot" title="AI Copilot — Text-to-CAD, Voice Commands" style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);">
+          <span class="toolbar-icon">✨</span>
+          <span class="toolbar-label">Copilot</span>
+        </button>
+        <button class="toolbar-button" id="btn-dfm" title="DFM Analyzer — Manufacturability Check" style="background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);">
+          <span class="toolbar-icon">🏭</span>
+          <span class="toolbar-label">DFM</span>
+        </button>
+        <button class="toolbar-button" id="btn-materials" title="Material Library — 40+ PBR Materials" style="background:rgba(34,211,238,0.1);border:1px solid rgba(34,211,238,0.3);">
+          <span class="toolbar-icon">🎨</span>
+          <span class="toolbar-label">Materials</span>
+        </button>
+        <button class="toolbar-button" id="btn-cam" title="CAM Pipeline — Slicer, Toolpath, G-code" style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);">
+          <span class="toolbar-icon">⚙</span>
+          <span class="toolbar-label">CAM</span>
+        </button>
+        <button class="toolbar-button" id="btn-fabs" title="Connected Fabs — Send to Fabrication" style="background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.3);">
+          <span class="toolbar-icon">🏗</span>
+          <span class="toolbar-label">Fabs</span>
+        </button>
+        <button class="toolbar-button" id="btn-collab" title="Collaboration — Multi-User Sessions" style="background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.3);">
+          <span class="toolbar-icon">👥</span>
+          <span class="toolbar-label">Collab</span>
+        </button>
+      </div>
+
       <!-- Agent API Panel -->
       <div class="toolbar-group">
         <button class="toolbar-button" id="btn-agent-panel" title="Agent Command Panel (Test API)">
@@ -1551,6 +1598,7 @@
           <button class="properties-tab active" data-tab="properties">Properties</button>
           <button class="properties-tab" data-tab="chat">Chat</button>
           <button class="properties-tab" data-tab="guide">Guide</button>
+          <button class="properties-tab" data-tab="tokens" style="margin-left: auto; background: linear-gradient(135deg, rgba(88,166,255,0.1), rgba(63,185,80,0.1)); border: 1px solid rgba(88,166,255,0.3);" title="Token Balance & Billing">💰 Tokens</button>
         </div>
 
         <!-- Properties Content -->
@@ -1564,6 +1612,7 @@
           <div id="tab-guide" style="display: none;">
             <!-- Rebuild guide populated by JavaScript -->
           </div>
+          <!-- Tokens tab will be populated by token-dashboard.js -->
         </div>
       </div>
     </div>
@@ -1656,6 +1705,7 @@
     import Assembly from './js/assembly.js';
     import { exportSketchToDXF, exportProjectionToDXF, exportMultiViewDXF, export3DDXF, downloadDXF } from './js/dxf-export.js';
     import { initAgentAPI } from './js/agent-api.js';
+    import { initTokenDashboard } from './js/token-dashboard.js';
 
     // ========== Application State ==========
     const APP = {
@@ -1711,6 +1761,38 @@
             document.getElementById('chat-send'),
             (cmd) => executeParsedPrompt(cmd)
           );
+        }
+
+        // 4b. Initialize Token Dashboard
+        const tokenTab = document.getElementById('tab-tokens');
+        if (tokenTab) {
+          const tokenDashboard = initTokenDashboard();
+          tokenTab.innerHTML = tokenDashboard.html;
+          tokenTab.style.display = 'none';
+          tokenTab.style.overflowY = 'auto';
+          // Initialize the dashboard events
+          tokenDashboard.init();
+
+          // Update toolbar balance indicator
+          function updateTokenBalanceLabel() {
+            const balance = window.cycleCAD?.tokens?.getBalance?.() || 0;
+            const label = document.getElementById('token-balance-label');
+            if (label) {
+              if (balance >= 1000) {
+                label.textContent = Math.floor(balance / 1000) + 'K Tokens';
+              } else {
+                label.textContent = balance + ' Tokens';
+              }
+            }
+          }
+          updateTokenBalanceLabel();
+
+          // Update label when tokens change
+          if (window.cycleCAD?.tokens?.on) {
+            window.cycleCAD.tokens.on('token-spent', updateTokenBalanceLabel);
+            window.cycleCAD.tokens.on('token-added', updateTokenBalanceLabel);
+            window.cycleCAD.tokens.on('month-reset', updateTokenBalanceLabel);
+          }
         }
 
         // 5. Wire up toolbar buttons
@@ -1889,7 +1971,33 @@
         console.log('[Agent API] Usage: window.cycleCAD.execute({ method: "meta.ping" })');
         console.log('[Agent API] Schema: window.cycleCAD.getSchema()');
 
-        console.log('cycleCAD initialized successfully');
+        // Initialize new architecture modules
+        if (window.cycleCAD?.materials?.init) {
+          window.cycleCAD.materials.init();
+          console.log('[Materials] Library initialized — ' + (window.cycleCAD.materials.getAll?.()?.length || '40+') + ' materials');
+        }
+        if (window.cycleCAD?.dfm?.init) {
+          window.cycleCAD.dfm.init();
+          console.log('[DFM] Analyzer initialized — 8 manufacturing processes');
+        }
+        if (window.cycleCAD?.cam?.init) {
+          window.cycleCAD.cam.init();
+          console.log('[CAM] Pipeline initialized — slicer, toolpath, G-code');
+        }
+        if (window.cycleCAD?.fabs?.init) {
+          window.cycleCAD.fabs.init();
+          console.log('[Fabs] Connected fabrication network initialized');
+        }
+        if (window.cycleCAD?.copilot?.init) {
+          window.cycleCAD.copilot.init();
+          console.log('[AI Copilot] Initialized — text-to-CAD, voice commands');
+        }
+        if (window.cycleCAD?.collab?.init) {
+          window.cycleCAD.collab.init();
+          console.log('[Collaboration] Session management initialized');
+        }
+
+        console.log('cycleCAD initialized successfully — all modules loaded');
         updateStatus('Ready');
 
       } catch (error) {
@@ -2302,6 +2410,14 @@
           document.getElementById('tab-properties').style.display = target === 'properties' ? 'block' : 'none';
           document.getElementById('tab-chat').style.display = target === 'chat' ? 'flex' : 'none';
           document.getElementById('tab-guide').style.display = target === 'guide' ? 'block' : 'none';
+          const tokenTab = document.getElementById('tab-tokens');
+          if (tokenTab) {
+            tokenTab.style.display = target === 'tokens' ? 'block' : 'none';
+            if (target === 'tokens') {
+              // Update token dashboard when switching to it
+              window.cycleCAD?.tokens?.on?.('panel-opened', () => {});
+            }
+          }
         });
       });
     }
@@ -3119,6 +3235,55 @@
       }
     });
 
+    // ========== New Module Toolbar Buttons ==========
+    function toggleModulePanel(moduleKey, panelId) {
+      let panel = document.getElementById(panelId);
+      if (panel) {
+        panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+        return;
+      }
+      // Create floating panel
+      panel = document.createElement('div');
+      panel.id = panelId;
+      panel.style.cssText = 'position:fixed;top:60px;right:320px;width:400px;max-height:80vh;overflow-y:auto;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:8px;z-index:500;display:flex;flex-direction:column;box-shadow:var(--shadow-lg);';
+
+      const header = document.createElement('div');
+      header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border-color);background:var(--bg-tertiary);border-radius:8px 8px 0 0;cursor:move;';
+
+      const titles = {
+        'copilot-panel': '✨ AI Copilot',
+        'dfm-panel': '🏭 DFM Analyzer',
+        'materials-panel': '🎨 Material Library',
+        'cam-panel': '⚙ CAM Pipeline',
+        'fabs-panel': '🏗 Connected Fabs',
+        'collab-panel': '👥 Collaboration'
+      };
+      header.innerHTML = `<span style="font-weight:600;font-size:13px;">${titles[panelId] || moduleKey}</span><button onclick="document.getElementById('${panelId}').style.display='none'" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:16px;">✕</button>`;
+      panel.appendChild(header);
+
+      const body = document.createElement('div');
+      body.style.cssText = 'padding:14px;flex:1;min-height:0;overflow-y:auto;font-size:12px;';
+
+      const mod = window.cycleCAD?.[moduleKey];
+      if (mod?.getUI) {
+        body.innerHTML = mod.getUI();
+      } else if (mod?.getStatus) {
+        const status = mod.getStatus();
+        body.innerHTML = `<div style="color:var(--text-secondary);line-height:1.8;">${JSON.stringify(status, null, 2).replace(/\n/g, '<br>')}</div>`;
+      } else {
+        body.innerHTML = `<div style="color:var(--accent-green);padding:12px;text-align:center;"><p style="font-weight:600;margin-bottom:8px;">Module Loaded</p><p style="color:var(--text-secondary);">Access via console:<br><code style="background:var(--bg-tertiary);padding:2px 6px;border-radius:3px;">window.cycleCAD.${moduleKey}</code></p></div>`;
+      }
+      panel.appendChild(body);
+      document.body.appendChild(panel);
+    }
+
+    document.getElementById('btn-ai-copilot')?.addEventListener('click', () => toggleModulePanel('copilot', 'copilot-panel'));
+    document.getElementById('btn-dfm')?.addEventListener('click', () => toggleModulePanel('dfm', 'dfm-panel'));
+    document.getElementById('btn-materials')?.addEventListener('click', () => toggleModulePanel('materials', 'materials-panel'));
+    document.getElementById('btn-cam')?.addEventListener('click', () => toggleModulePanel('cam', 'cam-panel'));
+    document.getElementById('btn-fabs')?.addEventListener('click', () => toggleModulePanel('fabs', 'fabs-panel'));
+    document.getElementById('btn-collab')?.addEventListener('click', () => toggleModulePanel('collab', 'collab-panel'));
+
   </script>
 
   <!-- Operation Dialogs -->
@@ -3468,6 +3633,6 @@
     </div>
   </div>
 
-  <span id="version-badge" style="position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:70;font-size:0.85rem;color:rgba(255,255,255,0.7);letter-spacing:0.1em;white-space:nowrap;padding:5px 14px;user-select:all;pointer-events:auto;font-family:monospace;font-weight:600;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);border-radius:6px;text-shadow:0 1px 3px rgba(0,0,0,0.5);" title="cycleCAD version">cycleCAD v0.2.0</span>
+  <span id="version-badge" style="position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:70;font-size:0.85rem;color:rgba(255,255,255,0.7);letter-spacing:0.1em;white-space:nowrap;padding:5px 14px;user-select:all;pointer-events:auto;font-family:monospace;font-weight:600;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);border-radius:6px;text-shadow:0 1px 3px rgba(0,0,0,0.5);" title="cycleCAD version">cycleCAD v0.2.1</span>
 </body>
 </html>

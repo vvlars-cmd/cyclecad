@@ -6,8 +6,8 @@ SACHIN (vvlars@googlemail.com, GitHub: vvlars-cmd). Building cycleCAD — open-s
 ## Two Repos — CRITICAL DISTINCTION
 | Repo | Local Path | GitHub | npm | What |
 |------|-----------|--------|-----|------|
-| **ExplodeView** | `~/explodeview` | `vvlars-cmd/explodeview` | `explodeview` v1.0.5 | 3D CAD **viewer** for STEP files. 19,000+ line monolith app.js |
-| **cycleCAD** | `~/cyclecad` | `vvlars-cmd/cyclecad` | `cyclecad` v0.1.3 | Parametric 3D CAD **modeler**. 19 modular JS files, 18,800+ lines. This is the active project. |
+| **ExplodeView** | `~/explodeview` | `vvlars-cmd/explodeview` | `explodeview` v1.0.10+ | 3D CAD **viewer** for STEP files. 19,000+ line monolith app.js. Currently at v293. |
+| **cycleCAD** | `~/cyclecad` | `vvlars-cmd/cyclecad` | `cyclecad` v0.2.0 | Parametric 3D CAD **modeler**. 19 modular JS files, 18,800+ lines. This is the active project. |
 
 **IMPORTANT**: These are SEPARATE repos. When Sachin says "cyclecad" he means `~/cyclecad`, NOT `~/explodeview/docs/cyclecad/`. I made this mistake once and was corrected.
 
@@ -481,16 +481,177 @@ Created ExplodeView merge PoC:
 
 **Version badge:** Larger and more readable (0.85rem, bold, border, text-shadow). Bumped to v0.2.0.
 
+## Session 2026-03-25 (Night) — Pricing Update + ExplodeView STEP Debug
+
+**What was done for cycleCAD:**
+- Updated investor deck pricing: `$588/yr` → `€588/yr` (Pro), `$48K/yr` → `€3,588/yr` (Enterprise)
+- Updated deck subtitle to reference Pro €49/mo + Enterprise €299/mo
+- Landing page already had 3-tier pricing section from earlier session
+- Committed: "Update pricing to Stripe rates: Pro €49/mo, Enterprise €299/mo"
+
+**ExplodeView STEP import debug (cross-reference):**
+- ExplodeView v290→v293: debugging opencascade.js integration for large STEP files
+- v293 currently being tested with 138MB file
+- See ExplodeView CLAUDE.md for full debug timeline
+- Key lesson: `opencascade.full.js` exports factory as `window.Module`, not `opencascade()`
+
+**Git workflow lesson:**
+VM commits create stale lock files. Always give user ONE combined command:
+```bash
+rm -f ~/[repo]/.git/HEAD.lock ~/[repo]/.git/index.lock && cd ~/[repo] && git add [files] && git commit -m "msg" && git push origin main
+```
+
+## Session 2026-03-26 — Architecture Decks + Full Feature Build + Test Agents
+
+### Problem Evolution
+1. User asked "create teh architecture" → Built 14-slide architecture deck (dark ocean theme)
+2. User asked about Claude token model → Researched Claude API billing (BPE, input/output pricing, prompt caching, batch) and mapped to $CYCLE token economy
+3. User asked to update both decks with Claude-inspired token model → Updated architecture slide 8 + investor slide 7
+4. User asked "make architecture in same style as investor deck" → Rewrote entire architecture deck from dark ocean theme to light investor theme (white bg, Georgia/Calibri, rounded cards, colored badges)
+5. User said "start working on the features we mentioned in the architecture slides — start multiple agents" → Launched 6 parallel agents to build MCP server, CLI tool, REST API, token engine, marketplace, and fix ExplodeView UI
+6. User asked to "build all features and create a test agent that will click every part on the interface" → Built two visual test agent pages (ExplodeView + cycleCAD) with live Chrome visualization
+
+### Architecture Deck (Light Theme — matches Investor Deck)
+**File:** `cycleCAD-Architecture.pptx` (14 slides)
+**Builder:** `/sessions/sharp-modest-allen/build-arch-deck.js`
+**Style:** White bg, Georgia headers, Calibri body, sky-blue accent (#0284C7), rounded cards with colored borders
+
+| Slide | Title | Content |
+|-------|-------|---------|
+| 1 | Title (dark) | cycleCAD System Architecture + 4 stat cards |
+| 2 | High-Level Architecture | 3 layers (Users & Agents → Platform Core → Infrastructure) |
+| 3 | Agent-First Architecture | Human ↔ Agent API ↔ AI Swarms + Integration Layer |
+| 4 | Module Map | 20 tiles in 4×5 color-coded grid (ENGINE/DATA/I-O/AI/PLATFORM) |
+| 5 | 3D CAD Engine | Geometry Pipeline + Rendering Stack |
+| 6 | Agent API — 10 Namespaces | Table with 55 commands |
+| 7 | Integration Layer | MCP Server, CLI Tool, REST API, WebSocket, Webhooks |
+| 8 | $CYCLE Token Engine | Claude vs cycleCAD comparison + per-operation costs + ledger |
+| 9 | Model Marketplace | 5-stage flow + revenue split + agent economy |
+| 10 | CAD → CAM → Connected Fabs | 4-stage pipeline + fab network + tokenized manufacturing |
+| 11 | AI Integration — 3-Tier | Cloud LLM / Local AI / Offline Fallback |
+| 12 | Docker Infrastructure | 3 services + 4 deployment options |
+| 13 | Data Flow & State | Globals + data flow + persistence |
+| 14 | Technology Roadmap | NOW / NEXT / FUTURE columns |
+
+### Investor Deck Updates
+**File:** `cycleCAD-Investor-Deck.pptx` (17 slides)
+**Builder:** `/sessions/sharp-modest-allen/build-pitch-v2.js`
+- Slide 7 ($CYCLE Token Economy) rewritten with Claude API comparison
+- "HOW IT WORKS (LIKE CLAUDE)" vs "WHAT CLAUDE DOESN'T HAVE" comparison cards
+- Compact 4-step token flow (BUY → SPEND → EARN → CASH OUT)
+
+### 6 New Modules Built (6,245 lines total)
+
+| File | Lines | What |
+|------|-------|------|
+| `server/mcp-server.js` | 1,161 | **MCP Server** — 55+ tools exposed as MCP, JSON-RPC over stdio, WebSocket + HTTP transport |
+| `server/api-server.js` | 1,120 | **REST API** — Express-style HTTP server, 10 endpoints, WebSocket, rate limiting, CORS |
+| `bin/cyclecad-cli.js` | 662 | **CLI Tool** — Interactive REPL + batch mode, colored output, tab completion, `cyclecad shape.cylinder --radius 25` |
+| `bin/cyclecad-mcp` | 56 | MCP server launcher shim |
+| `app/js/token-engine.js` | 743 | **Token Engine** — Per-op billing, double-entry ledger, 3 tiers (FREE/PRO/ENTERPRISE), cache discounts (10% for 24h repeat), batch discounts (25%-50%), escrow for fab jobs, Stripe + crypto placeholders |
+| `app/js/token-dashboard.js` | 563 | **Token Dashboard UI** — Balance card, purchase dialog, history modal, CSV export, real-time event updates |
+| `app/js/marketplace.js` | 1,994 | **Marketplace** — Publish, search, purchase models, reviews, 7 access tiers, 8 demo models, 6-tab UI panel, creator dashboard |
+
+### Visual Test Agents (2,981 lines total)
+
+| File | Lines | What |
+|------|-------|------|
+| `docs/demo/test-agent.html` (ExplodeView) | 1,234 | 14 categories, 100+ tests: toolbar tabs, all buttons, panels, keyboard shortcuts, context menu, dragging, part selection, language |
+| `app/test-agent.html` (cycleCAD) | 1,747 | 15 categories, 113 tests: splash, sketch tools, 3D ops, advanced ops, sheet metal, panels, shortcuts, views, Agent API, token engine, marketplace, import/export, dialogs, status bar |
+
+**Test agent features:**
+- Split-screen: app iframe (left) + test log panel (right)
+- Live visualization — green flashes on elements being clicked
+- Run All or individual categories
+- Pass/Fail/Skip with color coding
+- Progress bar + elapsed time
+- Export results as JSON
+- 5-second timeout per test
+
+### ExplodeView Fixes (v297)
+- Sidebar scroll fixed (added to wheel exception list)
+- Top bar made draggable
+- Cache bust bumped to v=297
+
+### Claude Token Model Research
+| Claude Feature | $CYCLE Equivalent |
+|---------------|-------------------|
+| BPE tokenization | Per-operation pricing (50-1000 tokens) |
+| Input/output pricing | Spend tokens (buyer) + earn tokens (creator) |
+| Tiered by model (Haiku→Opus) | Tiered by access (FREE→PRO→ENTERPRISE) |
+| Prompt caching (10% cost) | Cached model access (10% for 24h repeat) |
+| Batch API (50% discount) | Batch scan (25-50% discount) |
+| `{ input_tokens, output_tokens, cost }` | `{ tokens_spent, tokens_earned, balance }` |
+| **One-way (spend only)** | **Two-way (spend AND earn)** |
+| No creator royalties | 70-90% creator royalties |
+| No crypto | USDC/ETH for agents without banks |
+
+### Git Status
+- cycleCAD: All 6 new files committed and pushed to main (29ba26f)
+- ExplodeView: v297 committed and pushed to main (95a996e)
+- Test agent pages: need commit and push
+
+### Key Files Modified/Created This Session
+| File | Action | Repo |
+|------|--------|------|
+| `server/mcp-server.js` | NEW | cyclecad |
+| `server/api-server.js` | NEW | cyclecad |
+| `bin/cyclecad-cli.js` | NEW | cyclecad |
+| `bin/cyclecad-mcp` | NEW | cyclecad |
+| `app/js/token-engine.js` | NEW | cyclecad |
+| `app/js/token-dashboard.js` | NEW | cyclecad |
+| `app/js/marketplace.js` | NEW | cyclecad |
+| `app/test-agent.html` | NEW | cyclecad |
+| `cycleCAD-Architecture.pptx` | REBUILT | cyclecad |
+| `cycleCAD-Investor-Deck.pptx` | UPDATED | cyclecad |
+| `docs/demo/test-agent.html` | NEW | explodeview |
+| `docs/demo/app.js` | MODIFIED (sidebar scroll, drag toolbar) | explodeview |
+| `docs/demo/index.html` | MODIFIED (v=297) | explodeview |
+
+## Key Files (Updated)
+| File | Lines | What |
+|------|-------|------|
+| `server/mcp-server.js` | 1,161 | MCP Server — 55+ commands as MCP tools |
+| `server/api-server.js` | 1,120 | REST API — HTTP + WebSocket endpoints |
+| `server/converter.py` | 500+ | FastAPI STEP→GLB server |
+| `bin/cyclecad-cli.js` | 662 | CLI tool — REPL + batch mode |
+| `app/js/token-engine.js` | 743 | $CYCLE Token Engine |
+| `app/js/token-dashboard.js` | 563 | Token Dashboard UI |
+| `app/js/marketplace.js` | 1,994 | Model Marketplace |
+| `app/js/agent-api.js` | 1,180 | Agent API — 55 commands, 10 namespaces |
+| `app/test-agent.html` | 1,747 | Visual test agent |
+| `cycleCAD-Architecture.pptx` | 14 slides | System architecture (light theme) |
+| `cycleCAD-Investor-Deck.pptx` | 17 slides | Investor pitch deck (light theme) |
+
 ## Near-term Tasks
-- [ ] Push ExplodeView v282 and test STEP import with large files
-- [ ] Fix ExplodeView UI: home button, grid, sidebar scroll, top bar
-- [ ] Improve agent-demo.html — more commands, better UI, voice improvements
-- [ ] Wire agent-api.js to real cycleCAD modules
-- [ ] Build new agent features (design review, multi-agent, NL CAD editing)
-- [ ] Test live site at cyclecad.com/app/ and cyclecad.com/app/mobile.html
-- [ ] Start OpenCascade.js WASM integration (blocking STEP import goal)
-- [ ] Create viewer-mode.html standalone demo (ExplodeView merge preview)
+- [x] Update investor deck pricing (€49/€299)
+- [x] Update landing page pricing section
+- [x] Push ExplodeView v290-v293 (STEP import fixes)
+- [x] Fix ExplodeView UI: sidebar scroll, top bar
+- [x] Build MCP server, REST API, CLI tool
+- [x] Build token engine + marketplace
+- [x] Build visual test agents for both apps
+- [x] Create architecture deck in investor deck style
+- [x] Update decks with Claude-inspired token model
+- [ ] Commit and push test-agent.html files
+- [ ] npm publish both packages (explodeview v1.0.11, cyclecad v0.2.1)
+- [ ] Wire token-engine.js and marketplace.js into app/index.html
+- [ ] Run test agents in Chrome and fix any failures
+- [ ] Verify ExplodeView STEP import works with 138MB file
+- [ ] Test live sites at cyclecad.com/app/ and explodeview.com
 - [ ] Polish LinkedIn post and publish
+- [ ] Create viewer-mode.html standalone demo
+
+## Collaboration Patterns (Updated)
+| Pattern | Detail |
+|---------|--------|
+| Lock file dance | VM commits → lock appears → user deletes lock → user pushes. Give ONE combined command. |
+| Parallel agents | User says "start multiple agents" → launch 5-6 agents for independent tasks simultaneously |
+| Fast iteration | User prefers action over questions. Build first, show results. |
+| Architecture style match | User expects visual consistency across decks — same palette, fonts, card styles |
+| Test-driven | User wants visual proof that features work — live test agent in Chrome, not just console logs |
+| Gone for hours | User leaves for hours expecting autonomous work. Build everything, commit, provide push commands. |
+| Short confirmations | "ok", "i did", terminal output pasted = confirmation that git commands were run |
 
 # currentDate
-Today's date is 2026-03-25.
+Today's date is 2026-03-26.

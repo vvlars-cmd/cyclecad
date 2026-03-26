@@ -1,0 +1,26 @@
+# Simple batch script for cycleCAD CLI
+# Run with: ./bin/cyclecad-cli.js --batch examples/batch-simple.txt
+
+# Create a cylinder
+shape.cylinder --radius 25 --height 80
+
+# Create a box
+shape.box --width 50 --height 40 --depth 30
+
+# Start a sketch
+sketch.start --plane XY
+
+# Add a circle to the sketch
+sketch.circle --cx 0 --cy 0 --radius 15
+
+# End the sketch
+sketch.end
+
+# Extrude the sketch
+feature.extrude --height 10
+
+# Check dimensions
+validate.dimensions --target extrude_1
+
+# Export to STL
+export.stl --filename my-part.stl

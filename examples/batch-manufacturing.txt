@@ -1,0 +1,28 @@
+# Manufacturing analysis workflow
+# Run with: ./bin/cyclecad-cli.js --batch examples/batch-manufacturing.txt
+
+# Create a bracket shape
+sketch.start --plane XY
+sketch.rect --x 0 --y 0 --width 80 --height 40
+sketch.end
+
+# Extrude to create a base
+feature.extrude --height 15
+
+# Add a fillet for manufacturing
+feature.fillet --radius 2 --edges all
+
+# Check if it's manufacturable
+validate.printability --target extrude_1 --process CNC
+
+# Estimate material cost
+validate.cost --target extrude_1 --process CNC --material aluminum
+
+# Estimate weight
+validate.mass --target extrude_1 --material aluminum
+
+# Design review
+validate.designReview --target extrude_1
+
+# Export for manufacturing
+export.stl --filename bracket-cad.stl --binary true

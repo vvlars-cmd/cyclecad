@@ -1,0 +1,564 @@
+{
+  "version": "1.0.0",
+  "name": "cycleCAD Model Marketplace API",
+  "description": "Token-based 3D model publishing, discovery, and purchase system",
+  "baseMethod": "window.cycleCAD.marketplace",
+  "endpoints": {
+    "publish": {
+      "method": "publish(modelData)",
+      "description": "Publish a new model to the marketplace",
+      "params": {
+        "name": {
+          "type": "string",
+          "required": true,
+          "description": "Model name (max 100 chars)"
+        },
+        "description": {
+          "type": "string",
+          "required": true,
+          "description": "Detailed description (max 1000 chars)"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["Mechanical", "Structural", "Enclosure", "Fastener", "Custom", "Template"],
+          "required": true,
+          "description": "Model category"
+        },
+        "tags": {
+          "type": "string[]",
+          "default": [],
+          "description": "Search tags (e.g., ['metal', 'precision', 'oem'])"
+        },
+        "tiers": {
+          "type": "tier[]",
+          "default": [{"id": 1, "name": "Free Preview", "price": 0}],
+          "description": "Access tiers offered by creator"
+        },
+        "sourceGeometry": {
+          "type": "THREE.BufferGeometry|null",
+          "optional": true,
+          "description": "Three.js geometry for preview generation"
+        },
+        "parametricData": {
+          "type": "object|null",
+          "optional": true,
+          "description": "JSON parametric data for parametric tier"
+        },
+        "metadata": {
+          "type": "object",
+          "optional": true,
+          "properties": {
+            "material": "string",
+            "weight": "number (kg)",
+            "color": "string",
+            "dimensions": {"x": "number", "y": "number", "z": "number"}
+          }
+        },
+        "derivedFromModelId": {
+          "type": "string|null",
+          "optional": true,
+          "description": "Parent model ID if derivative"
+        }
+      },
+      "response": {
+        "ok": "boolean",
+        "modelId": "string (UUID)",
+        "model": "object",
+        "error": "string (if not ok)"
+      },
+      "example": {
+        "request": "publish({name: 'M8 Bolt', description: 'Steel fastener', category: 'Fastener', tags: ['metric']})",
+        "response": "{ok: true, modelId: 'abc-123', model: {...}}"
+      }
+    },
+    "search": {
+      "method": "search(query, filters)",
+      "description": "Full-text search models with optional filtering",
+      "params": {
+        "query": {
+          "type": "string",
+          "required": true,
+          "description": "Search terms (searches name, desc, tags, creator)"
+        },
+        "filters": {
+          "type": "object",
+          "optional": true,
+          "properties": {
+            "category": {"type": "string", "description": "Filter by category"},
+            "priceMin": {"type": "number", "description": "Minimum token price"},
+            "priceMax": {"type": "number", "description": "Maximum token price"},
+            "minRating": {"type": "number", "min": 0, "max": 5, "description": "Minimum rating (0-5)"},
+            "page": {"type": "number", "default": 0, "description": "Page number (0-indexed)"},
+            "pageSize": {"type": "number", "default": 20, "description": "Results per page (1-100)"}
+          }
+        }
+      },
+      "response": {
+        "ok": "boolean",
+        "results": "model[]",
+        "total": "number",
+        "page": "number",
+        "pageSize": "number",
+        "hasMore": "boolean"
+      }
+    },
+    "browse": {
+      "method": "browse(category, options)",
+      "description": "Browse models by category with sorting",
+      "params": {
+        "category": {
+          "type": "string|null",
+          "description": "Category to filter (null = all)"
+        },
+        "options": {
+          "type": "object",
+          "optional": true,
+          "properties": {
+            "sort": {
+              "type": "string",
+              "enum": ["newest", "popular", "price-low", "price-high", "rating"],
+              "default": "newest"
+            },
+            "page": {"type": "number", "default": 0},
+            "pageSize": {"type": "number", "default": 20}
+          }
+        }
+      },
+      "response": {
+        "ok": "boolean",
+        "results": "model[]",
+        "category": "string|null",
+        "sort": "string",
+        "total": "number",
+        "hasMore": "boolean"
+      }
+    },
+    "getDetails": {
+      "method": "getDetails(modelId)",
+      "description": "Get full details of a model including preview and reviews",
+      "params": {
+        "modelId": {
+          "type": "string (UUID)",
+          "required": true,
+          "description": "Model ID to fetch"
+        }
+      },
+      "response": {
+        "ok": "boolean",
+        "model": "object (full model data with stats)",
+        "creator": "object (creator profile)",
+        "canEdit": "boolean (user owns model)",
+        "canDownload": "boolean (user purchased)",
+        "averageRating": "number (0-5)",
+        "reviewCount": "number"
+      }
+    },
+    "getCreatorProfile": {
+      "method": "getCreatorProfile(creatorId)",
+      "description": "Get public profile of any creator",
+      "params": {
+        "creatorId": {
+          "type": "string (UUID)",
+          "required": true
+        }
+      },
+      "response": {
+        "ok": "boolean",
+        "profile": {
+          "creatorId": "string",
+          "name": "string",
+          "modelCount": "number",
+          "totalDownloads": "number",
+          "totalViews": "number",
+          "averageRating": "number",
+          "earnings": "number (total tokens earned)",
+          "topModels": "model[] (top 5 by downloads)"
+        }
+      }
+    },
+    "purchase": {
+      "method": "purchase(modelId, tierId)",
+      "description": "Purchase access to a model at a specific tier",
+      "params": {
+        "modelId": {"type": "string (UUID)", "required": true},
+        "tierId": {
+          "type": "number",
+          "enum": [1, 2, 3, 4, 5, 6, 7],
+          "description": "Access tier ID (1=Free, 2=Mesh, 3=Parametric, 4=Full IP, 5=Commercial, 6=Derivative, 7=Agent)"
+        }
+      },
+      "response": {
+        "ok": "boolean",
+        "purchaseId": "string (UUID)",
+        "accessUrl": "string (download URL)",
+        "expiryDate": "ISO string (1 year from purchase)",
+        "error": "string (insufficient balance, etc.)"
+      }
+    },
+    "download": {
+      "method": "download(modelId, format)",
+      "description": "Download a purchased model in requested format",
+      "params": {
+        "modelId": {"type": "string (UUID)", "required": true},
+        "format": {
+          "type": "string",
+          "enum": ["stl", "obj", "gltf", "json", "step"],
+          "default": "stl",
+          "description": "Export format"
+        }
+      },
+      "response": {
+        "ok": "boolean",
+        "data": "ArrayBuffer|string (file content)",
+        "filename": "string",
+        "mimeType": "string",
+        "error": "string (must purchase first, etc.)"
+      }
+    },
+    "getPurchaseHistory": {
+      "method": "getPurchaseHistory()",
+      "description": "Get list of models purchased by current user",
+      "response": [
+        {
+          "id": "string (purchase ID)",
+          "modelId": "string",
+          "modelName": "string",
+          "creatorName": "string",
+          "tierId": "number",
+          "tierName": "string",
+          "price": "number (tokens paid)",
+          "purchaseDate": "ISO string",
+          "expiryDate": "ISO string",
+          "downloadedTimes": "number"
+        }
+      ]
+    },
+    "getCreatorStats": {
+      "method": "getCreatorStats(period)",
+      "description": "Get creator dashboard statistics for current user",
+      "params": {
+        "period": {
+          "type": "string",
+          "enum": ["all", "day", "week", "month"],
+          "default": "all"
+        }
+      },
+      "response": {
+        "ok": "boolean",
+        "stats": {
+          "totalEarnings": "number (tokens)",
+          "totalDownloads": "number",
+          "totalViews": "number",
+          "modelCount": "number",
+          "averageRating": "number (0-5)",
+          "topModel": "model (highest downloads)",
+          "period": "string"
+        }
+      }
+    },
+    "listMyModels": {
+      "method": "listMyModels()",
+      "description": "List all models published by current user",
+      "response": "model[]"
+    },
+    "updateModel": {
+      "method": "updateModel(modelId, updates)",
+      "description": "Update a model (creator only)",
+      "params": {
+        "modelId": {"type": "string (UUID)", "required": true},
+        "updates": {
+          "type": "object",
+          "properties": {
+            "name": "string",
+            "description": "string",
+            "tags": "string[]",
+            "tiers": "tier[]",
+            "metadata": "object"
+          }
+        }
+      },
+      "response": {
+        "ok": "boolean",
+        "model": "object (updated)",
+        "error": "string"
+      }
+    },
+    "deleteModel": {
+      "method": "deleteModel(modelId)",
+      "description": "Delete a model (creator only, no undo)",
+      "params": {
+        "modelId": {"type": "string (UUID)", "required": true}
+      },
+      "response": {
+        "ok": "boolean",
+        "error": "string"
+      }
+    },
+    "addReview": {
+      "method": "addReview(modelId, rating, comment)",
+      "description": "Leave a review on a purchased model",
+      "params": {
+        "modelId": {"type": "string (UUID)", "required": true},
+        "rating": {
+          "type": "number",
+          "min": 1,
+          "max": 5,
+          "required": true,
+          "description": "Star rating"
+        },
+        "comment": {
+          "type": "string",
+          "optional": true,
+          "default": "",
+          "description": "Review text (max 500 chars)"
+        }
+      },
+      "response": {
+        "ok": "boolean",
+        "review": {
+          "id": "string (review ID)",
+          "rating": "number",
+          "comment": "string",
+          "date": "ISO string",
+          "helpful": "number (helpful count)"
+        },
+        "error": "string (must purchase first)"
+      }
+    },
+    "getReviews": {
+      "method": "getReviews(modelId, page, pageSize)",
+      "description": "Get paginated reviews for a model",
+      "params": {
+        "modelId": {"type": "string (UUID)", "required": true},
+        "page": {"type": "number", "default": 0},
+        "pageSize": {"type": "number", "default": 10}
+      },
+      "response": {
+        "ok": "boolean",
+        "reviews": "review[]",
+        "total": "number",
+        "page": "number",
+        "pageSize": "number",
+        "hasMore": "boolean",
+        "averageRating": "number",
+        "reviewCount": "number"
+      }
+    },
+    "getEarningsBreakdown": {
+      "method": "getEarningsBreakdown(period)",
+      "description": "Get earnings broken down by date period",
+      "params": {
+        "period": {
+          "type": "string",
+          "enum": ["daily", "weekly", "monthly"],
+          "default": "daily"
+        }
+      },
+      "response": {
+        "ok": "boolean",
+        "breakdown": {
+          "2026-03-25": "number (tokens earned)",
+          "2026-03-26": "number",
+          "[dateKey]": "number"
+        },
+        "period": "string",
+        "total": "number (sum of all earnings)"
+      }
+    },
+    "withdrawEarnings": {
+      "method": "withdrawEarnings(amount, method)",
+      "description": "Request payout of earned tokens (Stripe/crypto placeholder)",
+      "params": {
+        "amount": {
+          "type": "number",
+          "required": true,
+          "description": "Tokens to withdraw"
+        },
+        "method": {
+          "type": "string",
+          "enum": ["stripe", "crypto"],
+          "default": "stripe"
+        }
+      },
+      "response": {
+        "ok": "boolean",
+        "withdrawalId": "string (UUID)",
+        "status": "string (pending|processing|completed)",
+        "message": "string (user-friendly message)",
+        "error": "string (insufficient earnings)"
+      }
+    },
+    "on": {
+      "method": "on(eventName, callback)",
+      "description": "Listen to marketplace events",
+      "params": {
+        "eventName": {
+          "type": "string",
+          "enum": [
+            "modelPublished",
+            "modelUpdated",
+            "modelDeleted",
+            "modelPurchased",
+            "modelDownloaded",
+            "reviewAdded",
+            "withdrawalRequested"
+          ]
+        },
+        "callback": {
+          "type": "function",
+          "description": "Event handler function"
+        }
+      }
+    },
+    "off": {
+      "method": "off(eventName, callback)",
+      "description": "Unsubscribe from marketplace events",
+      "params": {
+        "eventName": {"type": "string"},
+        "callback": {"type": "function"}
+      }
+    }
+  },
+  "dataTypes": {
+    "model": {
+      "id": "string (UUID)",
+      "creatorId": "string (UUID)",
+      "creatorName": "string",
+      "name": "string",
+      "description": "string",
+      "category": "string (6 categories)",
+      "tags": "string[]",
+      "tiers": "tier[]",
+      "previewImage": "string (data URL)",
+      "metadata": {
+        "dimensions": {"x": "number", "y": "number", "z": "number"},
+        "polyCount": "number",
+        "material": "string",
+        "weight": "number"
+      },
+      "stats": {
+        "views": "number",
+        "downloads": "number",
+        "purchases": "number",
+        "rating": "number (0-5 avg)",
+        "reviewCount": "number"
+      },
+      "reviews": "review[]",
+      "publishedDate": "ISO string",
+      "updatedDate": "ISO string"
+    },
+    "tier": {
+      "id": "number (1-7)",
+      "name": "string",
+      "price": "number (tokens) or null",
+      "description": "string"
+    },
+    "review": {
+      "id": "string (UUID)",
+      "userId": "string (UUID)",
+      "userName": "string",
+      "rating": "number (1-5)",
+      "comment": "string",
+      "date": "ISO string",
+      "helpful": "number"
+    },
+    "purchase": {
+      "id": "string (UUID)",
+      "userId": "string (UUID)",
+      "modelId": "string (UUID)",
+      "tierId": "number",
+      "tierName": "string",
+      "price": "number (tokens paid)",
+      "purchaseDate": "ISO string",
+      "expiryDate": "ISO string",
+      "downloadedTimes": "number"
+    }
+  },
+  "constants": {
+    "categories": [
+      "Mechanical",
+      "Structural",
+      "Enclosure",
+      "Fastener",
+      "Custom",
+      "Template"
+    ],
+    "tiers": {
+      "FREE_PREVIEW": {"id": 1, "price": 0},
+      "MESH_DOWNLOAD": {"id": 2, "price": 50},
+      "PARAMETRIC": {"id": 3, "price": 200},
+      "FULL_IP": {"id": 4, "price": 1000},
+      "COMMERCIAL_USE": {"id": 5, "price": 2000},
+      "DERIVATIVE": {"id": 6, "price": "15% of parent"},
+      "AGENT_ACCESS": {"id": 7, "price": 5}
+    },
+    "formats": ["stl", "obj", "gltf", "json", "step"]
+  },
+  "examples": {
+    "publishFromUI": "Click Marketplace → Publish tab → Fill form",
+    "searchViaAPI": "marketplace.search('bolt', { minRating: 4.5 })",
+    "agentPurchase": "await cycleCAD.execute({ method: 'marketplace.purchase', params: {...} })",
+    "eventListening": "marketplace.on('modelPurchased', (data) => { ... })",
+    "creatorDashboard": "marketplace.getCreatorStats('month')"
+  },
+  "limits": {
+    "maxNameLength": 100,
+    "maxDescriptionLength": 1000,
+    "maxCommentLength": 500,
+    "maxModelsPerCreator": "unlimited",
+    "previewImageSize": "512x512 px",
+    "modelStorageLimit": "localStorage 50KB per 20 models (IndexedDB in Phase 2)"
+  },
+  "roadmap": {
+    "phase1": {
+      "status": "✅ COMPLETE",
+      "features": [
+        "Model publishing & discovery",
+        "Token-based purchasing",
+        "Creator dashboard",
+        "Review system",
+        "UI panel with 6 tabs"
+      ]
+    },
+    "phase2": {
+      "status": "Q2 2026",
+      "features": [
+        "Real file uploads (S3/CloudFlare R2)",
+        "Stripe payment gateway",
+        "Advanced search (Elasticsearch)",
+        "Creator reputation system",
+        "Model versioning"
+      ]
+    },
+    "phase3": {
+      "status": "Q3 2026",
+      "features": [
+        "Model licensing (CC0, CC-BY, proprietary)",
+        "Collaboration (co-creators, revenue split)",
+        "Marketplace curation",
+        "AI-generated descriptions",
+        "Model comparison"
+      ]
+    },
+    "phase4": {
+      "status": "Q4 2026",
+      "features": [
+        "Enterprise marketplace (SSO)",
+        "Private team libraries",
+        "Analytics dashboard",
+        "Quality checks (automated)",
+        "Platform integrations (MecAgent, etc.)"
+      ]
+    }
+  },
+  "authentication": {
+    "method": "In-browser (localStorage)",
+    "phase2": "OAuth2 with GitHub/Google",
+    "phase3": "Enterprise SSO (SAML)"
+  },
+  "storageBackend": {
+    "current": "localStorage (demo, 50KB limit)",
+    "phase2": "IndexedDB + backend API (100MB+)",
+    "production": "AWS S3 + PostgreSQL ledger"
+  }
+}

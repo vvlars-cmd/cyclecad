@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Model Marketplace - Setup Guide</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+      color: #333;
+    }
+    h1, h2 { color: #2c3e50; }
+    code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+    pre {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 15px;
+      border-radius: 5px;
+      overflow-x: auto;
+      font-size: 13px;
+    }
+    .warning {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 12px;
+      margin: 15px 0;
+    }
+    .success {
+      background: #d4edda;
+      border-left: 4px solid #28a745;
+      padding: 12px;
+      margin: 15px 0;
+    }
+    .section {
+      background: white;
+      padding: 20px;
+      margin: 15px 0;
+      border-radius: 5px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+    }
+    th {
+      background: #f8f9fa;
+      font-weight: bold;
+    }
+    .api-method {
+      background: #f9f9f9;
+      border-left: 3px solid #58a6ff;
+      padding: 12px;
+      margin: 10px 0;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🛍️ Model Marketplace - Quick Setup</h1>
+
+<p>Complete integration guide for cycleCAD Model Marketplace module.</p>
+
+<div class="section">
+  <h2>Step 1: Import the Module</h2>
+  <p>In <code>app/index.html</code>, add this script tag in the <code>&lt;head&gt;</code>:</p>
+  <pre>&lt;script type="module"&gt;
+  import { initMarketplace } from './js/marketplace.js';
+
+  // In your module initialization section:
+  // After all other modules (viewport, sketch, operations, etc.) are ready
+
+  window.addEventListener('DOMContentLoaded', async () => {
+    // ... existing module initializations ...
+
+    // Initialize marketplace
+    const mpResult = initMarketplace({
+      viewport: _viewport,           // THREE.js viewport
+      tokenEngine: _tokenEngine      // Optional: token engine instance
+    });
+
+    console.log('[APP] Marketplace initialized:', mpResult);
+  });
+&lt;/script&gt;</pre>
+
+  <div class="success">
+    ✅ The module auto-creates:<br/>
+    • A toolbar button "🛍️ Marketplace"<br/>
+    • A fixed-position panel on the right side<br/>
+    • All UI styles
+  </div>
+</div>
+
+<div class="section">
+  <h2>Step 2: Access the API</h2>
+  <p>The marketplace is exposed globally as:</p>
+  <pre>window.cycleCAD.marketplace</pre>
+
+  <p>Try it in the browser console:</p>
+  <pre>// Search for models
+window.cycleCAD.marketplace.search('bolt')
+
+// Get creator stats
+window.cycleCAD.marketplace.getCreatorStats()
+
+// Browse mechanical models
+window.cycleCAD.marketplace.browse('Mechanical', { sort: 'popular' })</pre>
+</div>
+
+<div class="section">
+  <h2>Step 3: Publish Your First Model</h2>
+
+  <h3>Method A: Via UI</h3>
+  <ol>
+    <li>Click "🛍️ Marketplace" button in toolbar</li>
+    <li>Click "Publish" tab</li>
+    <li>Fill out the form with model details</li>
+    <li>Click "Publish Model"</li>
+  </ol>
+
+  <h3>Method B: Via API</h3>
+  <pre>// From browser console or agent code
+const result = window.cycleCAD.marketplace.publish({
+  name: 'My Awesome Part',
+  description: 'A high-quality mechanical component',
+  category: 'Mechanical',  // Must be one of the 6 categories
+  tags: ['metal', 'precision', 'oem'],
+  tiers: [
+    { id: 2, name: 'Mesh Download', price: 50 }
+  ],
+  sourceGeometry: geometry,      // THREE.BufferGeometry (optional)
+  parametricData: paramJson,     // JSON (optional)
+  metadata: {
+    material: 'aluminum',
+    weight: 0.25,
+    dimensions: { x: 50, y: 40, z: 30 }
+  }
+});
+
+console.log('Published!', result.modelId);</pre>
+</div>
+
+<div class="section">
+  <h2>Step 4: Integrate with Agent API</h2>
+
+  <p>The marketplace is already integrated with <code>window.cycleCAD</code> agent commands:</p>
+
+  <pre>// Agent publishes a model
+await window.cycleCAD.execute({
+  method: 'marketplace.publish',
+  params: {
+    name: 'AI-Generated Bracket',
+    description: 'Auto-generated support structure',
+    category: 'Structural',
+    tags: ['ai', 'generated']
+  }
+});
+
+// Agent searches for parts
+await window.cycleCAD.execute({
+  method: 'marketplace.search',
+  params: { query: 'bolt', minRating: 4.0 }
+});
+
+// Agent purchases a model
+await window.cycleCAD.execute({
+  method: 'marketplace.purchase',
+  params: { modelId: 'abc-123', tierId: 3 }
+});</pre>
+</div>
+
+<div class="section">
+  <h2>Complete API Reference</h2>
+
+  <table>
+    <tr>
+      <th>Function</th>
+      <th>Returns</th>
+      <th>Description</th>
+    </tr>
+    <tr>
+      <td><code>publish(modelData)</code></td>
+      <td><code>{ ok, modelId, model }</code></td>
+      <td>Publish a new model to marketplace</td>
+    </tr>
+    <tr>
+      <td><code>search(query, filters)</code></td>
+      <td><code>{ ok, results[], total, page, hasMore }</code></td>
+      <td>Full-text search with optional filters</td>
+    </tr>
+    <tr>
+      <td><code>browse(category, opts)</code></td>
+      <td><code>{ ok, results[], total, page, hasMore }</code></td>
+      <td>Browse by category with sorting</td>
+    </tr>
+    <tr>
+      <td><code>getDetails(modelId)</code></td>
+      <td><code>{ ok, model, creator, canDownload }</code></td>
+      <td>Get full model details + preview</td>
+    </tr>
+    <tr>
+      <td><code>purchase(modelId, tierId)</code></td>
+      <td><code>{ ok, purchaseId, accessUrl, expiryDate }</code></td>
+      <td>Purchase model at tier</td>
+    </tr>
+    <tr>
+      <td><code>download(modelId, format)</code></td>
+      <td><code>{ ok, data, filename, mimeType }</code></td>
+      <td>Download purchased model</td>
+    </tr>
+    <tr>
+      <td><code>getPurchaseHistory()</code></td>
+      <td><code>[ purchase[], ... ]</code></td>
+      <td>Get user's purchased models</td>
+    </tr>
+    <tr>
+      <td><code>getCreatorStats(period)</code></td>
+      <td><code>{ ok, stats: { earnings, downloads, avgRating, ... } }</code></td>
+      <td>Get creator dashboard stats</td>
+    </tr>
+    <tr>
+      <td><code>getCreatorProfile(creatorId)</code></td>
+      <td><code>{ ok, profile }</code></td>
+      <td>Get any creator's public profile</td>
+    </tr>
+    <tr>
+      <td><code>listMyModels()</code></td>
+      <td><code>[ model[], ... ]</code></td>
+      <td>List all models published by current user</td>
+    </tr>
+    <tr>
+      <td><code>updateModel(modelId, updates)</code></td>
+      <td><code>{ ok, model }</code></td>
+      <td>Update model (creator only)</td>
+    </tr>
+    <tr>
+      <td><code>deleteModel(modelId)</code></td>
+      <td><code>{ ok }</code></td>
+      <td>Delete model (creator only)</td>
+    </tr>
+    <tr>
+      <td><code>addReview(modelId, rating, comment)</code></td>
+      <td><code>{ ok, review }</code></td>
+      <td>Leave review on purchased model</td>
+    </tr>
+    <tr>
+      <td><code>getReviews(modelId, page, pageSize)</code></td>
+      <td><code>{ ok, reviews[], total, hasMore }</code></td>
+      <td>Get paginated reviews</td>
+    </tr>
+    <tr>
+      <td><code>getEarningsBreakdown(period)</code></td>
+      <td><code>{ ok, breakdown, total }</code></td>
+      <td>Get earnings by day/week/month</td>
+    </tr>
+    <tr>
+      <td><code>withdrawEarnings(amount, method)</code></td>
+      <td><code>{ ok, withdrawalId, status }</code></td>
+      <td>Request payout (Stripe/crypto placeholder)</td>
+    </tr>
+  </table>
+</div>
+
+<div class="section">
+  <h2>Model Categories (6 Options)</h2>
+  <pre>1. Mechanical    - Motors, bearings, shafts, couplings
+2. Structural    - Brackets, frames, supports
+3. Enclosure     - Boxes, cabinets, housings
+4. Fastener      - Bolts, screws, nuts, washers
+5. Custom        - Domain-specific, proprietary parts
+6. Template      - Parametric templates, configurable</pre>
+</div>
+
+<div class="section">
+  <h2>Access Tiers (7 Pricing Tiers)</h2>
+  <table>
+    <tr>
+      <th>Tier</th>
+      <th>ID</th>
+      <th>Price</th>
+      <th>What's Included</th>
+    </tr>
+    <tr>
+      <td>Free Preview</td>
+      <td>1</td>
+      <td>0 tokens</td>
+      <td>View preview only</td>
+    </tr>
+    <tr>
+      <td>Mesh Download</td>
+      <td>2</td>
+      <td>50 tokens</td>
+      <td>STL/OBJ exports</td>
+    </tr>
+    <tr>
+      <td>Parametric</td>
+      <td>3</td>
+      <td>200 tokens</td>
+      <td>JSON editable format</td>
+    </tr>
+    <tr>
+      <td>Full IP</td>
+      <td>4</td>
+      <td>1,000 tokens</td>
+      <td>STEP + source + history</td>
+    </tr>
+    <tr>
+      <td>Commercial Use</td>
+      <td>5</td>
+      <td>2,000 tokens</td>
+      <td>License for resale</td>
+    </tr>
+    <tr>
+      <td>Derivative</td>
+      <td>6</td>
+      <td>15% of parent</td>
+      <td>Fork & modify license</td>
+    </tr>
+    <tr>
+      <td>Agent Access</td>
+      <td>7</td>
+      <td>5 tokens/query</td>
+      <td>Programmatic API access</td>
+    </tr>
+  </table>
+</div>
+
+<div class="section">
+  <h2>Events API</h2>
+
+  <p>Listen to marketplace events:</p>
+
+  <pre>// Model published
+window.cycleCAD.marketplace.on('modelPublished', (data) => {
+  console.log(`Model "${data.modelName}" published as ${data.modelId}`);
+});
+
+// Model purchased
+window.cycleCAD.marketplace.on('modelPurchased', (data) => {
+  console.log(`Purchased ${data.modelId} tier ${data.tierId} for ${data.price} tokens`);
+});
+
+// Review added
+window.cycleCAD.marketplace.on('reviewAdded', (data) => {
+  console.log(`Review ${data.rating}★ on ${data.modelId}`);
+});
+
+// Model downloaded
+window.cycleCAD.marketplace.on('modelDownloaded', (data) => {
+  console.log(`Downloaded: ${data.filename}`);
+});
+
+// Earnings withdrawal requested
+window.cycleCAD.marketplace.on('withdrawalRequested', (data) => {
+  console.log(`${data.amount} tokens → ${data.method}`);
+});</pre>
+</div>
+
+<div class="section">
+  <h2>Common Use Cases</h2>
+
+  <h3>1. Creator Publishing a Model</h3>
+  <pre>// After designing a part in cycleCAD
+const { mesh, geometry } = getCurrentModel();
+
+window.cycleCAD.marketplace.publish({
+  name: 'Precision Shaft Adapter',
+  description: 'High-tolerance adapter for 12mm shafts',
+  category: 'Mechanical',
+  tags: ['shaft', 'adapter', 'precision', 'metal'],
+  sourceGeometry: geometry,
+  tiers: [
+    { id: 2, name: 'Mesh', price: 50 },
+    { id: 3, name: 'Parametric', price: 200 }
+  ]
+});</pre>
+
+  <h3>2. Engineer Finding a Fastener</h3>
+  <pre>// Search marketplace for specific bolt
+const results = window.cycleCAD.marketplace.search('M8 hex bolt', {
+  minRating: 4.5,
+  priceMax: 100
+});
+
+// Click result to view details
+results.results.forEach(model => {
+  console.log(`${model.name} - ${model.stats.rating}★ - ${model.tiers[0].price} tokens`);
+});</pre>
+
+  <h3>3. Purchasing & Using a Model</h3>
+  <pre>// Purchase a model
+const purchase = window.cycleCAD.marketplace.purchase(modelId, 3); // Tier 3 = Parametric
+
+// Download the model
+const download = window.cycleCAD.marketplace.download(modelId, 'json');
+
+// Import into current project
+loadCycleCADModel(download.data);</pre>
+
+  <h3>4. Creator Dashboard Workflow</h3>
+  <pre>// Get all my published models
+const myModels = window.cycleCAD.marketplace.listMyModels();
+
+// Check earnings
+const stats = window.cycleCAD.marketplace.getCreatorStats('all');
+console.log(`Total earnings: ${stats.stats.totalEarnings} tokens`);
+console.log(`Total downloads: ${stats.stats.totalDownloads}`);
+
+// Withdraw earnings
+window.cycleCAD.marketplace.withdrawEarnings(5000, 'stripe');</pre>
+
+  <h3>5. AI Agent Publishing & Selling Models</h3>
+  <pre>// Agent auto-generates design
+const design = await generateDesignFromPrompt('Lightweight bracket for drone');
+
+// Publish to marketplace
+const result = await window.cycleCAD.execute({
+  method: 'marketplace.publish',
+  params: {
+    name: 'AI-Generated Drone Bracket',
+    description: 'Lightweight, optimized for additive manufacturing',
+    category: 'Custom',
+    tags: ['ai', 'lightweight', 'drone', 'fdm'],
+    sourceGeometry: design.geometry,
+    tiers: [{ id: 3, price: 200 }]
+  }
+});
+
+// Agent can now earn tokens when others download!

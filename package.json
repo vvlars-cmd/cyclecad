@@ -32,7 +32,7 @@
     "cyclewash"
   ],
   "author": "vvlars <vvlars@googlemail.com>",
-  "license": "MIT",
+  "license": "BSL-1.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/vvlars-cmd/cyclecad.git"

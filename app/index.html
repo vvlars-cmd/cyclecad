@@ -1296,6 +1296,11 @@
   <script src="./js/stock-manager.js"></script>
   <script src="./js/sketch-enhance.js"></script>
   <script src="./js/section-view.js"></script>
+  <!-- Marketplace V2 + GD&T + MISUMI + VR modules (IIFE, no imports) -->
+  <script src="./js/marketplace-v2.js"></script>
+  <script src="./js/gdt-training.js"></script>
+  <script src="./js/misumi-catalog.js"></script>
+  <script src="./js/cad-vr.js"></script>
 </head>
 <body>
   <div id="app">
@@ -1532,6 +1537,26 @@
         <button class="toolbar-button" id="btn-section" title="Section View — Cut Planes (X)" style="background:rgba(220,38,38,0.1);border:1px solid rgba(220,38,38,0.3);">
           <span class="toolbar-icon">🔪</span>
           <span class="toolbar-label">Section</span>
+        </button>
+      </div>
+
+      <!-- Marketplace V2 + GD&T + MISUMI + VR -->
+      <div class="toolbar-group">
+        <button class="toolbar-button" id="btn-marketplace-v2" title="Model Marketplace (GrabCAD-style)" style="background:rgba(63,185,80,0.1);border:1px solid rgba(63,185,80,0.3);">
+          <span class="toolbar-icon">🏪</span>
+          <span class="toolbar-label">Market</span>
+        </button>
+        <button class="toolbar-button" id="btn-gdt" title="GD&T Training & Reference" style="background:rgba(210,153,34,0.1);border:1px solid rgba(210,153,34,0.3);">
+          <span class="toolbar-icon">📐</span>
+          <span class="toolbar-label">GD&T</span>
+        </button>
+        <button class="toolbar-button" id="btn-misumi" title="MISUMI Component Catalog" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);">
+          <span class="toolbar-icon">🔩</span>
+          <span class="toolbar-label">MISUMI</span>
+        </button>
+        <button class="toolbar-button" id="btn-vr" title="CAD2VR — View in Virtual Reality" style="background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);">
+          <span class="toolbar-icon">🥽</span>
+          <span class="toolbar-label">VR</span>
         </button>
       </div>
 
@@ -3316,7 +3341,11 @@
         'tools-panel': '🔩 Tool Library',
         'stock-panel': '📦 Stock Manager',
         'sketch-enhance-panel': '✏ Sketch Tools+',
-        'section-panel': '🔪 Section View'
+        'section-panel': '🔪 Section View',
+        'marketplace-v2-panel': '🏪 Model Marketplace',
+        'gdt-panel': '📐 GD&T Training',
+        'misumi-panel': '🔩 MISUMI Catalog',
+        'vr-panel': '🥽 CAD2VR'
       };
       header.innerHTML = `<span style="font-weight:600;font-size:13px;">${titles[panelId] || moduleKey}</span><button onclick="document.getElementById('${panelId}').style.display='none'" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:16px;">✕</button>`;
       panel.appendChild(header);
@@ -3351,6 +3380,10 @@
     document.getElementById('btn-stock')?.addEventListener('click', () => toggleModulePanel('stock', 'stock-panel'));
     document.getElementById('btn-sketch-enhance')?.addEventListener('click', () => toggleModulePanel('sketchEnhance', 'sketch-enhance-panel'));
     document.getElementById('btn-section')?.addEventListener('click', () => toggleModulePanel('sectionView', 'section-panel'));
+    document.getElementById('btn-marketplace-v2')?.addEventListener('click', () => toggleModulePanel('marketplaceV2', 'marketplace-v2-panel'));
+    document.getElementById('btn-gdt')?.addEventListener('click', () => toggleModulePanel('gdtTraining', 'gdt-panel'));
+    document.getElementById('btn-misumi')?.addEventListener('click', () => toggleModulePanel('misumi', 'misumi-panel'));
+    document.getElementById('btn-vr')?.addEventListener('click', () => toggleModulePanel('cadVR', 'vr-panel'));
 
     // ========== Help & Tutorials Panel ==========
     document.getElementById('btn-help')?.addEventListener('click', () => {
@@ -3430,7 +3463,8 @@
         { cat: 'CAM', items: ['CAM Operations (8 types)', 'G-Code Generator', 'Machine Profiles (15+)', 'Tool Library (30+ tools)', 'Stock Manager', 'Connected Fabs'] },
         { cat: 'Analysis', items: ['Section View', 'Material Library', 'Weight Estimator', 'Part Comparison', 'Clearance Checker'] },
         { cat: 'Import/Export', items: ['STL (ASCII + binary)', 'OBJ', 'glTF 2.0', 'DXF (2D + 3D)', 'cycleCAD JSON', 'Inventor .ipt/.iam', 'STEP (via server)'] },
-        { cat: 'Platform', items: ['Agent API (55 commands)', 'MCP Server', 'REST API', 'CLI Tool', '$CYCLE Token Engine', 'Model Marketplace', 'Collaboration'] },
+        { cat: 'Platform', items: ['Agent API (55 commands)', 'MCP Server', 'REST API', 'CLI Tool', '$CYCLE Token Engine', 'Model Marketplace V2 (GrabCAD-style)', 'Collaboration', 'CAD2VR (WebXR)'] },
+        { cat: 'Reference', items: ['GD&T Training (14 symbols, 50 quiz questions)', 'MISUMI Component Catalog (80+ parts)', 'McMaster-Carr Integration', 'FCF Builder', 'Tolerance Calculator'] },
         { cat: 'Utilities', items: ['Keyboard Shortcuts (25+)', 'Dark Theme', 'Performance Monitor', 'Grid Floor', 'Wireframe Toggle'] }
       ];
       const fl = document.getElementById('help-feature-list');
@@ -3804,6 +3838,6 @@
     </div>
   </div>
 
-  <span id="version-badge" style="position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:70;font-size:0.85rem;color:rgba(255,255,255,0.7);letter-spacing:0.1em;white-space:nowrap;padding:5px 14px;user-select:all;pointer-events:auto;font-family:monospace;font-weight:600;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);border-radius:6px;text-shadow:0 1px 3px rgba(0,0,0,0.5);" title="cycleCAD version">cycleCAD v0.3.1</span>
+  <span id="version-badge" style="position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:70;font-size:0.85rem;color:rgba(255,255,255,0.7);letter-spacing:0.1em;white-space:nowrap;padding:5px 14px;user-select:all;pointer-events:auto;font-family:monospace;font-weight:600;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);border-radius:6px;text-shadow:0 1px 3px rgba(0,0,0,0.5);" title="cycleCAD version">cycleCAD v0.4.0</span>
 </body>
 </html>

@@ -174,7 +174,7 @@ function updateTokenDashboard() {
           <div style="color: var(--text-muted); margin-top: 2px;">${new Date(t.timestamp).toLocaleDateString()}</div>
         </div>
         <div style="text-align: right; font-weight: 500;">
-          <div style="color: ${t.type === 'debit' ? 'var(--accent-red)' : 'var(--accent-green)';};">
+          <div style="color: ${t.type === 'debit' ? 'var(--accent-red)' : 'var(--accent-green)'};">
             ${t.type === 'debit' ? '-' : '+'}${t.amount}
           </div>
           <div style="color: var(--text-secondary); margin-top: 2px;">Balance: ${formatNumber(t.balance_after)}</div>

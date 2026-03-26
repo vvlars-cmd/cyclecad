@@ -93,7 +93,7 @@ export function initAgentAPI({ viewport, sketch, operations, advancedOps, export
 /**
  * Get module references (for debugging)
  */
-export function getModules() {
+function getModules() {
   return {
     viewport: _viewport,
     sketch: _sketch,

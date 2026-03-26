@@ -1287,6 +1287,15 @@
   <script type="module" src="./js/ai-copilot.js"></script>
   <script type="module" src="./js/collaboration.js"></script>
   <script type="module" src="./js/collaboration-ui.js"></script>
+  <!-- CadXStudio-killer modules (IIFE, no imports) -->
+  <script src="./js/text-to-cad.js"></script>
+  <script src="./js/cam-operations.js"></script>
+  <script src="./js/gcode-generator.js"></script>
+  <script src="./js/machine-profiles.js"></script>
+  <script src="./js/tool-library.js"></script>
+  <script src="./js/stock-manager.js"></script>
+  <script src="./js/sketch-enhance.js"></script>
+  <script src="./js/section-view.js"></script>
 </head>
 <body>
   <div id="app">
@@ -1490,12 +1499,55 @@
           <span class="toolbar-label">Collab</span>
         </button>
       </div>
+      <!-- CadXStudio-Killer Features -->
+      <div class="toolbar-group">
+        <button class="toolbar-button" id="btn-text2cad" title="Text-to-CAD — Natural Language 3D Modeling" style="background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);">
+          <span class="toolbar-icon">💬</span>
+          <span class="toolbar-label">Text2CAD</span>
+        </button>
+        <button class="toolbar-button" id="btn-camops" title="CAM Operations — Outline, Rough, Pocket, Drill" style="background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.3);">
+          <span class="toolbar-icon">🔧</span>
+          <span class="toolbar-label">CAM Ops</span>
+        </button>
+        <button class="toolbar-button" id="btn-gcode" title="G-Code Generator — CNC, FDM, Laser" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);">
+          <span class="toolbar-icon">📄</span>
+          <span class="toolbar-label">G-Code</span>
+        </button>
+        <button class="toolbar-button" id="btn-machines" title="Machine Profiles — 15+ CNC/FDM/Laser Presets" style="background:rgba(107,114,128,0.1);border:1px solid rgba(107,114,128,0.3);">
+          <span class="toolbar-icon">🖥</span>
+          <span class="toolbar-label">Machines</span>
+        </button>
+        <button class="toolbar-button" id="btn-tools" title="Tool Library — 30+ End Mills, Drills, V-Bits" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);">
+          <span class="toolbar-icon">🔩</span>
+          <span class="toolbar-label">Tools</span>
+        </button>
+        <button class="toolbar-button" id="btn-stock" title="Stock Manager — Workpiece Definition" style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);">
+          <span class="toolbar-icon">📦</span>
+          <span class="toolbar-label">Stock</span>
+        </button>
+        <button class="toolbar-button" id="btn-sketch-enhance" title="Sketch Tools+ — Spline, Polygon, Text, Trim, Offset" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);">
+          <span class="toolbar-icon">✏</span>
+          <span class="toolbar-label">Sketch+</span>
+        </button>
+        <button class="toolbar-button" id="btn-section" title="Section View — Cut Planes (X)" style="background:rgba(220,38,38,0.1);border:1px solid rgba(220,38,38,0.3);">
+          <span class="toolbar-icon">🔪</span>
+          <span class="toolbar-label">Section</span>
+        </button>
+      </div>
 
       <!-- Agent API Panel -->
       <div class="toolbar-group">
         <button class="toolbar-button" id="btn-agent-panel" title="Agent Command Panel (Test API)">
           <span class="toolbar-icon">🤖</span>
           <span class="toolbar-label">Agent</span>
+        </button>
+      </div>
+
+      <!-- Help & Tutorials -->
+      <div class="toolbar-group">
+        <button class="toolbar-button" id="btn-help" title="Help & Tutorials (?)" style="background:rgba(88,166,255,0.1);border:1px solid rgba(88,166,255,0.3);">
+          <span class="toolbar-icon">?</span>
+          <span class="toolbar-label">Help</span>
         </button>
       </div>
 
@@ -3256,7 +3308,15 @@
         'materials-panel': '🎨 Material Library',
         'cam-panel': '⚙ CAM Pipeline',
         'fabs-panel': '🏗 Connected Fabs',
-        'collab-panel': '👥 Collaboration'
+        'collab-panel': '👥 Collaboration',
+        'text2cad-panel': '🤖 Text-to-CAD',
+        'camops-panel': '🔧 CAM Operations',
+        'gcode-panel': '📄 G-Code Generator',
+        'machines-panel': '🖥 Machine Profiles',
+        'tools-panel': '🔩 Tool Library',
+        'stock-panel': '📦 Stock Manager',
+        'sketch-enhance-panel': '✏ Sketch Tools+',
+        'section-panel': '🔪 Section View'
       };
       header.innerHTML = `<span style="font-weight:600;font-size:13px;">${titles[panelId] || moduleKey}</span><button onclick="document.getElementById('${panelId}').style.display='none'" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:16px;">✕</button>`;
       panel.appendChild(header);
@@ -3283,6 +3343,117 @@
     document.getElementById('btn-cam')?.addEventListener('click', () => toggleModulePanel('cam', 'cam-panel'));
     document.getElementById('btn-fabs')?.addEventListener('click', () => toggleModulePanel('fabs', 'fabs-panel'));
     document.getElementById('btn-collab')?.addEventListener('click', () => toggleModulePanel('collab', 'collab-panel'));
+    document.getElementById('btn-text2cad')?.addEventListener('click', () => toggleModulePanel('textToCAD', 'text2cad-panel'));
+    document.getElementById('btn-camops')?.addEventListener('click', () => toggleModulePanel('camOps', 'camops-panel'));
+    document.getElementById('btn-gcode')?.addEventListener('click', () => toggleModulePanel('gcode', 'gcode-panel'));
+    document.getElementById('btn-machines')?.addEventListener('click', () => toggleModulePanel('machines', 'machines-panel'));
+    document.getElementById('btn-tools')?.addEventListener('click', () => toggleModulePanel('tools', 'tools-panel'));
+    document.getElementById('btn-stock')?.addEventListener('click', () => toggleModulePanel('stock', 'stock-panel'));
+    document.getElementById('btn-sketch-enhance')?.addEventListener('click', () => toggleModulePanel('sketchEnhance', 'sketch-enhance-panel'));
+    document.getElementById('btn-section')?.addEventListener('click', () => toggleModulePanel('sectionView', 'section-panel'));
+
+    // ========== Help & Tutorials Panel ==========
+    document.getElementById('btn-help')?.addEventListener('click', () => {
+      let panel = document.getElementById('help-tutorials-panel');
+      if (panel) { panel.style.display = panel.style.display === 'none' ? 'flex' : 'none'; return; }
+      panel = document.createElement('div');
+      panel.id = 'help-tutorials-panel';
+      panel.style.cssText = 'position:fixed;top:60px;left:50%;transform:translateX(-50%);width:680px;max-height:85vh;overflow-y:auto;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:10px;z-index:600;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.6);';
+      panel.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border-color);background:var(--bg-tertiary);border-radius:10px 10px 0 0;">
+          <span style="font-weight:700;font-size:15px;">? Help & Tutorials</span>
+          <button onclick="document.getElementById('help-tutorials-panel').style.display='none'" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:18px;">x</button>
+        </div>
+        <div style="padding:18px;">
+          <!-- Tutorials Section -->
+          <div style="margin-bottom:20px;">
+            <h3 style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--accent-blue);">Tutorials</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+              <a href="./tutorials/basic.html" style="text-decoration:none;display:block;padding:16px;background:linear-gradient(135deg,rgba(63,185,80,0.12),rgba(63,185,80,0.04));border:1px solid rgba(63,185,80,0.3);border-radius:8px;text-align:center;">
+                <div style="font-size:28px;margin-bottom:8px;">&#x1F331;</div>
+                <div style="font-weight:600;color:#3fb950;font-size:13px;">Basic</div>
+                <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">First 3D part, sketches, extrude, export</div>
+              </a>
+              <a href="./tutorials/intermediate.html" style="text-decoration:none;display:block;padding:16px;background:linear-gradient(135deg,rgba(88,166,255,0.12),rgba(88,166,255,0.04));border:1px solid rgba(88,166,255,0.3);border-radius:8px;text-align:center;">
+                <div style="font-size:28px;margin-bottom:8px;">&#x1F680;</div>
+                <div style="font-weight:600;color:#58a6ff;font-size:13px;">Intermediate</div>
+                <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">CAM, Text-to-CAD, assemblies, DFM</div>
+              </a>
+              <a href="./tutorials/advanced.html" style="text-decoration:none;display:block;padding:16px;background:linear-gradient(135deg,rgba(210,153,34,0.12),rgba(210,153,34,0.04));border:1px solid rgba(210,153,34,0.3);border-radius:8px;text-align:center;">
+                <div style="font-size:28px;margin-bottom:8px;">&#x26A1;</div>
+                <div style="font-weight:600;color:#d29922;font-size:13px;">Advanced</div>
+                <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">Agent API, MCP, tokens, Docker, plugins</div>
+              </a>
+            </div>
+          </div>
+
+          <!-- Keyboard Shortcuts -->
+          <div style="margin-bottom:20px;">
+            <h3 style="font-size:14px;font-weight:600;margin-bottom:10px;color:var(--accent-blue);">Keyboard Shortcuts</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;">
+              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Undo</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">Ctrl+Z</kbd></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Redo</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">Ctrl+Y</kbd></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Extrude</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">E</kbd></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Revolve</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">R</kbd></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Toggle Grid</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">G</kbd></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Wireframe</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">W</kbd></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Fit All</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">V</kbd></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Delete</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">Del</kbd></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Cancel</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">Esc</kbd></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Save</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">Ctrl+S</kbd></div>
+            </div>
+          </div>
+
+          <!-- Feature Catalog -->
+          <div style="margin-bottom:16px;">
+            <h3 style="font-size:14px;font-weight:600;margin-bottom:10px;color:var(--accent-blue);">All Features (${Object.keys(window.cycleCAD || {}).length}+ modules)</h3>
+            <div id="help-feature-list" style="max-height:280px;overflow-y:auto;border:1px solid var(--border-color);border-radius:6px;"></div>
+          </div>
+
+          <!-- Links -->
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <a href="https://github.com/vvlars-cmd/cyclecad" target="_blank" style="text-decoration:none;padding:8px 14px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);font-size:12px;">GitHub Repo</a>
+            <a href="https://www.npmjs.com/package/cyclecad" target="_blank" style="text-decoration:none;padding:8px 14px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);font-size:12px;">npm Package</a>
+            <a href="../" style="text-decoration:none;padding:8px 14px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);font-size:12px;">cyclecad.com</a>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(panel);
+
+      // Populate feature list
+      const features = [
+        { cat: 'Core', items: ['3D Viewport (Three.js r170)', 'Sketch Engine (line, rect, circle, arc, polyline)', 'Constraint Solver (12 types)', 'Feature Tree', 'Parameter Editor', 'Undo/Redo History'] },
+        { cat: 'Operations', items: ['Extrude', 'Revolve', 'Fillet', 'Chamfer', 'Boolean (union/cut/intersect)', 'Shell', 'Rectangular Pattern', 'Circular Pattern'] },
+        { cat: 'Advanced Ops', items: ['Sweep (twist + scale)', 'Loft', 'Sheet Metal (bend/flange/tab/slot/unfold)', 'Spring Generator', 'Thread Generator'] },
+        { cat: 'Sketch+', items: ['Spline', 'Polygon', 'Text', 'Ellipse', 'Slot', 'Trim/Extend/Split', 'Offset/Mirror/Scale'] },
+        { cat: 'AI Tools', items: ['Text-to-CAD (6-step pipeline)', 'AI Copilot', 'AI Chatbot (Gemini + Groq)', 'DFM Analyzer', 'Batch AI Scan'] },
+        { cat: 'CAM', items: ['CAM Operations (8 types)', 'G-Code Generator', 'Machine Profiles (15+)', 'Tool Library (30+ tools)', 'Stock Manager', 'Connected Fabs'] },
+        { cat: 'Analysis', items: ['Section View', 'Material Library', 'Weight Estimator', 'Part Comparison', 'Clearance Checker'] },
+        { cat: 'Import/Export', items: ['STL (ASCII + binary)', 'OBJ', 'glTF 2.0', 'DXF (2D + 3D)', 'cycleCAD JSON', 'Inventor .ipt/.iam', 'STEP (via server)'] },
+        { cat: 'Platform', items: ['Agent API (55 commands)', 'MCP Server', 'REST API', 'CLI Tool', '$CYCLE Token Engine', 'Model Marketplace', 'Collaboration'] },
+        { cat: 'Utilities', items: ['Keyboard Shortcuts (25+)', 'Dark Theme', 'Performance Monitor', 'Grid Floor', 'Wireframe Toggle'] }
+      ];
+      const fl = document.getElementById('help-feature-list');
+      if (fl) {
+        fl.innerHTML = features.map(c => `
+          <div style="border-bottom:1px solid var(--border-color);">
+            <div style="padding:8px 12px;font-weight:600;font-size:12px;color:var(--accent-blue);background:var(--bg-tertiary);cursor:pointer;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('span').textContent=this.nextElementSibling.style.display==='none'?'+':'-'">
+              <span style="margin-right:6px;font-family:monospace;">-</span>${c.cat} <span style="color:var(--text-muted);font-weight:400;">(${c.items.length})</span>
+            </div>
+            <div style="padding:4px 12px 8px 28px;">
+              ${c.items.map(i => `<div style="padding:2px 0;font-size:11px;color:var(--text-secondary);">${i}</div>`).join('')}
+            </div>
+          </div>
+        `).join('');
+      }
+    });
+
+    // ? key opens help
+    document.addEventListener('keydown', e => {
+      if (e.key === '?' && !e.ctrlKey && !e.metaKey && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+        document.getElementById('btn-help')?.click();
+      }
+    });
 
   </script>
 
@@ -3633,6 +3804,6 @@
     </div>
   </div>
 
-  <span id="version-badge" style="position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:70;font-size:0.85rem;color:rgba(255,255,255,0.7);letter-spacing:0.1em;white-space:nowrap;padding:5px 14px;user-select:all;pointer-events:auto;font-family:monospace;font-weight:600;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);border-radius:6px;text-shadow:0 1px 3px rgba(0,0,0,0.5);" title="cycleCAD version">cycleCAD v0.2.4</span>
+  <span id="version-badge" style="position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:70;font-size:0.85rem;color:rgba(255,255,255,0.7);letter-spacing:0.1em;white-space:nowrap;padding:5px 14px;user-select:all;pointer-events:auto;font-family:monospace;font-weight:600;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);border-radius:6px;text-shadow:0 1px 3px rgba(0,0,0,0.5);" title="cycleCAD version">cycleCAD v0.3.1</span>
 </body>
 </html>

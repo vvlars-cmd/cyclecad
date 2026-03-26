@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intermediate Tutorial - cycleCAD</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #2d2d2d;
+            --bg-tertiary: #3e3e3e;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --accent: #58a6ff;
+            --accent-dark: #0d47a1;
+            --success: #3fb950;
+            --warning: #d29922;
+            --info: #79c0ff;
+            --danger: #f85149;
+            --border: #404040;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        /* Top Navigation Bar */
+        .nav-bar {
+            position: sticky;
+            top: 0;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .nav-back {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 13px;
+            transition: color 0.2s;
+        }
+
+        .nav-back:hover {
+            color: var(--info);
+        }
+
+        .nav-breadcrumbs {
+            display: flex;
+            gap: 16px;
+            flex: 1;
+        }
+
+        .nav-breadcrumb {
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .nav-breadcrumb:hover {
+            background-color: var(--bg-tertiary);
+            color: var(--accent);
+        }
+
+        .nav-breadcrumb.active {
+            background-color: var(--accent);
+            color: var(--bg-primary);
+        }
+
+        /* Main Layout */
+        .container {
+            display: flex;
+            min-height: calc(100vh - 60px);
+        }
+
+        /* Progress Sidebar */
+        .progress-sidebar {
+            width: 240px;
+            background-color: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            padding: 24px 0;
+            overflow-y: auto;
+            max-height: calc(100vh - 60px);
+            position: sticky;
+            top: 60px;
+        }
+
+        .progress-title {
+            padding: 0 20px;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            letter-spacing: 0.5px;
+        }
+
+        .progress-item {
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-secondary);
+            transition: background-color 0.2s, color 0.2s;
+            position: relative;
+            border-left: 3px solid transparent;
+        }
+
+        .progress-item:hover {
+            background-color: var(--bg-tertiary);
+            color: var(--accent);
+        }
+
+        .progress-item.active {
+            background-color: var(--bg-tertiary);
+            color: var(--accent);
+            border-left-color: var(--accent);
+        }
+
+        .progress-item.complete {
+            color: var(--success);
+        }
+
+        .progress-item.complete::before {
+            content: "✓";
+            position: absolute;
+            left: 8px;
+            font-weight: 600;
+            font-size: 11px;
+        }
+
+        /* Main Content */
+        .content {
+            flex: 1;
+            padding: 40px 60px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* Section */
+        .section {
+            margin-bottom: 60px;
+            scroll-margin-top: 80px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: baseline;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .section-number {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--accent);
+            min-width: 40px;
+        }
+
+        .section-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .section-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 12px;
+        }
+
+        /* Content Boxes */
+        .tip-box, .warning-box, .note-box, .pro-tip-box {
+            padding: 16px 16px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid var(--accent);
+            background-color: rgba(88, 166, 255, 0.08);
+        }
+
+        .warning-box {
+            border-left-color: var(--warning);
+            background-color: rgba(210, 153, 34, 0.08);
+        }
+
+        .note-box {
+            border-left-color: var(--text-secondary);
+            background-color: rgba(160, 160, 160, 0.08);
+        }
+
+        .pro-tip-box {
+            border-left-color: var(--success);
+            background-color: rgba(63, 185, 80, 0.08);
+        }
+
+        .tip-title, .warning-title, .note-title, .pro-tip-title {
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            color: var(--accent);
+        }
+
+        .warning-title {
+            color: var(--warning);
+        }
+
+        .note-title {
+            color: var(--text-secondary);
+        }
+
+        .pro-tip-title {
+            color: var(--success);
+        }
+
+        /* Keyboard Shortcut Badge */
+        .kbd {
+            display: inline-block;
+            padding: 4px 8px;
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--accent);
+            margin: 0 4px;
+            vertical-align: baseline;
+        }
+
+        /* Screenshot Placeholder */
+        .screenshot-placeholder {
+            width: 100%;
+            height: 320px;
+            background-color: var(--bg-tertiary);
+            border: 2px dashed var(--border);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 24px 0;
+            color: var(--text-secondary);
+            font-size: 14px;
+            text-align: center;
+            padding: 24px;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .screenshot-icon {
+            font-size: 48px;
+            opacity: 0.5;
+        }
+
+        /* Step List */
+        .step-list {
+            list-style: none;
+            margin: 20px 0;
+            padding-left: 0;
+            counter-reset: step-counter;
+        }
+
+        .step-list li {
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            background-color: var(--bg-secondary);
+            border-radius: 4px;
+            border-left: 3px solid var(--accent);
+            display: flex;
+            gap: 12px;
+        }
+
+        .step-list li::before {
+            content: counter(step-counter);
+            counter-increment: step-counter;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            background-color: var(--accent);
+            color: var(--bg-primary);
+            border-radius: 50%;
+            font-weight: 600;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        /* Shortcuts Table */
+        .shortcuts-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: var(--bg-secondary);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .shortcuts-table thead {
+            background-color: var(--bg-tertiary);
+        }
+
+        .shortcuts-table th {
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--accent);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .shortcuts-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .shortcuts-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .shortcuts-table code {
+            background-color: var(--bg-primary);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            color: var(--accent);
+            font-size: 12px;
+        }
+
+        /* Next Steps Button */
+        .next-steps-section {
+            background-color: var(--bg-secondary);
+            padding: 32px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .next-steps-section a {
+            display: inline-block;
+            background-color: var(--accent);
+            color: var(--bg-primary);
+            padding: 12px 32px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 16px;
+            transition: background-color 0.2s;
+        }
+
+        .next-steps-section a:hover {
+            background-color: var(--info);
+        }
+
+        /* Subsection */
+        .subsection-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-top: 32px;
+            margin-bottom: 16px;
+        }
+
+        /* Code Block */
+        .code-block {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 16px;
+            overflow-x: auto;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: var(--accent);
+            line-height: 1.5;
+        }
+
+        /* Scrollbar Styling */
+        .progress-sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .progress-sidebar::-webkit-scrollbar-track {
+            background-color: transparent;
+        }
+
+        .progress-sidebar::-webkit-scrollbar-thumb {
+            background-color: var(--border);
+            border-radius: 3px;
+        }
+
+        .progress-sidebar::-webkit-scrollbar-thumb:hover {
+            background-color: var(--text-secondary);
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .progress-sidebar {
+                width: 200px;
+            }
+
+            .content {
+                padding: 30px 40px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .progress-sidebar {
+                display: none;
+            }
+
+            .content {
+                padding: 24px 20px;
+                max-width: 100%;
+            }
+
+            .section-title {
+                font-size: 24px;
+            }
+
+            .nav-breadcrumbs {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation -->
+    <div class="nav-bar">
+        <a href="../" class="nav-back">← Back to App</a>
+        <div class="nav-breadcrumbs">
+            <a href="basic.html" class="nav-breadcrumb">Basic</a>
+            <span class="nav-breadcrumb active">Intermediate</span>
+            <a href="advanced.html" class="nav-breadcrumb">Advanced</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Progress Sidebar -->
+        <div class="progress-sidebar">
+            <div class="progress-title">Progress</div>
+            <div class="progress-item" data-section="intro">Introduction</div>
+            <div class="progress-item" data-section="sketch">Advanced Sketches</div>
+            <div class="progress-item" data-section="parametric">Parametric Ops</div>
+            <div class="progress-item" data-section="advanced-ops">Advanced Ops</div>
+            <div class="progress-item" data-section="assembly">Assembly</div>
+            <div class="progress-item" data-section="text-to-cad">Text-to-CAD</div>
+            <div class="progress-item" data-section="cam">CAM Pipeline</div>
+            <div class="progress-item" data-section="sections">Section Views</div>
+            <div class="progress-item" data-section="ai-chat">AI Chat</div>
+            <div class="progress-item" data-section="dfm">DFM Analysis</div>
+            <div class="progress-item" data-section="import">Import/Export</div>
+            <div class="progress-item" data-section="next">Next Steps</div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content">
+            <!-- Section 1: Introduction -->
+            <div class="section" id="intro">
+                <div class="section-header">
+                    <div class="section-number">1</div>
+                    <div>
+                        <div class="section-title">Intermediate cycleCAD</div>
+                        <div class="section-subtitle">Master advanced modeling, AI-driven workflows, and CAM integration</div>
+                    </div>
+                </div>
+
+                <p>
+                    You've completed the basics of cycleCAD. Now it's time to explore the powerful features that make cycleCAD
+                    a serious CAD platform: advanced constraints, parametric operations, AI-powered text-to-CAD, CAM toolpaths, and
+                    DFM analysis.
+                </p>
+
+                <div class="note-box">
+                    <div class="note-title">Prerequisites</div>
+                    Complete the Basic Tutorial first. You should be comfortable with sketches, extrusions, and the feature tree.
+                </div>
+
+                <p style="margin-top: 20px;">
+                    In this guide, you'll learn:
+                </p>
+                <ul style="margin-left: 20px; margin-top: 12px;">
+                    <li>12 constraint types for fully parametric sketches</li>
+                    <li>Fillet, chamfer, boolean, shell, and pattern operations</li>
+                    <li>Sweep, loft, and sheet metal design</li>
+                    <li>Assembly workspace with mate constraints</li>
+                    <li>Natural language CAD with voice and text</li>
+                    <li>8 CNC operations and G-code generation</li>
+                    <li>Section cuts and cross-section analysis</li>
+                    <li>AI chatbot for DFM guidance</li>
+                    <li>Reverse engineering from STL imports</li>
+                </ul>
+            </div>
+
+            <!-- Section 2: Advanced Sketch Techniques -->
+            <div class="section" id="sketch">
+                <div class="section-header">
+                    <div class="section-number">2</div>
+                    <div>
+                        <div class="section-title">Advanced Sketch Techniques</div>
+                        <div class="section-subtitle">Constraints, geometry tools, and parametric sketching</div>
+                    </div>
+                </div>
+
+                <p>
+                    Fully constrained sketches are the foundation of parametric modeling. cycleCAD's constraint solver supports
+                    12 constraint types that define relationships between geometry.
+                </p>
+
+                <div class="subsection-title">🔗 Constraint Types</div>
+
+                <table class="shortcuts-table">
+                    <thead>
+                        <tr>
+                            <th>Constraint</th>
+                            <th>Description</th>
+                            <th>Use Case</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Coincident</strong></td>
+                            <td>Two points or endpoints overlap</td>
+                            <td>Align circles at origin</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Horizontal</strong></td>
+                            <td>Line parallel to X-axis</td>
+                            <td>Level edges</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Vertical</strong></td>
+                            <td>Line parallel to Y-axis</td>
+                            <td>Plumb edges</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Parallel</strong></td>
+                            <td>Two lines stay parallel</td>
+                            <td>Slot geometry</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Perpendicular</strong></td>
+                            <td>Two lines are 90°</td>
+                            <td>Right angles</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Tangent</strong></td>
+                            <td>Line touches curve smoothly</td>
+                            <td>Rounded corners</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Equal</strong></td>
+                            <td>Lengths or radii match</td>
+                            <td>Symmetric parts</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Concentric</strong></td>
+                            <td>Circles share same center</td>
+                            <td>Hole placement</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Symmetric</strong></td>
+                            <td>Mirrored across centerline</td>
+                            <td>Bilateral symmetry</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Distance</strong></td>
+                            <td>Fixed distance between points</td>
+                            <td>Dimension spacing</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Angle</strong></td>
+                            <td>Fixed angle between lines</td>
+                            <td>Angled edges</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Fixed</strong></td>
+                            <td>Lock point or geometry in place</td>
+                            <td>Reference geometry</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="pro-tip-box">
+                    <div class="pro-tip-title">Pro Tip: Constraint Strategy</div>
+                    Start with geometric constraints (coincident, parallel, perpendicular) before adding dimensional constraints
+                    (distance, angle). This reduces solver iterations and creates more robust designs.
+                </div>
+
+                <div class="subsection-title">📐 Advanced Geometry Tools</div>
+
+                <p><strong>Spline</strong> <span class="kbd">B</span> — Draw smooth curves through multiple points. Adjust control points post-draw.</p>
+
+                <p><strong>Polygon</strong> <span class="kbd">Shift+P</span> — Regular polygons (3-sided to 12-sided). Set center and radius.</p>
+
+                <p><strong>Text</strong> <span class="kbd">T</span> — Add sketch text (NOT extruded text). Useful for labeling drawings.</p>
+
+                <p><strong>Ellipse</strong> <span class="kbd">E</span> — Elliptical geometry. Click center, then drag major/minor axes.</p>
+
+                <p><strong>Slot</strong> <span class="kbd">Shift+S</span> — Rounded rectangle. Specify width, length, and corner radius.</p>
+
+                <div class="subsection-title">✂️ Sketch Modifiers</div>
+
+                <table class="shortcuts-table">
+                    <thead>
+                        <tr>
+                            <th>Modifier</th>
+                            <th>Shortcut</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Trim</td>
+                            <td><span class="kbd">Shift+T</span></td>
+                            <td>Remove line segments between intersections</td>
+                        </tr>
+                        <tr>
+                            <td>Extend</td>
+                            <td><span class="kbd">Shift+E</span></td>
+                            <td>Stretch line to nearest edge</td>
+                        </tr>
+                        <tr>
+                            <td>Split</td>
+                            <td><span class="kbd">Shift+L</span></td>
+                            <td>Break curve at intersection point</td>
+                        </tr>
+                        <tr>
+                            <td>Offset</td>
+                            <td><span class="kbd">O</span></td>
+                            <td>Parallel copy at fixed distance</td>
+                        </tr>
+                        <tr>
+                            <td>Mirror</td>
+                            <td><span class="kbd">M</span></td>
+                            <td>Flip geometry across centerline</td>
+                        </tr>
+                        <tr>
+                            <td>Move/Copy</td>
+                            <td><span class="kbd">Shift+M</span></td>
+                            <td>Duplicate while translating</td>
+                        </tr>
+                        <tr>
+                            <td>Scale</td>
+                            <td><span class="kbd">Shift+K</span></td>
+                            <td>Enlarge/shrink from center point</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="warning-box">
+                    <div class="warning-title">Watch Out</div>
+                    Over-constraining a sketch (redundant constraints) will block solver. The status bar shows "3 DOF" (degrees of freedom).
+                    Fully constrained = 0 DOF. If stuck, delete the last constraint and re-apply.
+                </div>
+            </div>
+
+            <!-- Section 3: Parametric Operations -->
+            <div class="section" id="parametric">
+                <div class="section-header">
+                    <div class="section-number">3</div>
+                    <div>
+                        <div class="section-title">Parametric Operations</div>
+                        <div class="section-subtitle">Fillet, chamfer, boolean, shell, and patterns</div>
+                    </div>
+                </div>
+
+                <div class="subsection-title">🔲 Fillet</div>
+                <p>
+                    Round edges with a smooth curve. Select one or more edges, then specify radius. Fillets adapt when you change
+                    upstream sketches or extrusion heights.
+                </p>
+                <ul style="margin-left: 20px;">
+                    <li><strong>Single-radius fillet:</strong> Constant radius all edges</li>
+                    <li><strong>Variable fillet:</strong> Click edge, set custom radius in properties</li>
+                    <li><strong>Multi-edge:</strong> Shift-click multiple edges, apply one operation</li>
+                </ul>
+
+                <div class="subsection-title">🔪 Chamfer</div>
+                <p>Cut a 45° or angled bevel on edges. Useful for deburring and assembly fit.</p>
+                <ul style="margin-left: 20px;">
+                    <li><strong>Distance chamfer:</strong> Equal cut length on both faces (1mm)</li>
+                    <li><strong>Angled chamfer:</strong> Specify angle and one distance (2mm @ 30°)</li>
+                </ul>
+
+                <div class="subsection-title">🔄 Boolean Operations</div>
+                <p>Combine multiple solid bodies (union, cut, intersect).</p>
+
+                <table class="shortcuts-table">
+                    <thead>
+                        <tr>
+                            <th>Operation</th>
+                            <th>Shortcut</th>
+                            <th>Result</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Union</strong></td>
+                            <td><span class="kbd">Ctrl+U</span></td>
+                            <td>Merge two bodies into one</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Cut</strong></td>
+                            <td><span class="kbd">Ctrl+X</span></td>
+                            <td>Remove tool body from target</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Intersect</strong></td>
+                            <td><span class="kbd">Ctrl+I</span></td>
+                            <td>Keep only overlapping volume</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="subsection-title">🏠 Shell</div>
+                <p>Create hollow geometry by removing one or more faces and setting wall thickness (e.g., 2mm).</p>
+                <ul style="margin-left: 20px;">
+                    <li>Select faces to remove</li>
+                    <li>Set uniform wall thickness</li>
+                    <li>Ideal for plastic injection molding</li>
+                </ul>
+
+                <div class="subsection-title">📦 Rectangular Pattern</div>
+                <p>
+                    Array features in X and Y directions. Select a feature (fillet, hole, boss), then set count and spacing.
+                </p>
+                <div class="code-block">
+// Example: 3×4 array of holes, 10mm spacing
+Pattern: Type=Rectangular, Count-X=3, Spacing-X=10mm,
+         Count-Y=4, Spacing-Y=10mm
+                </div>
+
+                <div class="subsection-title">⭕ Circular Pattern</div>
+                <p>Array features in a circle around a center point. Useful for bolt holes, turbine blades.</p>
+                <ul style="margin-left: 20px;">
+                    <li>Set count (8 holes)</li>
+                    <li>Set radius (50mm from center)</li>
+                    <li>Optional: rotation offset</li>
+                </ul>
+
+                <div class="pro-tip-box">
+                    <div class="pro-tip-title">Pro Tip: Pattern Editing</div>
+                    Once created, patterns are "smart." Change the original feature, and all array instances update automatically.
+                </div>
+            </div>
+
+            <!-- Section 4: Advanced Operations -->
+            <div class="section" id="advanced-ops">
+                <div class="section-header">
+                    <div class="section-number">4</div>
+                    <div>
+                        <div class="section-title">Advanced Operations</div>
+                        <div class="section-subtitle">Sweep, loft, sheet metal, springs, and threads</div>
+                    </div>
+                </div>
+
+                <div class="subsection-title">🌀 Sweep</div>
+                <p>
+                    Extrude a 2D profile (circle, rectangle) along a 3D path (line, spline, arc). Perfect for shafts,
+                    tubes, and curved geometry.
+                </p>
+                <ul style="margin-left: 20px;">
+                    <li>Draw profile sketch (cross-section)</li>
+                    <li>Draw path sketch</li>
+                    <li>Sweep → Select profile and path</li>
+                    <li>Optional: Twist angle, scale variation</li>
+                </ul>
+
+                <div class="subsection-title">🌊 Loft</div>
+                <p>
+                    Blend between two or more profiles. Creates smooth transitions between different cross-sections.
+                    Ideal for aerodynamic shapes and complex transitions.
+                </p>
+                <ul style="margin-left: 20px;">
+                    <li>Create 2+ profile sketches (circle → rectangle)</li>
+                    <li>Loft → Select profiles in order</li>
+                    <li>Automatic resampling for smooth blend</li>
+                </ul>
+
+                <div class="subsection-title">📊 Sheet Metal</div>
+                <p>
+                    Design flat stock and bends. cycleCAD includes 5 sheet metal operations:
+                </p>
+                <ul style="margin-left: 20px;">
+                    <li><strong>Bend:</strong> Specify thickness, bend radius, and K-factor for flat pattern</li>
+                    <li><strong>Flange:</strong> Add perpendicular walls to edges</li>
+                    <li><strong>Tab:</strong> Small rectangular protrusions</li>
+                    <li><strong>Slot:</strong> Cutouts for assembly</li>
+                    <li><strong>Unfold:</strong> Generate flat pattern for laser cutting or waterjet</li>
+                </ul>
+
+                <div class="subsection-title">🔗 Spring Generator</div>
+                <p>
+                    Automatically create helical springs (compression, tension, torsion). Specify:
+                </p>
+                <ul style="margin-left: 20px;">
+                    <li>Outer diameter</li>
+                    <li>Wire diameter</li>
+                    <li>Number of turns</li>
+                    <li>Pitch (gap between coils)</li>
+                </ul>
+
+                <div class="subsection-title">🔩 Thread Generator</div>
+                <p>
+                    Create ISO metric threads on cylinders (M5, M10, M16, etc.). Auto-generates helix geometry with
+                    proper pitch and root/crest radii per ISO 262 standard.
+                </p>
+
+                <div class="pro-tip-box">
+                    <div class="pro-tip-title">Pro Tip: Loft Strategy</div>
+                    For best results, ensure profiles have the same number of vertices and match topology. Use
+                    <span class="kbd">Sketch → Edit</span> to reorder points if loft twists unexpectedly.
+                </div>
+            </div>
+
+            <!-- Section 5: Assembly Workspace -->
+            <div class="section" id="assembly">
+                <div class="section-header">
+                    <div class="section-number">5</div>
+                    <div>
+                        <div class="section-title">Assembly Workspace</div>
+                        <div class="section-subtitle">Components, mates, joints, and exploded views</div>
+                    </div>
+                </div>
+
+                <p>
+                    Switch to Assembly mode to combine multiple parts and constrain their positions. cycleCAD supports
+                    hierarchical assemblies with automatic BOM generation.
+                </p>
+
+                <div class="subsection-title">📦 Adding Components</div>
+                <ul class="step-list">
+                    <li>Assembly Tab → <strong>Insert Component</strong></li>
+                    <li>Select .STL, .STEP, or cycleCAD .json file</li>
+                    <li>Click 3D viewport to place</li>
+                    <li>Edit position in properties panel</li>
+                </ul>
+
+                <div class="subsection-title">🔗 Mate Constraints</div>
+                <p>Define relationships between components:</p>
+
+                <table class="shortcuts-table">
+                    <thead>
+                        <tr>
+                            <th>Mate Type</th>
+                            <th>Constraint</th>
+                            <th>Use Case</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Coincident</td>
+                            <td>Faces/planes overlap</td>
+                            <td>Flush assembly</td>
+                        </tr>
+                        <tr>
+                            <td>Offset</td>
+                            <td>Parallel at distance</td>
+                            <td>Gasket gaps</td>
+                        </tr>
+                        <tr>
+                            <td>Angle</td>
+                            <td>Fixed angle between faces</td>
+                            <td>Hinged joints</td>
+                        </tr>
+                        <tr>
+                            <td>Concentric</td>
+                            <td>Cylinders share axis</td>
+                            <td>Shaft alignment</td>
+                        </tr>
+                        <tr>
+                            <td>Tangent</td>
+                            <td>Surfaces touch smoothly</td>
+                            <td>Rollover contacts</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="subsection-title">💥 Exploded View</div>
+                <p>
+                    Create animation showing assembly disassembly. Set component displacement vectors and animate
+                    assembly/disassembly sequence. Export as MP4 for presentations.
+                </p>
+
+                <div class="note-box">
+                    <div class="note-title">Assembly Status</div>
+                    cycleCAD currently has beta support for assembly. Feature tree shows components but visual
+                    constraints are approximate. Full B-rep constraint solving coming in Phase B.
+                </div>
+            </div>
+
+            <!-- Section 6: Text-to-CAD -->
+            <div class="section" id="text-to-cad">
+                <div class="section-header">
+                    <div class="section-number">6</div>
+                    <div>
+                        <div class="section-title">Text-to-CAD with AI</div>
+                        <div class="section-subtitle">Natural language commands and voice input</div>
+                    </div>
+                </div>
+
+                <p>
+                    cycleCAD includes an <strong>Agent API</strong> that interprets natural language and translates it
+                    into CAD operations. You can describe a shape in English, and the AI constructs it automatically.
+                </p>
+
+                <div class="subsection-title">🎙️ Voice Input</div>
+                <p>Click the microphone icon in the toolbar and speak a command:</p>
+                <ul style="margin-left: 20px;">
+                    <li>"Create a cylinder 50mm diameter, 80mm tall"</li>
+                    <li>"Add a hole with 10mm radius"</li>
+                    <li>"Fillet all edges with 2mm radius"</li>
+                    <li>"Export as STL"</li>
+                </ul>
+
+                <div class="warning-box">
+                    <div class="warning-title">Browser Requirement</div>
+                    Voice input requires HTTPS and microphone permissions. Test with text input first if mic isn't working.
+                </div>
+
+                <div class="subsection-title">📝 Text Commands</div>
+                <p>Type directly into the Agent panel (bottom left). Commands are parsed with NLP:</p>
+                <div class="code-block">
+"build a rectangular boss 100x50x20mm"
+"add four M5 holes arranged in a circle at radius 30mm"
+"fillet all edges with radius 3"
+"create sheet metal from current sketch, bend radius 2mm, thickness 1.5mm"
+                </div>
+
+                <div class="subsection-title">🔄 Agent Pipeline (6 Steps)</div>
+                <ol style="margin-left: 20px;">
+                    <li><strong>Understand</strong> — Parse NLP intent (create, add, modify, export)</li>
+                    <li><strong>Plan</strong> — Map to CAD operations (extrude, hole, fillet, pattern)</li>
+                    <li><strong>Generate</strong> — Build geometry in Three.js scene</li>
+                    <li><strong>Validate</strong> — Check for DFM issues, collisions</li>
+                    <li><strong>Fix</strong> — Auto-correct if needed (adjust radius, scale)</li>
+                    <li><strong>Simplify</strong> — Optimize for export (reduce polygons if needed)</li>
+                </ol>
+
+                <div class="pro-tip-box">
+                    <div class="pro-tip-title">Pro Tip: Iterative Design</div>
+                    Don't try to build the entire part in one command. Start simple ("create cylinder 50") and refine:
+                    "add hole 10" → "fillet 2" → "pattern in circle 8x". The agent learns context from each step.
+                </div>
+            </div>
+
+            <!-- Section 7: CAM Pipeline -->
+            <div class="section" id="cam">
+                <div class="section-header">
+                    <div class="section-number">7</div>
+                    <div>
+                        <div class="section-title">CAM Pipeline</div>
+                        <div class="section-subtitle">From design to G-code: 8 CNC operations</div>
+                    </div>
+                </div>
+
+                <p>
+                    cycleCAD includes a full CAM (Computer-Aided Manufacturing) module that generates tool paths
+                    and G-code for 3-axis CNC mills and routers.
+                </p>
+
+                <div class="subsection-title">🔧 8 CNC Operations</div>
+
+                <table class="shortcuts-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Operation</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td><strong>Outline</strong></td>
+                            <td>Cut 2D profile perimeter (pockets, profiles)</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td><strong>Level</strong></td>
+                            <td>Face flats (reduce material height to Z-min)</td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td><strong>Rough</strong></td>
+                            <td>High-feedrate bulk removal (3-5mm stepdown)</td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td><strong>Contour</strong></td>
+                            <td>Adaptive tool path following part geometry</td>
+                        </tr>
+                        <tr>
+                            <td>5</td>
+                            <td><strong>Drill</strong></td>
+                            <td>Pre-drill holes before tapping or countersink</td>
+                        </tr>
+                        <tr>
+                            <td>6</td>
+                            <td><strong>Trace</strong></td>
+                            <td>Finish edge following (0.2-0.5mm stepdown)</td>
+                        </tr>
+                        <tr>
+                            <td>7</td>
+                            <td><strong>Pocket</strong></td>
+                            <td>Interior features (pockets, slots)</td>
+                        </tr>
+                        <tr>
+                            <td>8</td>
+                            <td><strong>Register</strong></td>
+                            <td>Flip part and machine backside</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="subsection-title">⚙️ Tool Library</div>
+                <p>Pre-configured tools with cutting speeds/feeds:</p>
+                <ul style="margin-left: 20px;">
+                    <li>End mills (2-flute, 4-flute, variable)</li>
+                    <li>Drills (stub, standard, jobber)</li>
+                    <li>Countersinks (90°, 82°, 60°)</li>
+                    <li>Thread mills (ISO metric, UNC)</li>
+                </ul>
+
+                <div class="subsection-title">📋 Stock Manager</div>
+                <p>
+                    Define blank size (e.g., 100x100x25mm aluminum plate) and margin. cycleCAD calculates minimum depth
+                    and recommends clamp locations.
+                </p>
+
+                <div class="subsection-title">📊 G-Code Export</div>
+                <p>
+                    Export tool paths as G-code (FANUC, Haas, Mach3 dialects). Includes:
+                </p>
+                <ul style="margin-left: 20px;">
+                    <li>Tool change comments <span class="kbd">M6 T3</span></li>
+                    <li>Feedrate blocks <span class="kbd">F120</span> (mm/min)</li>
+                    <li>Spindle speed <span class="kbd">M3 S1200</span> (RPM)</li>
+                    <li>Tool length offset compensation <span class="kbd">H1</span></li>
+                    <li>Coolant control <span class="kbd">M8/M9</span></li>
+                </ul>
+
+                <div class="tip-box">
+                    <div class="tip-title">Tip: Verify Before Cutting</div>
+                    Always simulate G-code in CAM software (Fusion 360, Carbide Create) before loading on CNC.
+                    Verify tool paths don't collide with fixtures or part.
+                </div>
+            </div>
+
+            <!-- Section 8: Section Views -->
+            <div class="section" id="sections">
+                <div class="section-header">
+                    <div class="section-number">8</div>
+                    <div>
+                        <div class="section-title">Section Views & Cross-Sections</div>
+                        <div class="section-subtitle">Cut planes, 2D projection, and technical drawings</div>
+                    </div>
+                </div>
+
+                <p>
+                    Section cuts reveal interior geometry. cycleCAD uses WebGL clipping planes to dynamically cut
+                    the 3D model and extract 2D engineering drawings.
+                </p>
+
+                <div class="subsection-title">✂️ Cut Planes</div>
+                <p>Select a plane orientation:</p>
+                <ul style="margin-left: 20px;">
+                    <li><strong>XY (Top)</strong> — Horizontal cut, shows plan view</li>
+                    <li><strong>XZ (Front)</strong> — Vertical cut, shows elevation</li>
+                    <li><strong>YZ (Side)</strong> — Vertical cut, shows side profile</li>
+                    <li><strong>Custom</strong> — Arbitrary plane angle (for sectional views through features)</li>
+                </ul>
+
+                <div class="subsection-title">📐 Section Views in Drawings</div>
+                <p>
+                    Combine multiple sections (A-A, B-B) in engineering drawings. cycleCAD auto-generates hidden line rendering
+                    and dimension lines.
+                </p>
+
+                <div class="subsection-title">📤 Export to 2D</div>
+                <ul style="margin-left: 20px;">
+                    <li><strong>DXF</strong> — AutoCAD format, suitable for further editing</li>
+                    <li><strong>SVG</strong> — Vector graphics, embeddable in web</li>
+                    <li><strong>PDF</strong> — High-quality technical drawing output</li>
+                </ul>
+
+                <div class="note-box">
+                    <div class="note-title">Current Limitation</div>
+                    Automatic section generation is in beta. Manual section placement currently requires manual sketching
+                    in 2D view. Parametric sections coming in Phase C.
+                </div>
+            </div>
+
+            <!-- Section 9: AI Chat -->
+            <div class="section" id="ai-chat">
+                <div class="section-header">
+                    <div class="section-number">9</div>
+                    <div>
+                        <div class="section-title">AI Chatbot & Design Assistant</div>
+                        <div class="section-subtitle">Gemini + Groq + offline fallback for CAD guidance</div>
+                    </div>
+                </div>
+
+                <p>
+                    cycleCAD includes a hybrid AI chatbot that understands CAD context. Ask questions about
+                    manufacturability, material selection, cost, or assembly strategy.
+                </p>
+
+                <div class="subsection-title">💬 Chat Features</div>
+                <ul style="margin-left: 20px;">
+                    <li>Query current part geometry (volume, surface area, weight)</li>
+                    <li>Material recommendations based on use case</li>
+                    <li>Manufacturing process suggestions (CNC, 3D print, injection molding)</li>
+                    <li>Assembly sequence advice</li>
+                    <li>Cost estimation based on material and machining time</li>
+                </ul>
+
+                <div class="subsection-title">🔌 AI Backends</div>
+                <p>cycleCAD uses a 3-tier fallback system:</p>
+                <ol style="margin-left: 20px;">
+                    <li><strong>Gemini Flash API</strong> (Primary) — Google's fastest model, 1M context window</li>
+                    <li><strong>Groq Llama 3.1 8B</strong> (Fallback) — Open-source, ultra-low latency (~30ms)</li>
+                    <li><strong>Offline NLP</strong> (Offline Mode) — Pattern matching when no internet</li>
+                </ol>
+
+                <div class="pro-tip-box">
+                    <div class="pro-tip-title">Pro Tip: CAD-Aware Queries</div>
+                    Be specific: "I have an aluminum part with 500cm² surface area and thin walls 1.5mm.
+                    Can I CNC mill it or should I 3D print?" The chatbot analyzes your current part geometry.
+                </div>
+            </div>
+
+            <!-- Section 10: DFM Analysis -->
+            <div class="section" id="dfm">
+                <div class="section-header">
+                    <div class="section-number">10</div>
+                    <div>
+                        <div class="section-title">DFM Analysis</div>
+                        <div class="section-subtitle">Design for Manufacturability & Cost Estimation</div>
+                    </div>
+                </div>
+
+                <p>
+                    DFM (Design For Manufacturing) analysis checks your design against practical manufacturing constraints
+                    and estimates production cost.
+                </p>
+
+                <div class="subsection-title">🔍 Automated DFM Checks</div>
+                <ul style="margin-left: 20px;">
+                    <li><strong>Wall thickness:</strong> Min 0.8mm for injection molding, 0.5mm for CNC aluminum</li>
+                    <li><strong>Draft angle:</strong> Recommend 2-5° for molded parts</li>
+                    <li><strong>Undercuts:</strong> Flag geometry that requires side action cores</li>
+                    <li><strong>Fillet radius:</strong> Warn if fillet < half wall thickness</li>
+                    <li><strong>Hole alignment:</strong> Detect holes that would require complex tooling</li>
+                    <li><strong>Thin features:</strong> Alert if feature width &lt; 2× depth (weak geometry)</li>
+                </ul>
+
+                <div class="subsection-title">💰 Cost Estimation</div>
+                <p>Select material and process for real-time cost breakdown:</p>
+
+                <table class="shortcuts-table">
+                    <thead>
+                        <tr>
+                            <th>Process</th>
+                            <th>Material Cost</th>
+                            <th>Labor/Machine Time</th>
+                            <th>Tooling</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>CNC Aluminum</td>
+                            <td>Per kg: ~$5-10</td>
+                            <td>$80-150/hr</td>
+                            <td>$0 (no setup)</td>
+                        </tr>
+                        <tr>
+                            <td>3D Print (FDM)</td>
+                            <td>Per kg: ~$15-30</td>
+                            <td>$2-5/hr</td>
+                            <td>$0</td>
+                        </tr>
+                        <tr>
+                            <td>Injection Molding</td>
+                            <td>Per kg: ~$2-5</td>
+                            <td>$1-3/unit (high vol)</td>
+                            <td>$5K-50K per mold</td>
+                        </tr>
+                        <tr>
+                            <td>Sheet Metal</td>
+                            <td>Per kg: ~$3-8</td>
+                            <td>$50-100/hr</td>
+                            <td>$500-2K (dies)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="subsection-title">📊 Material Selection</div>
+                <p>cycleCAD includes libraries for 15+ materials:</p>
+                <ul style="margin-left: 20px;">
+                    <li><strong>Metals:</strong> Aluminum 6061-T6, Steel, Stainless, Titanium, Copper</li>
+                    <li><strong>Plastics:</strong> ABS, PLA, PETG, Nylon, Polycarbonate</li>
+                    <li><strong>Composites:</strong> Carbon fiber, Fiberglass</li>
+                </ul>
+
+                <div class="tip-box">
+                    <div class="tip-title">Tip: Iterate on Cost</div>
+                    Use DFM to make quick design decisions. E.g., "Injection molding would save 40% at 1000 units,
+                    but CNC is $80 setup-free for prototypes." Edit sketch, re-cost, repeat.
+                </div>
+            </div>
+
+            <!-- Section 11: Import & Export -->
+            <div class="section" id="import">
+                <div class="section-header">
+                    <div class="section-number">11</div>
+                    <div>
+                        <div class="section-title">Import & Export Workflows</div>
+                        <div class="section-subtitle">STEP, STL, DXF, Inventor, and reverse engineering</div>
+                    </div>
+                </div>
+
+                <p>
+                    cycleCAD reads and writes industry-standard file formats. Import CAD from other tools, or reverse-engineer
+                    from 3D scans and STL files.
+                </p>
+
+                <div class="subsection-title">📥 Import Formats</div>
+
+                <table class="shortcuts-table">
+                    <thead>
+                        <tr>
+                            <th>Format</th>
+                            <th>What It Does</th>
+                            <th>Typical Use</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>.STEP</strong></td>
+                            <td>Parametric B-rep geometry (solid geometry)</td>
+                            <td>Exchange with SolidWorks, Fusion, OnShape</td>
+                        </tr>
+                        <tr>
+                            <td><strong>.STL</strong></td>
+                            <td>Triangle mesh (non-parametric)</td>
+                            <td>3D print models, reverse engineering</td>
+                        </tr>
+                        <tr>
+                            <td><strong>.IPT / .IAM</strong></td>
+                            <td>Autodesk Inventor parts and assemblies</td>
+                            <td>Migrate from Inventor to cycleCAD</td>
+                        </tr>
+                        <tr>
+                            <td><strong>.DXF</strong></td>
+                            <td>2D drawing geometry</td>
+                            <td>Import sketches from AutoCAD, LibreCAD</td>
+                        </tr>
+                        <tr>
+                            <td><strong>cycleCAD .JSON</strong></td>
+                            <td>Native cycleCAD format (fully parametric)</td>
+                            <td>Save/load cycleCAD designs</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="subsection-title">📤 Export Formats</div>
+
+                <table class="shortcuts-table">
+                    <thead>
+                        <tr>
+                            <th>Format</th>
+                            <th>Resolution</th>
+                            <th>Use Case</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>.STL (Binary/ASCII)</strong></td>
+                            <td>Mesh (0.1-1mm triangles)</td>
+                            <td>3D printing, CNC simulation</td>
+                        </tr>
+                        <tr>
+                            <td><strong>.OBJ</strong></td>
+                            <td>Mesh (with texture coordinates)</td>
+                            <td>3D visualization, rendering</td>
+                        </tr>
+                        <tr>
+                            <td><strong>.glTF 2.0</strong></td>
+                            <td>Mesh + PBR materials</td>
+                            <td>Web preview, AR/VR, game engines</td>
+                        </tr>
+                        <tr>
+                            <td><strong>.DXF (2D/3D)</strong></td>
+                            <td>Wireframe or 3D projection</td>
+                            <td>CAM software, AutoCAD, laser cutting</td>
+                        </tr>
+                        <tr>
+                            <td><strong>.G-Code</strong></td>
+                            <td>Tool paths for CNC</td>
+                            <td>CNC mills, routers, waterjet</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="subsection-title">🔄 Reverse Engineering from STL</div>
+                <p>
+                    Import an STL (from 3D scan, competitor product, or legacy CAD) and automatically generate
+                    parametric sketches and features:
+                </p>
+                <ol style="margin-left: 20px;">
+                    <li>Detect flat faces → sketches</li>
+                    <li>Identify cylinders and holes</li>
+                    <li>Extract draft angles</li>
+                    <li>Build feature history (extrude, fillet, pattern)</li>
+                </ol>
+
+                <div class="warning-box">
+                    <div class="warning-title">Reverse Engineering Caveat</div>
+                    Automatic feature detection is ~80% accurate. You may need to manually refine sketches or
+                    recreate complex features. Use as a starting point, not a complete replacement.
+                </div>
+
+                <div class="subsection-title">📦 Inventor Project Loading</div>
+                <p>
+                    Load entire Inventor projects (.ipj). cycleCAD parses folder structure, finds all parts (.ipt),
+                    assemblies (.iam), and generates a Bill of Materials:
+                </p>
+                <ul style="margin-left: 20px;">
+                    <li>Browse .ipj projects in file picker</li>
+                    <li>View component tree with quantities</li>
+                    <li>Export BOM to CSV for purchasing</li>
+                    <li>Identify custom vs. standard parts</li>
+                </ul>
+            </div>
+
+            <!-- Section 12: Next Steps -->
+            <div class="section" id="next">
+                <div class="section-header">
+                    <div class="section-number">12</div>
+                    <div>
+                        <div class="section-title">What's Next?</div>
+                        <div class="section-subtitle">Advanced features and real-world projects</div>
+                    </div>
+                </div>
+
+                <p>
+                    You've mastered intermediate cycleCAD. Ready to level up?
+                </p>
+
+                <div class="next-steps-section">
+                    <h3>Continue Learning</h3>
+                    <p>Progress to the Advanced Tutorial for:</p>
+                    <ul style="margin: 16px 0; text-align: left; display: inline-block;">
+                        <li>Generative design with AI optimization</li>
+                        <li>Real-time collaboration with teammates</li>
+                        <li>Plugin development (custom features)</li>
+                        <li>Simulation (FEA, thermal, motion)</li>
+                        <li>Professional rendering and visualization</li>
+                    </ul>
+                    <a href="advanced.html">→ Advanced Tutorial</a>
+                </div>
+
+                <p style="margin-top: 40px; font-size: 13px; color: var(--text-secondary);">
+                    Questions? Join the cycleCAD community on GitHub or Discord. Share your designs and get feedback
+                    from other makers and engineers worldwide.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Progress sidebar tracking
+        const progressItems = document.querySelectorAll('.progress-item');
+        const sections = document.querySelectorAll('.section');
+
+        function markSectionComplete(sectionId) {
+            const item = document.querySelector(`[data-section="${sectionId}"]`);
+            if (item) {
+                item.classList.add('complete');
+                localStorage.setItem(`intermediate-${sectionId}`, 'complete');
+            }
+        }
+
+        function restoreProgress() {
+            progressItems.forEach(item => {
+                const sectionId = item.getAttribute('data-section');
+                if (localStorage.getItem(`intermediate-${sectionId}`) === 'complete') {
+                    item.classList.add('complete');
+                }
+            });
+        }
+
+        // Intersection Observer for active section
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    progressItems.forEach(item => item.classList.remove('active'));
+                    const activeItem = document.querySelector(`[data-section="${entry.target.id}"]`);
+                    if (activeItem) {
+                        activeItem.classList.add('active');
+                    }
+                }
+            });
+        }, { threshold: 0.3 });
+
+        sections.forEach(section => observer.observe(section));
+
+        // Click to navigate
+        progressItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const sectionId = item.getAttribute('data-section');
+                const section = document.getElementById(sectionId);
+                if (section) {
+                    section.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+
+        // Restore on load
+        window.addEventListener('load', restoreProgress);
+    </script>
+</body>
+</html>

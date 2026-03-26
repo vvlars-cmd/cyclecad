@@ -70,8 +70,8 @@ export function initAgentAPI({ viewport, sketch, operations, advancedOps, export
   eventListeners = {};
   console.log(`[Agent API] Initialized. Session: ${sessionId}`);
 
-  // Expose globally for external agent access
-  window.cycleCAD = {
+  // Expose globally for external agent access (merge, don't overwrite — other modules already registered)
+  window.cycleCAD = Object.assign(window.cycleCAD || {}, {
     execute,
     executeMany,
     executeBatch,
@@ -85,7 +85,7 @@ export function initAgentAPI({ viewport, sketch, operations, advancedOps, export
     canUndo,
     canRedo,
     _debug: { viewport, sketch, operations, advancedOps, exportModule, appState, tree, assembly }
-  };
+  });
 
   return { sessionId };
 }

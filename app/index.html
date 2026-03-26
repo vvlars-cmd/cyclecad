@@ -2818,7 +2818,7 @@
       init();
     }
 
-    window.cycleCAD = { version: '1.0.0', APP, init };
+    window.cycleCAD = Object.assign(window.cycleCAD || {}, { version: '1.0.0', APP, init });
 
     // ========== Hard Reset (with browser detection) ==========
     const hardResetBtn = document.getElementById('btn-hard-reset');
@@ -3633,6 +3633,6 @@
     </div>
   </div>
 
-  <span id="version-badge" style="position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:70;font-size:0.85rem;color:rgba(255,255,255,0.7);letter-spacing:0.1em;white-space:nowrap;padding:5px 14px;user-select:all;pointer-events:auto;font-family:monospace;font-weight:600;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);border-radius:6px;text-shadow:0 1px 3px rgba(0,0,0,0.5);" title="cycleCAD version">cycleCAD v0.2.1</span>
+  <span id="version-badge" style="position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:70;font-size:0.85rem;color:rgba(255,255,255,0.7);letter-spacing:0.1em;white-space:nowrap;padding:5px 14px;user-select:all;pointer-events:auto;font-family:monospace;font-weight:600;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);border-radius:6px;text-shadow:0 1px 3px rgba(0,0,0,0.5);" title="cycleCAD version">cycleCAD v0.2.2</span>
 </body>
 </html>

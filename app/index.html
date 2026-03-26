@@ -1301,6 +1301,7 @@
   <script src="./js/gdt-training.js"></script>
   <script src="./js/misumi-catalog.js"></script>
   <script src="./js/cad-vr.js"></script>
+  <script src="./js/generative-design.js"></script>
 </head>
 <body>
   <div id="app">
@@ -1557,6 +1558,10 @@
         <button class="toolbar-button" id="btn-vr" title="CAD2VR — View in Virtual Reality" style="background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);">
           <span class="toolbar-icon">🥽</span>
           <span class="toolbar-label">VR</span>
+        </button>
+        <button class="toolbar-button" id="btn-generative" title="Generative Design — Topology Optimization" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);">
+          <span class="toolbar-icon">🧬</span>
+          <span class="toolbar-label">GenDes</span>
         </button>
       </div>
 
@@ -3345,7 +3350,8 @@
         'marketplace-v2-panel': '🏪 Model Marketplace',
         'gdt-panel': '📐 GD&T Training',
         'misumi-panel': '🔩 MISUMI Catalog',
-        'vr-panel': '🥽 CAD2VR'
+        'vr-panel': '🥽 CAD2VR',
+        'generative-panel': '🧬 Generative Design'
       };
       header.innerHTML = `<span style="font-weight:600;font-size:13px;">${titles[panelId] || moduleKey}</span><button onclick="document.getElementById('${panelId}').style.display='none'" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:16px;">✕</button>`;
       panel.appendChild(header);
@@ -3384,6 +3390,7 @@
     document.getElementById('btn-gdt')?.addEventListener('click', () => toggleModulePanel('gdtTraining', 'gdt-panel'));
     document.getElementById('btn-misumi')?.addEventListener('click', () => toggleModulePanel('misumi', 'misumi-panel'));
     document.getElementById('btn-vr')?.addEventListener('click', () => toggleModulePanel('cadVR', 'vr-panel'));
+    document.getElementById('btn-generative')?.addEventListener('click', () => toggleModulePanel('generativeDesign', 'generative-panel'));
 
     // ========== Help & Tutorials Panel ==========
     document.getElementById('btn-help')?.addEventListener('click', () => {
@@ -3464,6 +3471,7 @@
         { cat: 'Analysis', items: ['Section View', 'Material Library', 'Weight Estimator', 'Part Comparison', 'Clearance Checker'] },
         { cat: 'Import/Export', items: ['STL (ASCII + binary)', 'OBJ', 'glTF 2.0', 'DXF (2D + 3D)', 'cycleCAD JSON', 'Inventor .ipt/.iam', 'STEP (via server)'] },
         { cat: 'Platform', items: ['Agent API (55 commands)', 'MCP Server', 'REST API', 'CLI Tool', '$CYCLE Token Engine', 'Model Marketplace V2 (GrabCAD-style)', 'Collaboration', 'CAD2VR (WebXR)'] },
+        { cat: 'Simulation', items: ['Generative Design (Topology Optimization)', 'SIMP Solver (Web Worker)', '15 Materials Library', 'Loads & Constraints', 'Marching Cubes Mesh Generation', 'Manufacturing Constraints'] },
         { cat: 'Reference', items: ['GD&T Training (14 symbols, 50 quiz questions)', 'MISUMI Component Catalog (80+ parts)', 'McMaster-Carr Integration', 'FCF Builder', 'Tolerance Calculator'] },
         { cat: 'Utilities', items: ['Keyboard Shortcuts (25+)', 'Dark Theme', 'Performance Monitor', 'Grid Floor', 'Wireframe Toggle'] }
       ];

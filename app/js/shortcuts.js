@@ -46,7 +46,7 @@ const SHORTCUT_MAP = {
   // Display
   'g': { action: 'toggleGrid', label: 'Toggle Grid', category: 'Display' },
   'w': { action: 'toggleWireframe', label: 'Toggle Wireframe', category: 'Display' },
-  'shift+f': { action: 'fitAll', label: 'Fit All', category: 'Display' },
+  'h': { action: 'fitAll', label: 'Fit All / Home View', category: 'Display' },
 
   // Export & Save
   'ctrl+s': { action: 'save', label: 'Save (Export JSON)', category: 'File' },

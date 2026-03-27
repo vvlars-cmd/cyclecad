@@ -1,0 +1,1924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>cycleCAD Advanced Tutorial</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        /* Header & Navigation */
+        .top-nav {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background-color: #252525;
+            border-bottom: 1px solid #404040;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-left a {
+            color: #58a6ff;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-left a:hover {
+            color: #79c0ff;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-tabs a {
+            color: #a0a0a0;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            padding: 6px 0;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .nav-tabs a:hover {
+            color: #e0e0e0;
+        }
+
+        .nav-tabs a.active {
+            color: #58a6ff;
+            border-bottom-color: #58a6ff;
+        }
+
+        /* Main Layout */
+        .container {
+            display: flex;
+            max-width: 1600px;
+            margin: 0 auto;
+            min-height: calc(100vh - 53px);
+        }
+
+        .sidebar {
+            width: 280px;
+            background-color: #252525;
+            border-right: 1px solid #404040;
+            padding: 20px;
+            overflow-y: auto;
+            max-height: calc(100vh - 53px);
+            position: sticky;
+            top: 53px;
+        }
+
+        .sidebar h3 {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #808080;
+            margin-top: 16px;
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar h3:first-child {
+            margin-top: 0;
+        }
+
+        .sidebar-item {
+            padding: 8px 12px;
+            margin: 4px 0;
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #a0a0a0;
+        }
+
+        .sidebar-item:hover {
+            background-color: #2d2d2d;
+            color: #e0e0e0;
+        }
+
+        .sidebar-item.active {
+            background-color: #58a6ff;
+            color: #1e1e1e;
+            font-weight: 600;
+        }
+
+        .progress-bar {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #404040;
+        }
+
+        .progress-bar-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #808080;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        .progress-bar-fill {
+            height: 4px;
+            background-color: #404040;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill-inner {
+            height: 100%;
+            background-color: #58a6ff;
+            transition: width 0.3s ease;
+        }
+
+        /* Main Content */
+        .content {
+            flex: 1;
+            padding: 40px 60px;
+            overflow-y: auto;
+            max-height: calc(100vh - 53px);
+        }
+
+        .section {
+            margin-bottom: 60px;
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #ffffff;
+        }
+
+        h2 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-top: 40px;
+            margin-bottom: 16px;
+            color: #e0e0e0;
+            border-bottom: 2px solid #58a6ff;
+            padding-bottom: 8px;
+        }
+
+        h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 24px;
+            margin-bottom: 12px;
+            color: #e0e0e0;
+        }
+
+        p {
+            margin-bottom: 12px;
+            color: #c8c8c8;
+        }
+
+        a {
+            color: #58a6ff;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Code Blocks */
+        pre {
+            background-color: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 16px;
+            overflow-x: auto;
+            margin: 16px 0;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        code {
+            font-family: 'Courier New', monospace;
+            color: #79c0ff;
+        }
+
+        pre code {
+            color: inherit;
+        }
+
+        /* Syntax highlighting */
+        .kw { color: #ff7b72; }         /* Keywords */
+        .str { color: #a5d6ff; }        /* Strings */
+        .num { color: #79c0ff; }        /* Numbers */
+        .fn { color: #d2a8ff; }         /* Functions */
+        .obj { color: #ffa657; }        /* Objects */
+        .com { color: #8b949e; }        /* Comments */
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            background-color: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        th {
+            background-color: #161b22;
+            border-bottom: 1px solid #30363d;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #79c0ff;
+            font-size: 12px;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #30363d;
+            font-size: 13px;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Info Boxes */
+        .info-box {
+            border-radius: 6px;
+            padding: 12px 16px;
+            margin: 16px 0;
+            border-left: 4px solid;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .pro-tip {
+            background-color: rgba(40, 167, 69, 0.1);
+            border-left-color: #28a745;
+            color: #d4f1d4;
+        }
+
+        .pro-tip strong {
+            color: #58ff66;
+        }
+
+        .warning {
+            background-color: rgba(255, 193, 7, 0.1);
+            border-left-color: #ffc107;
+            color: #fff9e6;
+        }
+
+        .warning strong {
+            color: #ffd700;
+        }
+
+        .advanced-note {
+            background-color: rgba(156, 39, 176, 0.1);
+            border-left-color: #9c27b0;
+            color: #e8d5f2;
+        }
+
+        .advanced-note strong {
+            color: #d487ff;
+        }
+
+        /* Lists */
+        ul, ol {
+            margin: 16px 0 16px 24px;
+        }
+
+        li {
+            margin-bottom: 8px;
+            color: #c8c8c8;
+        }
+
+        /* Diagrams */
+        .diagram {
+            background-color: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 16px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #79c0ff;
+            white-space: pre;
+            overflow-x: auto;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 80px;
+            padding-top: 24px;
+            border-top: 1px solid #404040;
+            color: #808080;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                position: static;
+                max-height: none;
+                border-right: none;
+                border-bottom: 1px solid #404040;
+                display: flex;
+                gap: 20px;
+                padding: 16px;
+                overflow-y: visible;
+                flex-wrap: wrap;
+            }
+
+            .sidebar h3 {
+                flex-basis: 100%;
+            }
+
+            .content {
+                padding: 30px 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation -->
+    <div class="top-nav">
+        <div class="nav-left">
+            <a href="../index.html">← Back to App</a>
+        </div>
+        <div class="nav-tabs">
+            <a href="basic.html">Basic</a>
+            <a href="intermediate.html">Intermediate</a>
+            <a href="advanced.html" class="active">Advanced</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <h3>Sections</h3>
+            <div class="sidebar-item active" data-section="intro">Introduction</div>
+            <div class="sidebar-item" data-section="agent-api">Agent API</div>
+            <div class="sidebar-item" data-section="mcp">MCP Server</div>
+            <div class="sidebar-item" data-section="rest">REST API</div>
+            <div class="sidebar-item" data-section="cli">CLI Tool</div>
+            <div class="sidebar-item" data-section="tokens">Token Engine</div>
+            <div class="sidebar-item" data-section="marketplace">Marketplace</div>
+            <div class="sidebar-item" data-section="fabs">Connected Fabs</div>
+            <div class="sidebar-item" data-section="agents">Multi-Agent</div>
+            <div class="sidebar-item" data-section="machines">Machine Profiles</div>
+            <div class="sidebar-item" data-section="collab">Collaboration</div>
+            <div class="sidebar-item" data-section="perf">Performance</div>
+            <div class="sidebar-item" data-section="docker">Docker</div>
+            <div class="sidebar-item" data-section="plugins">Plugins</div>
+            <div class="sidebar-item" data-section="contrib">Contributing</div>
+
+            <div class="progress-bar">
+                <div class="progress-bar-label">Progress</div>
+                <div class="progress-bar-fill">
+                    <div class="progress-bar-fill-inner" id="progressFill"></div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+
+            <!-- Section: Introduction -->
+            <section id="intro" class="section active">
+                <h1>Advanced cycleCAD Tutorial</h1>
+                <p>Master agent-first CAD automation, enterprise integration, and next-generation manufacturing workflows.</p>
+
+                <h2>Prerequisites</h2>
+                <p>This advanced tutorial assumes you have:</p>
+                <ul>
+                    <li>Completed the Basic and Intermediate tutorials</li>
+                    <li>Familiarity with JavaScript, JSON, and REST APIs</li>
+                    <li>Understanding of parametric CAD concepts (sketches, features, assemblies)</li>
+                    <li>Experience with CLI tools and command-line interfaces</li>
+                    <li>Familiarity with Docker or containerization concepts (optional)</li>
+                </ul>
+
+                <h2>What You'll Master</h2>
+                <ul>
+                    <li><strong>Agent API:</strong> 55 commands across 10 namespaces for programmatic CAD</li>
+                    <li><strong>MCP Server:</strong> Connect external AI agents and tools</li>
+                    <li><strong>REST API:</strong> HTTP/WebSocket integration for cloud systems</li>
+                    <li><strong>CLI Tool:</strong> Command-line CAD automation and scripting</li>
+                    <li><strong>$CYCLE Token Engine:</strong> Per-operation billing and ledger management</li>
+                    <li><strong>Model Marketplace:</strong> Publishing, distributing, and monetizing designs</li>
+                    <li><strong>Connected Fabs:</strong> CAD→CAM→Manufacturing pipeline with fab networks</li>
+                    <li><strong>Multi-Agent Workflows:</strong> Cooperative design with agent swarms</li>
+                    <li><strong>Docker Deployment:</strong> 3-service architecture for enterprise</li>
+                </ul>
+
+                <div class="pro-tip">
+                    <strong>Pro Tip:</strong> cycleCAD is "Agent-First" — designed for AI agents before humans. All features are accessible via the Agent API, making it naturally extensible.
+                </div>
+            </section>
+
+            <!-- Section: Agent API -->
+            <section id="agent-api" class="section">
+                <h1>Agent API Deep Dive</h1>
+
+                <h2>Architecture</h2>
+                <p>The Agent API exposes all cycleCAD functionality as a JSON-RPC style interface. Any external system (AI agent, web app, CLI tool, or MCP server) communicates with cycleCAD via <code>window.cycleCAD.execute()</code>.</p>
+
+                <h3>Basic Usage</h3>
+<pre><code><span class="com">// All Agent API calls follow this pattern:</span>
+<span class="kw">const</span> result = <span class="kw">await</span> <span class="obj">window</span>.cycleCAD.<span class="fn">execute</span>({
+    method: <span class="str">'shape.cylinder'</span>,
+    params: {
+        radius: <span class="num">25</span>,
+        height: <span class="num">80</span>,
+        centered: <span class="kw">true</span>
+    }
+});
+
+console.<span class="fn">log</span>(result); <span class="com">// { id: 'shape_0', success: true, ... }</span></code></pre>
+
+                <h2>10 Namespaces (55 Commands)</h2>
+
+                <table>
+                    <tr>
+                        <th>Namespace</th>
+                        <th>Commands</th>
+                        <th>Purpose</th>
+                    </tr>
+                    <tr>
+                        <td><code>shape.*</code></td>
+                        <td>12 commands</td>
+                        <td>Create geometry: cylinder, box, sphere, cone, torus, wedge, tube, plate, disk, ring, hexbolt, washer</td>
+                    </tr>
+                    <tr>
+                        <td><code>feature.*</code></td>
+                        <td>10 commands</td>
+                        <td>Edit geometry: extrude, revolve, fillet, chamfer, boolean, shell, pattern, mirror, sweep, loft</td>
+                    </tr>
+                    <tr>
+                        <td><code>assembly.*</code></td>
+                        <td>8 commands</td>
+                        <td>Manage components: add, remove, position, explode, constraint, mate, joint, query</td>
+                    </tr>
+                    <tr>
+                        <td><code>render.*</code></td>
+                        <td>6 commands</td>
+                        <td>Viewport control: snapshot, multiview, fitToSelection, setView, toggleGrid, toggleWireframe</td>
+                    </tr>
+                    <tr>
+                        <td><code>validate.*</code></td>
+                        <td>5 commands</td>
+                        <td>Design review: dfm (Design For Manufacturing), weight, cost, clearance, summary</td>
+                    </tr>
+                    <tr>
+                        <td><code>export.*</code></td>
+                        <td>4 commands</td>
+                        <td>Output formats: stl, obj, gltf, json</td>
+                    </tr>
+                    <tr>
+                        <td><code>scene.*</code></td>
+                        <td>4 commands</td>
+                        <td>Scene management: clear, undo, redo, getState</td>
+                    </tr>
+                    <tr>
+                        <td><code>material.*</code></td>
+                        <td>2 commands</td>
+                        <td>Material assignment: list, apply</td>
+                    </tr>
+                    <tr>
+                        <td><code>annotation.*</code></td>
+                        <td>2 commands</td>
+                        <td>Markup: pin, note</td>
+                    </tr>
+                    <tr>
+                        <td><code>query.*</code></td>
+                        <td>2 commands</td>
+                        <td>Data retrieval: edges, faces</td>
+                    </tr>
+                </table>
+
+                <h3>Self-Describing Schema</h3>
+                <p>Query the API to understand what commands are available and what parameters they accept:</p>
+
+<pre><code><span class="com">// Get schema for all commands</span>
+<span class="kw">const</span> schema = <span class="kw">await</span> <span class="obj">window</span>.cycleCAD.<span class="fn">getSchema</span>();
+
+<span class="com">// Returns:</span>
+{
+    shape: {
+        cylinder: {
+            description: <span class="str">'Create a cylinder'</span>,
+            params: {
+                radius: { type: <span class="str">'number'</span>, required: <span class="kw">true</span> },
+                height: { type: <span class="str">'number'</span>, required: <span class="kw">true</span> },
+                centered: { type: <span class="str">'boolean'</span>, default: <span class="kw">false</span> }
+            }
+        },
+        ...
+    }
+}</code></pre>
+
+                <h3>Example: Agent-Driven Design</h3>
+<pre><code><span class="com">// AI agent creates a motor mount bracket step-by-step</span>
+<span class="kw">async function</span> <span class="fn">createMotorBracket</span>() {
+    <span class="kw">const</span> api = <span class="obj">window</span>.cycleCAD;
+
+    <span class="com">// 1. Create base plate</span>
+    <span class="kw">let</span> base = <span class="kw">await</span> api.<span class="fn">execute</span>({
+        method: <span class="str">'shape.box'</span>,
+        params: { width: <span class="num">100</span>, height: <span class="num">80</span>, depth: <span class="num">10</span> }
+    });
+
+    <span class="com">// 2. Add mounting holes</span>
+    <span class="kw">await</span> api.<span class="fn">execute</span>({
+        method: <span class="str">'feature.pattern'</span>,
+        params: {
+            type: <span class="str">'rectangular'</span>,
+            rows: <span class="num">2</span>,
+            cols: <span class="num">2</span>,
+            spacing: <span class="num">40</span>
+        }
+    });
+
+    <span class="com">// 3. Fillet edges</span>
+    <span class="kw">await</span> api.<span class="fn">execute</span>({
+        method: <span class="str">'feature.fillet'</span>,
+        params: { radius: <span class="num">2</span> }
+    });
+
+    <span class="com">// 4. Validate design</span>
+    <span class="kw">const</span> review = <span class="kw">await</span> api.<span class="fn">execute</span>({
+        method: <span class="str">'validate.dfm'</span>,
+        params: {}
+    });
+
+    <span class="kw">return</span> review;
+}</code></pre>
+
+                <div class="advanced-note">
+                    <strong>Advanced:</strong> The Agent API is transport-agnostic. In-browser it uses direct function calls. Over MCP it uses stdio JSON-RPC. Over REST it uses HTTP. The command semantics remain identical.
+                </div>
+            </section>
+
+            <!-- Section: MCP Server -->
+            <section id="mcp" class="section">
+                <h1>MCP Server Integration</h1>
+
+                <h2>What is MCP?</h2>
+                <p>Model Context Protocol (MCP) is a standard for AI agents to discover and call tools. cycleCAD exposes all 55 Agent API commands as MCP tools, allowing Claude, other LLMs, and specialized agents to control CAD directly.</p>
+
+                <h2>Starting the MCP Server</h2>
+
+<pre><code><span class="com">// From command line:</span>
+npx cyclecad-mcp --port <span class="num">3000</span>
+
+<span class="com">// Or via Node.js:</span>
+<span class="kw">const</span> mcpServer = <span class="fn">require</span>(<span class="str">'cyclecad/server/mcp-server'</span>);
+<span class="kw">await</span> mcpServer.<span class="fn">start</span>({ port: <span class="num">3000</span> });
+
+console.<span class="fn">log</span>(<span class="str">'MCP Server running on :3000'</span>);</code></pre>
+
+                <h2>Connecting an AI Agent</h2>
+                <p>Claude and other AI systems can now discover cycleCAD tools via MCP:</p>
+
+<pre><code><span class="com">// In your Claude/Agent context:</span>
+<span class="str">"You have access to the cycleCAD CAD engine via MCP tools."</span>
+
+cycleCAD tools available:
+- <span class="str">shape_cylinder</span> — Create a cylinder (radius, height, centered)
+- <span class="str">shape_box</span> — Create a box (width, height, depth)
+- <span class="str">feature_fillet</span> — Fillet edges (radius)
+- <span class="str">validate_dfm</span> — Design for Manufacturing analysis
+- ... (55 tools total)
+
+<span class="com">// Agent usage:</span>
+<span class="str">"Create a 50mm diameter, 80mm tall cylinder, then add a 5mm fillet"</span>
+
+<span class="com">// Claude calls:</span>
+1. shape_cylinder { radius: <span class="num">25</span>, height: <span class="num">80</span> }
+2. feature_fillet { radius: <span class="num">5</span> }</code></pre>
+
+                <h2>Transport Options</h2>
+                <table>
+                    <tr>
+                        <th>Transport</th>
+                        <th>Use Case</th>
+                        <th>Example</th>
+                    </tr>
+                    <tr>
+                        <td>stdio (default)</td>
+                        <td>Local agents, Claude, easy integration</td>
+                        <td><code>npx cyclecad-mcp</code></td>
+                    </tr>
+                    <tr>
+                        <td>WebSocket</td>
+                        <td>Browser agents, real-time collaboration</td>
+                        <td><code>ws://localhost:3000</code></td>
+                    </tr>
+                    <tr>
+                        <td>HTTP (request/response)</td>
+                        <td>Stateless cloud functions, Lambda</td>
+                        <td><code>POST /tool/{toolName}</code></td>
+                    </tr>
+                </table>
+
+                <div class="pro-tip">
+                    <strong>Pro Tip:</strong> Use stdio transport with Claude for the smoothest integration. Claude automatically calls tools and processes results.
+                </div>
+
+                <h2>Tool Manifest Format</h2>
+<pre><code>{
+    <span class="str">"tools"</span>: [
+        {
+            <span class="str">"name"</span>: <span class="str">"shape_cylinder"</span>,
+            <span class="str">"description"</span>: <span class="str">"Create a cylinder with given radius and height"</span>,
+            <span class="str">"inputSchema"</span>: {
+                <span class="str">"type"</span>: <span class="str">"object"</span>,
+                <span class="str">"properties"</span>: {
+                    <span class="str">"radius"</span>: { <span class="str">"type"</span>: <span class="str">"number"</span> },
+                    <span class="str">"height"</span>: { <span class="str">"type"</span>: <span class="str">"number"</span> },
+                    <span class="str">"centered"</span>: { <span class="str">"type"</span>: <span class="str">"boolean"</span> }
+                },
+                <span class="str">"required"</span>: [<span class="str">"radius"</span>, <span class="str">"height"</span>]
+            }
+        },
+        ...
+    ]
+}</code></pre>
+            </section>
+
+            <!-- Section: REST API -->
+            <section id="rest" class="section">
+                <h1>REST API & WebSocket</h1>
+
+                <h2>Overview</h2>
+                <p>The REST API provides HTTP endpoints for cloud-based CAD operations. All endpoints accept JSON and return JSON.</p>
+
+                <h2>Core Endpoints</h2>
+                <table>
+                    <tr>
+                        <th>Endpoint</th>
+                        <th>Method</th>
+                        <th>Purpose</th>
+                    </tr>
+                    <tr>
+                        <td><code>/api/v1/execute</code></td>
+                        <td>POST</td>
+                        <td>Execute any Agent API command</td>
+                    </tr>
+                    <tr>
+                        <td><code>/api/v1/schema</code></td>
+                        <td>GET</td>
+                        <td>Get schema for all commands</td>
+                    </tr>
+                    <tr>
+                        <td><code>/api/v1/models</code></td>
+                        <td>GET</td>
+                        <td>List saved models</td>
+                    </tr>
+                    <tr>
+                        <td><code>/api/v1/models/{id}</code></td>
+                        <td>GET</td>
+                        <td>Get model state/geometry</td>
+                    </tr>
+                    <tr>
+                        <td><code>/api/v1/models/{id}/export</code></td>
+                        <td>POST</td>
+                        <td>Export to STL/OBJ/GLTF</td>
+                    </tr>
+                    <tr>
+                        <td><code>/api/v1/token/balance</code></td>
+                        <td>GET</td>
+                        <td>Get account token balance</td>
+                    </tr>
+                    <tr>
+                        <td><code>/api/v1/token/spend</code></td>
+                        <td>POST</td>
+                        <td>Record token spend</td>
+                    </tr>
+                    <tr>
+                        <td><code>/ws/live</code></td>
+                        <td>WebSocket</td>
+                        <td>Real-time events and collaboration</td>
+                    </tr>
+                </table>
+
+                <h3>Example: Execute via REST</h3>
+<pre><code><span class="com">// POST /api/v1/execute</span>
+curl -X POST http://localhost:<span class="num">3000</span>/api/v1/execute \
+  -H <span class="str">'Content-Type: application/json'</span> \
+  -d <span class="str">'{
+    "method": "shape.cylinder",
+    "params": {
+      "radius": 25,
+      "height": 80
+    }
+  }'</span>
+
+<span class="com">// Response:</span>
+{
+  <span class="str">"success"</span>: <span class="kw">true</span>,
+  <span class="str">"id"</span>: <span class="str">"shape_0"</span>,
+  <span class="str">"bbox"</span>: { <span class="str">"min"</span>: [...], <span class="str">"max"</span>: [...] },
+  <span class="str">"tokensUsed"</span>: <span class="num">150</span>
+}</code></pre>
+
+                <h2>WebSocket Real-Time Events</h2>
+<pre><code><span class="com">// Connect to WebSocket</span>
+<span class="kw">const</span> ws = <span class="kw">new</span> <span class="fn">WebSocket</span>(<span class="str">'ws://localhost:3000/ws/live'</span>);
+
+ws.<span class="fn">onmessage</span> = (event) => {
+    <span class="kw">const</span> msg = <span class="fn">JSON</span>.<span class="fn">parse</span>(event.data);
+
+    <span class="kw">switch</span> (msg.type) {
+        <span class="kw">case</span> <span class="str">'operation_complete'</span>:
+            console.<span class="fn">log</span>(<span class="str">'Operation done:'</span>, msg.operation);
+            <span class="kw">break</span>;
+        <span class="kw">case</span> <span class="str">'user_joined'</span>:
+            console.<span class="fn">log</span>(<span class="str">'Collab user:'</span>, msg.user);
+            <span class="kw">break</span>;
+    }
+};</code></pre>
+
+                <h2>Rate Limiting & CORS</h2>
+                <p>Configure rate limits and CORS in your deployment:</p>
+
+<pre><code><span class="com">// config.json</span>
+{
+    <span class="str">"rateLimit"</span>: {
+        <span class="str">"windowMs"</span>: <span class="num">60000</span>,     <span class="com">// 1 minute</span>
+        <span class="str">"maxRequests"</span>: <span class="num">100</span>      <span class="com">// 100 req/min per IP</span>
+    },
+    <span class="str">"cors"</span>: {
+        <span class="str">"origin"</span>: [<span class="str">"https://yourapp.com"</span>],
+        <span class="str">"credentials"</span>: <span class="kw">true</span>
+    }
+}</code></pre>
+
+                <div class="warning">
+                    <strong>Warning:</strong> Always validate API keys in production. Use JWT tokens with short expiration times.
+                </div>
+            </section>
+
+            <!-- Section: CLI Tool -->
+            <section id="cli" class="section">
+                <h1>CLI Tool</h1>
+
+                <h2>Installation & Usage</h2>
+
+<pre><code><span class="com">// Global install</span>
+npm install -g cyclecad
+
+<span class="com">// Interactive REPL</span>
+cyclecad
+
+<span class="com">// Batch command</span>
+cyclecad shape.cylinder --radius <span class="num">25</span> --height <span class="num">80</span>
+
+<span class="com">// Execute script file</span>
+cyclecad run my-design.cycle</code></pre>
+
+                <h2>Interactive REPL</h2>
+
+<pre><code><span class="com">$ cyclecad</span>
+<span class="str">cycleCAD v0.2.0 | Type 'help' for commands</span>
+
+cyclecad> shape.cylinder --radius <span class="num">25</span> --height <span class="num">80</span>
+<span class="str">✓ Created cylinder (shape_0)</span>
+
+cyclecad> feature.fillet --radius <span class="num">5</span>
+<span class="str">✓ Filleted edges (fillet_0)</span>
+
+cyclecad> render.snapshot --format png
+<span class="str">✓ Saved: /tmp/cyclecad_snapshot.png</span>
+
+cyclecad> validate.dfm
+<span class="str">Design Review: PASS (A)
+  ✓ No thin walls detected
+  ✓ Adequate draft angles
+  ⚠ Warning: Consider corner radii</span>
+
+cyclecad> export.stl --file my-part.stl
+<span class="str">✓ Exported: my-part.stl (245 KB)</span>
+
+cyclecad> exit</code></pre>
+
+                <h2>Script Files (.cycle)</h2>
+                <p>Create reusable design scripts:</p>
+
+<pre><code><span class="com">// motor-bracket.cycle</span>
+<span class="com"># Define parameters</span>
+<span class="kw">set</span> $plate_width <span class="num">100</span>
+<span class="kw">set</span> $plate_height <span class="num">80</span>
+<span class="kw">set</span> $hole_diameter <span class="num">6</span>
+
+<span class="com"># Create base plate</span>
+shape.box --width <span class="str">$plate_width</span> --height <span class="str">$plate_height</span> --depth <span class="num">10</span>
+
+<span class="com"># Add mounting holes</span>
+<span class="kw">loop</span> i <span class="num">0</span> <span class="num">3</span> {
+    feature.hole --diameter <span class="str">$hole_diameter</span> --depth <span class="num">10</span>
+}
+
+<span class="com"># Finish</span>
+feature.fillet --radius <span class="num">2</span>
+render.snapshot --format png
+
+<span class="com"># Export</span>
+export.stl --file motor-bracket.stl
+
+<span class="com"># Validate</span>
+validate.dfm</code></pre>
+
+                <h2>Tab Completion & Help</h2>
+
+<pre><code><span class="com">// Type 'help' for all commands</span>
+cyclecad> help
+
+<span class="com">// Type 'help {command}' for details</span>
+cyclecad> help shape.cylinder
+shape.cylinder — Create a cylinder
+Usage: shape.cylinder --radius &lt;num&gt; --height &lt;num&gt; [--centered]
+Parameters:
+  --radius     [required] Cylinder radius in mm
+  --height     [required] Cylinder height in mm
+  --centered   [optional] Center at origin (default: false)
+
+<span class="com">// Tab autocomplete</span>
+cyclecad> shape. [TAB]
+  shape.box
+  shape.cone
+  shape.cylinder
+  shape.disk
+  ...
+
+cyclecad> feature. [TAB]
+  feature.boolean
+  feature.chamfer
+  feature.fillet
+  ...</code></pre>
+
+                <div class="pro-tip">
+                    <strong>Pro Tip:</strong> Use `--watch` flag to re-run scripts on file changes: <code>cyclecad run design.cycle --watch</code>
+                </div>
+            </section>
+
+            <!-- Section: Token Engine -->
+            <section id="tokens" class="section">
+                <h1>$CYCLE Token Engine</h1>
+
+                <h2>Overview</h2>
+                <p>$CYCLE is a dual-ledger token system where users spend tokens to create designs and earn tokens by sharing them. It's inspired by Claude's API pricing model but adds creator economics.</p>
+
+                <h2>Three Tiers</h2>
+                <table>
+                    <tr>
+                        <th>Tier</th>
+                        <th>Cost</th>
+                        <th>Features</th>
+                    </tr>
+                    <tr>
+                        <td><strong>FREE</strong></td>
+                        <td>€0/mo</td>
+                        <td>50 tokens/month, basic AI, 10MB storage, no publish</td>
+                    </tr>
+                    <tr>
+                        <td><strong>PRO</strong></td>
+                        <td>€49/mo</td>
+                        <td>5,000 tokens/month, advanced AI, 1GB storage, publish models</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ENTERPRISE</strong></td>
+                        <td>€299/mo</td>
+                        <td>50,000 tokens/month, priority support, unlimited storage, API access</td>
+                    </tr>
+                </table>
+
+                <h2>Per-Operation Costs</h2>
+                <table>
+                    <tr>
+                        <th>Operation</th>
+                        <th>Tokens</th>
+                        <th>Notes</th>
+                    </tr>
+                    <tr>
+                        <td>Simple shape (cylinder, box)</td>
+                        <td>50</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>Fillet/Chamfer</td>
+                        <td>75</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>Boolean operation</td>
+                        <td>150</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>Assembly constraint</td>
+                        <td>100</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>Design review (DFM)</td>
+                        <td>200</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>Export to STEP</td>
+                        <td>250</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>AI design suggestions</td>
+                        <td>500</td>
+                        <td>Per request</td>
+                    </tr>
+                </table>
+
+                <h2>Discounts</h2>
+                <ul>
+                    <li><strong>Cache Discount:</strong> 10% for repeated operations within 24 hours</li>
+                    <li><strong>Batch Discount:</strong> 25-50% for bulk operations (10+ in a script)</li>
+                    <li><strong>Loyalty Discount:</strong> 5% per month as a PRO/ENTERPRISE user</li>
+                </ul>
+
+                <h2>Checking Balance</h2>
+
+<pre><code><span class="com">// In app</span>
+<span class="kw">const</span> balance = <span class="kw">await</span> <span class="obj">window</span>.cycleCAD.<span class="fn">token</span>.<span class="fn">getBalance</span>();
+console.<span class="fn">log</span>(balance); <span class="com">// { balance: 4850, tier: 'PRO', ... }</span>
+
+<span class="com">// Via CLI</span>
+cyclecad token balance
+<span class="str">Balance: 4,850 $CYCLE
+Tier: PRO (€49/mo)
+Spend this month: 1,150 $CYCLE
+Reset: 2026-04-01</span>
+
+<span class="com">// Via REST API</span>
+curl http://localhost:<span class="num">3000</span>/api/v1/token/balance</code></pre>
+
+                <h2>Double-Entry Ledger</h2>
+                <p>All token transactions are recorded in a cryptographically signed ledger:</p>
+
+<pre><code>{
+    <span class="str">"transactions"</span>: [
+        {
+            <span class="str">"id"</span>: <span class="str">"txn_abc123"</span>,
+            <span class="str">"timestamp"</span>: <span class="str">"2026-03-26T14:30:00Z"</span>,
+            <span class="str">"type"</span>: <span class="str">"spend"</span>,
+            <span class="str">"amount"</span>: <span class="num">150</span>,
+            <span class="str">"operation"</span>: <span class="str">"feature.fillet"</span>,
+            <span class="str">"note"</span>: <span class="str">"Motor bracket project"</span>,
+            <span class="str">"hash"</span>: <span class="str">"0xabc..."</span>
+        },
+        {
+            <span class="str">"id"</span>: <span class="str">"txn_def456"</span>,
+            <span class="str">"timestamp"</span>: <span class="str">"2026-03-26T15:00:00Z"</span>,
+            <span class="str">"type"</span>: <span class="str">"earn"</span>,
+            <span class="str">"amount"</span>: <span class="num">500</span>,
+            <span class="str">"source"</span>: <span class="str">"marketplace_sale"</span>,
+            <span class="str">"note"</span>: <span class="str">"Bearing housing model purchased"</span>,
+            <span class="str">"hash"</span>: <span class="str">"0xdef..."</span>
+        }
+    ]
+}</code></pre>
+
+                <div class="advanced-note">
+                    <strong>Advanced:</strong> The ledger is immutable. Each transaction is cryptographically chained (hash of previous txn included in next). This ensures a tamper-proof audit trail.
+                </div>
+
+                <h2>Purchasing Tokens</h2>
+
+<pre><code><span class="com">// Subscribe to PRO (5,000 tokens/month)</span>
+<span class="kw">await</span> <span class="obj">window</span>.cycleCAD.<span class="fn">token</span>.<span class="fn">subscribe</span>({
+    tier: <span class="str">'PRO'</span>,
+    billingCycle: <span class="str">'monthly'</span>
+});
+
+<span class="com">// Buy additional tokens (pay-as-you-go)</span>
+<span class="kw">await</span> <span class="obj">window</span>.cycleCAD.<span class="fn">token</span>.<span class="fn">purchase</span>({
+    amount: <span class="num">1000</span>,
+    method: <span class="str">'stripe'</span> <span class="com">// or 'crypto' for USDC</span>
+});</code></pre>
+            </section>
+
+            <!-- Section: Marketplace -->
+            <section id="marketplace" class="section">
+                <h1>Model Marketplace</h1>
+
+                <h2>Publishing Your Models</h2>
+                <p>Share designs in the cycleCAD marketplace and earn 70-90% royalties.</p>
+
+                <h3>7 Access Tiers</h3>
+                <table>
+                    <tr>
+                        <th>Tier</th>
+                        <th>Price (€)</th>
+                        <th>Your Royalty</th>
+                    </tr>
+                    <tr>
+                        <td>Free</td>
+                        <td>0</td>
+                        <td>—</td>
+                    </tr>
+                    <tr>
+                        <td>Starter</td>
+                        <td>9</td>
+                        <td>70% (€6.30)</td>
+                    </tr>
+                    <tr>
+                        <td>Basic</td>
+                        <td>19</td>
+                        <td>75% (€14.25)</td>
+                    </tr>
+                    <tr>
+                        <td>Professional</td>
+                        <td>49</td>
+                        <td>80% (€39.20)</td>
+                    </tr>
+                    <tr>
+                        <td>Premium</td>
+                        <td>99</td>
+                        <td>85% (€84.15)</td>
+                    </tr>
+                    <tr>
+                        <td>Enterprise</td>
+                        <td>299</td>
+                        <td>90% (€269.10)</td>
+                    </tr>
+                    <tr>
+                        <td>Custom</td>
+                        <td>Negotiated</td>
+                        <td>90%+</td>
+                    </tr>
+                </table>
+
+                <h2>Publishing a Model</h2>
+
+<pre><code><span class="com">// In app UI or via API:</span>
+<span class="kw">await</span> <span class="obj">window</span>.cycleCAD.<span class="fn">marketplace</span>.<span class="fn">publish</span>({
+    title: <span class="str">'Motor Mount Bracket'</span>,
+    description: <span class="str">'Aluminum bracket for NEMA23 stepper motors'</span>,
+    category: <span class="str">'mechanical'</span>,
+    tags: [<span class="str">'aluminum'</span>, <span class="str">'bracket'</span>, <span class="str">'stepper'</span>],
+    thumbnail: <span class="str">'snapshot.png'</span>,
+    accessTier: <span class="str">'Professional'</span>,
+    price: <span class="num">49</span>,
+    features: {
+        geometry: <span class="kw">true</span>,
+        parameters: <span class="kw">true</span>,
+        assembly: <span class="kw">true</span>
+    }
+});
+
+<span class="com">// Returns published model ID and marketplace URL</span></code></pre>
+
+                <h2>Marketplace Search</h2>
+
+<pre><code><span class="com">// Find models by keyword</span>
+<span class="kw">const</span> results = <span class="kw">await</span> <span class="obj">window</span>.cycleCAD.<span class="fn">marketplace</span>.<span class="fn">search</span>({
+    query: <span class="str">'bearing housing'</span>,
+    category: <span class="str">'mechanical'</span>,
+    maxPrice: <span class="num">50</span>,
+    sortBy: <span class="str">'downloads'</span>
+});
+
+<span class="com">// Browse by category</span>
+<span class="kw">const</span> mechanical = <span class="kw">await</span> <span class="obj">window</span>.cycleCAD.<span class="fn">marketplace</span>.<span class="fn">browse</span>({
+    category: <span class="str">'mechanical'</span>,
+    limit: <span class="num">20</span>
+});</code></pre>
+
+                <h2>Creator Dashboard</h2>
+                <p>Track sales, earnings, reviews, and download statistics:</p>
+
+<pre><code>{
+    <span class="str">"models"</span>: [
+        {
+            <span class="str">"id"</span>: <span class="str">"model_xyz"</span>,
+            <span class="str">"title"</span>: <span class="str">"Motor Mount Bracket"</span>,
+            <span class="str">"downloads"</span>: <span class="num">1247</span>,
+            <span class="str">"sales"</span>: <span class="num">89</span>,
+            <span class="str">"revenue"</span>: <span class="num">4371</span>,   <span class="com">// €</span>
+            <span class="str">"yourRoyalty"</span>: <span class="num">3497</span>,  <span class="com">// 80%</span>
+            <span class="str">"avgRating"</span>: <span class="num">4.8</span>,
+            <span class="str">"reviews"</span>: <span class="num">42</span>
+        }
+    ],
+    <span class="str">"totalRevenue"</span>: <span class="num">12450</span>,
+    <span class="str">"totalRoyalties"</span>: <span class="num">9960</span>
+}</code></pre>
+
+                <div class="pro-tip">
+                    <strong>Pro Tip:</strong> Models with detailed documentation, good screenshots, and videos get 3-5x more downloads.
+                </div>
+            </section>
+
+            <!-- Section: Connected Fabs -->
+            <section id="fabs" class="section">
+                <h1>Connected Fabs & Manufacturing</h1>
+
+                <h2>CAD → CAM → Manufacturing Pipeline</h2>
+
+<pre><code><span class="diagram">┌─────────────────────────────────────────┐
+│  cycleCAD (Design)                      │
+│  - Create geometry                      │
+│  - Specify materials                    │
+│  - Add tolerances                       │
+└───────────┬─────────────────────────────┘
+            │
+            ▼
+┌─────────────────────────────────────────┐
+│  CAM Generation                         │
+│  - Tool path generation                 │
+│  - Feeds & speeds calculation           │
+│  - Nesting optimization                 │
+└───────────┬─────────────────────────────┘
+            │
+            ▼
+┌─────────────────────────────────────────┐
+│  Fab Network                            │
+│  - Quote aggregation                    │
+│  - Inventory check                      │
+│  - Lead time estimation                 │
+└───────────┬─────────────────────────────┘
+            │
+            ▼
+┌─────────────────────────────────────────┐
+│  Order + Manufacturing                  │
+│  - Production monitoring                │
+│  - Quality assurance                    │
+│  - Delivery tracking                    │
+└─────────────────────────────────────────┘</span></code></pre>
+
+                <h2>Connecting a Fab</h2>
+                <p>Register a fab to receive automated orders from cycleCAD users:</p>
+
+<pre><code><span class="com">// Fab registration (as fab operator)</span>
+<span class="kw">await</span> <span class="obj">window</span>.cycleCAD.<span class="fn">fab</span>.<span class="fn">register</span>({
+    name: <span class="str">'TechMachining Co.'</span>,
+    location: <span class="str">'Berlin, Germany'</span>,
+    capabilities: [
+        <span class="str">'CNC_3AXIS'</span>, <span class="str">'CNC_5AXIS'</span>,
+        <span class="str">'FDM'</span>, <span class="str">'SLA'</span>,
+        <span class="str">'LASER_CUT'</span>, <span class="str">'SHEET_METAL'</span>
+    ],
+    materials: [
+        <span class="str">'aluminum'</span>, <span class="str">'steel'</span>,
+        <span class="str">'abs'</span>, <span class="str">'pla'</span>,
+        <span class="str">'nylon'</span>
+    ],
+    apiKey: <span class="str">'fab_key_...'</span>
+});</code></pre>
+
+                <h2>Automated Quoting</h2>
+
+<pre><code><span class="com">// User exports design, gets instant quotes from all connected fabs</span>
+<span class="kw">const</span> quotes = <span class="kw">await</span> <span class="obj">window</span>.cycleCAD.<span class="fn">fab</span>.<span class="fn">getQuotes</span>({
+    geometry: model,
+    material: <span class="str">'aluminum'</span>,
+    quantity: <span class="num">10</span>,
+    machineTime: <span class="num">2.5</span>  <span class="com">// hours</span>
+});
+
+<span class="com">// Returns:</span>
+[
+    {
+        fab: <span class="str">'TechMachining'</span>,
+        price: <span class="num">450</span>,        <span class="com">// € per batch</span>
+        leadTime: <span class="num">3</span>,          <span class="com">// days</span>
+        setup: <span class="num">50</span>,
+        perUnit: <span class="num">40</span>
+    },
+    {
+        fab: <span class="str">'QuickParts'</span>,
+        price: <span class="num">480</span>,
+        leadTime: <span class="num">2</span>,
+        setup: <span class="num">0</span>,
+        perUnit: <span class="num">48</span>
+    }
+]</code></pre>
+
+                <h2>Order Tracking</h2>
+
+<pre><code><span class="com">// Place order with fab</span>
+<span class="kw">const</span> order = <span class="kw">await</span> <span class="obj">window</span>.cycleCAD.<span class="fn">fab</span>.<span class="fn">placeOrder</span>({
+    fabId: <span class="str">'fab_techmachining'</span>,
+    design: model,
+    quantity: <span class="num">10</span>,
+    material: <span class="str">'6061-T6 Aluminum'</span>
+});
+
+<span class="com">// Get order status</span>
+<span class="kw">const</span> status = <span class="kw">await</span> <span class="obj">window</span>.cycleCAD.<span class="fn">fab</span>.<span class="fn">getOrderStatus</span>(order.id);
+<span class="com">// { status: 'in_production', progress: 65, eta: '2026-03-28' }</span></code></pre>
+
+                <div class="advanced-note">
+                    <strong>Advanced:</strong> Fabs can define custom machine profiles (CNC tools, feeds, speeds) which auto-optimize toolpaths for your specific equipment.
+                </div>
+            </section>
+
+            <!-- Section: Multi-Agent Workflows -->
+            <section id="agents" class="section">
+                <h1>Multi-Agent Workflows</h1>
+
+                <h2>Agent Swarms</h2>
+                <p>Multiple AI agents can collaborate on a design, each with specialized skills:</p>
+
+<pre><code><span class="kw">const</span> swarm = <span class="kw">await</span> <span class="obj">window</span>.cycleCAD.<span class="fn">agent</span>.<span class="fn">createSwarm</span>({
+    name: <span class="str">'Motor Bracket Design'</span>,
+    agents: [
+        {
+            role: <span class="str">'designer'</span>,
+            model: <span class="str">'claude-opus'</span>,
+            <span class="com">// Creates geometry, refines shapes</span>
+        },
+        {
+            role: <span class="str">'analyst'</span>,
+            model: <span class="str">'claude-sonnet'</span>,
+            <span class="com">// Validates design, runs FEA simulation</span>
+        },
+        {
+            role: <span class="str">'manufacturer'</span>,
+            model: <span class="str">'domain-model'</span>,
+            <span class="com">// Optimizes for manufacturability</span>
+        }
+    ]
+});
+
+<span class="com">// Swarm processes iteratively:</span>
+<span class="com">// 1. Designer creates initial geometry</span>
+<span class="com">// 2. Analyst reviews, suggests improvements</span>
+<span class="com">// 3. Manufacturer optimizes for CNC/FDM/etc</span>
+<span class="com">// 4. Repeat until converged</span></code></pre>
+
+                <h2>Design Review Loop</h2>
+                <p>Automatic A/B/C/F scoring for iterative improvement:</p>
+
+<pre><code><span class="com">// Design score: A (excellent) → F (fail)</span>
+<span class="kw">const</span> review = <span class="kw">await</span> <span class="obj">window</span>.cycleCAD.<span class="fn">validate</span>.<span class="fn">dfm</span>();
+
+<span class="com">// Returns:</span>
+{
+    <span class="str">"score"</span>: <span class="str">"B"</span>,
+    <span class="str">"summary"</span>: <span class="str">"Good design with minor improvements recommended"</span>,
+    <span class="str">"criteria"</span>: {
+        <span class="str">"manufacturability"</span>: <span class="str">"A"</span>,  <span class="com">// ✓ No issues</span>
+        <span class="str">"cost"</span>: <span class="str">"C"</span>,                  <span class="com">// ⚠ High waste material</span>
+        <span class="str">"assembly"</span>: <span class="str">"B"</span>,              <span class="com">// ✓ Good</span>
+        <span class="str">"strength"</span>: <span class="str">"A"</span>,               <span class="com">// ✓ Sufficient</span>
+        <span class="str">"tolerances"</span>: <span class="str">"B"</span>            <span class="com">// ✓ Good</span>
+    },
+    <span class="str">"suggestions"</span>: [
+        <span class="str">"Reduce 15mm corner radius to 8mm to save material"</span>,
+        <span class="str">"Add ribs for rigidity without extra weight"</span>
+    ]
+}</code></pre>
+
+                <h2>Cooperative Design Workflow</h2>
+
+<pre><code><span class="com">// Example: Team designs assembly together</span>
+
+<span class="com">// Step 1: Engineer A creates base plate</span>
+agent_a: <span class="str">"Create 100x80 aluminum plate with 4 corners holes"</span>
+→ cycleCAD: shape.box → feature.hole (x4)
+
+<span class="com">// Step 2: Engineer B adds support ribs</span>
+agent_b: <span class="str">"The plate needs reinforcement. Add vertical ribs."</span>
+→ cycleCAD: feature.loft (rib geometry)
+
+<span class="com">// Step 3: Analyst validates</span>
+analyst: <span class="str">"Run FEM analysis on the design"</span>
+→ cycleCAD: validate.dfm + validate.strength
+
+<span class="com">// Step 4: Manufacturer optimizes</span>
+mfg: <span class="str">"Optimize for CNC 3-axis, add stock allowance"</span>
+→ cycleCAD: feature.shell + export.step</code></pre>
+
+                <h2>WebRTC Collaboration</h2>
+                <p>Real-time design collaboration with WebRTC (CRDT-based):</p>
+
+<pre><code><span class="com">// Connect two users via WebRTC</span>
+<span class="kw">const</span> session = <span class="kw">await</span> <span class="obj">window</span>.cycleCAD.<span class="fn">collab</span>.<span class="fn">createSession</span>({
+    peers: [<span class="str">'user1@domain.com'</span>, <span class="str">'user2@domain.com'</span>]
+});
+
+<span class="com">// Both users see each other's cursors, operations in real-time</span>
+<span class="com">// CRDT ensures eventual consistency despite network delays</span>
+
+<span class="com">// Event stream:</span>
+session.<span class="fn">on</span>(<span class="str">'operation'</span>, (op) => {
+    console.<span class="fn">log</span>(<span class="str">'User just:'</span>, op.type); <span class="com">// 'added_fillet', 'moved_part', etc</span>
+});</code></pre>
+
+                <div class="pro-tip">
+                    <strong>Pro Tip:</strong> Swarms work best when agents have clear roles. Use domain-specific models for manufacturing and assembly logic.
+                </div>
+            </section>
+
+            <!-- Section: Machine Profiles -->
+            <section id="machines" class="section">
+                <h1>Custom Machine Profiles</h1>
+
+                <h2>Creating a Machine Profile</h2>
+                <p>Define feeds, speeds, and tool recommendations for your specific CNC/FDM/laser:</p>
+
+<pre><code><span class="com">// config/machines/haas-vf4.json</span>
+{
+    <span class="str">"name"</span>: <span class="str">"HAAS VF-4"</span>,
+    <span class="str">"type"</span>: <span class="str">"CNC_3AXIS"</span>,
+    <span class="str">"workspace"</span>: {
+        <span class="str">"x"</span>: <span class="num">1000</span>,
+        <span class="str">"y"</span>: <span class="num">500</span>,
+        <span class="str">"z"</span>: <span class="num">300</span>
+    },
+    <span class="str">"tools"</span>: [
+        {
+            <span class="str">"id"</span>: <span class="str">"tool_1"</span>,
+            <span class="str">"name"</span>: <span class="str">"Carbide End Mill 10mm"</span>,
+            <span class="str">"type"</span>: <span class="str">"endmill"</span>,
+            <span class="str">"diameter"</span>: <span class="num">10</span>,
+            <span class="str">"flutes"</span>: <span class="num">4</span>
+        }
+    ],
+    <span class="str">"feedspeeds"</span>: {
+        <span class="str">"aluminum"</span>: {
+            <span class="str">"tool_1"</span>: {
+                <span class="str">"spindle"</span>: <span class="num">4000</span>,  <span class="com">// RPM</span>
+                <span class="str">"feed"</span>: <span class="num">0.1</span>,      <span class="com">// mm/tooth</span>
+                <span class="str">"depth"</span>: <span class="num">5</span>       <span class="com">// mm per pass</span>
+            }
+        },
+        <span class="str">"steel"</span>: {
+            <span class="str">"tool_1"</span>: {
+                <span class="str">"spindle"</span>: <span class="num">2000</span>,
+                <span class="str">"feed"</span>: <span class="num">0.05</span>,
+                <span class="str">"depth"</span>: <span class="num">3</span>
+            }
+        }
+    }
+}</code></pre>
+
+                <h2>Auto-Optimization</h2>
+
+<pre><code><span class="com">// CAM engine automatically selects tools and parameters</span>
+<span class="kw">const</span> toolpath = <span class="kw">await</span> <span class="obj">window</span>.cycleCAD.<span class="fn">cam</span>.<span class="fn">generateToolpath</span>({
+    geometry: part,
+    material: <span class="str">'aluminum'</span>,
+    machine: <span class="str">'haas-vf4'</span>,
+    quality: <span class="str">'high'</span>  <span class="com">// or 'fast', 'balanced'</span>
+});
+
+<span class="com">// Returns optimal tool, RPM, feed rate, depth, tool changes</span></code></pre>
+
+                <h2>FDM Profile Example</h2>
+
+<pre><code>{
+    <span class="str">"name"</span>: <span class="str">"Prusa i3 MK3S"</span>,
+    <span class="str">"type"</span>: <span class="str">"FDM"</span>,
+    <span class="str">"nozzleDiameter"</span>: <span class="num">0.4</span>,
+    <span class="str">"bedSize"</span>: [<span class="num">250</span>, <span class="num">210</span>],
+    <span class="str">"materials"</span>: {
+        <span class="str">"pla"</span>: {
+            <span class="str">"nozzleTemp"</span>: <span class="num">210</span>,
+            <span class="str">"bedTemp"</span>: <span class="num">60</span>,
+            <span class="str">"layerHeight"</span>: <span class="num">0.2</span>,
+            <span class="str">"printSpeed"</span>: <span class="num">150</span>,  <span class="com">// mm/s</span>
+            <span class="str">"infill"</span>: <span class="num">15</span>         <span class="com">// %</span>
+        },
+        <span class="str">"abs"</span>: {
+            <span class="str">"nozzleTemp"</span>: <span class="num">240</span>,
+            <span class="str">"bedTemp"</span>: <span class="num">100</span>,
+            <span class="str">"layerHeight"</span>: <span class="num">0.2</span>,
+            <span class="str">"printSpeed"</span>: <span class="num">80</span>,
+            <span class="str">"infill"</span>: <span class="num">20</span>
+        }
+    }
+}</code></pre>
+
+                <div class="warning">
+                    <strong>Warning:</strong> Incorrect feed/speed settings can damage tools or machines. Always validate with your machine manual.
+                </div>
+            </section>
+
+            <!-- Section: Collaboration -->
+            <section id="collab" class="section">
+                <h1>Real-Time Collaboration</h1>
+
+                <h2>Architecture</h2>
+                <p>cycleCAD uses CRDT (Conflict-free Replicated Data Types) for real-time multi-user editing without a central server.</p>
+
+<pre><code><span class="diagram">User A          Network         User B
+  │              (WebRTC)          │
+  │◄──────────────────────────────►│
+  │  Geometry change              │
+  │  Shape added: cylinder_0      │
+  │  Local ID: a_001              │
+  │  Global ID: uuid_abc          │
+  │                               │
+  │  Fillet operation             │
+  │  Feature added: fillet_0      │
+  │  Dependencies: [cylinder_0]   │
+  │  Local ID: a_002              │
+  │  Global ID: uuid_def          │
+  │                               │
+  │◄─── Both users converge ──────►│
+  │  Same scene, both directions  │</span></code></pre>
+
+                <h2>Enabling Collaboration</h2>
+
+<pre><code><span class="com">// Open existing design for collaboration</span>
+<span class="kw">const</span> doc = <span class="kw">await</span> <span class="obj">window</span>.cycleCAD.<span class="fn">collab</span>.<span class="fn">openDocument</span>({
+    id: <span class="str">'design_xyz'</span>,
+    mode: <span class="str">'edit'</span>  <span class="com">// or 'view'</span>
+});
+
+<span class="com">// Invite collaborators</span>
+<span class="kw">await</span> doc.<span class="fn">invite</span>([
+    <span class="str">'engineer1@company.com'</span>,
+    <span class="str">'engineer2@company.com'</span>
+]);
+
+<span class="com">// Listen for remote operations</span>
+doc.<span class="fn">on</span>(<span class="str">'remote-operation'</span>, (op) => {
+    console.<span class="fn">log</span>(<span class="str">'Peer just:'</span>, op);
+    <span class="com">// { type: 'shape.cylinder', user: 'engineer1@company.com' }</span>
+});</code></pre>
+
+                <h2>Share Links</h2>
+
+<pre><code><span class="com">// Generate shareable link (no login required)</span>
+<span class="kw">const</span> shareLink = <span class="kw">await</span> doc.<span class="fn">getShareLink</span>({
+    access: <span class="str">'view'</span>  <span class="com">// or 'comment', 'edit'</span>
+});
+
+<span class="com">// Returns: https://cyclecad.com/view/share/xyz123</span>
+<span class="com">// Anyone with link can view (or edit if access='edit')</span></code></pre>
+
+                <h2>Comments & Annotations</h2>
+
+<pre><code><span class="com">// Add comment to a specific feature</span>
+<span class="kw">await</span> doc.<span class="fn">addComment</span>({
+    featureId: <span class="str">'fillet_0'</span>,
+    text: <span class="str">'Increase radius to 4mm for assembly'</span>,
+    author: <span class="str">'engineer1@company.com'</span>
+});
+
+<span class="com">// Create task</span>
+<span class="kw">await</span> doc.<span class="fn">createTask</span>({
+    description: <span class="str">'Validate hole clearances'</span>,
+    assignee: <span class="str">'engineer2@company.com'</span>,
+    dueDate: <span class="str">'2026-03-28'</span>
+});</code></pre>
+
+                <div class="pro-tip">
+                    <strong>Pro Tip:</strong> Collaboration works best for teams <10 people. For larger teams, use branching + merge workflow (similar to Git).
+                </div>
+            </section>
+
+            <!-- Section: Performance -->
+            <section id="perf" class="section">
+                <h1>Performance Optimization</h1>
+
+                <h2>Large Assemblies (500+ Parts)</h2>
+                <p>cycleCAD uses Level-of-Detail (LOD) rendering to maintain 60 FPS:</p>
+
+<pre><code><span class="com">// LOD automatically switches geometry detail based on zoom level</span>
+{
+    <span class="str">"part_001"</span>: {
+        <span class="str">"lod0"</span>: { meshes: <span class="num">50000</span>, tris: <span class="num">2000000</span> },  <span class="com">// Close-up</span>
+        <span class="str">"lod1"</span>: { meshes: <span class="num">20000</span>, tris: <span class="num">800000</span> },    <span class="com">// Normal</span>
+        <span class="str">"lod2"</span>: { meshes: <span class="num">5000</span>, tris: <span class="num">200000</span> },     <span class="com">// Far</span>
+        <span class="str">"lod3"</span>: { meshes: <span class="num">100</span>, tris: <span class="num">5000</span> }         <span class="com">// Very far</span>
+    }
+}</code></pre>
+
+                <h2>Memory Management</h2>
+
+<pre><code><span class="com">// Monitor memory usage</span>
+<span class="kw">const</span> stats = <span class="kw">await</span> <span class="obj">window</span>.cycleCAD.<span class="fn">performance</span>.<span class="fn">getStats</span>();
+console.<span class="fn">log</span>(stats);
+<span class="com">// {</span>
+<span class="com">//   geometry_mb: 245,</span>
+<span class="com">//   textures_mb: 128,</span>
+<span class="com">//   scene_objects: 4230,</span>
+<span class="com">//   fps: 58,</span>
+<span class="com">//   gpu_memory: 678</span>
+<span class="com">// }</span>
+
+<span class="com">// Garbage collection hint</span>
+<span class="kw">await</span> <span class="obj">window</span>.cycleCAD.<span class="fn">performance</span>.<span class="fn">optimize</span>();</code></pre>
+
+                <h2>Caching</h2>
+
+<pre><code><span class="com">// Enable geometry cache (10% token discount for 24h repeats)</span>
+{
+    <span class="str">"caching"</span>: {
+        <span class="str">"enabled"</span>: <span class="kw">true</span>,
+        <span class="str">"strategy"</span>: <span class="str">"lru"</span>,  <span class="com">// Least Recently Used</span>
+        <span class="str">"maxAge"</span>: <span class="num">86400</span>,    <span class="com">// 24 hours</span>
+        <span class="str">"maxSize"</span>: <span class="num">500</span>       <span class="com">// MB</span>
+    }
+}</code></pre>
+
+                <h2>Render Optimization</h2>
+                <ul>
+                    <li><strong>Instancing:</strong> Repeated parts (bolt patterns) rendered as single instanced draw call</li>
+                    <li><strong>Frustum Culling:</strong> Off-screen geometry skipped</li>
+                    <li><strong>Occlusion Culling:</strong> Geometry hidden behind opaque parts not rendered</li>
+                    <li><strong>Normal Maps:</strong> Use for surface detail instead of high-poly geometry</li>
+                    <li><strong>Baking:</strong> Bake lighting for static geometry, only dynamic objects computed at runtime</li>
+                </ul>
+
+                <div class="advanced-note">
+                    <strong>Advanced:</strong> For assemblies >1000 parts, consider splitting into sub-assemblies and loading on-demand.
+                </div>
+            </section>
+
+            <!-- Section: Docker -->
+            <section id="docker" class="section">
+                <h1>Docker Deployment</h1>
+
+                <h2>3-Service Architecture</h2>
+
+<pre><code><span class="diagram">┌──────────────────────────────────┐
+│  User (Browser)                  │
+└──────────────────────────────────┘
+            │
+            ▼
+┌──────────────────────────────────┐
+│  cycleCAD (Port 3000)            │
+│  - Web app, Agent API            │
+│  - REST API                      │
+│  - WebSocket collaboration       │
+└──────────────────────────────────┘
+            │
+   ┌────────┴────────┐
+   ▼                 ▼
+┌─────────────┐  ┌──────────────────┐
+│ExplodeView  │  │STEP Converter    │
+│(Port 8080)  │  │(Port 8787)       │
+│- 3D Viewer  │  │- FastAPI         │
+│- Analysis   │  │- STEP→GLB        │
+│- Tools      │  │- OpenCascade.js  │
+└─────────────┘  └──────────────────┘</span></code></pre>
+
+                <h2>docker-compose.yml</h2>
+
+<pre><code><span class="str">version:</span> <span class="str">'3.8'</span>
+
+<span class="str">services:</span>
+  <span class="str">cyclecad:</span>
+    <span class="str">image:</span> <span class="str">vvlars-cmd/cyclecad:latest</span>
+    <span class="str">ports:</span>
+      - <span class="str">'3000:3000'</span>
+    <span class="str">environment:</span>
+      - <span class="str">NODE_ENV=production</span>
+      - <span class="str">API_PORT=3000</span>
+    <span class="str">healthcheck:</span>
+      <span class="str">test:</span> [<span class="str">'CMD'</span>, <span class="str">'curl'</span>, <span class="str">'http://localhost:3000/health'</span>]
+      <span class="str">interval:</span> <span class="str">30s</span>
+      <span class="str">timeout:</span> <span class="str">10s</span>
+
+  <span class="str">explodeview:</span>
+    <span class="str">image:</span> <span class="str">vvlars-cmd/explodeview:latest</span>
+    <span class="str">ports:</span>
+      - <span class="str">'8080:80'</span>
+    <span class="str">healthcheck:</span>
+      <span class="str">test:</span> [<span class="str">'CMD'</span>, <span class="str">'curl'</span>, <span class="str">'http://localhost:80/'</span>]
+
+  <span class="str">step-converter:</span>
+    <span class="str">image:</span> <span class="str">vvlars-cmd/step-converter:latest</span>
+    <span class="str">ports:</span>
+      - <span class="str">'8787:8787'</span>
+    <span class="str">environment:</span>
+      - <span class="str">CONVERTER_PORT=8787</span>
+    <span class="str">memory:</span> <span class="str">'4gb'</span>
+    <span class="str">memswap_limit:</span> <span class="str">'1gb'</span></code></pre>
+
+                <h2>Starting Services</h2>
+
+<pre><code><span class="com">// Clone repo</span>
+git clone https://github.com/vvlars-cmd/cyclecad.git
+cd cyclecad
+
+<span class="com">// Start all services</span>
+docker-compose up -d
+
+<span class="com">// Check status</span>
+docker-compose ps
+
+<span class="com">// View logs</span>
+docker-compose logs -f cyclecad
+
+<span class="com">// Access</span>
+<span class="com">// cycleCAD: http://localhost:3000</span>
+<span class="com">// ExplodeView: http://localhost:8080</span>
+<span class="com">// API: http://localhost:3000/api/v1/schema</span></code></pre>
+
+                <h2>Health Checks</h2>
+
+<pre><code><span class="com">// Each service exposes /health endpoint</span>
+curl http://localhost:<span class="num">3000</span>/health
+
+<span class="com">// Response:</span>
+{
+    <span class="str">"status"</span>: <span class="str">"ok"</span>,
+    <span class="str">"uptime"</span>: <span class="num">3600</span>,
+    <span class="str">"db"</span>: <span class="str">"connected"</span>,
+    <span class="str">"version"</span>: <span class="str">"0.2.0"</span>
+}</code></pre>
+
+                <div class="pro-tip">
+                    <strong>Pro Tip:</strong> Deploy to Kubernetes with this helm chart: https://github.com/vvlars-cmd/cyclecad-helm
+                </div>
+            </section>
+
+            <!-- Section: Plugins -->
+            <section id="plugins" class="section">
+                <h1>Building Plugins</h1>
+
+                <h2>Plugin Architecture</h2>
+                <p>Extend cycleCAD with custom features using the Plugin API (FeatureScript-equivalent in pure JavaScript):</p>
+
+<pre><code><span class="com">// plugins/custom-bracket.js</span>
+<span class="kw">export const</span> plugin = {
+    name: <span class="str">'Custom Bracket Generator'</span>,
+    version: <span class="str">'1.0.0'</span>,
+    author: <span class="str">'Your Name'</span>,
+
+    <span class="kw">async</span> <span class="fn">install</span>(cycleCAD) {
+        <span class="com">// Register custom command in Agent API</span>
+        cycleCAD.<span class="fn">registerCommand</span>({
+            method: <span class="str">'custom.bracket'</span>,
+            description: <span class="str">'Create parametric bracket'</span>,
+            params: {
+                width: { type: <span class="str">'number'</span> },
+                height: { type: <span class="str">'number'</span> },
+                holes: { type: <span class="str">'number'</span>, default: <span class="num">4</span> }
+            },
+            handler: <span class="kw">async</span> (params) => {
+                <span class="kw">return</span> <span class="kw">await</span> createBracket(params);
+            }
+        });
+    },
+
+    <span class="kw">async</span> <span class="fn">createBracket</span>(params) {
+        <span class="kw">const</span> api = <span class="obj">window</span>.cycleCAD;
+
+        <span class="com">// Create base plate</span>
+        <span class="kw">let</span> base = <span class="kw">await</span> api.<span class="fn">execute</span>({
+            method: <span class="str">'shape.box'</span>,
+            params: { width: params.width, height: params.height, depth: <span class="num">10</span> }
+        });
+
+        <span class="com">// Add holes pattern</span>
+        <span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i &lt; params.holes; i++) {
+            <span class="kw">await</span> api.<span class="fn">execute</span>({
+                method: <span class="str">'feature.hole'</span>,
+                params: { diameter: <span class="num">6</span>, depth: <span class="num">10</span> }
+            });
+        }
+
+        <span class="kw">return</span> { success: <span class="kw">true</span>, id: base.id };
+    }
+};</code></pre>
+
+                <h2>Registering a Plugin</h2>
+
+<pre><code><span class="com">// In app/index.html or via marketplace</span>
+<span class="kw">await</span> <span class="obj">window</span>.cycleCAD.<span class="fn">plugins</span>.<span class="fn">install</span>({
+    url: <span class="str">'https://github.com/user/cyclecad-bracket-plugin/raw/main/dist/bracket.js'</span>
+});
+
+<span class="com">// Plugin is now available</span>
+<span class="kw">await</span> <span class="obj">window</span>.cycleCAD.<span class="fn">execute</span>({
+    method: <span class="str">'custom.bracket'</span>,
+    params: { width: <span class="num">150</span>, height: <span class="num">100</span>, holes: <span class="num">6</span> }
+});</code></pre>
+
+                <h2>Plugin Marketplace</h2>
+                <p>Publish your plugin to the marketplace (same as design models):</p>
+
+<pre><code><span class="com">// package.json</span>
+{
+    <span class="str">"name"</span>: <span class="str">"cyclecad-bracket-plugin"</span>,
+    <span class="str">"type"</span>: <span class="str">"cyclecad-plugin"</span>,
+    <span class="str">"version"</span>: <span class="str">"1.0.0"</span>,
+    <span class="str">"description"</span>: <span class="str">"Custom bracket generator with parametric control"</span>,
+    <span class="str">"main"</span>: <span class="str">"dist/bracket.js"</span>,
+    <span class="str">"keywords"</span>: [<span class="str">"bracket"</span>, <span class="str">"mechanical"</span>, <span class="str">"generator"</span>]
+}</code></pre>
+
+                <div class="pro-tip">
+                    <strong>Pro Tip:</strong> Plugins earn royalties just like designs. Popular plugins can generate significant passive income.
+                </div>
+            </section>
+
+            <!-- Section: Contributing -->
+            <section id="contrib" class="section">
+                <h1>Contributing to cycleCAD</h1>
+
+                <h2>BSL 1.1 License</h2>
+                <p>cycleCAD is open-source under the Business Source License 1.1 (BSL 1.1):</p>
+                <ul>
+                    <li>Free for development, testing, and non-commercial use</li>
+                    <li>Commercial use requires paid license after 2-year transition period</li>
+                    <li>Source code is open, but redistribution is restricted</li>
+                    <li>After 2 years, code automatically converts to Mozilla Public License 2.0</li>
+                </ul>
+
+                <h2>Repository Structure</h2>
+
+<pre><code>cyclecad/
+├── app/
+│   ├── index.html          <span class="com"># Main CAD app</span>
+│   ├── tutorials/          <span class="com"># Tutorial docs</span>
+│   ├── js/                 <span class="com"># 33 ES modules</span>
+│   │   ├── viewport.js
+│   │   ├── sketch.js
+│   │   ├── operations.js
+│   │   ├── agent-api.js
+│   │   ├── marketplace.js
+│   │   └── ... (30 more)
+│   ├── agent-demo.html     <span class="com"># Interactive agent demo</span>
+│   └── test-agent.html     <span class="com"># Visual test runner</span>
+├── server/
+│   ├── mcp-server.js       <span class="com"># MCP tool server</span>
+│   ├── api-server.js       <span class="com"># REST API</span>
+│   └── converter.py        <span class="com"># STEP→GLB converter</span>
+├── bin/
+│   ├── cyclecad-cli.js     <span class="com"># CLI tool</span>
+│   └── cyclecad-mcp        <span class="com"># MCP launcher</span>
+├── docs/
+│   ├── opencascade-integration.md
+│   ├── explodeview-merge-plan.md
+│   └── MASTERPLAN.md
+├── Dockerfile
+├── docker-compose.yml
+├── package.json
+└── README.md</code></pre>
+
+                <h2>PR Guidelines</h2>
+                <ol>
+                    <li>Fork the repo and create a feature branch: <code>git checkout -b feature/my-feature</code></li>
+                    <li>Make changes in a new module under <code>app/js/</code> or enhance existing ones</li>
+                    <li>Add tests in <code>app/test-agent.html</code> for your feature</li>
+                    <li>Run the visual test agent and verify all tests pass</li>
+                    <li>Update documentation in relevant section of <code>app/tutorials/advanced.html</code></li>
+                    <li>Commit with descriptive message: <code>git commit -m "feature: add X capability"</code></li>
+                    <li>Push to your fork and open a Pull Request</li>
+                    <li>Maintainers will review within 48 hours</li>
+                </ol>
+
+                <h2>Code Style</h2>
+                <ul>
+                    <li>Use ES6+ modern JavaScript (const/let, arrow functions, async/await)</li>
+                    <li>Module-level scope: no global variables except <code>window.cycleCAD</code></li>
+                    <li>Comments for non-obvious logic; self-documenting code preferred</li>
+                    <li>Follow existing naming conventions (camelCase for functions/vars, PascalCase for classes)</li>
+                    <li>Include JSDoc comments for public APIs</li>
+                </ul>
+
+                <h2>Module Template</h2>
+
+<pre><code><span class="com">/**
+ * my-feature.js - Brief description
+ * Part of cycleCAD
+ */</span>
+
+<span class="kw">export</span> <span class="kw">async</span> <span class="fn">initMyFeature</span>() {
+    <span class="com">/**
+     * Register feature with Agent API
+     */</span>
+    <span class="kw">const</span> cycleCAD = <span class="obj">window</span>.cycleCAD;
+
+    cycleCAD.<span class="fn">registerCommand</span>({
+        method: <span class="str">'myfeature.action'</span>,
+        description: <span class="str">'Description'</span>,
+        params: { ... },
+        handler: <span class="kw">async</span> (params) => { ... }
+    });
+
+    <span class="com">// Add UI button if needed</span>
+    <span class="kw">const</span> btn = document.<span class="fn">createElement</span>(<span class="str">'button'</span>);
+    btn.textContent = <span class="str">'My Feature'</span>;
+    btn.<span class="fn">addEventListener</span>(<span class="str">'click'</span>, () => { ... });
+    document.<span class="fn">getElementById</span>(<span class="str">'toolbar'</span>).<span class="fn">appendChild</span>(btn);
+}</code></pre>
+
+                <div class="pro-tip">
+                    <strong>Pro Tip:</strong> Start small. Contribute a single module or bug fix rather than redesigning architecture. Easy wins help maintainers review faster.
+                </div>
+
+                <h2>Roadmap & Bounties</h2>
+                <p>Check the GitHub Issues for:</p>
+                <ul>
+                    <li><code>good-first-issue</code> — Perfect for new contributors</li>
+                    <li><code>bounty</code> — Paid tasks (€50-500 depending on complexity)</li>
+                    <li><code>roadmap</code> — Planned features for next phase</li>
+                </ul>
+
+                <p>Active development is driven by community needs. Join the Discord for real-time discussion.</p>
+            </section>
+
+            <!-- Footer -->
+            <div class="footer">
+                <p>cycleCAD Advanced Tutorial — Last updated 2026-03-26</p>
+                <p><a href="https://github.com/vvlars-cmd/cyclecad">GitHub</a> | <a href="https://cyclecad.com">Website</a> | <a href="https://cyclecad.com/app/">Launch App</a></p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Sidebar navigation
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const sectionId = item.dataset.section;
+
+                // Update active states
+                document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                document.getElementById(sectionId).classList.add('active');
+
+                // Update progress
+                updateProgress();
+
+                // Save to localStorage
+                localStorage.setItem('tutorialSection', sectionId);
+            });
+        });
+
+        // Progress bar
+        function updateProgress() {
+            const sections = ['intro', 'agent-api', 'mcp', 'rest', 'cli', 'tokens', 'marketplace', 'fabs', 'agents', 'machines', 'collab', 'perf', 'docker', 'plugins', 'contrib'];
+            const activeItem = document.querySelector('.sidebar-item.active');
+            const activeIndex = Array.from(document.querySelectorAll('.sidebar-item')).indexOf(activeItem);
+            const progress = ((activeIndex + 1) / sections.length) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+
+        // Restore state from localStorage
+        window.addEventListener('load', () => {
+            const savedSection = localStorage.getItem('tutorialSection') || 'intro';
+            const item = document.querySelector(`[data-section="${savedSection}"]`);
+            if (item) item.click();
+        });
+
+        // Syntax highlighting
+        document.querySelectorAll('pre code').forEach(block => {
+            const html = block.innerHTML;
+
+            // Highlight keywords
+            block.innerHTML = html
+                .replace(/\b(const|let|var|function|async|await|return|if|else|for|while|switch|case|break|default|try|catch|new|typeof|instanceof|this|class|extends|static|get|set|import|export)\b/g, '<span class="kw">$1</span>')
+                .replace(/'([^']*)'|"([^"]*)"|`([^`]*)`/g, (match, sq, dq, bt) => `<span class="str">${match}</span>`)
+                .replace(/\b(\d+|true|false|null|undefined)\b/g, '<span class="num">$1</span>')
+                .replace(/\b([a-z_$][a-z0-9_$]*)\s*(?=\()/g, '<span class="fn">$1</span>')
+                .replace(/#.*$/gm, '<span class="com">$&</span>')
+                .replace(/\/\/.*$/gm, '<span class="com">$&</span>');
+        });
+    </script>
+</body>
+</html>

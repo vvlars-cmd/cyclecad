@@ -1,0 +1,44 @@
+{
+  "name": "cyclecad",
+  "version": "0.5.0",
+  "description": "Browser-based parametric 3D CAD modeler with AI-powered tools, native Inventor file parsing, and smart assembly management. No install required.",
+  "main": "index.html",
+  "bin": {
+    "cyclecad": "./bin/cyclecad-cli.js",
+    "cyclecad-mcp": "./bin/cyclecad-mcp"
+  },
+  "scripts": {
+    "dev": "npx serve . -p 3000",
+    "start": "npx serve . -p 3000",
+    "mcp": "node bin/cyclecad-mcp",
+    "mcp:debug": "DEBUG_MCP=1 node bin/cyclecad-mcp",
+    "cli": "node bin/cyclecad-cli.js",
+    "server": "node server/api-server.js",
+    "server:dev": "node server/api-server.js --dev",
+    "server:auth": "CYCLECAD_API_KEY=$(openssl rand -base64 32) node server/api-server.js",
+    "test:api": "node test-api-server.js"
+  },
+  "keywords": [
+    "cad",
+    "3d",
+    "parametric",
+    "modeler",
+    "browser",
+    "threejs",
+    "inventor",
+    "ai",
+    "assembly",
+    "engineering",
+    "cyclewash"
+  ],
+  "author": "vvlars <vvlars@googlemail.com>",
+  "license": "BSL-1.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vvlars-cmd/cyclecad.git"
+  },
+  "homepage": "https://cyclecad.com",
+  "bugs": {
+    "url": "https://github.com/vvlars-cmd/cyclecad/issues"
+  }
+}

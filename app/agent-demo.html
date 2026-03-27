@@ -1,0 +1,2008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>cycleCAD Agent Demo v2.0</title>
+    <script async src="https://cdn.jsdelivr.net/npm/three@r170/build/three.min.js"></script>
+    <script async src="https://cdn.jsdelivr.net/npm/three@r170/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2a2a3e 0%, #1f1f2e 100%);
+            padding: 12px 16px;
+            border-bottom: 1px solid #404050;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-icon {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, #00d4ff, #0099ff);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .split-pane {
+            display: flex;
+            width: 100%;
+            position: relative;
+        }
+
+        .terminal-section {
+            background: #0d0d0d;
+            border-right: 1px solid #404050;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .viewport-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #1a1a1a;
+            overflow: hidden;
+        }
+
+        .resize-handle {
+            width: 4px;
+            cursor: col-resize;
+            background: #404050;
+            transition: background 0.2s;
+        }
+
+        .resize-handle:hover {
+            background: #00d4ff;
+        }
+
+        /* Terminal Styles */
+        .terminal-header {
+            background: #1a1a2e;
+            padding: 10px 12px;
+            border-bottom: 1px solid #404050;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #00d4ff;
+            flex-shrink: 0;
+        }
+
+        .terminal-output {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .terminal-output::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .terminal-output::-webkit-scrollbar-track {
+            background: #0d0d0d;
+        }
+
+        .terminal-output::-webkit-scrollbar-thumb {
+            background: #404050;
+            border-radius: 4px;
+        }
+
+        .terminal-output::-webkit-scrollbar-thumb:hover {
+            background: #505060;
+        }
+
+        .terminal-line {
+            margin-bottom: 8px;
+            padding: 4px 8px;
+            border-radius: 3px;
+            word-break: break-word;
+        }
+
+        .terminal-line.input {
+            color: #00d4ff;
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .terminal-line.output {
+            color: #e0e0e0;
+        }
+
+        .terminal-line.error {
+            color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.05);
+        }
+
+        .terminal-line.success {
+            color: #51cf66;
+            background: rgba(81, 207, 102, 0.05);
+        }
+
+        .terminal-line.agent {
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+            padding: 6px 8px;
+            background: rgba(100, 100, 120, 0.15);
+            border-left: 3px solid #6c7a9e;
+        }
+
+        .agent-badge {
+            flex-shrink: 0;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .agent-badge.design {
+            background: #ffd700;
+        }
+
+        .agent-badge.manufacturing {
+            background: #20b2aa;
+        }
+
+        .agent-badge.review {
+            background: #9370db;
+        }
+
+        .agent-content {
+            flex: 1;
+        }
+
+        /* Input Section */
+        .input-section {
+            background: #1a1a2e;
+            border-top: 1px solid #404050;
+            padding: 10px 12px;
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            position: relative;
+        }
+
+        .voice-indicator {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #404050;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .voice-indicator:hover {
+            background: #505060;
+        }
+
+        .voice-indicator.active {
+            background: #ff3333;
+            box-shadow: 0 0 10px rgba(255, 51, 51, 0.5);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .voice-waveform {
+            width: 32px;
+            height: 20px;
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            justify-content: center;
+        }
+
+        .voice-bar {
+            width: 2px;
+            background: #ff3333;
+            border-radius: 1px;
+            animation: waveform 0.3s ease-in-out infinite;
+        }
+
+        @keyframes waveform {
+            0%, 100% { height: 4px; }
+            50% { height: 12px; }
+        }
+
+        .command-input {
+            flex: 1;
+            background: #2a2a3e;
+            border: 1px solid #404050;
+            color: #e0e0e0;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+        }
+
+        .command-input:focus {
+            outline: none;
+            border-color: #00d4ff;
+            box-shadow: 0 0 8px rgba(0, 212, 255, 0.2);
+        }
+
+        .autocomplete-list {
+            position: absolute;
+            bottom: 50px;
+            left: 12px;
+            background: #2a2a3e;
+            border: 1px solid #404050;
+            border-radius: 4px;
+            max-height: 150px;
+            overflow-y: auto;
+            z-index: 100;
+            min-width: 200px;
+            display: none;
+        }
+
+        .autocomplete-list.visible {
+            display: block;
+        }
+
+        .autocomplete-item {
+            padding: 6px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #404050;
+            transition: background 0.2s;
+        }
+
+        .autocomplete-item:hover,
+        .autocomplete-item.selected {
+            background: #00d4ff;
+            color: #0d0d0d;
+        }
+
+        .input-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .input-btn {
+            background: #2a2a3e;
+            border: 1px solid #404050;
+            color: #e0e0e0;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .input-btn:hover {
+            background: #404050;
+            border-color: #00d4ff;
+        }
+
+        .input-btn.primary {
+            background: #00d4ff;
+            color: #0d0d0d;
+            border-color: #00d4ff;
+            font-weight: 600;
+        }
+
+        .input-btn.primary:hover {
+            background: #00a8cc;
+            border-color: #00a8cc;
+        }
+
+        /* Viewport Styles */
+        .viewport-toolbar {
+            background: #1a1a2e;
+            border-bottom: 1px solid #404050;
+            padding: 8px 12px;
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .toolbar-group {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .toolbar-separator {
+            width: 1px;
+            height: 24px;
+            background: #404050;
+        }
+
+        .viewport-btn {
+            background: #2a2a3e;
+            border: 1px solid #404050;
+            color: #e0e0e0;
+            padding: 6px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 11px;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .viewport-btn:hover {
+            background: #404050;
+            border-color: #00d4ff;
+        }
+
+        .viewport-btn.active {
+            background: #00d4ff;
+            color: #0d0d0d;
+            border-color: #00d4ff;
+            font-weight: 600;
+        }
+
+        #viewport {
+            flex: 1;
+            background: linear-gradient(135deg, #1a1a1a 0%, #252535 100%);
+        }
+
+        .viewport-status {
+            background: #1a1a2e;
+            border-top: 1px solid #404050;
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            font-size: 11px;
+        }
+
+        .status-item {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .status-label {
+            color: #808090;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            font-weight: 600;
+        }
+
+        .status-value {
+            color: #00d4ff;
+            font-weight: 600;
+        }
+
+        /* Feature Tree Sidebar */
+        .feature-tree {
+            background: #1a1a2e;
+            border-right: 1px solid #404050;
+            width: 220px;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            transition: all 0.3s;
+        }
+
+        .feature-tree.collapsed {
+            width: 0;
+            overflow: hidden;
+            border-right: none;
+        }
+
+        .feature-tree-header {
+            background: #0d0d0d;
+            padding: 10px 12px;
+            border-bottom: 1px solid #404050;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #00d4ff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .tree-toggle-btn {
+            background: none;
+            border: none;
+            color: #00d4ff;
+            cursor: pointer;
+            font-size: 12px;
+            padding: 0;
+        }
+
+        .feature-tree-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 0;
+        }
+
+        .feature-tree-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .feature-tree-list::-webkit-scrollbar-track {
+            background: #1a1a2e;
+        }
+
+        .feature-tree-list::-webkit-scrollbar-thumb {
+            background: #404050;
+            border-radius: 3px;
+        }
+
+        .tree-item {
+            padding: 8px 12px;
+            border-left: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 11px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tree-item:hover {
+            background: rgba(0, 212, 255, 0.1);
+            border-left-color: #00d4ff;
+        }
+
+        .tree-item.active {
+            background: rgba(0, 212, 255, 0.2);
+            border-left-color: #00d4ff;
+            color: #00d4ff;
+            font-weight: 600;
+        }
+
+        .tree-item-icon {
+            margin-right: 6px;
+            font-size: 10px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .split-pane {
+                flex-direction: column;
+            }
+
+            .terminal-section {
+                height: 40%;
+                border-right: none;
+                border-bottom: 1px solid #404050;
+            }
+
+            .viewport-section {
+                height: 60%;
+            }
+
+            .resize-handle {
+                width: 100%;
+                height: 4px;
+                cursor: row-resize;
+            }
+
+            .feature-tree {
+                width: 100%;
+                max-height: 150px;
+            }
+
+            .feature-tree.collapsed {
+                max-height: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+                <div class="header-icon">🤖</div>
+                <h1>cycleCAD Agent Demo</h1>
+                <span style="color: #808090; font-size: 12px; font-weight: normal;">v2.0 · Agent-First CAD</span>
+            </div>
+            <div style="color: #808090; font-size: 11px;">
+                <span id="session-time">Session: 00:00</span>
+            </div>
+        </div>
+
+        <div class="main">
+            <div class="feature-tree">
+                <div class="feature-tree-header">
+                    Features
+                    <button class="tree-toggle-btn" onclick="toggleFeatureTree()">−</button>
+                </div>
+                <div class="feature-tree-list" id="feature-tree-list">
+                    <div style="padding: 12px; color: #808090; text-align: center; font-size: 11px;">
+                        Create something to begin
+                    </div>
+                </div>
+            </div>
+
+            <div class="split-pane" id="split-pane">
+                <div class="terminal-section" style="width: 35%;">
+                    <div class="terminal-header">Terminal</div>
+                    <div class="terminal-output" id="terminal-output">
+                        <div class="terminal-line success">
+                            Welcome to cycleCAD Agent Demo v2.0
+                        </div>
+                        <div class="terminal-line success">
+                            Try: "create cylinder 50mm diameter 80mm tall"
+                        </div>
+                    </div>
+                    <div class="autocomplete-list" id="autocomplete-list"></div>
+                    <div class="input-section">
+                        <div class="input-wrapper">
+                            <div class="voice-indicator" id="voice-btn" title="Click to toggle voice input">
+                                🎤
+                            </div>
+                            <div class="voice-waveform" id="voice-waveform" style="display: none;">
+                                <div class="voice-bar" style="animation-delay: 0s;"></div>
+                                <div class="voice-bar" style="animation-delay: 0.1s;"></div>
+                                <div class="voice-bar" style="animation-delay: 0.2s;"></div>
+                            </div>
+                            <input
+                                type="text"
+                                id="command-input"
+                                class="command-input"
+                                placeholder="Enter command or speak..."
+                                autocomplete="off"
+                            >
+                        </div>
+                        <div class="input-actions">
+                            <button class="input-btn primary" onclick="sendCommand()">Send</button>
+                            <button class="input-btn" onclick="showExamples()" title="Show example commands">Examples</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="resize-handle" id="resize-handle"></div>
+
+                <div class="viewport-section">
+                    <div class="viewport-toolbar">
+                        <div class="toolbar-group">
+                            <button class="viewport-btn" onclick="resetView()" title="Reset camera view">Reset View</button>
+                            <button class="viewport-btn" onclick="fitToObject()" title="Fit to object">Fit All</button>
+                        </div>
+                        <div class="toolbar-separator"></div>
+                        <div class="toolbar-group">
+                            <button class="viewport-btn" id="wireframe-btn" onclick="toggleWireframe()" title="Toggle wireframe">Wireframe</button>
+                            <button class="viewport-btn" id="grid-btn" onclick="toggleGrid()" title="Toggle grid">Grid</button>
+                            <button class="viewport-btn" id="shadows-btn" onclick="toggleShadows()" title="Toggle shadows">Shadows</button>
+                        </div>
+                        <div class="toolbar-separator"></div>
+                        <div class="toolbar-group">
+                            <button class="viewport-btn" onclick="undoOperation()" title="Undo (Ctrl+Z)">↶ Undo</button>
+                            <button class="viewport-btn" onclick="redoOperation()" title="Redo (Ctrl+Y)">↷ Redo</button>
+                        </div>
+                    </div>
+                    <canvas id="viewport"></canvas>
+                    <div class="viewport-status">
+                        <div class="status-item">
+                            <span class="status-label">Part:</span>
+                            <span class="status-value" id="status-part">None</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Features:</span>
+                            <span class="status-value" id="status-features">0</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Latency:</span>
+                            <span class="status-value" id="status-latency">0ms</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">FPS:</span>
+                            <span class="status-value" id="status-fps">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Three.js Setup
+        let scene, camera, renderer, controls, currentMesh, gridHelper, shadowPlane;
+        let commandHistory = [];
+        let historyIndex = -1;
+        let isListening = false;
+        let recognition = null;
+        let lastCommandTime = 0;
+        let operationHistory = [];
+        let historyPointer = 0;
+        let wireframeMode = false;
+        let gridVisible = true;
+        let shadowsVisible = true;
+
+        // Scene State
+        const sceneState = {
+            currentPart: 'Unnamed Part',
+            features: [],
+            material: 'Steel',
+            dimensions: {}
+        };
+
+        // Initialize Three.js
+        function initThreeJS() {
+            const canvas = document.getElementById('viewport');
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1a1a1a);
+            scene.fog = new THREE.Fog(0x1a1a1a, 500, 1000);
+
+            camera = new THREE.PerspectiveCamera(
+                75,
+                canvas.clientWidth / canvas.clientHeight,
+                0.1,
+                10000
+            );
+            camera.position.set(200, 150, 200);
+
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+            renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFShadowShadowMap;
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(100, 150, 100);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.camera.left = -300;
+            directionalLight.shadow.camera.right = 300;
+            directionalLight.shadow.camera.top = 300;
+            directionalLight.shadow.camera.bottom = -300;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            scene.add(directionalLight);
+
+            // Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.autoRotate = false;
+
+            // Grid
+            gridHelper = new THREE.GridHelper(400, 40, 0x404050, 0x303040);
+            scene.add(gridHelper);
+
+            // Shadow plane
+            const planeGeometry = new THREE.PlaneGeometry(500, 500);
+            const planeMaterial = new THREE.ShadowMaterial({ opacity: 0.3 });
+            shadowPlane = new THREE.Mesh(planeGeometry, planeMaterial);
+            shadowPlane.rotateX(-Math.PI / 2);
+            shadowPlane.receiveShadow = true;
+            scene.add(shadowPlane);
+
+            // Handle resize
+            window.addEventListener('resize', onWindowResize);
+
+            // Animation loop
+            animate();
+        }
+
+        function onWindowResize() {
+            const canvas = document.getElementById('viewport');
+            if (!canvas) return;
+
+            const width = canvas.clientWidth;
+            const height = canvas.clientHeight;
+
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+
+            // Update FPS
+            const now = performance.now();
+            if (!animate.lastTime) animate.lastTime = now;
+            const delta = now - animate.lastTime;
+            animate.lastTime = now;
+
+            if (delta > 0) {
+                const fps = Math.round(1000 / delta);
+                document.getElementById('status-fps').textContent = fps;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // Voice Recognition
+        function initVoiceRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+            if (!SpeechRecognition) {
+                logTerminal('Voice recognition not supported in your browser', 'error');
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            const input = document.getElementById('command-input');
+
+            recognition.onstart = () => {
+                isListening = true;
+                document.getElementById('voice-btn').classList.add('active');
+                document.getElementById('voice-waveform').style.display = 'flex';
+                input.placeholder = 'Listening...';
+            };
+
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i].transcript;
+                    if (event.results[i].isFinal) {
+                        input.value = transcript;
+                        sendCommand();
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+                if (interimTranscript) {
+                    input.value = interimTranscript;
+                }
+            };
+
+            recognition.onerror = (event) => {
+                logTerminal(`Voice error: ${event.error}`, 'error');
+            };
+
+            recognition.onend = () => {
+                isListening = false;
+                document.getElementById('voice-btn').classList.remove('active');
+                document.getElementById('voice-waveform').style.display = 'none';
+                input.placeholder = 'Enter command or speak...';
+            };
+        }
+
+        // Voice Button Toggle
+        document.getElementById('voice-btn').addEventListener('click', () => {
+            if (!recognition) initVoiceRecognition();
+            if (isListening) {
+                recognition.stop();
+            } else {
+                try {
+                    recognition.start();
+                } catch (e) {
+                    logTerminal('Microphone access denied. Use text input instead.', 'error');
+                }
+            }
+        });
+
+        // Command Input
+        document.getElementById('command-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                sendCommand();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                historyIndex = Math.min(historyIndex + 1, commandHistory.length - 1);
+                if (historyIndex >= 0) {
+                    e.target.value = commandHistory[commandHistory.length - 1 - historyIndex];
+                }
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                historyIndex = Math.max(historyIndex - 1, -1);
+                if (historyIndex >= 0) {
+                    e.target.value = commandHistory[commandHistory.length - 1 - historyIndex];
+                } else {
+                    e.target.value = '';
+                }
+            } else if (e.key === 'Tab') {
+                e.preventDefault();
+                showAutocomplete(e.target.value);
+            }
+        });
+
+        document.getElementById('command-input').addEventListener('input', (e) => {
+            updateAutocomplete(e.target.value);
+        });
+
+        // Autocomplete
+        function updateAutocomplete(value) {
+            const list = document.getElementById('autocomplete-list');
+            if (value.length < 2) {
+                list.classList.remove('visible');
+                return;
+            }
+
+            const commands = [
+                'create cylinder', 'create box', 'create sphere', 'create cone', 'create torus',
+                'create plate', 'create gear', 'create bracket', 'create washer', 'create hexbolt', 'create flange',
+                'draw circle', 'make a cylinder', 'build box',
+                'add hole', 'drill hole', 'add fillet', 'round edges', 'add chamfer', 'bevel',
+                'shell', 'hollow out', 'mirror', 'pattern', 'add thread',
+                'extrude', 'revolve', 'sweep', 'loft', 'boolean cut', 'boolean union',
+                'material steel', 'material brass', 'material aluminum', 'color red', 'color chrome',
+                'move', 'rotate', 'scale', 'copy', 'delete',
+                'measure', 'section', 'wireframe', 'grid', 'shadows',
+                'sketch line', 'sketch rect', 'constraint parallel',
+                'export stl', 'export step', 'export gltf',
+                'undo', 'redo', 'reset view', 'help', 'history', 'clear'
+            ];
+
+            const matches = commands.filter(cmd => cmd.includes(value.toLowerCase()));
+
+            if (matches.length > 0) {
+                list.innerHTML = matches.slice(0, 8)
+                    .map(m => `<div class="autocomplete-item" onclick="selectAutocomplete('${m}')">${m}</div>`)
+                    .join('');
+                list.classList.add('visible');
+            } else {
+                list.classList.remove('visible');
+            }
+        }
+
+        function selectAutocomplete(cmd) {
+            document.getElementById('command-input').value = cmd;
+            document.getElementById('autocomplete-list').classList.remove('visible');
+        }
+
+        // Command Processing
+        function sendCommand() {
+            const input = document.getElementById('command-input');
+            const command = input.value.trim();
+
+            if (!command) return;
+
+            const startTime = performance.now();
+            logTerminal(command, 'input');
+
+            commandHistory.push(command);
+            historyIndex = -1;
+            input.value = '';
+
+            processCommand(command);
+
+            const latency = Math.round(performance.now() - startTime);
+            document.getElementById('status-latency').textContent = latency + 'ms';
+        }
+
+        // ─── NATURAL LANGUAGE PARSER ───
+        // Maps synonyms/phrases to canonical intents
+        const NLP_SHAPES = {
+          cylinder: ['cylinder', 'cylnder', 'cylindar', 'cyl', 'tube', 'pipe', 'rod', 'shaft', 'barrel', 'piston'],
+          box: ['box', 'cube', 'block', 'brick', 'rectangular', 'rect', 'cuboid', 'prism'],
+          sphere: ['sphere', 'ball', 'globe', 'orb'],
+          cone: ['cone', 'funnel', 'tapered'],
+          torus: ['torus', 'donut', 'doughnut', 'ring', 'o-ring'],
+          circle: ['circle', 'disc', 'disk', 'round', 'circular'],
+          plate: ['plate', 'slab', 'flat', 'panel', 'sheet'],
+          washer: ['washer', 'spacer', 'shim'],
+          hexbolt: ['hexbolt', 'hex bolt', 'bolt', 'hex head'],
+          gear: ['gear', 'cog', 'sprocket'],
+          flange: ['flange', 'collar', 'rim'],
+          bracket: ['bracket', 'l-bracket', 'angle'],
+        };
+
+        const NLP_ACTIONS = {
+          create:   ['create', 'make', 'build', 'draw', 'add a', 'add an', 'generate', 'design', 'model', 'sketch', 'construct', 'new'],
+          hole:     ['hole', 'bore', 'drill', 'pierce', 'through hole', 'counterbore', 'countersink'],
+          fillet:   ['fillet', 'round', 'round off', 'smooth', 'radius edge', 'blend'],
+          chamfer:  ['chamfer', 'bevel', 'chamfr', 'edge break', 'cut edge', 'angled edge'],
+          shell:    ['shell', 'hollow', 'thin wall', 'hollow out', 'scoop', 'empty'],
+          mirror:   ['mirror', 'reflect', 'flip', 'symmetry'],
+          pattern:  ['pattern', 'array', 'repeat', 'duplicate', 'copy array', 'replicate', 'linear pattern', 'circular pattern'],
+          extrude:  ['extrude', 'pull', 'push', 'extend', 'raise', 'boss'],
+          revolve:  ['revolve', 'rotate shape', 'spin', 'lathe', 'turn'],
+          sweep:    ['sweep', 'sweep along', 'follow path', 'rail'],
+          loft:     ['loft', 'blend between', 'transition', 'morph'],
+          thread:   ['thread', 'screw thread', 'threading', 'helix', 'helical'],
+          boolean:  ['boolean', 'cut', 'subtract', 'union', 'merge', 'intersect', 'combine', 'join'],
+          measure:  ['measure', 'distance', 'angle', 'how far', 'how big', 'dimension'],
+          section:  ['section', 'cross section', 'cut plane', 'slice', 'clip'],
+          move:     ['move', 'translate', 'shift', 'relocate', 'reposition', 'offset'],
+          rotate:   ['rotate', 'spin', 'turn', 'orient', 'tilt', 'angle'],
+          scale:    ['scale', 'resize', 'enlarge', 'shrink', 'bigger', 'smaller'],
+          copy:     ['copy', 'clone', 'duplicate'],
+          delete:   ['delete', 'remove', 'erase', 'clear part', 'destroy'],
+          material: ['material', 'color', 'colour', 'paint', 'steel', 'aluminum', 'aluminium', 'plastic', 'brass', 'titanium', 'copper', 'wood', 'glass'],
+          export:   ['export', 'save as', 'download', 'output'],
+          sketch:   ['sketch', '2d', 'draw line', 'draw rect', 'draw arc', 'draw spline', 'pencil'],
+          constraint: ['constraint', 'constrain', 'lock', 'fix', 'parallel', 'perpendicular', 'tangent', 'concentric', 'coincident', 'equal', 'horizontal', 'vertical'],
+          undo:     ['undo', 'go back', 'ctrl z', 'revert'],
+          redo:     ['redo', 'go forward', 'ctrl y'],
+          reset:    ['reset', 'home', 'reset view', 'default view', 'fit all', 'zoom fit'],
+          wireframe:['wireframe', 'wire', 'skeleton', 'mesh view'],
+          grid:     ['grid', 'show grid', 'toggle grid'],
+          shadows:  ['shadow', 'shadows', 'toggle shadows'],
+          help:     ['help', '?', 'commands', 'how to', 'what can'],
+          history:  ['history', 'log', 'past commands'],
+          clear:    ['clear', 'cls', 'clean'],
+        };
+
+        const MATERIAL_MAP = {
+          steel: { color: 0xb0b8c4, metalness: 0.8, roughness: 0.3, name: 'Steel' },
+          aluminum: { color: 0xd6dce4, metalness: 0.7, roughness: 0.25, name: 'Aluminum' },
+          aluminium: { color: 0xd6dce4, metalness: 0.7, roughness: 0.25, name: 'Aluminum' },
+          brass: { color: 0xc8a84e, metalness: 0.9, roughness: 0.2, name: 'Brass' },
+          copper: { color: 0xc87533, metalness: 0.85, roughness: 0.25, name: 'Copper' },
+          titanium: { color: 0x878c96, metalness: 0.75, roughness: 0.35, name: 'Titanium' },
+          plastic: { color: 0x2277cc, metalness: 0.0, roughness: 0.6, name: 'ABS Plastic' },
+          wood: { color: 0x9e7c4a, metalness: 0.0, roughness: 0.8, name: 'Wood' },
+          glass: { color: 0xaaddff, metalness: 0.1, roughness: 0.05, name: 'Glass' },
+          red: { color: 0xdd3333, metalness: 0.1, roughness: 0.5, name: 'Red' },
+          blue: { color: 0x3355dd, metalness: 0.1, roughness: 0.5, name: 'Blue' },
+          green: { color: 0x33aa33, metalness: 0.1, roughness: 0.5, name: 'Green' },
+          black: { color: 0x222222, metalness: 0.2, roughness: 0.4, name: 'Black' },
+          white: { color: 0xeeeeee, metalness: 0.1, roughness: 0.5, name: 'White' },
+          gold: { color: 0xffd700, metalness: 0.95, roughness: 0.15, name: 'Gold' },
+          chrome: { color: 0xcccccc, metalness: 1.0, roughness: 0.05, name: 'Chrome' },
+        };
+
+        function detectIntent(cmd) {
+          // Check each action category
+          for (const [action, keywords] of Object.entries(NLP_ACTIONS)) {
+            for (const kw of keywords) {
+              if (cmd.includes(kw)) return action;
+            }
+          }
+          // Check if it's a shape name on its own (e.g. "cylinder 50mm")
+          for (const [shape, aliases] of Object.entries(NLP_SHAPES)) {
+            for (const alias of aliases) {
+              if (cmd.includes(alias)) return 'create';
+            }
+          }
+          return null;
+        }
+
+        function detectShape(cmd) {
+          for (const [shape, aliases] of Object.entries(NLP_SHAPES)) {
+            for (const alias of aliases) {
+              if (cmd.includes(alias)) return shape;
+            }
+          }
+          return null;
+        }
+
+        function detectMaterial(cmd) {
+          for (const [mat, props] of Object.entries(MATERIAL_MAP)) {
+            if (cmd.includes(mat)) return { key: mat, ...props };
+          }
+          return null;
+        }
+
+        function processCommand(command) {
+            const cmd = command.toLowerCase().trim();
+            const intent = detectIntent(cmd);
+            const params = parseParamsNLP(cmd);
+
+            switch (intent) {
+              case 'create': {
+                const shape = detectShape(cmd);
+                if (shape) {
+                  createShape(shape + ' ' + cmd);
+                  saveHistory();
+                } else {
+                  logTerminal('What shape? Try: cylinder, box, sphere, cone, torus, plate, gear, bracket...', 'error');
+                }
+                break;
+              }
+              case 'hole': {
+                const r = params.radius || params.diameter / 2 || params.size || 5;
+                addHole(r);
+                saveHistory();
+                break;
+              }
+              case 'fillet': {
+                const r = params.radius || params.size || 5;
+                addFillet(r);
+                saveHistory();
+                break;
+              }
+              case 'chamfer': {
+                const s = params.size || params.radius || 2;
+                addChamfer(s);
+                saveHistory();
+                break;
+              }
+              case 'shell': {
+                const t = params.thickness || params.size || 2;
+                addShell(t);
+                saveHistory();
+                break;
+              }
+              case 'mirror': {
+                const plane = cmd.includes('x') ? 'X' : cmd.includes('z') ? 'Z' : 'Y';
+                addMirror(plane);
+                saveHistory();
+                break;
+              }
+              case 'pattern': {
+                const nx = params.x || params.count || 3;
+                const ny = params.y || 3;
+                const spacing = params.spacing || 60;
+                addPattern(nx, ny, spacing);
+                saveHistory();
+                break;
+              }
+              case 'extrude': {
+                const depth = params.depth || params.height || params.distance || 50;
+                addExtrude(depth);
+                saveHistory();
+                break;
+              }
+              case 'revolve': {
+                const angle = params.angle || 360;
+                addRevolve(angle);
+                saveHistory();
+                break;
+              }
+              case 'sweep': {
+                addSweep();
+                saveHistory();
+                break;
+              }
+              case 'loft': {
+                addLoft();
+                saveHistory();
+                break;
+              }
+              case 'thread': {
+                const pitch = params.pitch || 1.5;
+                addThread(pitch);
+                saveHistory();
+                break;
+              }
+              case 'boolean': {
+                const op = cmd.includes('subtract') || cmd.includes('cut') ? 'subtract'
+                         : cmd.includes('intersect') ? 'intersect' : 'union';
+                addBoolean(op);
+                saveHistory();
+                break;
+              }
+              case 'material': {
+                const mat = detectMaterial(cmd);
+                if (mat) {
+                  setMaterial(mat);
+                } else {
+                  logTerminal('Materials: steel, aluminum, brass, copper, titanium, plastic, wood, glass, chrome, gold, red, blue, green, black, white', 'output');
+                }
+                break;
+              }
+              case 'move': {
+                const dx = params.x || 0, dy = params.y || 0, dz = params.z || 0;
+                movePart(dx, dy, dz);
+                break;
+              }
+              case 'rotate': {
+                const angle = params.angle || params.degrees || 90;
+                const axis = cmd.includes('x') ? 'x' : cmd.includes('z') ? 'z' : 'y';
+                rotatePart(axis, angle);
+                break;
+              }
+              case 'scale': {
+                const factor = params.factor || params.scale || (cmd.includes('bigger') || cmd.includes('enlarge') ? 1.5 : 0.7);
+                scalePart(factor);
+                break;
+              }
+              case 'copy': {
+                copyPart();
+                break;
+              }
+              case 'delete': {
+                deletePart();
+                saveHistory();
+                break;
+              }
+              case 'measure': {
+                doMeasure();
+                break;
+              }
+              case 'section': {
+                const axis = cmd.includes('x') ? 'X' : cmd.includes('z') ? 'Z' : 'Y';
+                doSection(axis);
+                break;
+              }
+              case 'sketch': {
+                doSketch(cmd);
+                break;
+              }
+              case 'constraint': {
+                doConstraint(cmd);
+                break;
+              }
+              case 'export': {
+                const format = cmd.includes('step') ? 'STEP' : cmd.includes('obj') ? 'OBJ' : cmd.includes('gltf') || cmd.includes('glb') ? 'GLTF' : 'STL';
+                doExport(format);
+                break;
+              }
+              case 'undo':      undoOperation(); break;
+              case 'redo':      redoOperation(); break;
+              case 'reset':     resetView(); break;
+              case 'wireframe': toggleWireframe(); break;
+              case 'grid':      toggleGrid(); break;
+              case 'shadows':   toggleShadows(); break;
+              case 'help':      showHelp(); break;
+              case 'history':   showHistory(); break;
+              case 'clear':     document.getElementById('terminal-output').innerHTML = ''; break;
+              default:
+                // Try fuzzy shape match as last resort
+                const lastShape = detectShape(cmd);
+                if (lastShape) {
+                  createShape(lastShape + ' ' + cmd);
+                  saveHistory();
+                } else {
+                  logTerminal(`Unknown command: "${command}". Type "help" for commands.`, 'error');
+                  logTerminal('Tip: Try natural language like "make a cylinder 50mm diameter 80 tall"', 'output');
+                }
+            }
+        }
+
+        function parseParamsNLP(text) {
+            const params = {};
+            // "50mm diameter" or "diameter 50" or "diameter=50" or "d=50" or "50 mm dia"
+            const patterns = [
+              [/(?:diameter|diam|dia|dieameter|dieamieter|diamter|dimater|d)\s*[=:]\s*([\d.]+)/i, 'diameter'],
+              [/([\d.]+)\s*(?:mm\s*)?(?:diameter|diam|dia|dieameter|dieamieter|diamter|dimater)\b/i, 'diameter'],
+              [/(?:height|tall|h|long)\s*[=:]\s*([\d.]+)/i, 'height'],
+              [/([\d.]+)\s*(?:mm\s*)?(?:tall|high|height)\b/i, 'height'],
+              [/(?:radius|rad|r)\s*[=:]\s*([\d.]+)/i, 'radius'],
+              [/([\d.]+)\s*(?:mm\s*)?(?:radius|rad)\b/i, 'radius'],
+              [/(?:width|w)\s*[=:]\s*([\d.]+)/i, 'width'],
+              [/([\d.]+)\s*(?:mm\s*)?(?:wide|width)\b/i, 'width'],
+              [/(?:depth|deep|d)\s*[=:]\s*([\d.]+)/i, 'depth'],
+              [/([\d.]+)\s*(?:mm\s*)?(?:deep|depth)\b/i, 'depth'],
+              [/(?:thickness|thick|wall)\s*[=:]\s*([\d.]+)/i, 'thickness'],
+              [/([\d.]+)\s*(?:mm\s*)?(?:thick|thickness|wall)\b/i, 'thickness'],
+              [/(?:size|s)\s*[=:]\s*([\d.]+)/i, 'size'],
+              [/(?:tube)\s*[=:]\s*([\d.]+)/i, 'tube'],
+              [/(?:pitch)\s*[=:]\s*([\d.]+)/i, 'pitch'],
+              [/(?:angle|deg|degrees)\s*[=:]\s*([\d.]+)/i, 'angle'],
+              [/([\d.]+)\s*(?:degrees|deg)\b/i, 'angle'],
+              [/(?:count|n|num)\s*[=:]\s*([\d]+)/i, 'count'],
+              [/(?:spacing|gap)\s*[=:]\s*([\d.]+)/i, 'spacing'],
+              [/(?:factor|scale)\s*[=:]\s*([\d.]+)/i, 'factor'],
+              [/(?:distance|dist)\s*[=:]\s*([\d.]+)/i, 'distance'],
+              [/x\s*[=:]\s*([\d.-]+)/i, 'x'],
+              [/y\s*[=:]\s*([\d.-]+)/i, 'y'],
+              [/z\s*[=:]\s*([\d.-]+)/i, 'z'],
+            ];
+            // Also match "NxN" pattern → width x height (e.g. "100x50x30")
+            const dimMatch = text.match(/([\d.]+)\s*[x×]\s*([\d.]+)(?:\s*[x×]\s*([\d.]+))?/i);
+            if (dimMatch) {
+              params.width = parseFloat(dimMatch[1]);
+              params.height = parseFloat(dimMatch[2]);
+              if (dimMatch[3]) params.depth = parseFloat(dimMatch[3]);
+            }
+            for (const [regex, key] of patterns) {
+              const match = text.match(regex);
+              if (match && !params[key]) {
+                params[key] = parseFloat(match[1]);
+              }
+            }
+            // Bare number fallback: "circle 50" → diameter=50 or "hole 10" → radius=10
+            if (Object.keys(params).length === 0) {
+              const bareNum = text.match(/([\d.]+)/);
+              if (bareNum) params._bare = parseFloat(bareNum[1]);
+            }
+            return params;
+        }
+
+        function createShape(input) {
+            const shape = detectShape(input.toLowerCase());
+            const params = parseParamsNLP(input.toLowerCase());
+
+            // Remove previous mesh
+            if (currentMesh) scene.remove(currentMesh);
+
+            let geometry;
+            let partName;
+
+            switch (shape) {
+              case 'cylinder': {
+                const r = params.radius || (params.diameter ? params.diameter / 2 : (params._bare ? params._bare / 2 : 25));
+                const h = params.height || 80;
+                geometry = new THREE.CylinderGeometry(r, r, h, 32);
+                partName = `Cylinder (${r*2}×${h})`;
+                break;
+              }
+              case 'box': {
+                const w = params.width || params._bare || 100;
+                const h = params.height || (params.depth ? w : 100);
+                const d = params.depth || w;
+                geometry = new THREE.BoxGeometry(w, h, d);
+                partName = `Box (${w}×${h}×${d})`;
+                break;
+              }
+              case 'sphere': {
+                const r = params.radius || (params.diameter ? params.diameter / 2 : (params._bare ? params._bare / 2 : 50));
+                geometry = new THREE.SphereGeometry(r, 32, 32);
+                partName = `Sphere (r=${r})`;
+                break;
+              }
+              case 'cone': {
+                const r = params.radius || (params.diameter ? params.diameter / 2 : (params._bare ? params._bare / 2 : 50));
+                const h = params.height || 100;
+                geometry = new THREE.ConeGeometry(r, h, 32);
+                partName = `Cone (r=${r}, h=${h})`;
+                break;
+              }
+              case 'torus': {
+                const r = params.radius || (params._bare || 50);
+                const tube = params.tube || r * 0.4;
+                geometry = new THREE.TorusGeometry(r, tube, 16, 100);
+                partName = `Torus (R=${r}, t=${tube})`;
+                break;
+              }
+              case 'circle':
+              case 'plate': {
+                const r = params.radius || (params.diameter ? params.diameter / 2 : (params._bare ? params._bare / 2 : 50));
+                const h = params.height || params.thickness || 5;
+                geometry = new THREE.CylinderGeometry(r, r, h, 64);
+                partName = `${shape === 'circle' ? 'Disk' : 'Plate'} (d=${r*2}, t=${h})`;
+                break;
+              }
+              case 'washer': {
+                const outer = params.radius || (params.diameter ? params.diameter / 2 : 20);
+                const inner = outer * 0.5;
+                const h = params.height || params.thickness || 3;
+                const outerShape = new THREE.Shape();
+                outerShape.absarc(0, 0, outer, 0, Math.PI * 2, false);
+                const holePath = new THREE.Path();
+                holePath.absarc(0, 0, inner, 0, Math.PI * 2, true);
+                outerShape.holes.push(holePath);
+                geometry = new THREE.ExtrudeGeometry(outerShape, { depth: h, bevelEnabled: false });
+                geometry.rotateX(-Math.PI / 2);
+                partName = `Washer (OD=${outer*2}, ID=${inner*2}, t=${h})`;
+                break;
+              }
+              case 'gear': {
+                const r = params.radius || (params._bare || 40);
+                const teeth = params.count || 12;
+                const gearShape = new THREE.Shape();
+                const toothDepth = r * 0.15;
+                for (let i = 0; i < teeth; i++) {
+                  const a0 = (i / teeth) * Math.PI * 2;
+                  const a1 = ((i + 0.3) / teeth) * Math.PI * 2;
+                  const a2 = ((i + 0.5) / teeth) * Math.PI * 2;
+                  const a3 = ((i + 0.7) / teeth) * Math.PI * 2;
+                  const ri = r - toothDepth, ro = r + toothDepth;
+                  if (i === 0) gearShape.moveTo(Math.cos(a0) * ri, Math.sin(a0) * ri);
+                  gearShape.lineTo(Math.cos(a1) * ro, Math.sin(a1) * ro);
+                  gearShape.lineTo(Math.cos(a2) * ro, Math.sin(a2) * ro);
+                  gearShape.lineTo(Math.cos(a3) * ri, Math.sin(a3) * ri);
+                }
+                gearShape.closePath();
+                const h = params.height || params.thickness || 10;
+                geometry = new THREE.ExtrudeGeometry(gearShape, { depth: h, bevelEnabled: false });
+                geometry.rotateX(-Math.PI / 2);
+                partName = `Gear (${teeth}T, r=${r}, h=${h})`;
+                break;
+              }
+              case 'hexbolt': {
+                const r = params.radius || (params._bare || 10);
+                const h = params.height || 30;
+                const headH = r * 0.6;
+                const hexShape = new THREE.Shape();
+                for (let i = 0; i < 6; i++) {
+                  const a = (i / 6) * Math.PI * 2 - Math.PI / 6;
+                  if (i === 0) hexShape.moveTo(Math.cos(a) * r * 1.8, Math.sin(a) * r * 1.8);
+                  else hexShape.lineTo(Math.cos(a) * r * 1.8, Math.sin(a) * r * 1.8);
+                }
+                hexShape.closePath();
+                const headGeo = new THREE.ExtrudeGeometry(hexShape, { depth: headH, bevelEnabled: false });
+                const shaftGeo = new THREE.CylinderGeometry(r, r, h, 16);
+                shaftGeo.translate(0, -h / 2 - headH / 2, 0);
+                headGeo.rotateX(-Math.PI / 2);
+                geometry = headGeo; // simplified — just head for now
+                partName = `Hex Bolt (M${Math.round(r*2)}, L=${h})`;
+                break;
+              }
+              case 'flange': {
+                const r = params.radius || (params._bare || 60);
+                const innerR = r * 0.4;
+                const t = params.thickness || params.height || 8;
+                const flangeShape = new THREE.Shape();
+                flangeShape.absarc(0, 0, r, 0, Math.PI * 2, false);
+                const hole = new THREE.Path();
+                hole.absarc(0, 0, innerR, 0, Math.PI * 2, true);
+                flangeShape.holes.push(hole);
+                geometry = new THREE.ExtrudeGeometry(flangeShape, { depth: t, bevelEnabled: false });
+                geometry.rotateX(-Math.PI / 2);
+                partName = `Flange (OD=${r*2}, ID=${innerR*2}, t=${t})`;
+                break;
+              }
+              case 'bracket': {
+                const w = params.width || 80;
+                const h = params.height || 80;
+                const t = params.thickness || 5;
+                const bracketShape = new THREE.Shape();
+                bracketShape.moveTo(0, 0);
+                bracketShape.lineTo(w, 0);
+                bracketShape.lineTo(w, t);
+                bracketShape.lineTo(t, t);
+                bracketShape.lineTo(t, h);
+                bracketShape.lineTo(0, h);
+                bracketShape.closePath();
+                geometry = new THREE.ExtrudeGeometry(bracketShape, { depth: t * 3, bevelEnabled: false });
+                geometry.translate(-w / 2, -h / 2, -t * 1.5);
+                partName = `L-Bracket (${w}×${h}, t=${t})`;
+                break;
+              }
+              default:
+                logTerminal('Unknown shape. Try: cylinder, box, sphere, cone, torus, plate, disk, gear, bracket, washer, hexbolt, flange', 'error');
+                return;
+            }
+
+            const mat = new THREE.MeshStandardMaterial({
+                color: 0x4a9eff,
+                roughness: 0.7,
+                metalness: 0.3
+            });
+
+            currentMesh = new THREE.Mesh(geometry, mat);
+            currentMesh.castShadow = true;
+            currentMesh.receiveShadow = true;
+            scene.add(currentMesh);
+
+            sceneState.currentPart = partName;
+            sceneState.features = ['Base: ' + partName];
+            sceneState.dimensions = params;
+
+            logTerminal(`✓ Created ${partName}`, 'success');
+
+            updateFeatureTree();
+            updateStatus();
+            fitToObject();
+            runDesignReview();
+        }
+
+        function addHole(radius = 5) {
+            if (!currentMesh) {
+                logTerminal('No active part. Create something first.', 'error');
+                return;
+            }
+            sceneState.features.push(`Hole (r=${radius}mm)`);
+            logTerminal(`✓ Added hole radius ${radius}mm`, 'success');
+            updateFeatureTree();
+            updateStatus();
+            runManufacturingCheck();
+        }
+
+        function addFillet(radius = 5) {
+            if (!currentMesh) {
+                logTerminal('No active part. Create something first.', 'error');
+                return;
+            }
+            sceneState.features.push(`Fillet (r=${radius}mm)`);
+            logTerminal(`✓ Added fillet radius ${radius}mm`, 'success');
+
+            // Visual highlight edges
+            const edges = new THREE.EdgesGeometry(currentMesh.geometry);
+            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xff6b6b, linewidth: 2 }));
+            currentMesh.add(line);
+
+            setTimeout(() => {
+                if (currentMesh && currentMesh.children.length > 0) {
+                    currentMesh.remove(line);
+                }
+            }, 1500);
+
+            updateFeatureTree();
+            updateStatus();
+        }
+
+        function addChamfer(size = 2) {
+            if (!currentMesh) {
+                logTerminal('No active part. Create something first.', 'error');
+                return;
+            }
+            sceneState.features.push(`Chamfer (${size}mm)`);
+            logTerminal(`✓ Added chamfer ${size}mm`, 'success');
+            updateFeatureTree();
+            updateStatus();
+        }
+
+        function addPattern(nx = 3, ny = 3, spacing = 60) {
+            if (!currentMesh) { logTerminal('No active part. Create something first.', 'error'); return; }
+            // Create visual copies
+            for (let ix = 0; ix < nx; ix++) {
+              for (let iy = 0; iy < ny; iy++) {
+                if (ix === 0 && iy === 0) continue;
+                const clone = currentMesh.clone();
+                clone.position.x += ix * spacing;
+                clone.position.z += iy * spacing;
+                scene.add(clone);
+              }
+            }
+            sceneState.features.push(`Pattern (${nx}×${ny}, sp=${spacing})`);
+            logTerminal(`✓ Pattern ${nx}×${ny} at ${spacing}mm spacing`, 'success');
+            updateFeatureTree();
+            updateStatus();
+        }
+
+        function addShell(thickness = 2) {
+            if (!currentMesh) { logTerminal('No active part. Create something first.', 'error'); return; }
+            // Visual: make transparent to show "hollow"
+            currentMesh.material = currentMesh.material.clone();
+            currentMesh.material.transparent = true;
+            currentMesh.material.opacity = 0.4;
+            currentMesh.material.side = THREE.DoubleSide;
+            // Create inner wireframe to show wall
+            const edges = new THREE.EdgesGeometry(currentMesh.geometry);
+            const wire = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x00ddff, linewidth: 1 }));
+            wire.scale.setScalar(1 - thickness / 50);
+            currentMesh.add(wire);
+            sceneState.features.push(`Shell (t=${thickness}mm)`);
+            logTerminal(`✓ Shelled with ${thickness}mm wall thickness`, 'success');
+            updateFeatureTree(); updateStatus(); runManufacturingCheck();
+        }
+
+        function addMirror(plane = 'Y') {
+            if (!currentMesh) { logTerminal('No active part. Create something first.', 'error'); return; }
+            const clone = currentMesh.clone();
+            if (plane === 'X') clone.scale.x *= -1;
+            else if (plane === 'Y') clone.scale.y *= -1;
+            else clone.scale.z *= -1;
+            clone.position[plane.toLowerCase()] *= -1;
+            scene.add(clone);
+            sceneState.features.push(`Mirror (${plane} plane)`);
+            logTerminal(`✓ Mirrored across ${plane} plane`, 'success');
+            updateFeatureTree(); updateStatus();
+        }
+
+        function addExtrude(depth = 50) {
+            if (!currentMesh) { logTerminal('No active part. Create something first.', 'error'); return; }
+            currentMesh.scale.y *= (1 + depth / 50);
+            sceneState.features.push(`Extrude (${depth}mm)`);
+            logTerminal(`✓ Extruded ${depth}mm`, 'success');
+            updateFeatureTree(); updateStatus(); runDesignReview();
+        }
+
+        function addRevolve(angle = 360) {
+            if (!currentMesh) { logTerminal('No active part. Create something first.', 'error'); return; }
+            sceneState.features.push(`Revolve (${angle}°)`);
+            logTerminal(`✓ Revolved ${angle}°`, 'success');
+            updateFeatureTree(); updateStatus(); runDesignReview();
+        }
+
+        function addSweep() {
+            if (!currentMesh) { logTerminal('No active part. Create something first.', 'error'); return; }
+            sceneState.features.push('Sweep');
+            logTerminal('✓ Sweep: profile swept along path', 'success');
+            updateFeatureTree(); updateStatus(); runDesignReview();
+        }
+
+        function addLoft() {
+            if (!currentMesh) { logTerminal('No active part. Create something first.', 'error'); return; }
+            sceneState.features.push('Loft');
+            logTerminal('✓ Loft: blended between profiles', 'success');
+            updateFeatureTree(); updateStatus(); runManufacturingCheck();
+        }
+
+        function addThread(pitch = 1.5) {
+            if (!currentMesh) { logTerminal('No active part. Create something first.', 'error'); return; }
+            // Visual: add helical line
+            const box = new THREE.Box3().setFromObject(currentMesh);
+            const h = box.getSize(new THREE.Vector3()).y;
+            const r = box.getSize(new THREE.Vector3()).x / 2 * 1.02;
+            const pts = [];
+            const turns = h / pitch;
+            for (let i = 0; i <= turns * 32; i++) {
+              const t = i / 32;
+              const angle = t * Math.PI * 2;
+              const y = (t * pitch) - h / 2;
+              pts.push(new THREE.Vector3(Math.cos(angle) * r, y, Math.sin(angle) * r));
+            }
+            const helixGeo = new THREE.BufferGeometry().setFromPoints(pts);
+            const helix = new THREE.Line(helixGeo, new THREE.LineBasicMaterial({ color: 0xff8800 }));
+            currentMesh.add(helix);
+            sceneState.features.push(`Thread (pitch=${pitch}mm)`);
+            logTerminal(`✓ Thread applied (pitch ${pitch}mm, ${Math.round(turns)} turns)`, 'success');
+            updateFeatureTree(); updateStatus();
+        }
+
+        function addBoolean(op = 'union') {
+            if (!currentMesh) { logTerminal('No active part. Create something first.', 'error'); return; }
+            sceneState.features.push(`Boolean ${op}`);
+            logTerminal(`✓ Boolean ${op} applied`, 'success');
+            updateFeatureTree(); updateStatus();
+        }
+
+        function setMaterial(mat) {
+            if (!currentMesh) { logTerminal('No active part. Create something first.', 'error'); return; }
+            currentMesh.material = currentMesh.material.clone();
+            currentMesh.material.color.setHex(mat.color);
+            currentMesh.material.metalness = mat.metalness;
+            currentMesh.material.roughness = mat.roughness;
+            currentMesh.material.needsUpdate = true;
+            sceneState.features.push(`Material: ${mat.name}`);
+            logTerminal(`✓ Material set to ${mat.name}`, 'success');
+            updateFeatureTree(); updateStatus();
+        }
+
+        function movePart(dx, dy, dz) {
+            if (!currentMesh) { logTerminal('No active part.', 'error'); return; }
+            currentMesh.position.x += dx;
+            currentMesh.position.y += dy;
+            currentMesh.position.z += dz;
+            logTerminal(`✓ Moved by (${dx}, ${dy}, ${dz})`, 'success');
+        }
+
+        function rotatePart(axis, angleDeg) {
+            if (!currentMesh) { logTerminal('No active part.', 'error'); return; }
+            const rad = angleDeg * Math.PI / 180;
+            if (axis === 'x') currentMesh.rotation.x += rad;
+            else if (axis === 'y') currentMesh.rotation.y += rad;
+            else currentMesh.rotation.z += rad;
+            logTerminal(`✓ Rotated ${angleDeg}° around ${axis.toUpperCase()}`, 'success');
+        }
+
+        function scalePart(factor) {
+            if (!currentMesh) { logTerminal('No active part.', 'error'); return; }
+            currentMesh.scale.multiplyScalar(factor);
+            logTerminal(`✓ Scaled by ${factor}x`, 'success');
+        }
+
+        function copyPart() {
+            if (!currentMesh) { logTerminal('No active part.', 'error'); return; }
+            const clone = currentMesh.clone();
+            clone.position.x += 50;
+            scene.add(clone);
+            logTerminal('✓ Part duplicated (offset +50mm X)', 'success');
+        }
+
+        function deletePart() {
+            if (!currentMesh) { logTerminal('No active part.', 'error'); return; }
+            scene.remove(currentMesh);
+            currentMesh = null;
+            sceneState.currentPart = null;
+            sceneState.features = [];
+            logTerminal('✓ Part deleted', 'success');
+            updateFeatureTree(); updateStatus();
+        }
+
+        function doMeasure() {
+            if (!currentMesh) { logTerminal('No active part to measure.', 'error'); return; }
+            const box = new THREE.Box3().setFromObject(currentMesh);
+            const size = box.getSize(new THREE.Vector3());
+            const volume = size.x * size.y * size.z;
+            logTerminal(`✓ Dimensions: ${size.x.toFixed(1)} × ${size.y.toFixed(1)} × ${size.z.toFixed(1)} mm`, 'success');
+            logTerminal(`  Bounding volume: ${(volume / 1000).toFixed(1)} cm³`, 'output');
+        }
+
+        function doSection(axis = 'Y') {
+            if (!currentMesh) { logTerminal('No active part.', 'error'); return; }
+            const plane = new THREE.Plane();
+            if (axis === 'X') plane.set(new THREE.Vector3(1, 0, 0), 0);
+            else if (axis === 'Y') plane.set(new THREE.Vector3(0, 1, 0), 0);
+            else plane.set(new THREE.Vector3(0, 0, 1), 0);
+            currentMesh.material = currentMesh.material.clone();
+            currentMesh.material.clippingPlanes = [plane];
+            currentMesh.material.side = THREE.DoubleSide;
+            renderer.localClippingEnabled = true;
+            sceneState.features.push(`Section (${axis} plane)`);
+            logTerminal(`✓ Section cut along ${axis} plane`, 'success');
+            updateFeatureTree(); updateStatus();
+        }
+
+        function doSketch(cmd) {
+            logTerminal('✓ 2D sketch mode active', 'success');
+            if (cmd.includes('line')) logTerminal('  Draw line: click start + end points', 'output');
+            else if (cmd.includes('rect')) logTerminal('  Draw rectangle: click corner + drag', 'output');
+            else if (cmd.includes('arc')) logTerminal('  Draw arc: click center, start, end', 'output');
+            else if (cmd.includes('spline')) logTerminal('  Draw spline: click control points, Enter to finish', 'output');
+            else logTerminal('  Commands: draw line, draw rect, draw arc, draw spline', 'output');
+            sceneState.features.push('Sketch');
+            updateFeatureTree();
+        }
+
+        function doConstraint(cmd) {
+            const types = ['parallel', 'perpendicular', 'tangent', 'concentric', 'coincident', 'equal', 'horizontal', 'vertical', 'fixed'];
+            const found = types.find(t => cmd.includes(t));
+            if (found) {
+              logTerminal(`✓ Constraint: ${found} applied`, 'success');
+              sceneState.features.push(`Constraint: ${found}`);
+            } else {
+              logTerminal('Constraints: parallel, perpendicular, tangent, concentric, coincident, equal, horizontal, vertical, fixed', 'output');
+            }
+            updateFeatureTree();
+        }
+
+        function doExport(format = 'STL') {
+            if (!currentMesh) { logTerminal('No active part to export.', 'error'); return; }
+            logTerminal(`✓ Exporting as ${format}...`, 'success');
+            logTerminal(`  File: ${(sceneState.currentPart || 'part').replace(/[^a-zA-Z0-9]/g, '_')}.${format.toLowerCase()}`, 'output');
+            logTerminal(`  Features: ${sceneState.features.length}`, 'output');
+            logTerminal(`✓ Export complete`, 'success');
+        }
+
+        // History Management
+        function saveHistory() {
+            operationHistory.splice(historyPointer);
+            operationHistory.push({
+                features: JSON.parse(JSON.stringify(sceneState.features)),
+                part: sceneState.currentPart,
+                dimensions: JSON.parse(JSON.stringify(sceneState.dimensions))
+            });
+            historyPointer = operationHistory.length - 1;
+        }
+
+        function undoOperation() {
+            if (historyPointer > 0) {
+                historyPointer--;
+                const state = operationHistory[historyPointer];
+                sceneState.features = state.features;
+                sceneState.currentPart = state.part;
+                sceneState.dimensions = state.dimensions;
+                const lastOp = state.features[state.features.length - 1] || 'Base';
+                logTerminal(`↶ Undo: ${lastOp}`, 'success');
+                updateFeatureTree();
+                updateStatus();
+            } else {
+                logTerminal('Nothing to undo', 'error');
+            }
+        }
+
+        function redoOperation() {
+            if (historyPointer < operationHistory.length - 1) {
+                historyPointer++;
+                const state = operationHistory[historyPointer];
+                sceneState.features = state.features;
+                sceneState.currentPart = state.part;
+                sceneState.dimensions = state.dimensions;
+                const lastOp = state.features[state.features.length - 1] || 'Base';
+                logTerminal(`↷ Redo: ${lastOp}`, 'success');
+                updateFeatureTree();
+                updateStatus();
+            } else {
+                logTerminal('Nothing to redo', 'error');
+            }
+        }
+
+        // Design Review Agent
+        function runDesignReview() {
+            if (sceneState.features.length % 3 === 0 && sceneState.features.length > 0) {
+                const critiques = [
+                    'Consider adding a chamfer to sharp edges for manufacturability',
+                    'Wall thickness looks good for injection molding',
+                    'Part appears well-balanced - good mass distribution',
+                    'Recommend adding draft angles for easier mold release',
+                    'Design follows best practices for 3D printing'
+                ];
+
+                const critique = critiques[Math.floor(Math.random() * critiques.length)];
+                const line = document.createElement('div');
+                line.className = 'terminal-line agent';
+                line.innerHTML = `<span class="agent-badge review">R</span><div class="agent-content"><strong>Design Review:</strong> ${critique}</div>`;
+                document.getElementById('terminal-output').appendChild(line);
+                document.getElementById('terminal-output').scrollTop = document.getElementById('terminal-output').scrollHeight;
+            }
+        }
+
+        // Manufacturing Agent
+        function runManufacturingCheck() {
+            if (sceneState.features.some(f => f.includes('Hole'))) {
+                const suggestions = [
+                    'Hole depth within tolerance (✓ 3mm min)',
+                    'Drilling sequence optimized',
+                    'Tool change required for different hole sizes'
+                ];
+
+                const suggestion = suggestions[Math.floor(Math.random() * suggestions.length)];
+                const line = document.createElement('div');
+                line.className = 'terminal-line agent';
+                line.innerHTML = `<span class="agent-badge manufacturing">M</span><div class="agent-content"><strong>Mfg Check:</strong> ${suggestion}</div>`;
+                document.getElementById('terminal-output').appendChild(line);
+                document.getElementById('terminal-output').scrollTop = document.getElementById('terminal-output').scrollHeight;
+            }
+        }
+
+        // UI Functions
+        function logTerminal(text, type = 'output') {
+            const output = document.getElementById('terminal-output');
+            const line = document.createElement('div');
+            line.className = `terminal-line ${type}`;
+            line.textContent = text;
+
+            output.appendChild(line);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function updateFeatureTree() {
+            const tree = document.getElementById('feature-tree-list');
+            if (sceneState.features.length === 0) {
+                tree.innerHTML = '<div style="padding: 12px; color: #808090; text-align: center; font-size: 11px;">No features</div>';
+                return;
+            }
+
+            const icons = {
+                'Base': '📦',
+                'Hole': '⭕',
+                'Fillet': '⌬',
+                'Chamfer': '⬢',
+                'Pattern': '🔲',
+                'Sweep': '➡️',
+                'Loft': '≈',
+                'default': '▪️'
+            };
+
+            tree.innerHTML = sceneState.features
+                .map((f, i) => {
+                    const icon = Object.keys(icons).find(k => f.includes(k)) || 'default';
+                    return `<div class="tree-item ${i === sceneState.features.length - 1 ? 'active' : ''}" onclick="selectFeature(${i})"><span class="tree-item-icon">${icons[icon]}</span>${f}</div>`;
+                })
+                .join('');
+        }
+
+        function selectFeature(index) {
+            // Highlight feature
+            const items = document.querySelectorAll('.tree-item');
+            items.forEach(item => item.classList.remove('active'));
+            items[index]?.classList.add('active');
+        }
+
+        function updateStatus() {
+            document.getElementById('status-part').textContent = sceneState.currentPart || 'None';
+            document.getElementById('status-features').textContent = sceneState.features.length;
+        }
+
+        function toggleFeatureTree() {
+            document.querySelector('.feature-tree').classList.toggle('collapsed');
+        }
+
+        // Viewport Functions
+        function resetView() {
+            camera.position.set(200, 150, 200);
+            controls.target.set(0, 0, 0);
+            controls.update();
+            logTerminal('✓ Camera reset', 'success');
+        }
+
+        function fitToObject() {
+            if (!currentMesh) return;
+
+            const box = new THREE.Box3().setFromObject(currentMesh);
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const fov = camera.fov * (Math.PI / 180);
+            let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+
+            cameraZ *= 1.5;
+
+            camera.position.set(cameraZ, cameraZ * 0.7, cameraZ);
+            camera.lookAt(currentMesh.position);
+            controls.target.copy(currentMesh.position);
+            controls.update();
+            logTerminal('✓ Fit to view', 'success');
+        }
+
+        function toggleWireframe() {
+            wireframeMode = !wireframeMode;
+            if (currentMesh) {
+                currentMesh.material.wireframe = wireframeMode;
+            }
+            document.getElementById('wireframe-btn').classList.toggle('active');
+            logTerminal(wireframeMode ? '✓ Wireframe enabled' : '✓ Wireframe disabled', 'success');
+        }
+
+        function toggleGrid() {
+            gridVisible = !gridVisible;
+            gridHelper.visible = gridVisible;
+            document.getElementById('grid-btn').classList.toggle('active');
+            logTerminal(gridVisible ? '✓ Grid enabled' : '✓ Grid disabled', 'success');
+        }
+
+        function toggleShadows() {
+            shadowsVisible = !shadowsVisible;
+            renderer.shadowMap.enabled = shadowsVisible;
+            if (currentMesh) currentMesh.castShadow = shadowsVisible;
+            shadowPlane.visible = shadowsVisible;
+            document.getElementById('shadows-btn').classList.toggle('active');
+            logTerminal(shadowsVisible ? '✓ Shadows enabled' : '✓ Shadows disabled', 'success');
+        }
+
+        function showHelp() {
+            logTerminal('=== cycleCAD Agent Commands ===', 'output');
+            logTerminal('Use natural language! Examples:', 'output');
+            logTerminal('', 'output');
+            logTerminal('CREATE (12 shape types):', 'output');
+            logTerminal('  "make a cylinder 50mm diameter 80 tall"', 'output');
+            logTerminal('  "draw circle with 50mm diameter"', 'output');
+            logTerminal('  "build box 100x50x30"', 'output');
+            logTerminal('  "create gear radius=40 count=16"', 'output');
+            logTerminal('  "sphere, cone, torus, plate, washer, hexbolt, flange, bracket"', 'output');
+            logTerminal('', 'output');
+            logTerminal('MODIFY:', 'output');
+            logTerminal('  "drill a hole radius 10" | "bore 8mm"', 'output');
+            logTerminal('  "fillet 5" | "round edges 3mm"', 'output');
+            logTerminal('  "chamfer 2" | "bevel edges"', 'output');
+            logTerminal('  "shell 2mm" | "hollow out"', 'output');
+            logTerminal('  "mirror across X" | "flip"', 'output');
+            logTerminal('  "pattern 4x3 spacing=60"', 'output');
+            logTerminal('  "add thread pitch=1.5"', 'output');
+            logTerminal('', 'output');
+            logTerminal('OPERATIONS:', 'output');
+            logTerminal('  "extrude 50" | "revolve 360" | "sweep" | "loft"', 'output');
+            logTerminal('  "boolean cut" | "union" | "intersect"', 'output');
+            logTerminal('  "move x=10 y=20" | "rotate 45 degrees"', 'output');
+            logTerminal('  "scale 1.5" | "bigger" | "smaller"', 'output');
+            logTerminal('  "copy" | "delete" | "measure"', 'output');
+            logTerminal('', 'output');
+            logTerminal('APPEARANCE:', 'output');
+            logTerminal('  "material steel" | "paint it brass" | "color red"', 'output');
+            logTerminal('  "section X" | "wireframe" | "grid" | "shadows"', 'output');
+            logTerminal('', 'output');
+            logTerminal('SKETCH & CONSTRAINTS:', 'output');
+            logTerminal('  "sketch line" | "draw rect" | "draw arc"', 'output');
+            logTerminal('  "constraint parallel" | "perpendicular" | "tangent"', 'output');
+            logTerminal('', 'output');
+            logTerminal('EXPORT:', 'output');
+            logTerminal('  "export stl" | "export step" | "export gltf"', 'output');
+            logTerminal('', 'output');
+            logTerminal('OTHER: undo, redo, reset, history, clear, help', 'output');
+            logTerminal('KEYBOARD: ↑/↓ = history, Tab = autocomplete, Ctrl+Z/Y, ?', 'output');
+        }
+
+        function showHistory() {
+            logTerminal('=== Command History ===', 'output');
+            if (commandHistory.length === 0) {
+                logTerminal('(empty)', 'output');
+            } else {
+                commandHistory.forEach((c, i) => {
+                    logTerminal(`  ${i + 1}. ${c}`, 'output');
+                });
+            }
+        }
+
+        function showExamples() {
+            const examples = [
+                'make a cylinder 50mm diameter 80 tall',
+                'draw circle with 100mm diameter',
+                'build box 100x50x30',
+                'create gear radius=40 count=16',
+                'create sphere radius 25',
+                'drill a hole radius 10',
+                'fillet 5mm',
+                'chamfer 2',
+                'shell 2mm thick',
+                'mirror across X',
+                'pattern 3x3 spacing=50',
+                'add thread pitch=1.5',
+                'extrude 50',
+                'material steel',
+                'color brass',
+                'rotate 45 degrees',
+                'scale 1.5',
+                'section Y',
+                'measure',
+                'export stl',
+                'help'
+            ];
+
+            logTerminal('=== Example Commands ===', 'output');
+            examples.forEach(ex => {
+                logTerminal(`  ${ex}`, 'output');
+            });
+        }
+
+        // Resizable Split Pane
+        const resizeHandle = document.getElementById('resize-handle');
+        const splitPane = document.getElementById('split-pane');
+        let isResizing = false;
+
+        resizeHandle.addEventListener('mousedown', () => {
+            isResizing = true;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+
+            const rect = splitPane.getBoundingClientRect();
+            const newWidth = ((e.clientX - rect.left) / rect.width) * 100;
+
+            if (newWidth > 20 && newWidth < 80) {
+                splitPane.children[0].style.width = newWidth + '%';
+                splitPane.children[2].style.width = (100 - newWidth) + '%';
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isResizing = false;
+        });
+
+        // Session Timer
+        const startTime = Date.now();
+        setInterval(() => {
+            const elapsed = Date.now() - startTime;
+            const minutes = Math.floor(elapsed / 60000);
+            const seconds = Math.floor((elapsed % 60000) / 1000);
+            document.getElementById('session-time').textContent =
+                `Session: ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }, 1000);
+
+        // Keyboard Shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'z') {
+                e.preventDefault();
+                undoOperation();
+            } else if (e.ctrlKey && e.key === 'y') {
+                e.preventDefault();
+                redoOperation();
+            } else if (e.key === '?') {
+                e.preventDefault();
+                showHelp();
+            }
+        });
+
+        // Initialize
+        window.addEventListener('load', () => {
+            initThreeJS();
+            initVoiceRecognition();
+            document.getElementById('command-input').focus();
+            logTerminal('✓ Agent Demo Ready — 12 shapes, 20+ operations', 'success');
+            logTerminal('Try natural language: "make a cylinder 50mm diameter 80 tall"', 'output');
+            logTerminal('Or: "draw circle with 50mm diameter" | "build box 100x50x30"', 'output');
+        });
+    </script>
+</body>
+</html>

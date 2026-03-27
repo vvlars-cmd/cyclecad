@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basic Tutorial - cycleCAD</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #2d2d2d;
+            --bg-tertiary: #3e3e3e;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --accent: #58a6ff;
+            --accent-dark: #0d47a1;
+            --success: #3fb950;
+            --warning: #d29922;
+            --info: #79c0ff;
+            --danger: #f85149;
+            --border: #404040;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        /* Top Navigation Bar */
+        .nav-bar {
+            position: sticky;
+            top: 0;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .nav-back {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 13px;
+            transition: color 0.2s;
+        }
+
+        .nav-back:hover {
+            color: var(--info);
+        }
+
+        .nav-breadcrumbs {
+            display: flex;
+            gap: 16px;
+            flex: 1;
+        }
+
+        .nav-breadcrumb {
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .nav-breadcrumb:hover {
+            background-color: var(--bg-tertiary);
+            color: var(--accent);
+        }
+
+        .nav-breadcrumb.active {
+            background-color: var(--accent);
+            color: var(--bg-primary);
+        }
+
+        /* Main Layout */
+        .container {
+            display: flex;
+            min-height: calc(100vh - 60px);
+        }
+
+        /* Progress Sidebar */
+        .progress-sidebar {
+            width: 240px;
+            background-color: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            padding: 24px 0;
+            overflow-y: auto;
+            max-height: calc(100vh - 60px);
+            position: sticky;
+            top: 60px;
+        }
+
+        .progress-title {
+            padding: 0 20px;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            letter-spacing: 0.5px;
+        }
+
+        .progress-item {
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-secondary);
+            transition: background-color 0.2s, color 0.2s, left 0.2s;
+            position: relative;
+            border-left: 3px solid transparent;
+        }
+
+        .progress-item:hover {
+            background-color: var(--bg-tertiary);
+            color: var(--accent);
+        }
+
+        .progress-item.active {
+            background-color: var(--bg-tertiary);
+            color: var(--accent);
+            border-left-color: var(--accent);
+        }
+
+        .progress-item.complete {
+            color: var(--success);
+        }
+
+        .progress-item.complete::before {
+            content: "✓";
+            position: absolute;
+            left: 8px;
+            font-weight: 600;
+            font-size: 11px;
+        }
+
+        /* Main Content */
+        .content {
+            flex: 1;
+            padding: 40px 60px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* Section */
+        .section {
+            margin-bottom: 60px;
+            scroll-margin-top: 80px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: baseline;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .section-number {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--accent);
+            min-width: 40px;
+        }
+
+        .section-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .section-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 12px;
+        }
+
+        /* Content Boxes */
+        .tip-box, .warning-box, .note-box {
+            padding: 16px 16px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid var(--accent);
+            background-color: rgba(88, 166, 255, 0.08);
+        }
+
+        .warning-box {
+            border-left-color: var(--warning);
+            background-color: rgba(210, 153, 34, 0.08);
+        }
+
+        .note-box {
+            border-left-color: var(--text-secondary);
+            background-color: rgba(160, 160, 160, 0.08);
+        }
+
+        .tip-title, .warning-title, .note-title {
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            color: var(--accent);
+        }
+
+        .warning-title {
+            color: var(--warning);
+        }
+
+        .note-title {
+            color: var(--text-secondary);
+        }
+
+        /* Keyboard Shortcut Badge */
+        .kbd {
+            display: inline-block;
+            padding: 4px 8px;
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--accent);
+            margin: 0 4px;
+            vertical-align: baseline;
+        }
+
+        /* Screenshot Placeholder */
+        .screenshot-placeholder {
+            width: 100%;
+            height: 320px;
+            background-color: var(--bg-tertiary);
+            border: 2px dashed var(--border);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 24px 0;
+            color: var(--text-secondary);
+            font-size: 14px;
+            text-align: center;
+            padding: 24px;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .screenshot-icon {
+            font-size: 48px;
+            opacity: 0.5;
+        }
+
+        /* Step List */
+        .step-list {
+            list-style: none;
+            margin: 20px 0;
+            padding-left: 0;
+        }
+
+        .step-list li {
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            background-color: var(--bg-secondary);
+            border-radius: 4px;
+            border-left: 3px solid var(--accent);
+            display: flex;
+            gap: 12px;
+        }
+
+        .step-list li::before {
+            content: counter(step-counter);
+            counter-increment: step-counter;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            background-color: var(--accent);
+            color: var(--bg-primary);
+            border-radius: 50%;
+            font-weight: 600;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .step-list {
+            counter-reset: step-counter;
+        }
+
+        /* Shortcuts Table */
+        .shortcuts-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: var(--bg-secondary);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .shortcuts-table thead {
+            background-color: var(--bg-tertiary);
+        }
+
+        .shortcuts-table th {
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--accent);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .shortcuts-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .shortcuts-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .shortcuts-table code {
+            background-color: var(--bg-primary);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            color: var(--accent);
+            font-size: 12px;
+        }
+
+        /* Mark Complete Button */
+        .mark-complete-btn {
+            background-color: var(--success);
+            color: var(--bg-primary);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .mark-complete-btn:hover:not(.completed) {
+            background-color: #35d957;
+        }
+
+        .mark-complete-btn:active {
+            transform: scale(0.98);
+        }
+
+        .mark-complete-btn.completed {
+            background-color: var(--text-secondary);
+            cursor: default;
+            opacity: 0.6;
+        }
+
+        /* Next Steps Button */
+        .next-steps-section {
+            background-color: var(--bg-secondary);
+            padding: 32px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .next-steps-section a {
+            display: inline-block;
+            background-color: var(--accent);
+            color: var(--bg-primary);
+            padding: 12px 32px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 16px;
+            transition: background-color 0.2s;
+        }
+
+        .next-steps-section a:hover {
+            background-color: var(--info);
+        }
+
+        /* Scrollbar Styling */
+        .progress-sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .progress-sidebar::-webkit-scrollbar-track {
+            background-color: transparent;
+        }
+
+        .progress-sidebar::-webkit-scrollbar-thumb {
+            background-color: var(--border);
+            border-radius: 3px;
+        }
+
+        .progress-sidebar::-webkit-scrollbar-thumb:hover {
+            background-color: var(--text-secondary);
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .progress-sidebar {
+                width: 200px;
+            }
+
+            .content {
+                padding: 30px 40px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .progress-sidebar {
+                display: none;
+            }
+
+            .content {
+                padding: 24px 20px;
+                max-width: 100%;
+            }
+
+            .section-title {
+                font-size: 24px;
+            }
+
+            .nav-breadcrumbs {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation -->
+    <div class="nav-bar">
+        <a href="../" class="nav-back">← Back to App</a>
+        <div class="nav-breadcrumbs">
+            <span class="nav-breadcrumb active">Basic</span>
+            <a href="intermediate.html" class="nav-breadcrumb">Intermediate</a>
+            <a href="advanced.html" class="nav-breadcrumb">Advanced</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Progress Sidebar -->
+        <div class="progress-sidebar">
+            <div class="progress-title">Progress</div>
+            <div class="progress-item" data-section="welcome">Welcome</div>
+            <div class="progress-item" data-section="interface">Interface</div>
+            <div class="progress-item" data-section="first-part">First Part</div>
+            <div class="progress-item" data-section="viewport">Viewport Nav</div>
+            <div class="progress-item" data-section="sketches">Sketches</div>
+            <div class="progress-item" data-section="operations">Operations</div>
+            <div class="progress-item" data-section="tree">Feature Tree</div>
+            <div class="progress-item" data-section="export">Export</div>
+            <div class="progress-item" data-section="shortcuts">Shortcuts</div>
+            <div class="progress-item" data-section="next">Next Steps</div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content">
+            <!-- Section 1: Welcome -->
+            <div class="section" id="welcome">
+                <div class="section-header">
+                    <div class="section-number">1</div>
+                    <div>
+                        <div class="section-title">Welcome to cycleCAD</div>
+                        <div class="section-subtitle">Learn the basics of browser-based parametric 3D CAD modeling</div>
+                    </div>
+                </div>
+
+                <p>
+                    cycleCAD is a modern, open-source CAD modeler that runs directly in your browser. Like Fusion 360 or OnShape,
+                    it lets you create parametric 3D parts using sketches, extrusions, and advanced operations — all without installing
+                    desktop software.
+                </p>
+
+                <div class="tip-box">
+                    <div class="tip-title">What You'll Learn</div>
+                    This tutorial covers the essentials: navigating the 3D view, drawing sketches, creating your first part,
+                    and exporting your work. Plan on 20-30 minutes.
+                </div>
+
+                <p style="margin-top: 20px;">
+                    By the end, you'll have built a simple rectangular box from scratch. After that, the
+                    <strong>Intermediate</strong> tutorial will teach you more complex shapes and operations.
+                </p>
+
+                <button class="mark-complete-btn" data-section="welcome">✓ Mark Complete</button>
+            </div>
+
+            <!-- Section 2: Interface Overview -->
+            <div class="section" id="interface">
+                <div class="section-header">
+                    <div class="section-number">2</div>
+                    <div>
+                        <div class="section-title">Interface Overview</div>
+                        <div class="section-subtitle">Tour the main UI layout and panels</div>
+                    </div>
+                </div>
+
+                <p>
+                    cycleCAD is laid out like a professional CAD tool with a central 3D viewport, toolbars, and side panels.
+                </p>
+
+                <div class="screenshot-placeholder">
+                    <div class="screenshot-icon">⚙️</div>
+                    <div>Main interface showing 3D viewport, toolbar, and side panels</div>
+                </div>
+
+                <h3 style="margin-top: 28px; margin-bottom: 16px; font-size: 18px; font-weight: 600;">Key Areas:</h3>
+
+                <ul class="step-list">
+                    <li>
+                        <strong>Top Toolbar</strong> — Sketch, Extrude, Revolve, Fillet, Chamfer, Pattern, Assembly, and other tools.
+                        Tabs let you switch between View, Analyze, Create, Export, and AI Tools.
+                    </li>
+                    <li>
+                        <strong>Left Panel</strong> — Model Tree showing all features and components. You can rename, suppress, or delete
+                        features here.
+                    </li>
+                    <li>
+                        <strong>3D Viewport (center)</strong> — Where your model lives. Rotate, pan, zoom, and select parts here.
+                    </li>
+                    <li>
+                        <strong>Right Panel</strong> — Properties/parameters tab, AI Chat tab, and Guide tab. Change dimensions and
+                        material properties here.
+                    </li>
+                    <li>
+                        <strong>Status Bar (bottom)</strong> — Shows selection info, operation status, and keyboard hint.
+                    </li>
+                </ul>
+
+                <button class="mark-complete-btn" data-section="interface">✓ Mark Complete</button>
+            </div>
+
+            <!-- Section 3: Your First 3D Part -->
+            <div class="section" id="first-part">
+                <div class="section-header">
+                    <div class="section-number">3</div>
+                    <div>
+                        <div class="section-title">Your First 3D Part</div>
+                        <div class="section-subtitle">Build a simple 50mm tall box step by step</div>
+                    </div>
+                </div>
+
+                <p>
+                    Let's make a rectangular box. The pattern is: sketch a rectangle → extrude it → done.
+                    In cycleCAD, every 3D part starts as a 2D sketch.
+                </p>
+
+                <h3 style="margin-top: 28px; margin-bottom: 16px; font-size: 18px; font-weight: 600;">Step-by-Step:</h3>
+
+                <ol class="step-list">
+                    <li><strong>Click "Sketch"</strong> in the toolbar. You'll switch to 2D sketch mode (the viewport turns blue).</li>
+                    <li><strong>Click the rectangle tool</strong> (or press <span class="kbd">R</span>). Your cursor will show a crosshair.</li>
+                    <li><strong>Draw a rectangle</strong> by clicking two opposite corners: first at (0, 0), then at (100, 80). The grid helps you snap to round numbers.</li>
+                    <li><strong>Exit sketch mode</strong> by pressing <span class="kbd">Esc</span> or clicking the checkmark. The rectangle is now a flat sketch.</li>
+                    <li><strong>Click "Extrude"</strong> in the toolbar. A panel appears on the right asking for the height.</li>
+                    <li><strong>Type 50</strong> in the height field. You'll see the box rise to 50mm tall in the viewport.</li>
+                    <li><strong>Click OK</strong>. Your first 3D part is complete!</li>
+                </ol>
+
+                <div class="tip-box">
+                    <div class="tip-title">Tip: Undo is Your Friend</div>
+                    Made a mistake? Press <span class="kbd">Ctrl+Z</span> to undo. You can undo as many times as needed.
+                </div>
+
+                <div class="note-box">
+                    <div class="note-title">Note: Units</div>
+                    cycleCAD uses millimeters (mm) by default. All dimensions are in mm.
+                </div>
+
+                <button class="mark-complete-btn" data-section="first-part">✓ Mark Complete</button>
+            </div>
+
+            <!-- Section 4: Navigating the 3D Viewport -->
+            <div class="section" id="viewport">
+                <div class="section-header">
+                    <div class="section-number">4</div>
+                    <div>
+                        <div class="section-title">Navigating the 3D Viewport</div>
+                        <div class="section-subtitle">Master camera control with your mouse and keyboard</div>
+                    </div>
+                </div>
+
+                <p>
+                    The 3D viewport uses industry-standard controls. Once you learn them, they'll feel natural.
+                </p>
+
+                <div class="screenshot-placeholder">
+                    <div class="screenshot-icon">🎯</div>
+                    <div>3D viewport with your box displayed</div>
+                </div>
+
+                <h3 style="margin-top: 28px; margin-bottom: 16px; font-size: 18px; font-weight: 600;">Mouse Controls:</h3>
+
+                <ul class="step-list">
+                    <li><strong>Rotate:</strong> Left-click and drag. The model spins under your cursor.</li>
+                    <li><strong>Pan:</strong> Right-click and drag (or <span class="kbd">Shift</span> + left-drag). The model slides sideways.</li>
+                    <li><strong>Zoom:</strong> Scroll your mouse wheel up (zoom in) or down (zoom out).</li>
+                </ul>
+
+                <h3 style="margin-top: 28px; margin-bottom: 16px; font-size: 18px; font-weight: 600;">Preset Views (Press Number Keys):</h3>
+
+                <ul class="step-list">
+                    <li><span class="kbd">1</span> — Front view</li>
+                    <li><span class="kbd">2</span> — Top view</li>
+                    <li><span class="kbd">3</span> — Right-side view</li>
+                    <li><span class="kbd">7</span> — Isometric (3D perspective)</li>
+                    <li><span class="kbd">0</span> (zero) — Fit all (zoom to see entire model)</li>
+                </ul>
+
+                <div class="warning-box">
+                    <div class="warning-title">Warning: Orthographic vs Perspective</div>
+                    Preset views (Front, Top, Right) are orthographic (flat, no perspective). Isometric (7) is a 3D view.
+                    Switch between them to understand your model's shape.
+                </div>
+
+                <button class="mark-complete-btn" data-section="viewport">✓ Mark Complete</button>
+            </div>
+
+            <!-- Section 5: Drawing Sketches -->
+            <div class="section" id="sketches">
+                <div class="section-header">
+                    <div class="section-number">5</div>
+                    <div>
+                        <div class="section-title">Drawing Sketches</div>
+                        <div class="section-subtitle">Master 2D sketch tools and constraints</div>
+                    </div>
+                </div>
+
+                <p>
+                    Sketches are the foundation of 3D modeling. Every extrusion, revolution, or sweep starts with a 2D sketch.
+                    cycleCAD provides tools for drawing lines, rectangles, circles, and arcs with automatic constraint detection.
+                </p>
+
+                <h3 style="margin-top: 28px; margin-bottom: 16px; font-size: 18px; font-weight: 600;">Sketch Tools:</h3>
+
+                <ul class="step-list">
+                    <li><strong>Line Tool</strong> (<span class="kbd">L</span>) — Click to place points. Press <span class="kbd">Esc</span> to finish.</li>
+                    <li><strong>Rectangle Tool</strong> (<span class="kbd">R</span>) — Click two opposite corners to draw a rectangle.</li>
+                    <li><strong>Circle Tool</strong> (<span class="kbd">C</span>) — Click center, then drag to set radius.</li>
+                    <li><strong>Arc Tool</strong> (<span class="kbd">A</span>) — Click start, center, and end points.</li>
+                    <li><strong>Polyline Tool</strong> — Draw connected line segments. Press <span class="kbd">Esc</span> to finish.</li>
+                </ul>
+
+                <h3 style="margin-top: 28px; margin-bottom: 16px; font-size: 18px; font-weight: 600;">Grid and Snapping:</h3>
+
+                <ul class="step-list">
+                    <li><strong>Toggle Grid:</strong> Press <span class="kbd">G</span> to show/hide the grid.</li>
+                    <li><strong>Snap to Grid:</strong> When you draw, your cursor automatically snaps to the nearest 10mm grid point.</li>
+                    <li><strong>Precision Drawing:</strong> Type exact coordinates in the properties panel if you need exact dimensions.</li>
+                </ul>
+
+                <div class="tip-box">
+                    <div class="tip-title">Tip: Automatic Constraints</div>
+                    When you draw a vertical or horizontal line, cycleCAD automatically applies vertical/horizontal constraints.
+                    When two lines meet at the same point, it applies a coincident constraint. These constraints keep your sketch
+                    from accidentally moving.
+                </div>
+
+                <button class="mark-complete-btn" data-section="sketches">✓ Mark Complete</button>
+            </div>
+
+            <!-- Section 6: Basic Operations -->
+            <div class="section" id="operations">
+                <div class="section-header">
+                    <div class="section-number">6</div>
+                    <div>
+                        <div class="section-title">Basic Operations</div>
+                        <div class="section-subtitle">Extrude and revolve to create 3D shapes</div>
+                    </div>
+                </div>
+
+                <p>
+                    Two operations form the foundation of most models: extrude (pull a sketch into a 3D box) and revolve
+                    (spin a sketch around an axis).
+                </p>
+
+                <h3 style="margin-top: 28px; margin-bottom: 16px; font-size: 18px; font-weight: 600;">Extrude:</h3>
+
+                <ul class="step-list">
+                    <li>Create a sketch and exit sketch mode.</li>
+                    <li>Click <strong>"Extrude"</strong> in the toolbar (or press <span class="kbd">E</span>).</li>
+                    <li>In the right panel, enter the height (e.g., 50 mm).</li>
+                    <li>Optionally, enable <strong>"Two Direction"</strong> to extrude both sides equally.</li>
+                    <li>Click OK. Your sketch is now a 3D solid.</li>
+                </ul>
+
+                <h3 style="margin-top: 28px; margin-bottom: 16px; font-size: 18px; font-weight: 600;">Revolve:</h3>
+
+                <ul class="step-list">
+                    <li>Create a sketch of half your final shape (e.g., a triangle for a cone).</li>
+                    <li>Click <strong>"Revolve"</strong> in the toolbar (or press <span class="kbd">R</span>).</li>
+                    <li>Select the axis of rotation (usually a vertical or horizontal line in your sketch).</li>
+                    <li>Set the angle to 360° for a complete rotation, or less for a partial cone/wedge.</li>
+                    <li>Click OK. Your sketch is now a 3D solid of revolution.</li>
+                </ul>
+
+                <div class="note-box">
+                    <div class="note-title">Note: Sketch Orientation</div>
+                    When you extrude, the sketch extrudes perpendicular to its plane (the Z direction if you drew on the XY plane).
+                    When you revolve, the axis must lie on the sketch plane.
+                </div>
+
+                <button class="mark-complete-btn" data-section="operations">✓ Mark Complete</button>
+            </div>
+
+            <!-- Section 7: Feature Tree -->
+            <div class="section" id="tree">
+                <div class="section-header">
+                    <div class="section-number">7</div>
+                    <div>
+                        <div class="section-title">Feature Tree</div>
+                        <div class="section-subtitle">Manage and organize your model's features</div>
+                    </div>
+                </div>
+
+                <p>
+                    The Feature Tree (left panel) shows every sketch, extrusion, and operation in your model, in the order you created them.
+                    It's like a recipe: each step depends on the previous one.
+                </p>
+
+                <div class="screenshot-placeholder">
+                    <div class="screenshot-icon">🌳</div>
+                    <div>Feature tree showing Sketch1 and Extrude1 as a hierarchical list</div>
+                </div>
+
+                <h3 style="margin-top: 28px; margin-bottom: 16px; font-size: 18px; font-weight: 600;">Tree Operations:</h3>
+
+                <ul class="step-list">
+                    <li><strong>Click a feature:</strong> Highlights that feature in the 3D view.</li>
+                    <li><strong>Double-click a feature:</strong> Edits it (change the extrude height, for example).</li>
+                    <li><strong>Right-click a feature:</strong> Context menu with Rename, Suppress, Delete options.</li>
+                    <li><strong>Suppress:</strong> Temporarily hides the feature and all features after it. Useful for testing changes.</li>
+                    <li><strong>Delete:</strong> Removes the feature and updates the model accordingly.</li>
+                </ul>
+
+                <div class="tip-box">
+                    <div class="tip-title">Tip: Naming Features</div>
+                    Right-click any feature and choose "Rename" to give it a meaningful name like "Main Body" or "Mounting Hole".
+                    This makes your tree easier to understand.
+                </div>
+
+                <button class="mark-complete-btn" data-section="tree">✓ Mark Complete</button>
+            </div>
+
+            <!-- Section 8: Exporting Your Model -->
+            <div class="section" id="export">
+                <div class="section-header">
+                    <div class="section-number">8</div>
+                    <div>
+                        <div class="section-title">Exporting Your Model</div>
+                        <div class="section-subtitle">Save your work in multiple formats</div>
+                    </div>
+                </div>
+
+                <p>
+                    Once you've created your model, you'll want to save it. cycleCAD supports several export formats
+                    for different purposes: 3D printing, CAM, visualization, or collaboration.
+                </p>
+
+                <h3 style="margin-top: 28px; margin-bottom: 16px; font-size: 18px; font-weight: 600;">Export Formats:</h3>
+
+                <ul class="step-list">
+                    <li>
+                        <strong>STL (Stereolithography)</strong> — 3D printable mesh format. Use this for 3D printing,
+                        simulation, or sharing a solid model.
+                    </li>
+                    <li>
+                        <strong>OBJ (Wavefront OBJ)</strong> — Universal 3D mesh format. Good for visualization in other software
+                        or game engines.
+                    </li>
+                    <li>
+                        <strong>glTF 2.0 (GL Transmission Format)</strong> — Modern 3D format with support for materials and
+                        animations. Best for web viewers and AR.
+                    </li>
+                    <li>
+                        <strong>cycleCAD JSON</strong> — Save your full feature history and parameters. Load it back to edit later.
+                    </li>
+                </ul>
+
+                <h3 style="margin-top: 28px; margin-bottom: 16px; font-size: 18px; font-weight: 600;">How to Export:</h3>
+
+                <ol class="step-list">
+                    <li>Click the <strong>"Export"</strong> tab in the toolbar.</li>
+                    <li>Choose your format (STL, OBJ, glTF, or JSON).</li>
+                    <li>Click the format button. A file dialog appears.</li>
+                    <li>Name your file and click Save.</li>
+                </ol>
+
+                <div class="warning-box">
+                    <div class="warning-title">Warning: Lost Parametric Data</div>
+                    When you export to STL/OBJ/glTF, the file contains only the final 3D geometry (a "snapshot").
+                    You can't edit the sketch or parameters later. To preserve your work, export as cycleCAD JSON first,
+                    then export as STL when you're ready to share.
+                </div>
+
+                <button class="mark-complete-btn" data-section="export">✓ Mark Complete</button>
+            </div>
+
+            <!-- Section 9: Keyboard Shortcuts Reference -->
+            <div class="section" id="shortcuts">
+                <div class="section-header">
+                    <div class="section-number">9</div>
+                    <div>
+                        <div class="section-title">Keyboard Shortcuts Reference</div>
+                        <div class="section-subtitle">Speed up your workflow with keyboard commands</div>
+                    </div>
+                </div>
+
+                <p>
+                    Memorizing a few shortcuts will dramatically speed up your modeling. Here's a complete reference.
+                </p>
+
+                <h3 style="margin-top: 28px; margin-bottom: 16px; font-size: 18px; font-weight: 600;">General:</h3>
+
+                <table class="shortcuts-table">
+                    <thead>
+                        <tr>
+                            <th>Shortcut</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>Ctrl+Z</code> / <code>Cmd+Z</code></td>
+                            <td>Undo last action</td>
+                        </tr>
+                        <tr>
+                            <td><code>Ctrl+Y</code> / <code>Cmd+Shift+Z</code></td>
+                            <td>Redo</td>
+                        </tr>
+                        <tr>
+                            <td><code>Ctrl+S</code> / <code>Cmd+S</code></td>
+                            <td>Save (cycleCAD JSON)</td>
+                        </tr>
+                        <tr>
+                            <td><code>Ctrl+O</code> / <code>Cmd+O</code></td>
+                            <td>Open saved file</td>
+                        </tr>
+                        <tr>
+                            <td><code>Esc</code></td>
+                            <td>Cancel current operation, exit sketch mode</td>
+                        </tr>
+                        <tr>
+                            <td><code>Del</code></td>
+                            <td>Delete selected feature or part</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 style="margin-top: 28px; margin-bottom: 16px; font-size: 18px; font-weight: 600;">Sketch Tools:</h3>
+
+                <table class="shortcuts-table">
+                    <thead>
+                        <tr>
+                            <th>Shortcut</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>S</code></td>
+                            <td>Enter Sketch mode</td>
+                        </tr>
+                        <tr>
+                            <td><code>L</code></td>
+                            <td>Line tool</td>
+                        </tr>
+                        <tr>
+                            <td><code>R</code></td>
+                            <td>Rectangle tool</td>
+                        </tr>
+                        <tr>
+                            <td><code>C</code></td>
+                            <td>Circle tool</td>
+                        </tr>
+                        <tr>
+                            <td><code>A</code></td>
+                            <td>Arc tool</td>
+                        </tr>
+                        <tr>
+                            <td><code>G</code></td>
+                            <td>Toggle grid on/off</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 style="margin-top: 28px; margin-bottom: 16px; font-size: 18px; font-weight: 600;">3D Operations:</h3>
+
+                <table class="shortcuts-table">
+                    <thead>
+                        <tr>
+                            <th>Shortcut</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>E</code></td>
+                            <td>Extrude sketch</td>
+                        </tr>
+                        <tr>
+                            <td><code>V</code></td>
+                            <td>Revolve sketch</td>
+                        </tr>
+                        <tr>
+                            <td><code>F</code></td>
+                            <td>Fillet edges</td>
+                        </tr>
+                        <tr>
+                            <td><code>H</code></td>
+                            <td>Chamfer edges</td>
+                        </tr>
+                        <tr>
+                            <td><code>P</code></td>
+                            <td>Pattern (array)</td>
+                        </tr>
+                        <tr>
+                            <td><code>B</code></td>
+                            <td>Boolean operation (union, cut, intersect)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 style="margin-top: 28px; margin-bottom: 16px; font-size: 18px; font-weight: 600;">Viewport Navigation:</h3>
+
+                <table class="shortcuts-table">
+                    <thead>
+                        <tr>
+                            <th>Shortcut</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>1</code></td>
+                            <td>Front view</td>
+                        </tr>
+                        <tr>
+                            <td><code>2</code></td>
+                            <td>Top view</td>
+                        </tr>
+                        <tr>
+                            <td><code>3</code></td>
+                            <td>Right view</td>
+                        </tr>
+                        <tr>
+                            <td><code>7</code></td>
+                            <td>Isometric 3D view</td>
+                        </tr>
+                        <tr>
+                            <td><code>0</code></td>
+                            <td>Fit all (zoom to see entire model)</td>
+                        </tr>
+                        <tr>
+                            <td><code>W</code></td>
+                            <td>Toggle wireframe</td>
+                        </tr>
+                        <tr>
+                            <td><code>?</code></td>
+                            <td>Show help panel</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <button class="mark-complete-btn" data-section="shortcuts">✓ Mark Complete</button>
+            </div>
+
+            <!-- Section 10: Next Steps -->
+            <div class="section" id="next">
+                <div class="section-header">
+                    <div class="section-number">10</div>
+                    <div>
+                        <div class="section-title">Next Steps</div>
+                        <div class="section-subtitle">What to learn after the basics</div>
+                    </div>
+                </div>
+
+                <p>
+                    Congratulations! You've learned the fundamentals of cycleCAD. You can now:
+                </p>
+
+                <ul style="margin: 20px 0; padding-left: 20px;">
+                    <li>Create sketches with lines, rectangles, circles, and arcs</li>
+                    <li>Extrude and revolve sketches into 3D solids</li>
+                    <li>Navigate the 3D viewport with your mouse</li>
+                    <li>Use the feature tree to organize your model</li>
+                    <li>Export your work in multiple formats</li>
+                </ul>
+
+                <p style="margin-top: 20px;">
+                    Ready to learn more? The <strong>Intermediate</strong> tutorial covers:
+                </p>
+
+                <ul style="margin: 20px 0; padding-left: 20px;">
+                    <li><strong>Fillets and Chamfers:</strong> Smooth and bevel edges for realistic parts</li>
+                    <li><strong>Boolean Operations:</strong> Union, cut, and intersect multiple solids</li>
+                    <li><strong>Patterns:</strong> Create rectangular and circular arrays of features</li>
+                    <li><strong>Assemblies:</strong> Combine multiple parts into an assembly with constraints</li>
+                    <li><strong>Advanced Sketches:</strong> Constraints, driven dimensions, and symmetric geometry</li>
+                </ul>
+
+                <p style="margin-top: 20px;">
+                    After that, the <strong>Advanced</strong> tutorial unlocks:
+                </p>
+
+                <ul style="margin: 20px 0; padding-left: 20px;">
+                    <li><strong>Sweep:</strong> Pull a profile along a 3D path</li>
+                    <li><strong>Loft:</strong> Blend between multiple profiles</li>
+                    <li><strong>Sheet Metal:</strong> Bend, flange, and unfold metal parts</li>
+                    <li><strong>AI Copilot:</strong> Generate designs and CAM code with natural language</li>
+                </ul>
+
+                <div class="next-steps-section">
+                    <h3 style="font-size: 18px; margin-bottom: 8px;">Ready to level up?</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 0;">
+                        Continue your learning journey with the Intermediate tutorial.
+                    </p>
+                    <a href="intermediate.html">Continue to Intermediate Tutorial →</a>
+                </div>
+
+                <button class="mark-complete-btn" data-section="next">✓ Mark Complete</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // localStorage key for tracking completed sections
+        const STORAGE_KEY = 'cyclecad_tutorial_basic_progress';
+
+        // Get all section buttons
+        const sectionBtns = document.querySelectorAll('[data-section]');
+        const markCompleteBtns = document.querySelectorAll('.mark-complete-btn');
+
+        // Load progress from localStorage
+        function loadProgress() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const completed = JSON.parse(saved);
+                completed.forEach(section => {
+                    markSectionComplete(section, true);
+                });
+            }
+        }
+
+        // Save progress to localStorage
+        function saveProgress() {
+            const completed = Array.from(document.querySelectorAll('.progress-item.complete')).map(
+                el => el.dataset.section
+            );
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(completed));
+        }
+
+        // Mark a section as complete
+        function markSectionComplete(sectionId, fromLoad = false) {
+            const progressItem = document.querySelector(`[data-section="${sectionId}"]`);
+            const btn = document.querySelector(`[data-section="${sectionId}"]`).parentElement.querySelector('.mark-complete-btn');
+
+            if (progressItem) {
+                progressItem.classList.add('complete');
+            }
+
+            if (btn) {
+                btn.classList.add('completed');
+                btn.textContent = '✓ Complete';
+                btn.disabled = true;
+            }
+
+            if (!fromLoad) {
+                saveProgress();
+            }
+        }
+
+        // Add click handlers to progress items (scroll navigation)
+        sectionBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const sectionId = btn.dataset.section;
+                const section = document.getElementById(sectionId);
+                if (section) {
+                    // Update active state
+                    document.querySelectorAll('.progress-item').forEach(item => {
+                        item.classList.remove('active');
+                    });
+                    btn.classList.add('active');
+
+                    // Smooth scroll
+                    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // Add click handlers to mark complete buttons
+        markCompleteBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const sectionId = btn.dataset.section;
+                if (!btn.classList.contains('completed')) {
+                    markSectionComplete(sectionId);
+                }
+            });
+        });
+
+        // Update active progress item on scroll
+        const observerOptions = {
+            root: null,
+            rootMargin: '-100px 0px -66% 0px',
+            threshold: 0
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.id;
+                    document.querySelectorAll('.progress-item').forEach(item => {
+                        item.classList.remove('active');
+                    });
+                    const activeItem = document.querySelector(`[data-section="${id}"]`);
+                    if (activeItem) {
+                        activeItem.classList.add('active');
+                    }
+                }
+            });
+        }, observerOptions);
+
+        // Observe all sections
+        document.querySelectorAll('.section').forEach(section => {
+            observer.observe(section);
+        });
+
+        // Load progress on page load
+        loadProgress();
+    </script>
+</body>
+</html>

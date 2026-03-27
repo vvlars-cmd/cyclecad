@@ -1,0 +1,4076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>cycleCAD - Parametric 3D CAD Modeler</title>
+
+  <!-- Import Map for Three.js -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <style>
+    /* ===== CSS Variables & Root ===== */
+    :root {
+      --bg-primary: #1e1e1e;
+      --bg-secondary: #252526;
+      --bg-tertiary: #2d2d30;
+      --border-color: #3e3e42;
+      --text-primary: #e0e0e0;
+      --text-secondary: #a0a0a0;
+      --text-muted: #696969;
+      --accent-blue: #58a6ff;
+      --accent-blue-dark: #1f6feb;
+      --accent-green: #3fb950;
+      --accent-red: #f85149;
+      --accent-yellow: #d29922;
+      --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 8px 16px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 16px 32px rgba(0, 0, 0, 0.5);
+      --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+      --toolbar-height: 48px;
+      --statusbar-height: 36px;
+      --panel-width: 260px;
+      --properties-width: 300px;
+    }
+
+    /* ===== ViewCube ===== */
+    .vc-face {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.85);
+      background: rgba(40,44,52,0.8);
+      border: 1px solid rgba(88,166,255,0.4);
+      backface-visibility: hidden;
+      user-select: none;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .vc-face:hover {
+      background: rgba(88,166,255,0.5);
+      color: #fff;
+    }
+    :root.light-mode .vc-face {
+      background: rgba(220,225,235,0.85);
+      color: rgba(0,0,0,0.7);
+      border: 1px solid rgba(0,102,204,0.4);
+    }
+    :root.light-mode .vc-face:hover {
+      background: rgba(0,102,204,0.5);
+      color: #fff;
+    }
+
+    /* ===== Light Mode ===== */
+    :root.light-mode {
+      --bg-primary: #f5f5f5;
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #e8e8e8;
+      --border-color: #d0d0d0;
+      --text-primary: #1a1a1a;
+      --text-secondary: #555555;
+      --text-muted: #888888;
+      --accent-blue: #0066cc;
+      --accent-blue-dark: #004499;
+      --accent-green: #22863a;
+      --accent-red: #d73a49;
+      --accent-yellow: #b08800;
+      --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+      --shadow-md: 0 8px 16px rgba(0, 0, 0, 0.12);
+      --shadow-lg: 0 16px 32px rgba(0, 0, 0, 0.15);
+    }
+
+    /* ===== Reset & Globals ===== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif;
+      font-size: 13px;
+      line-height: 1.5;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    button, input, select, textarea {
+      font-family: inherit;
+      font-size: inherit;
+      color: inherit;
+      background: none;
+      border: none;
+      padding: 0;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* ===== Main Layout ===== */
+    #app {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+    }
+
+    #toolbar {
+      height: var(--toolbar-height);
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      gap: 4px;
+      user-select: none;
+      z-index: 100;
+      box-shadow: var(--shadow-sm);
+      overflow: visible;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.2) transparent;
+    }
+    #toolbar::-webkit-scrollbar { height: 3px; }
+    #toolbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+    #toolbar::-webkit-scrollbar-track { background: transparent; }
+
+    /* Dropdown menu for grouped tools */
+    .toolbar-dropdown {
+      position: relative;
+    }
+    .toolbar-dropdown-btn {
+      padding: 4px 6px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+    .toolbar-dropdown-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+    .toolbar-dropdown-btn .caret { font-size: 9px; opacity: 0.7; margin-left: 2px; }
+    .toolbar-dropdown-menu {
+      display: none;
+      position: fixed;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 4px;
+      min-width: 160px;
+      z-index: 9999;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+    .toolbar-dropdown.open .toolbar-dropdown-menu { display: block; }
+    .toolbar-dropdown-menu button {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      padding: 5px 8px;
+      background: transparent;
+      border: none;
+      border-radius: 4px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+    .toolbar-dropdown-menu button:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+
+    #content {
+      flex: 1;
+      display: flex;
+      gap: 0;
+      overflow: hidden;
+    }
+
+    #left-panel {
+      width: var(--panel-width);
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 50;
+    }
+
+    #viewport-container {
+      flex: 1;
+      position: relative;
+      background: var(--bg-primary);
+      overflow: hidden;
+    }
+
+    #viewport {
+      width: 100%;
+      height: 100%;
+    }
+
+    #right-panel {
+      width: var(--properties-width);
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 50;
+    }
+
+    #statusbar {
+      height: var(--statusbar-height);
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      gap: 24px;
+      font-size: 12px;
+      user-select: none;
+      z-index: 100;
+      box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    /* ===== Toolbar Styling ===== */
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      border-right: 1px solid var(--border-color);
+      padding-right: 8px;
+      margin-right: 8px;
+    }
+
+    .toolbar-group:last-child {
+      border-right: none;
+      margin-right: 0;
+      padding-right: 0;
+    }
+
+    .toolbar-button {
+      padding: 6px 8px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      border-radius: 3px;
+      background: transparent;
+      color: var(--text-primary);
+      transition: all var(--transition-fast);
+      white-space: nowrap;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .toolbar-button:hover:not(:disabled) {
+      background: var(--bg-tertiary);
+      color: var(--accent-blue);
+    }
+
+    .toolbar-button.active {
+      background: var(--accent-blue-dark);
+      color: var(--accent-blue);
+    }
+
+    .toolbar-button:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .toolbar-icon {
+      width: 16px;
+      height: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .toolbar-label {
+      font-size: 11px;
+      letter-spacing: 0.3px;
+    }
+
+    /* ===== Left Panel (Feature Tree) ===== */
+    #left-panel-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .left-tab {
+      flex: 1;
+      padding: 6px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      border-bottom: 2px solid transparent;
+      transition: all var(--transition-fast);
+      text-align: center;
+    }
+
+    .left-tab:hover {
+      color: var(--text-primary);
+      background: var(--bg-tertiary);
+    }
+
+    .left-tab.active {
+      color: var(--accent-blue);
+      border-bottom-color: var(--accent-blue);
+    }
+
+    .left-tab-content {
+      flex: 1;
+      min-height: 0;
+    }
+
+    #feature-tree {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 4px 0;
+    }
+
+    /* Inline Project Browser in Left Panel */
+    #inline-project-browser {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-height: 0;
+    }
+
+    .ipb-search-box {
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    #ipb-tree {
+      font-size: 12px;
+    }
+
+    .ipb-folder, .ipb-file {
+      padding: 3px 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: background var(--transition-fast);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ipb-folder:hover, .ipb-file:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .ipb-file.selected {
+      background: rgba(88, 166, 255, 0.15);
+      color: var(--accent-blue);
+    }
+
+    .ipb-toggle {
+      width: 12px;
+      font-size: 8px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+      transition: transform var(--transition-fast);
+      text-align: center;
+    }
+
+    .ipb-toggle.expanded {
+      transform: rotate(90deg);
+    }
+
+    .ipb-children {
+      padding-left: 12px;
+    }
+
+    .ipb-icon {
+      flex-shrink: 0;
+      font-size: 12px;
+    }
+
+    .ipb-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ipb-badge {
+      font-size: 9px;
+      padding: 0 4px;
+      border-radius: 2px;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .ipb-badge-green { background: rgba(63, 185, 80, 0.2); color: var(--accent-green); }
+    .ipb-badge-blue { background: rgba(88, 166, 255, 0.2); color: var(--accent-blue); }
+    .ipb-badge-yellow { background: rgba(210, 153, 34, 0.2); color: var(--accent-yellow); }
+
+    #feature-tree::-webkit-scrollbar {
+      width: 10px;
+    }
+
+    #feature-tree::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    #feature-tree::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 5px;
+    }
+
+    #feature-tree::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+
+    .tree-item {
+      padding: 4px 8px;
+      cursor: pointer;
+      transition: background var(--transition-fast);
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      margin: 1px 4px;
+      border-radius: 3px;
+    }
+
+    .tree-item:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .tree-item.active {
+      background: var(--accent-blue-dark);
+      color: var(--accent-blue);
+    }
+
+    .tree-icon {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+      opacity: 0.7;
+    }
+
+    /* ===== Right Panel (Properties + Chat) ===== */
+    #properties-header {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border-color);
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    #properties-tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border-color);
+      padding: 4px 4px 0 4px;
+    }
+
+    .properties-tab {
+      flex: 1;
+      padding: 6px 8px;
+      background: transparent;
+      color: var(--text-secondary);
+      border-bottom: 2px solid transparent;
+      transition: all var(--transition-fast);
+      font-size: 11px;
+      font-weight: 500;
+      text-align: center;
+    }
+
+    .properties-tab:hover {
+      color: var(--text-primary);
+    }
+
+    .properties-tab.active {
+      color: var(--accent-blue);
+      border-bottom-color: var(--accent-blue);
+    }
+
+    #properties-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+      min-height: 0;
+    }
+
+    #properties-content::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #properties-content::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    #properties-content::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 4px;
+    }
+
+    #properties-content::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+
+    .property-group {
+      margin-bottom: 12px;
+    }
+
+    .property-group-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .property-row {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 6px;
+      align-items: center;
+    }
+
+    .property-label {
+      min-width: 80px;
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .property-input {
+      flex: 1;
+      padding: 4px 6px;
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 3px;
+      font-size: 11px;
+      transition: border-color var(--transition-fast);
+    }
+
+    .property-input:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.1);
+    }
+
+    /* ===== Status Bar ===== */
+    .statusbar-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-secondary);
+    }
+
+    .statusbar-label {
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .statusbar-value {
+      color: var(--text-primary);
+      font-family: "Menlo", "Monaco", "Courier New", monospace;
+      font-size: 11px;
+    }
+
+    .status-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      animation: pulse 2s infinite;
+    }
+
+    .status-indicator.idle {
+      background: var(--text-muted);
+      animation: none;
+    }
+
+    .status-indicator.error {
+      background: var(--accent-red);
+      animation: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* ===== Welcome Splash Screen ===== */
+    #welcome-splash {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      gap: 32px;
+    }
+
+    #welcome-splash.hidden {
+      display: none;
+    }
+
+    .splash-logo {
+      font-size: 48px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .splash-logo-cycle {
+      color: var(--text-primary);
+      font-weight: 400;
+    }
+
+    .splash-logo-cad {
+      color: var(--accent-blue);
+      font-weight: 700;
+    }
+
+    .splash-subtitle {
+      font-size: 14px;
+      color: var(--text-secondary);
+      text-align: center;
+      max-width: 400px;
+    }
+
+    .splash-options {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      max-width: 420px;
+      justify-content: center;
+    }
+
+    .splash-button {
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all var(--transition-base);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 180px;
+      justify-content: center;
+    }
+
+    .splash-button-primary {
+      background: var(--accent-blue);
+      color: #000;
+      box-shadow: 0 4px 12px rgba(88, 166, 255, 0.2);
+    }
+
+    .splash-button-primary:hover {
+      background: #5db3ff;
+      box-shadow: 0 6px 16px rgba(88, 166, 255, 0.3);
+    }
+
+    .splash-button-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+
+    .splash-button-secondary:hover {
+      background: var(--bg-tertiary);
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+    }
+
+    /* ===== Viewport Overlays ===== */
+    #viewport-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      pointer-events: none;
+      padding: 12px;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .mode-indicator {
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid var(--accent-blue);
+      color: var(--accent-blue);
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      width: fit-content;
+      backdrop-filter: blur(4px);
+    }
+
+    .coordinate-display {
+      background: rgba(0, 0, 0, 0.6);
+      color: var(--text-secondary);
+      padding: 6px 8px;
+      border-radius: 3px;
+      font-family: "Menlo", "Monaco", "Courier New", monospace;
+      font-size: 10px;
+      width: fit-content;
+      backdrop-filter: blur(4px);
+    }
+
+    .coordinate-value {
+      color: var(--accent-blue);
+      margin: 0 4px;
+    }
+
+    .snap-indicator {
+      background: rgba(0, 0, 0, 0.6);
+      color: var(--accent-green);
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 500;
+      width: fit-content;
+      display: none;
+      backdrop-filter: blur(4px);
+    }
+
+    .snap-indicator.active {
+      display: block;
+    }
+
+    /* ===== Sketch Canvas Overlay ===== */
+    #sketch-canvas-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: none;
+      z-index: 20;
+      cursor: crosshair;
+    }
+
+    #sketch-canvas-overlay.active {
+      display: block;
+    }
+
+    /* ===== Loading Spinner ===== */
+    #kernel-spinner {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 2000;
+      display: none;
+    }
+
+    #kernel-spinner.active {
+      display: flex;
+    }
+
+    .spinner-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      background: var(--bg-secondary);
+      padding: 32px;
+      border-radius: 8px;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border-color);
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border-color);
+      border-top-color: var(--accent-blue);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .spinner-text {
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    /* ===== Scrollbars Global ===== */
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 5px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+
+    /* ===== Context Menu ===== */
+    #context-menu {
+      position: fixed;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      box-shadow: var(--shadow-lg);
+      z-index: 300;
+      display: none;
+      min-width: 180px;
+    }
+
+    #context-menu.visible {
+      display: block;
+    }
+
+    .context-item {
+      padding: 6px 12px;
+      cursor: pointer;
+      color: var(--text-primary);
+      font-size: 12px;
+      transition: background var(--transition-fast);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .context-item:hover {
+      background: var(--bg-tertiary);
+      color: var(--accent-blue);
+    }
+
+    .context-item.separator {
+      height: 1px;
+      background: var(--border-color);
+      margin: 2px 0;
+      cursor: default;
+    }
+
+    .context-item.separator:hover {
+      background: var(--border-color);
+    }
+
+    /* ===== Modals & Dialogs ===== */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 500;
+      backdrop-filter: blur(2px);
+    }
+
+    .modal-overlay.visible {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      box-shadow: var(--shadow-lg);
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border-color);
+      font-weight: 600;
+      font-size: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-close-btn {
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 18px;
+      cursor: pointer;
+      transition: color var(--transition-fast);
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-close-btn:hover {
+      color: var(--text-primary);
+    }
+
+    .modal-body {
+      padding: 16px;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .modal-footer {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    /* ===== Buttons ===== */
+    .btn {
+      padding: 6px 12px;
+      border-radius: 3px;
+      font-weight: 500;
+      font-size: 12px;
+      transition: all var(--transition-fast);
+      cursor: pointer;
+      border: 1px solid transparent;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-primary {
+      background: var(--accent-blue);
+      color: #000;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #5db3ff;
+      box-shadow: 0 2px 8px rgba(88, 166, 255, 0.2);
+    }
+
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border-color: var(--border-color);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+    }
+
+    .btn-danger {
+      background: var(--accent-red);
+      color: #fff;
+    }
+
+    .btn-danger:hover:not(:disabled) {
+      background: #ff7b72;
+    }
+
+    /* ===== Input Fields ===== */
+    input[type="text"],
+    input[type="number"],
+    textarea,
+    select {
+      padding: 6px 8px;
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 3px;
+      font-size: 12px;
+      transition: border-color var(--transition-fast);
+    }
+
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.1);
+    }
+
+    textarea {
+      resize: none;
+      font-family: "Menlo", "Monaco", "Courier New", monospace;
+    }
+
+    /* ===== Chat Panel ===== */
+    #chat-panel {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+    }
+
+    #chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 0;
+    }
+
+    #chat-messages::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #chat-messages::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 4px;
+    }
+
+    .chat-message {
+      padding: 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .chat-message.user {
+      background: var(--accent-blue-dark);
+      color: var(--text-primary);
+      margin-left: 12px;
+      border: 1px solid var(--accent-blue);
+    }
+
+    .chat-message.assistant {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      margin-right: 12px;
+      border: 1px solid var(--border-color);
+    }
+
+    #chat-input-area {
+      padding: 8px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    #chat-input {
+      flex: 1;
+      padding: 6px 8px;
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 3px;
+      font-size: 11px;
+      resize: none;
+      max-height: 80px;
+    }
+
+    #chat-input:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+    }
+
+    #chat-send-btn {
+      padding: 4px 8px;
+      background: var(--accent-blue);
+      color: #000;
+      border-radius: 3px;
+      font-weight: 600;
+      font-size: 11px;
+      transition: all var(--transition-fast);
+      flex-shrink: 0;
+    }
+
+    #chat-send-btn:hover:not(:disabled) {
+      background: #5db3ff;
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 1280px) {
+      :root {
+        --panel-width: 220px;
+        --properties-width: 260px;
+      }
+    }
+
+    @media (max-width: 1024px) {
+      :root {
+        --panel-width: 200px;
+        --properties-width: 240px;
+      }
+    }
+
+    /* ===== Project Browser ===== */
+    #project-browser-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      z-index: 500;
+    }
+
+    /* ===== Operation Dialogs ===== */
+    .operation-dialog {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      box-shadow: var(--shadow-lg);
+      z-index: 999;
+      min-width: 340px;
+      display: none;
+      flex-direction: column;
+      animation: slideIn 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .operation-dialog.visible {
+      display: flex;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -48%);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+      }
+    }
+
+    .dialog-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .dialog-title {
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--text-primary);
+    }
+
+    .dialog-close-btn {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 3px;
+      color: var(--text-secondary);
+      transition: all var(--transition-fast);
+      cursor: pointer;
+    }
+
+    .dialog-close-btn:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    .dialog-content {
+      padding: 16px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .dialog-footer {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px;
+      border-top: 1px solid var(--border-color);
+      justify-content: flex-end;
+    }
+
+    .dialog-button {
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all var(--transition-fast);
+      cursor: pointer;
+      border: 1px solid var(--border-color);
+    }
+
+    .dialog-button.primary {
+      background: var(--accent-blue-dark);
+      color: var(--accent-blue);
+      border-color: var(--accent-blue);
+    }
+
+    .dialog-button.primary:hover:not(:disabled) {
+      background: var(--accent-blue);
+      color: #000;
+    }
+
+    .dialog-button.secondary {
+      background: transparent;
+      color: var(--text-primary);
+    }
+
+    .dialog-button.secondary:hover:not(:disabled) {
+      background: var(--bg-tertiary);
+    }
+
+    .dialog-form-group {
+      margin-bottom: 12px;
+    }
+
+    .dialog-form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .dialog-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-bottom: 4px;
+    }
+
+    .dialog-input {
+      width: 100%;
+      padding: 6px 8px;
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 3px;
+      font-size: 11px;
+      transition: border-color var(--transition-fast);
+    }
+
+    .dialog-input:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.1);
+    }
+
+    .dialog-input[type="range"] {
+      width: 100%;
+      height: 6px;
+      padding: 0;
+      cursor: pointer;
+    }
+
+    .dialog-select {
+      width: 100%;
+      padding: 6px 8px;
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 3px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: border-color var(--transition-fast);
+    }
+
+    .dialog-select:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+    }
+
+    .dialog-radio-group {
+      display: flex;
+      gap: 12px;
+      flex-direction: column;
+    }
+
+    .dialog-radio-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .dialog-radio-item input[type="radio"] {
+      cursor: pointer;
+      accent-color: var(--accent-blue);
+    }
+
+    .dialog-radio-item label {
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .dialog-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .dialog-checkbox input[type="checkbox"] {
+      cursor: pointer;
+      accent-color: var(--accent-blue);
+    }
+
+    .dialog-checkbox label {
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .dialog-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.4);
+      z-index: 998;
+      display: none;
+    }
+
+    .dialog-backdrop.visible {
+      display: block;
+    }
+
+  </style>
+
+  <!-- Token Engine — Initialize early so window.cycleCAD.tokens is available -->
+  <script src="./js/token-engine.js"></script>
+  <!-- New Architecture Modules (ES modules need type="module") -->
+  <script type="module" src="./js/material-library.js?v=60"></script>
+  <script src="./js/dfm-analyzer.js"></script>
+  <script type="module" src="./js/cam-pipeline.js?v=60"></script>
+  <script src="./js/connected-fabs.js"></script>
+  <script type="module" src="./js/ai-copilot.js?v=60"></script>
+  <script type="module" src="./js/collaboration.js?v=60"></script>
+  <script type="module" src="./js/collaboration-ui.js?v=60"></script>
+  <!-- CadXStudio-killer modules (IIFE, no imports) -->
+  <script src="./js/text-to-cad.js"></script>
+  <script src="./js/cam-operations.js"></script>
+  <script src="./js/gcode-generator.js"></script>
+  <script src="./js/machine-profiles.js"></script>
+  <script src="./js/tool-library.js"></script>
+  <script src="./js/stock-manager.js"></script>
+  <script src="./js/sketch-enhance.js"></script>
+  <script src="./js/section-view.js"></script>
+  <!-- Marketplace V2 + GD&T + MISUMI + VR modules (IIFE, no imports) -->
+  <script src="./js/marketplace-v2.js"></script>
+  <script src="./js/gdt-training.js"></script>
+  <script src="./js/misumi-catalog.js"></script>
+  <script src="./js/cad-vr.js"></script>
+  <script src="./js/generative-design.js"></script>
+</head>
+<body>
+  <div id="app">
+    <!-- Welcome Splash Screen -->
+    <div id="welcome-splash">
+      <div>
+        <div class="splash-logo">
+          <span class="splash-logo-cycle">cycle</span><span class="splash-logo-cad">CAD</span>
+        </div>
+        <p class="splash-subtitle">Parametric 3D CAD Modeler for the Mechanical Designer</p>
+        <p style="color: rgba(255,255,255,0.45); font-size: 0.8rem; margin: 4px 0 0 0; letter-spacing: 1px;">v0.8.3</p>
+      </div>
+      <div class="splash-options">
+        <button class="splash-button splash-button-primary" id="btn-empty-project" style="grid-column: 1 / -1;">
+          <span>📦</span> Empty Project
+        </button>
+        <button class="splash-button splash-button-secondary" id="btn-new-sketch">
+          <span>📐</span> New Sketch
+        </button>
+        <button class="splash-button splash-button-secondary" id="btn-import-inventor">
+          <span>🏭</span> Import Inventor
+        </button>
+        <button class="splash-button splash-button-secondary" id="btn-ai-generate">
+          <span>✨</span> AI Generate
+        </button>
+        <button class="splash-button splash-button-secondary" id="btn-open-browser" style="grid-column: 1 / -1; background: rgba(255,140,0,0.1); border-color: rgba(255,140,0,0.3);">
+          <span>📂</span> DUO Project Browser (473 Parts)
+        </button>
+      </div>
+      <button id="btn-splash-reset" style="margin-top: 12px; padding: 6px 16px; background: rgba(255,80,80,0.15); border: 1px solid rgba(255,80,80,0.3); color: #f88; border-radius: 6px; cursor: pointer; font-size: 0.75rem; letter-spacing: 0.5px;">
+        🔄 Clear Cache & Reload
+      </button>
+    </div>
+
+    <!-- Top Toolbar -->
+    <div id="toolbar">
+      <!-- Pointer / Select -->
+      <div class="toolbar-group">
+        <button class="toolbar-button active" id="tool-pointer" title="Select / Pointer (Esc)" style="background:rgba(88,166,255,0.15);border:1px solid rgba(88,166,255,0.4);"><span class="toolbar-icon">↖</span><span class="toolbar-label">Select</span></button>
+      </div>
+
+      <!-- Sketch Tools (always visible) -->
+      <div class="toolbar-group">
+        <button class="toolbar-button" id="tool-sketch" title="Start Sketch (S)"><span class="toolbar-icon">📐</span><span class="toolbar-label">Sketch</span></button>
+        <button class="toolbar-button" id="tool-line" title="Line (L)"><span class="toolbar-icon">/</span></button>
+        <button class="toolbar-button" id="tool-rect" title="Rect (R)"><span class="toolbar-icon">▭</span></button>
+        <button class="toolbar-button" id="tool-circle" title="Circle (C)"><span class="toolbar-icon">⭕</span></button>
+        <button class="toolbar-button" id="tool-arc" title="Arc (A)"><span class="toolbar-icon">⌢</span></button>
+        <button class="toolbar-button" id="tool-dimension" title="Dimension (D)"><span class="toolbar-icon">↔</span></button>
+      </div>
+
+      <!-- Modeling (always visible) -->
+      <div class="toolbar-group">
+        <button class="toolbar-button" id="tool-extrude" title="Extrude (E)"><span class="toolbar-icon">⬆</span><span class="toolbar-label">Extrude</span></button>
+        <button class="toolbar-button" id="tool-revolve" title="Revolve"><span class="toolbar-icon">🔄</span></button>
+        <button class="toolbar-button" id="tool-fillet" title="Fillet"><span class="toolbar-icon">⌒</span></button>
+        <button class="toolbar-button" id="tool-chamfer" title="Chamfer"><span class="toolbar-icon">⌉</span></button>
+        <button class="toolbar-button" id="tool-cut" title="Cut"><span class="toolbar-icon">−</span></button>
+        <button class="toolbar-button" id="tool-union" title="Union"><span class="toolbar-icon">+</span></button>
+      </div>
+
+      <!-- Advanced Ops dropdown -->
+      <div class="toolbar-dropdown">
+        <button class="toolbar-dropdown-btn" title="Advanced Operations">⚙ More <span class="caret">▼</span></button>
+        <div class="toolbar-dropdown-menu">
+          <button id="tool-sweep" title="Sweep">↺ Sweep</button>
+          <button id="tool-loft" title="Loft">△ Loft</button>
+          <button id="tool-spring" title="Spring">↻ Spring</button>
+          <button id="tool-thread" title="Thread">✦ Thread</button>
+          <button id="tool-bend" title="Sheet Metal Bend">┌ Bend</button>
+          <button id="tool-flange" title="Flange">└ Flange</button>
+          <button id="tool-unfold" title="Unfold">▭ Unfold</button>
+          <button id="tool-shell" title="Shell (Hollow)">◻ Shell</button>
+          <button id="tool-pattern" title="Pattern (Array)">▦ Pattern</button>
+          <button id="btn-sketch-enhance" title="Sketch+">✏ Sketch+</button>
+          <button id="btn-section" title="Section View">🔪 Section</button>
+        </div>
+      </div>
+
+      <!-- Export dropdown -->
+      <div class="toolbar-dropdown">
+        <button class="toolbar-dropdown-btn" title="Export">💾 Export <span class="caret">▼</span></button>
+        <div class="toolbar-dropdown-menu">
+          <button id="export-stl">💾 STL</button>
+          <button id="export-step">💾 STEP</button>
+          <button id="export-dxf">📐 DXF</button>
+          <button id="export-multiview">📄 Drawing</button>
+        </div>
+      </div>
+
+      <!-- Assembly -->
+      <div class="toolbar-group">
+        <button class="toolbar-button" id="tool-assembly" title="Assembly" style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);"><span class="toolbar-icon">⚙</span><span class="toolbar-label">Assembly</span></button>
+        <button class="toolbar-button" id="tool-explode" title="Explode"><span class="toolbar-icon">⊙</span></button>
+      </div>
+
+      <!-- Import dropdown -->
+      <div class="toolbar-dropdown">
+        <button class="toolbar-dropdown-btn" title="Import">📂 Import <span class="caret">▼</span></button>
+        <div class="toolbar-dropdown-menu">
+          <button id="btn-reverse-engineer">🔍 Reverse Engineer</button>
+          <button id="btn-inventor-import">🏭 Inventor Import</button>
+        </div>
+      </div>
+
+      <!-- AI & Tools dropdown -->
+      <div class="toolbar-dropdown">
+        <button class="toolbar-dropdown-btn" title="AI & Tools" style="color:rgba(168,85,247,0.9);">✨ AI <span class="caret">▼</span></button>
+        <div class="toolbar-dropdown-menu">
+          <button id="btn-ai-copilot">✨ Copilot</button>
+          <button id="btn-text2cad">💬 Text2CAD</button>
+          <button id="btn-dfm">🏭 DFM Check</button>
+          <button id="btn-materials">🎨 Materials</button>
+          <button id="btn-generative">🧬 Generative</button>
+          <button id="btn-agent-panel">🤖 Agent API</button>
+        </div>
+      </div>
+
+      <!-- CAM dropdown -->
+      <div class="toolbar-dropdown">
+        <button class="toolbar-dropdown-btn" title="CAM & Manufacturing">⚙ CAM <span class="caret">▼</span></button>
+        <div class="toolbar-dropdown-menu">
+          <button id="btn-cam">⚙ CAM Pipeline</button>
+          <button id="btn-camops">🔧 CAM Ops</button>
+          <button id="btn-gcode">📄 G-Code</button>
+          <button id="btn-machines">🖥 Machines</button>
+          <button id="btn-tools">🔩 Tools</button>
+          <button id="btn-stock">📦 Stock</button>
+          <button id="btn-fabs">🏗 Fabs</button>
+        </div>
+      </div>
+
+      <!-- Reference dropdown -->
+      <div class="toolbar-dropdown">
+        <button class="toolbar-dropdown-btn" title="Reference & Catalog">📚 Ref <span class="caret">▼</span></button>
+        <div class="toolbar-dropdown-menu">
+          <button id="btn-marketplace-v2">🏪 Marketplace</button>
+          <button id="btn-gdt">📐 GD&T Training</button>
+          <button id="btn-misumi">🔩 MISUMI Catalog</button>
+          <button id="btn-vr">🥽 VR Mode</button>
+          <button id="btn-collab">👥 Collaboration</button>
+        </div>
+      </div>
+
+      <!-- Undo/Redo -->
+      <div class="toolbar-group">
+        <button class="toolbar-button" id="btn-undo" title="Undo (Ctrl+Z)"><span class="toolbar-icon">↶</span></button>
+        <button class="toolbar-button" id="btn-redo" title="Redo (Ctrl+Y)"><span class="toolbar-icon">↷</span></button>
+      </div>
+
+      <!-- Token balance -->
+      <button class="toolbar-button" id="btn-token-balance" title="Tokens" onclick="document.querySelector('[data-tab=tokens]')?.click()" style="background:linear-gradient(135deg,rgba(88,166,255,0.1),rgba(63,185,80,0.1));border:1px solid rgba(88,166,255,0.3);">
+        <span class="toolbar-icon">💰</span><span class="toolbar-label" id="token-balance-label">1K</span>
+      </button>
+
+      <!-- Right-side: Theme + Help + Reset -->
+      <div style="margin-left:auto;display:flex;gap:2px;">
+        <button class="toolbar-button" id="btn-theme-toggle" title="Toggle Light/Dark Mode" style="background:rgba(255,200,50,0.12);border:1px solid rgba(255,200,50,0.3);"><span class="toolbar-icon" id="theme-icon">☀</span></button>
+        <button class="toolbar-button" id="btn-help" title="Help (?)" style="background:rgba(88,166,255,0.1);"><span class="toolbar-icon">?</span></button>
+        <button class="toolbar-button" id="btn-hard-reset" title="Clear cache & reload" style="color:#f55;"><span class="toolbar-icon">🔄</span></button>
+      </div>
+    </div><!-- end toolbar -->
+
+    <!-- Hidden: View buttons used by keyboard shortcuts only -->
+    <div style="display:none;">
+      <button id="view-front" title="Front View (V+F)">
+          <span class="toolbar-label">Front</span>
+        </button>
+        <button class="toolbar-button" id="view-top" title="Top View (V+T)">
+          <span class="toolbar-label">Top</span>
+        </button>
+        <button class="toolbar-button" id="view-right" title="Right View (V+R)">
+          <span class="toolbar-label">Right</span>
+        </button>
+        <button class="toolbar-button" id="view-iso" title="Isometric View (V+I)">
+          <span class="toolbar-label">Iso</span>
+        </button>
+        <button class="toolbar-button" id="view-fit" title="Fit All (V)">
+          <span class="toolbar-label">Fit</span>
+        </button>
+    </div><!-- end hidden view buttons -->
+
+    <!-- Main Content Area -->
+    <div id="content">
+      <!-- Left Panel: Feature Tree + Project Browser -->
+      <div id="left-panel">
+        <div id="left-panel-tabs">
+          <button class="left-tab active" data-left-tab="tree">Model Tree</button>
+          <button class="left-tab" data-left-tab="browser">Project Browser</button>
+        </div>
+        <div id="left-tab-tree" class="left-tab-content" style="display:flex;flex-direction:column;flex:1;min-height:0;">
+          <div id="feature-tree">
+            <!-- Populated by JavaScript -->
+          </div>
+        </div>
+        <div id="left-tab-browser" class="left-tab-content" style="display:none;flex-direction:column;flex:1;min-height:0;">
+          <div id="inline-project-browser">
+            <!-- Inline project browser tree (populated when DUO manifest loads) -->
+            <div class="ipb-search-box">
+              <input type="text" id="ipb-search" placeholder="Search parts..." style="width:100%;padding:6px 8px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:3px;color:var(--text-primary);font-size:11px;">
+            </div>
+            <div id="ipb-stats" style="display:flex;gap:8px;padding:4px 8px;font-size:10px;color:var(--text-secondary);border-bottom:1px solid var(--border-color);"></div>
+            <div id="ipb-tree" style="flex:1;overflow-y:auto;padding:4px 0;min-height:0;">
+              <div id="ipb-empty" style="text-align:center;padding:20px 12px;">
+                <div style="font-size:32px;margin-bottom:8px;opacity:0.5;">&#x1F4C2;</div>
+                <p style="font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text-primary);">No project loaded</p>
+                <p style="font-size:11px;color:var(--text-secondary);line-height:1.5;">Use <b>Import &gt; Open Inventor Project</b> to load a project folder, or import STEP/STL files.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center: Viewport -->
+      <div id="viewport-container">
+
+        <!-- Viewport Overlays -->
+        <div id="viewport-overlay">
+          <div class="mode-indicator" id="mode-indicator">Ready</div>
+          <div class="coordinate-display">
+            <span>X:</span> <span class="coordinate-value" id="coord-x">0.00</span>
+            <span>Y:</span> <span class="coordinate-value" id="coord-y">0.00</span>
+            <span>Z:</span> <span class="coordinate-value" id="coord-z">0.00</span>
+          </div>
+          <div class="snap-indicator" id="snap-indicator">Snap: Grid</div>
+        </div>
+
+        <!-- ViewCube Navigation -->
+        <div id="viewcube" style="position:absolute;top:12px;right:12px;width:80px;height:80px;z-index:50;perspective:200px;cursor:pointer;">
+          <div id="vc-cube" style="width:80px;height:80px;position:relative;transform-style:preserve-3d;transform:rotateX(-25deg) rotateY(-35deg);transition:transform 0.3s ease;">
+            <div class="vc-face vc-front"  data-vc="front"  style="transform:translateZ(40px);">Front</div>
+            <div class="vc-face vc-back"   data-vc="back"   style="transform:rotateY(180deg) translateZ(40px);">Back</div>
+            <div class="vc-face vc-right"  data-vc="right"  style="transform:rotateY(90deg) translateZ(40px);">Right</div>
+            <div class="vc-face vc-left"   data-vc="left"   style="transform:rotateY(-90deg) translateZ(40px);">Left</div>
+            <div class="vc-face vc-top"    data-vc="top"    style="transform:rotateX(90deg) translateZ(40px);">Top</div>
+            <div class="vc-face vc-bottom" data-vc="bottom" style="transform:rotateX(-90deg) translateZ(40px);">Btm</div>
+          </div>
+        </div>
+
+        <!-- Sketch Canvas Overlay -->
+        <canvas id="sketch-canvas-overlay"></canvas>
+
+        <!-- Loading Spinner -->
+        <div id="kernel-spinner">
+          <div class="spinner-container">
+            <div class="spinner"></div>
+            <div class="spinner-text">Loading Kernel...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Panel: Properties + Chat -->
+      <div id="right-panel">
+        <div id="properties-header">Properties</div>
+
+        <!-- Tab Navigation -->
+        <div id="properties-tabs">
+          <button class="properties-tab active" data-tab="properties">Properties</button>
+          <button class="properties-tab" data-tab="chat">Chat</button>
+          <button class="properties-tab" data-tab="guide">Guide</button>
+          <button class="properties-tab" data-tab="tokens" style="margin-left: auto; background: linear-gradient(135deg, rgba(88,166,255,0.1), rgba(63,185,80,0.1)); border: 1px solid rgba(88,166,255,0.3);" title="Token Balance & Billing">💰 Tokens</button>
+        </div>
+
+        <!-- Properties Content -->
+        <div id="properties-content">
+          <div id="tab-properties">
+            <!-- Properties populated by JavaScript -->
+          </div>
+          <div id="tab-chat" style="display: none;">
+            <!-- Chat tab populated by JavaScript -->
+          </div>
+          <div id="tab-guide" style="display: none;">
+            <!-- Rebuild guide populated by JavaScript -->
+          </div>
+          <!-- Tokens tab will be populated by token-dashboard.js -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Status Bar -->
+    <div id="statusbar">
+      <div class="statusbar-item" id="status-bar-item">
+        <span id="status-bar">Ready</span>
+      </div>
+      <div class="statusbar-item">
+        <span class="status-indicator" id="kernel-status"></span>
+        <span class="statusbar-label">Kernel:</span>
+        <span class="statusbar-value" id="kernel-status-text">Idle</span>
+      </div>
+      <div class="statusbar-item">
+        <span class="statusbar-label">Mode:</span>
+        <span class="statusbar-value" id="mode-value">Normal</span>
+      </div>
+      <div class="statusbar-item">
+        <span class="statusbar-label">Units:</span>
+        <span class="statusbar-value" id="units-value">mm</span>
+      </div>
+      <div class="statusbar-item">
+        <span class="statusbar-label">Grid:</span>
+        <span class="statusbar-value" id="grid-value">1.0</span>
+      </div>
+      <div class="statusbar-item">
+        <span class="statusbar-label">FPS:</span>
+        <span class="statusbar-value" id="fps-value">0</span>
+      </div>
+      <div style="margin-left:auto;">
+        <button id="btn-hard-refresh" title="Hard Refresh — Nuke Cache & Reload" style="background:rgba(248,81,73,0.12);border:1px solid rgba(248,81,73,0.3);color:#f85149;font-size:11px;padding:2px 10px;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:4px;">
+          <span style="font-size:12px;">🔄</span> Hard Refresh
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Context Menu -->
+  <div id="context-menu"></div>
+
+  <!-- Agent Command Panel -->
+  <div id="agent-panel" style="display:none;position:fixed;bottom:40px;right:20px;width:450px;max-height:600px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;box-shadow:var(--shadow-lg);z-index:1000;flex-direction:column;gap:0;">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center;user-select:none;">
+      <strong style="font-size:13px;">Agent Command Panel</strong>
+      <button onclick="document.getElementById('agent-panel').style.display='none'" style="background:transparent;border:none;color:var(--text-secondary);cursor:pointer;font-size:16px;padding:0;width:20px;height:20px;">✕</button>
+    </div>
+
+    <div style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;min-height:0;">
+      <div id="agent-log" style="flex:1;display:flex;flex-direction:column;gap:6px;font-family:monospace;font-size:11px;color:var(--text-secondary);overflow-y:auto;min-height:100px;max-height:400px;">
+        <div style="color:var(--accent-green);">[Ready to accept commands]</div>
+      </div>
+    </div>
+
+    <div style="padding:12px;border-top:1px solid var(--border-color);display:flex;flex-direction:column;gap:8px;">
+      <!-- Command input -->
+      <input type="text" id="agent-command-input" placeholder="{ method: &quot;sketch.start&quot;, params: { plane: &quot;XY&quot; } }" style="width:100%;padding:8px 10px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:4px;color:var(--text-primary);font-family:monospace;font-size:11px;box-sizing:border-box;">
+
+      <!-- Quick command buttons -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;">
+        <button onclick="agentPanel.executeQuickCommand('ping')" style="padding:6px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:3px;color:var(--accent-blue);cursor:pointer;">Test (Ping)</button>
+        <button onclick="agentPanel.executeQuickCommand('schema')" style="padding:6px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:3px;color:var(--accent-blue);cursor:pointer;">Schema</button>
+        <button onclick="agentPanel.executeQuickCommand('newsketch')" style="padding:6px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:3px;color:var(--accent-green);cursor:pointer;">New Sketch</button>
+        <button onclick="agentPanel.executeQuickCommand('features')" style="padding:6px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:3px;color:var(--accent-green);cursor:pointer;">List Features</button>
+      </div>
+
+      <!-- Execute button -->
+      <button onclick="agentPanel.executeCommand()" style="width:100%;padding:8px;background:var(--accent-blue);color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:bold;font-size:12px;">Execute Command</button>
+    </div>
+  </div>
+
+  <!-- Module Loader -->
+  <script type="module">
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
+    const _v = '50';
+    import { initViewport, setView, addToScene, removeFromScene, getScene, getCamera, getControls, toggleGrid as vpToggleGrid, fitToObject, fitAll } from './js/viewport.js?v=60';
+    import { startSketch, endSketch, setTool, getEntities, clearSketch } from './js/sketch.js?v=60';
+    import { extrudeProfile, createPrimitive, rebuildFeature, createMaterial } from './js/operations.js?v=60';
+    import { initChat, parseCADPrompt, addMessage } from './js/ai-chat.js?v=60';
+    import { initTree, addFeature, selectFeature, onSelect } from './js/tree.js?v=60';
+    import { initParams, showParams, onParamChange } from './js/params.js?v=60';
+    import { exportSTL, exportOBJ, exportJSON } from './js/export.js?v=60';
+    import { initShortcuts } from './js/shortcuts.js?v=60';
+    import { createReverseEngineerPanel, importFile, analyzeGeometry, reconstructFeatureTree, createWalkthrough } from './js/reverse-engineer.js?v=60';
+    import { createInventorPanel, parseInventorFile } from './js/inventor-parser.js?v=60';
+    import { loadProject, showFolderPicker, parseIPJ } from './js/project-loader.js?v=60';
+    import { initProjectBrowser, showBrowser, hideBrowser, setProject, onFileSelect } from './js/project-browser.js?v=60';
+    import { generateGuide, renderGuide, exportGuideHTML } from './js/rebuild-guide.js?v=60';
+    import { solveConstraints, addConstraint, removeConstraint, autoDetectConstraints, isFullyConstrained, getAllConstraints, clearAllConstraints } from './js/constraint-solver.js?v=60';
+    import { createSweep, createLoft, createBend, createFlange, createTab, createSlot, unfoldSheetMetal, createSpring, createThread } from './js/advanced-ops.js?v=60';
+    import Assembly from './js/assembly.js?v=60';
+    import { exportSketchToDXF, exportProjectionToDXF, exportMultiViewDXF, export3DDXF, downloadDXF } from './js/dxf-export.js?v=60';
+    import { initAgentAPI } from './js/agent-api.js?v=60';
+    import { initTokenDashboard } from './js/token-dashboard.js?v=60';
+
+    // ========== Application State ==========
+    const APP = {
+      mode: 'idle',
+      currentSketch: null,
+      selectedFeature: null,
+      features: [],
+      history: [],
+      historyIndex: -1,
+      project: null,  // Current Inventor project
+      assembly: null,  // Assembly workspace instance
+    };
+
+    // ========== Initialization ==========
+    async function init() {
+      const errors = [];
+      function tryStep(name, fn) {
+        try { fn(); } catch(e) { console.warn('[init] ' + name + ' failed:', e.message); errors.push(name + ': ' + e.message); }
+      }
+      async function tryStepAsync(name, fn) {
+        try { await fn(); } catch(e) { console.warn('[init] ' + name + ' failed:', e.message); errors.push(name + ': ' + e.message); }
+      }
+      try {
+        console.log('Initializing cycleCAD...');
+
+        // 1. Initialize 3D viewport
+        tryStep('viewport', () => {
+          initViewport('viewport-container');
+          document.getElementById('kernel-status').classList.add('ready');
+          document.getElementById('kernel-status-text').textContent = 'Ready';
+        });
+
+        // 1b. Initialize assembly workspace
+        tryStep('assembly', () => { APP.assembly = new Assembly(getScene()); });
+
+        // 2. Initialize feature tree
+        tryStep('tree', () => {
+          const treeContainer = document.getElementById('feature-tree');
+          if (treeContainer) initTree(treeContainer);
+        });
+
+        // 3. Initialize properties panel
+        tryStep('params', () => {
+          const propsContainer = document.getElementById('tab-properties');
+          if (propsContainer) initParams(propsContainer);
+        });
+
+        // 4. Initialize AI chat
+        tryStep('chat', () => {
+          const chatTab = document.getElementById('tab-chat');
+          if (chatTab) {
+            chatTab.innerHTML = `
+              <div id="chat-messages" style="flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px;min-height:0;"></div>
+              <div style="display:flex;gap:4px;padding:8px;border-top:1px solid var(--border-color);">
+                <input id="chat-input" type="text" placeholder="Describe a part..." style="flex:1;padding:6px 10px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:4px;color:var(--text-primary);font-size:12px;">
+                <button id="chat-send" style="padding:6px 12px;background:var(--accent-blue);color:#fff;border-radius:4px;font-size:12px;">Send</button>
+              </div>
+            `;
+            chatTab.style.display = 'none';
+            chatTab.style.flexDirection = 'column';
+            chatTab.style.height = '100%';
+            initChat(
+              document.getElementById('chat-messages'),
+              document.getElementById('chat-input'),
+              document.getElementById('chat-send'),
+              (cmd) => executeParsedPrompt(cmd)
+            );
+          }
+        });
+
+        // 4b. Initialize Token Dashboard
+        tryStep('tokenDashboard', () => {
+          const tokenTab = document.getElementById('tab-tokens');
+          if (tokenTab) {
+            const tokenDashboard = initTokenDashboard();
+            tokenTab.innerHTML = tokenDashboard.html;
+            tokenTab.style.display = 'none';
+            tokenTab.style.overflowY = 'auto';
+            tokenDashboard.init();
+            function updateTokenBalanceLabel() {
+              const balance = window.cycleCAD?.tokens?.getBalance?.() || 0;
+              const label = document.getElementById('token-balance-label');
+              if (label) {
+                label.textContent = balance >= 1000 ? Math.floor(balance / 1000) + 'K Tokens' : balance + ' Tokens';
+              }
+            }
+            updateTokenBalanceLabel();
+            if (window.cycleCAD?.tokens?.on) {
+              window.cycleCAD.tokens.on('token-spent', updateTokenBalanceLabel);
+              window.cycleCAD.tokens.on('token-added', updateTokenBalanceLabel);
+              window.cycleCAD.tokens.on('month-reset', updateTokenBalanceLabel);
+            }
+          }
+        });
+
+        // 5. Wire up toolbar buttons
+        tryStep('toolbar', () => setupToolbar());
+
+        // 6. Wire up tab switching
+        tryStep('tabs', () => setupTabs());
+
+        // 7. Wire up tree selection → params
+        tryStep('treeSelection', () => {
+          onSelect((featureId) => {
+            APP.selectedFeature = APP.features.find(f => f.id === featureId);
+            if (APP.selectedFeature) showParams(APP.selectedFeature);
+          });
+          onParamChange((paramName, value) => {
+            if (APP.selectedFeature) {
+              APP.selectedFeature.params[paramName] = value;
+              rebuildFeature(APP.selectedFeature);
+            }
+          });
+        });
+
+        // 8. Initialize keyboard shortcuts
+        tryStep('shortcuts', () => initShortcuts({
+          newSketch: () => startNewSketch(),
+          line: () => setTool('line'),
+          rect: () => setTool('rect'),
+          circle: () => setTool('circle'),
+          arc: () => setTool('arc'),
+          extrude: () => doExtrude(),
+          undo: () => undo(),
+          redo: () => redo(),
+          delete: () => deleteSelected(),
+          escape: () => cancelOperation(),
+          enter: () => confirmOperation(),
+          viewFront: () => setView('front'),
+          viewBack: () => setView('back'),
+          viewRight: () => setView('right'),
+          viewLeft: () => setView('left'),
+          viewTop: () => setView('top'),
+          viewBottom: () => setView('bottom'),
+          viewIso: () => setView('iso'),
+          toggleGrid: () => vpToggleGrid(),
+          fitAll: () => fitAllFeatures(),
+          save: () => saveProject(),
+          exportSTL: () => doExportSTL(),
+        }));
+
+        // 9. Welcome splash + tabs now run AFTER try/catch (always execute)
+
+        // 10. Initialize project browser
+        tryStep('projectBrowser', () => initProjectBrowser(document.body, {
+          onFileOpen: async (file) => {
+            try {
+              const buffer = file.buffer || await file.arrayBuffer();
+              const result = parseInventorFile(new Uint8Array(buffer));
+              // Add features to tree
+              if (result.features) {
+                result.features.forEach((f, i) => {
+                  addFeature({
+                    id: `inv-${Date.now()}-${i}`,
+                    type: f.type || 'Unknown',
+                    name: f.name || `Feature ${i+1}`,
+                    params: f.parameters || {},
+                    icon: f.icon || '📦'
+                  });
+                });
+              }
+              // Generate rebuild guide
+              const guide = generateGuide(result);
+              // Show guide in right panel
+              const propsContent = document.getElementById('tab-guide');
+              if (propsContent) renderGuide(propsContent, guide);
+              updateStatus(`Opened: ${result.metadata?.fileName || file.name} — ${result.features?.length || 0} features`);
+            } catch (err) {
+              console.error('Failed to open file:', err);
+              updateStatus('Failed to open file: ' + err.message);
+            }
+          },
+          onProjectLoad: (project) => {
+            APP.project = project;
+            updateStatus(`Project loaded: ${project.stats.parts} parts, ${project.stats.assemblies} assemblies`);
+          }
+        }));
+
+        // 11. Hard Refresh button
+        tryStep('hardRefresh', () => {
+          const hardRefreshBtn = document.getElementById('btn-hard-refresh');
+          if (hardRefreshBtn) hardRefreshBtn.addEventListener('click', async () => {
+            hardRefreshBtn.textContent = 'Clearing...';
+            hardRefreshBtn.style.opacity = '0.6';
+            if ('serviceWorker' in navigator) {
+              const regs = await navigator.serviceWorker.getRegistrations();
+              for (const r of regs) await r.unregister();
+            }
+            if ('caches' in window) {
+              const names = await caches.keys();
+              for (const n of names) await caches.delete(n);
+            }
+            const url = new URL(window.location.href);
+            url.searchParams.set('v', Date.now());
+            window.location.replace(url.toString());
+          });
+        });
+
+        // Initialize Agent API — the primary interface
+        await tryStepAsync('agentAPI', async () => {
+        const agentImports = await import('./js/agent-api.js?v=60');
+        const agentSession = initAgentAPI({
+          viewport: {
+            getCamera,
+            getControls,
+            getScene,
+            setView,
+            fitToObject,
+            addToScene,
+            removeFromScene,
+            toggleGrid: vpToggleGrid,
+            toggleWireframe: (e) => console.log('wireframe:', e),
+            toggleAxisLines: () => {},
+            getRenderer: () => null
+          },
+          sketch: {
+            startSketch,
+            endSketch,
+            setTool,
+            getEntities,
+            clearSketch
+          },
+          operations: {
+            extrudeProfile,
+            createPrimitive,
+            rebuildFeature,
+            createMaterial,
+            fillet: (mesh, edges, radius) => console.log('fillet:', mesh, edges, radius),
+            chamfer: (mesh, edges, dist) => console.log('chamfer:', mesh, edges, dist),
+            booleanUnion: (a, b) => { console.log('union:', a, b); return a; },
+            booleanCut: (a, b) => { console.log('cut:', a, b); return a; },
+            booleanIntersect: (a, b) => { console.log('intersect:', a, b); return a; },
+            createShell: (mesh, thickness) => console.log('shell:', mesh, thickness),
+            createPattern: (mesh, type, count, spacing) => { console.log('pattern:', mesh, type, count, spacing); return []; },
+            getMaterialPresets: () => ({
+              steel: { color: 0x7799bb, name: 'Steel' },
+              aluminum: { color: 0xccccdd, name: 'Aluminum' },
+              plastic: { color: 0x2c3e50, name: 'Plastic' },
+              brass: { color: 0xcd7f32, name: 'Brass' },
+              titanium: { color: 0x878786, name: 'Titanium' },
+              nylon: { color: 0xf5f5dc, name: 'Nylon' }
+            })
+          },
+          advancedOps: {
+            createSweep,
+            createLoft,
+            createBend,
+            createFlange,
+            createTab,
+            createSlot,
+            unfoldSheetMetal,
+            createSpring,
+            createThread
+          },
+          exportModule: {
+            exportSTL,
+            exportOBJ,
+            exportJSON,
+            exportSTLBinary: exportSTL,
+            exportGLTF: exportOBJ
+          },
+          appState: APP
+        });
+        console.log(`[Agent API] Ready. Session: ${agentSession.sessionId}`);
+        console.log('[Agent API] Usage: window.cycleCAD.execute({ method: "meta.ping" })');
+        console.log('[Agent API] Schema: window.cycleCAD.getSchema()');
+        }); // end agentAPI tryStepAsync
+
+        // Initialize new architecture modules
+        tryStep('archModules', () => {
+          if (window.cycleCAD?.materials?.init) window.cycleCAD.materials.init();
+          if (window.cycleCAD?.dfm?.init) window.cycleCAD.dfm.init();
+          if (window.cycleCAD?.cam?.init) window.cycleCAD.cam.init();
+          if (window.cycleCAD?.fabs?.init) window.cycleCAD.fabs.init();
+          if (window.cycleCAD?.copilot?.init) window.cycleCAD.copilot.init();
+          if (window.cycleCAD?.collab?.init) window.cycleCAD.collab.init();
+        });
+
+        // Report results
+        if (errors.length > 0) {
+          console.warn('[init] Completed with errors:', errors);
+          updateStatus('Ready (some modules failed — see console)');
+        } else {
+          console.log('cycleCAD initialized successfully — all modules loaded');
+          updateStatus('Ready');
+        }
+
+      } catch (error) {
+        console.error('Failed to initialize cycleCAD:', error);
+        document.getElementById('kernel-status').classList.add('error');
+        document.getElementById('kernel-status-text').textContent = 'Error';
+      }
+
+      // ALWAYS run splash + toolbar setup even if init partially fails
+      try { setupWelcome(); } catch(e) { console.warn('setupWelcome error:', e); }
+      try { setupLeftTabs(); } catch(e) { console.warn('setupLeftTabs error:', e); }
+      try { setupInlineBrowserClicks(); } catch(e) { console.warn('setupInlineBrowserClicks error:', e); }
+
+      // Auto-load DUO manifest into Project Browser (non-blocking)
+      try {
+        fetch('duo-manifest.json').then(resp => {
+          if (!resp.ok) return;
+          return resp.json();
+        }).then(manifest => {
+          if (!manifest) return;
+          function transformTree(node) {
+            if (node.type === 'file' && node.ext) node.type = node.ext.replace('.', '');
+            if (node.children) node.children.forEach(transformTree);
+            return node;
+          }
+          transformTree(manifest.tree);
+          APP.project = manifest;
+          try { setProject(manifest.tree); } catch(e) {}
+          try { populateInlineBrowser(manifest.tree); } catch(e) {}
+          console.log('[init] DUO manifest auto-loaded:', manifest.stats?.total || 0, 'files');
+        }).catch(() => { /* manifest not available, ok */ });
+      } catch(e) {}
+    }
+
+    // ========== Left Panel Tab Switching ==========
+    function switchLeftTab(tab) {
+      document.querySelectorAll('.left-tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.leftTab === tab);
+      });
+      document.getElementById('left-tab-tree').style.display = tab === 'tree' ? 'flex' : 'none';
+      document.getElementById('left-tab-browser').style.display = tab === 'browser' ? 'flex' : 'none';
+    }
+
+    function setupLeftTabs() {
+      document.querySelectorAll('.left-tab').forEach(tab => {
+        tab.addEventListener('click', () => switchLeftTab(tab.dataset.leftTab));
+      });
+    }
+
+    // ========== Inline Project Browser (Left Panel) ==========
+    let ipbState = { tree: null, expanded: new Set(), searchQuery: '', selectedPath: null };
+
+    function populateInlineBrowser(treeData) {
+      ipbState.tree = treeData;
+      ipbState.expanded.clear();
+      ipbState.searchQuery = '';
+
+      // Auto-expand the first level
+      if (treeData.children) {
+        treeData.children.forEach((child, i) => {
+          if (child.type === 'folder') ipbState.expanded.add('root-' + i);
+        });
+      }
+
+      renderInlineBrowser();
+      updateInlineStats();
+
+      // Wire search
+      const searchEl = document.getElementById('ipb-search');
+      if (searchEl) {
+        let timeout;
+        searchEl.addEventListener('input', (e) => {
+          clearTimeout(timeout);
+          timeout = setTimeout(() => {
+            ipbState.searchQuery = e.target.value.toLowerCase();
+            renderInlineBrowser();
+          }, 200);
+        });
+      }
+    }
+
+    function renderInlineBrowser() {
+      const container = document.getElementById('ipb-tree');
+      if (!container || !ipbState.tree) return;
+      container.innerHTML = renderIPBItems(ipbState.tree.children || [], 'root');
+    }
+
+    function renderIPBItems(items, prefix) {
+      if (!items || items.length === 0) return '';
+      let html = '';
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const nodeId = prefix + '-' + i;
+
+        // Search filter
+        if (ipbState.searchQuery && item.type !== 'folder') {
+          if (!item.name.toLowerCase().includes(ipbState.searchQuery)) continue;
+        }
+
+        // If folder, check if any children match search
+        if (ipbState.searchQuery && item.type === 'folder') {
+          if (!folderHasMatch(item, ipbState.searchQuery)) continue;
+        }
+
+        const icon = getIPBIcon(item);
+        const badge = getIPBBadge(item.category);
+
+        if (item.type === 'folder' && item.children && item.children.length > 0) {
+          const isExp = ipbState.expanded.has(nodeId);
+          html += `<div class="ipb-folder" data-ipb-id="${nodeId}" data-ipb-type="folder">
+            <span class="ipb-toggle ${isExp ? 'expanded' : ''}">&#9654;</span>
+            <span class="ipb-icon">${icon}</span>
+            <span class="ipb-label">${escHTML(item.name)}</span>
+            <span style="margin-left:auto;font-size:9px;color:var(--text-muted);">${item.children.length}</span>
+          </div>`;
+          if (isExp) {
+            html += `<div class="ipb-children">${renderIPBItems(item.children, nodeId)}</div>`;
+          }
+        } else if (item.type !== 'folder') {
+          const sel = ipbState.selectedPath === item.path ? ' selected' : '';
+          html += `<div class="ipb-file${sel}" data-ipb-id="${nodeId}" data-ipb-type="${item.type}" data-ipb-path="${item.path || ''}" data-ipb-name="${escHTML(item.name)}">
+            <span class="ipb-toggle" style="visibility:hidden;">&#8226;</span>
+            <span class="ipb-icon">${icon}</span>
+            <span class="ipb-label">${escHTML(item.name)}</span>
+            ${badge}
+          </div>`;
+        }
+      }
+      return html;
+    }
+
+    function folderHasMatch(folder, query) {
+      if (!folder.children) return false;
+      return folder.children.some(child => {
+        if (child.type === 'folder') return folderHasMatch(child, query);
+        return child.name.toLowerCase().includes(query);
+      });
+    }
+
+    function getIPBIcon(item) {
+      const icons = { ipt: '&#128230;', iam: '&#127959;', idw: '&#128208;', ipj: '&#128203;', folder: '&#128193;' };
+      return icons[item.type] || '&#128196;';
+    }
+
+    function getIPBBadge(category) {
+      if (!category) return '';
+      const map = {
+        custom: '<span class="ipb-badge ipb-badge-green">CUSTOM</span>',
+        standard: '<span class="ipb-badge ipb-badge-blue">STD</span>',
+        vendor: '<span class="ipb-badge ipb-badge-yellow">VENDOR</span>',
+      };
+      return map[category] || '';
+    }
+
+    function escHTML(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function updateInlineStats() {
+      const el = document.getElementById('ipb-stats');
+      if (!el || !APP.project) return;
+      const s = APP.project.stats || {};
+      el.innerHTML = `<span>&#128230; ${s.parts || 0} parts</span><span>&#127959; ${s.assemblies || 0} asms</span><span>&#128196; ${s.total || 0} total</span>`;
+    }
+
+    // Delegated click handler for inline browser
+    function setupInlineBrowserClicks() {
+      const container = document.getElementById('ipb-tree');
+      if (!container) return;
+      container.addEventListener('click', (e) => {
+        const row = e.target.closest('[data-ipb-id]');
+        if (!row) return;
+        const nodeId = row.dataset.ipbId;
+        const nodeType = row.dataset.ipbType;
+
+        if (nodeType === 'folder') {
+          // Toggle expand
+          if (ipbState.expanded.has(nodeId)) {
+            ipbState.expanded.delete(nodeId);
+          } else {
+            ipbState.expanded.add(nodeId);
+          }
+          renderInlineBrowser();
+        } else if (['ipt', 'iam'].includes(nodeType)) {
+          // Select file → show info in guide tab
+          ipbState.selectedPath = row.dataset.ipbPath;
+          renderInlineBrowser();
+          handleFileSelect(row.dataset.ipbName, row.dataset.ipbPath, nodeType);
+        }
+      });
+    }
+
+    function handleFileSelect(name, path, type) {
+      updateStatus(`Selected: ${name}`);
+
+      // Switch right panel to Guide tab and show file info
+      document.querySelectorAll('.properties-tab').forEach(t => t.classList.remove('active'));
+      const guideTabBtn = document.querySelector('[data-tab="guide"]');
+      if (guideTabBtn) guideTabBtn.classList.add('active');
+      document.getElementById('tab-properties').style.display = 'none';
+      document.getElementById('tab-chat').style.display = 'none';
+      document.getElementById('tab-guide').style.display = 'block';
+
+      const guideContainer = document.getElementById('tab-guide');
+      if (!guideContainer) return;
+
+      // Show file info + feature guide placeholder
+      const ext = type.toUpperCase();
+      const category = getFileCategoryFromPath(path);
+      guideContainer.innerHTML = `
+        <div style="padding:12px;display:flex;flex-direction:column;gap:12px;">
+          <div style="font-weight:600;font-size:13px;color:var(--accent-blue);">${escHTML(name)}</div>
+          <div style="font-size:11px;color:var(--text-secondary);">
+            <div><strong>Type:</strong> Inventor ${ext} ${type === 'ipt' ? '(Part)' : '(Assembly)'}</div>
+            <div><strong>Path:</strong> ${escHTML(path)}</div>
+            <div><strong>Category:</strong> ${category}</div>
+          </div>
+          <div style="border-top:1px solid var(--border-color);padding-top:12px;">
+            <div style="font-weight:600;font-size:12px;margin-bottom:8px;">Rebuild Guide</div>
+            <p style="font-size:11px;color:var(--text-secondary);line-height:1.6;">
+              To generate a detailed rebuild guide, import this file using the
+              <strong>Import Inventor</strong> button in the toolbar. The parser will extract
+              features, dimensions, and constraints, then generate step-by-step
+              instructions for recreating the part in cycleCAD or Fusion 360.
+            </p>
+          </div>
+          <div style="border-top:1px solid var(--border-color);padding-top:12px;">
+            <div style="font-weight:600;font-size:12px;margin-bottom:8px;">Quick Actions</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <button onclick="navigator.clipboard.writeText('${escHTML(path)}')" style="padding:6px 10px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:3px;color:var(--text-primary);font-size:11px;text-align:left;cursor:pointer;">&#128203; Copy path</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function getFileCategoryFromPath(path) {
+      if (!path) return 'Unknown';
+      const lp = path.toLowerCase();
+      if (lp.includes('content center') || lp.includes('libraries')) return 'Standard (DIN/ISO)';
+      if (lp.includes('zukaufteile') || lp.includes('igus') || lp.includes('interroll') || lp.includes('rittal')) return 'Vendor / Buy-out';
+      return 'Custom';
+    }
+
+    // ========== Toolbar Wiring ==========
+    function setupToolbar() {
+      const bind = (id, fn) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('click', fn);
+      };
+
+      // Sketch tools
+      bind('tool-sketch', () => startNewSketch());
+      bind('tool-line', () => { if (APP.mode === 'sketch') setTool('line'); else { startNewSketch(); setTool('line'); } });
+      bind('tool-rect', () => { if (APP.mode === 'sketch') setTool('rect'); else { startNewSketch(); setTool('rect'); } });
+      bind('tool-circle', () => { if (APP.mode === 'sketch') setTool('circle'); else { startNewSketch(); setTool('circle'); } });
+      bind('tool-arc', () => { if (APP.mode === 'sketch') setTool('arc'); else { startNewSketch(); setTool('arc'); } });
+      bind('tool-dimension', () => setTool('dimension'));
+
+      // 3D operations
+      bind('tool-extrude', () => doExtrude());
+      bind('tool-revolve', () => openDialog('revolve'));
+      bind('tool-fillet', () => openDialog('fillet'));
+      bind('tool-chamfer', () => openDialog('chamfer'));
+      bind('tool-cut', () => openDialog('boolean'));
+      bind('tool-union', () => { document.getElementById('bool-union').checked = true; openDialog('boolean'); });
+
+      // Export
+      bind('export-stl', () => doExportSTL());
+      bind('export-step', () => updateStatus('STEP export requires OpenCascade.js — coming soon'));
+      bind('export-dxf', () => {
+        if (APP.features.length === 0) { updateStatus('No geometry to export'); return; }
+        try {
+          const mesh = APP.features[APP.features.length - 1].mesh;
+          if (!mesh) { updateStatus('Select a feature with geometry'); return; }
+          const dxf = exportProjectionToDXF(mesh, 'front', { hiddenLines: true });
+          downloadDXF(dxf, 'cyclecad-export.dxf');
+          updateStatus('DXF exported: front view projection');
+        } catch (err) { updateStatus('DXF export failed: ' + err.message); console.error(err); }
+      });
+      bind('export-multiview', () => {
+        if (APP.features.length === 0) { updateStatus('No geometry to export'); return; }
+        try {
+          const mesh = APP.features[APP.features.length - 1].mesh;
+          if (!mesh) { updateStatus('Select a feature with geometry'); return; }
+          const dxf = exportMultiViewDXF(mesh, { titleBlock: true, title: 'cycleCAD Part', author: 'cycleCAD', company: 'cycleWASH' });
+          downloadDXF(dxf, 'cyclecad-drawing.dxf');
+          updateStatus('Multi-view engineering drawing exported');
+        } catch (err) { updateStatus('Drawing export failed: ' + err.message); console.error(err); }
+      });
+
+      // Edit
+      bind('btn-undo', () => { undo(); });
+      bind('btn-redo', () => { redo(); });
+
+      // Views
+      bind('view-front', () => setView('front'));
+      bind('view-top', () => setView('top'));
+      bind('view-right', () => setView('right'));
+      bind('view-iso', () => setView('iso'));
+      bind('view-fit', () => fitAllFeatures());
+
+      // Reverse Engineer
+      bind('btn-reverse-engineer', () => {
+        const splash = document.getElementById('welcome-splash');
+        if (splash) splash.classList.add('hidden');
+        createReverseEngineerPanel(getScene());
+      });
+
+      // Inventor Import (.ipt / .iam)
+      bind('btn-inventor-import', () => {
+        const splash = document.getElementById('welcome-splash');
+        if (splash) splash.classList.add('hidden');
+        createInventorPanel((parsedData) => {
+          console.log('Inventor file parsed:', parsedData);
+          // Add parsed features to tree
+          if (parsedData.features && parsedData.features.length > 0) {
+            parsedData.features.forEach((f, i) => {
+              addFeature({
+                id: `inv-${i}`,
+                type: f.type || 'Unknown',
+                name: f.name || `Feature ${i + 1}`,
+                params: f.parameters || {},
+                icon: f.icon || '📦'
+              });
+            });
+          }
+
+          // Generate rebuild guide
+          try {
+            const guide = generateGuide(parsedData);
+            // Show guide in right panel
+            const guideTab = document.getElementById('tab-guide');
+            if (guideTab) {
+              renderGuide(guideTab, guide);
+              // Switch to guide tab
+              document.querySelectorAll('.properties-tab').forEach(t => t.classList.remove('active'));
+              const guideTabBtn = document.querySelector('[data-tab="guide"]');
+              if (guideTabBtn) guideTabBtn.classList.add('active');
+              document.getElementById('tab-properties').style.display = 'none';
+              document.getElementById('tab-chat').style.display = 'none';
+              guideTab.style.display = 'block';
+            }
+          } catch (err) {
+            console.warn('Failed to generate rebuild guide:', err);
+          }
+
+          updateStatus(`Inventor file loaded: ${parsedData.metadata?.fileName || 'unknown'} — ${parsedData.features?.length || 0} features found`);
+        });
+      });
+
+      // Advanced Operations
+      bind('tool-shell', () => openDialog('shell'));
+      bind('tool-pattern', () => openDialog('pattern'));
+      bind('tool-sweep', () => openDialog('sweep'));
+      bind('tool-loft', () => openDialog('loft'));
+      bind('tool-spring', () => {
+        const splash = document.getElementById('welcome-splash');
+        if (splash) splash.classList.add('hidden');
+        const radius = parseFloat(prompt('Spring outer radius (mm):', '10') || '0');
+        const wireR = parseFloat(prompt('Wire radius (mm):', '1.5') || '0');
+        const height = parseFloat(prompt('Spring height (mm):', '40') || '0');
+        const turns = parseFloat(prompt('Number of turns:', '8') || '0');
+        if (!radius || !wireR || !height || !turns) { updateStatus('Cancelled'); return; }
+        try {
+          const mesh = createSpring(radius, wireR, height, turns);
+          addToScene(mesh);
+          const feature = { id: 'feature_' + Date.now(), name: `Spring (R${radius} H${height})`, type: 'spring', mesh, params: { radius, wireR, height, turns } };
+          APP.features.push(feature);
+          addFeature(feature);
+          pushHistory();
+          updateStatus(`Created spring: R${radius}mm, ${turns} turns, H${height}mm`);
+        } catch (err) { updateStatus('Spring failed: ' + err.message); }
+      });
+      bind('tool-thread', () => {
+        const splash = document.getElementById('welcome-splash');
+        if (splash) splash.classList.add('hidden');
+        const outerR = parseFloat(prompt('Thread outer radius (mm):', '5') || '0');
+        const innerR = parseFloat(prompt('Thread inner radius (mm):', '4') || '0');
+        const pitch = parseFloat(prompt('Thread pitch (mm):', '1') || '0');
+        const length = parseFloat(prompt('Thread length (mm):', '20') || '0');
+        if (!outerR || !innerR || !pitch || !length) { updateStatus('Cancelled'); return; }
+        try {
+          const mesh = createThread(outerR, innerR, pitch, length);
+          addToScene(mesh);
+          const feature = { id: 'feature_' + Date.now(), name: `Thread M${outerR*2}x${pitch}`, type: 'thread', mesh, params: { outerR, innerR, pitch, length } };
+          APP.features.push(feature);
+          addFeature(feature);
+          pushHistory();
+          updateStatus(`Created thread: M${outerR*2}x${pitch}, L${length}mm`);
+        } catch (err) { updateStatus('Thread failed: ' + err.message); }
+      });
+
+      // Sheet Metal
+      bind('tool-bend', () => openDialog('bend'));
+      bind('tool-flange', () => openDialog('flange'));
+      bind('tool-unfold', () => {
+        if (APP.features.length === 0) { updateStatus('No features to unfold'); return; }
+        updateStatus('Sheet metal unfold: select a bent part, then define bend lines');
+      });
+
+      // Assembly
+      let assemblyMode = false;
+      bind('tool-assembly', () => {
+        assemblyMode = !assemblyMode;
+        if (assemblyMode) {
+          updateStatus('Assembly mode ON — click parts to add to assembly. Right-click for mate constraints.');
+          document.getElementById('tool-assembly').style.background = 'rgba(139,92,246,0.3)';
+        } else {
+          updateStatus('Assembly mode OFF');
+          document.getElementById('tool-assembly').style.background = 'rgba(139,92,246,0.1)';
+        }
+      });
+
+      let exploded = false;
+      bind('tool-explode', () => {
+        if (!APP.assembly) return;
+        exploded = !exploded;
+        if (exploded) {
+          APP.assembly.explodeAssembly(2.0);
+          updateStatus('Assembly exploded — click again to collapse');
+        } else {
+          APP.assembly.collapseAssembly();
+          updateStatus('Assembly collapsed');
+        }
+      });
+
+      // ===== Pointer / Select tool =====
+      bind('tool-pointer', () => {
+        // Exit sketch mode if active
+        if (APP.mode === 'sketch') {
+          try { endSketch(); } catch(e) {}
+          APP.currentSketch = null;
+          APP.mode = 'idle';
+          document.getElementById('mode-indicator').textContent = 'Ready';
+          document.getElementById('mode-value').textContent = 'Normal';
+        }
+        // Deactivate all tool buttons
+        document.querySelectorAll('.toolbar-button.active').forEach(b => b.classList.remove('active'));
+        document.getElementById('tool-pointer').classList.add('active');
+        updateStatus('Select mode');
+      });
+
+      // ===== Dropdown menu positioning (fixed position) =====
+      document.querySelectorAll('.toolbar-dropdown').forEach(dd => {
+        const btn = dd.querySelector('.toolbar-dropdown-btn');
+        const menu = dd.querySelector('.toolbar-dropdown-menu');
+        if (!btn || !menu) return;
+
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const wasOpen = dd.classList.contains('open');
+          // Close all other dropdowns
+          document.querySelectorAll('.toolbar-dropdown.open').forEach(d => d.classList.remove('open'));
+          if (!wasOpen) {
+            dd.classList.add('open');
+            // Position menu below button using fixed coordinates
+            const rect = btn.getBoundingClientRect();
+            menu.style.top = (rect.bottom + 2) + 'px';
+            menu.style.left = rect.left + 'px';
+          }
+        });
+
+        // Close dropdown when clicking a menu item
+        menu.querySelectorAll('button').forEach(item => {
+          item.addEventListener('click', () => {
+            dd.classList.remove('open');
+          });
+        });
+      });
+
+      // Close dropdowns when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.toolbar-dropdown')) {
+          document.querySelectorAll('.toolbar-dropdown.open').forEach(d => d.classList.remove('open'));
+        }
+      });
+    }
+
+    // ========== Tab Switching ==========
+    function setupTabs() {
+      document.querySelectorAll('.properties-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.properties-tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          const target = tab.getAttribute('data-tab');
+          document.getElementById('tab-properties').style.display = target === 'properties' ? 'block' : 'none';
+          document.getElementById('tab-chat').style.display = target === 'chat' ? 'flex' : 'none';
+          document.getElementById('tab-guide').style.display = target === 'guide' ? 'block' : 'none';
+          const tokenTab = document.getElementById('tab-tokens');
+          if (tokenTab) {
+            tokenTab.style.display = target === 'tokens' ? 'block' : 'none';
+            if (target === 'tokens') {
+              // Update token dashboard when switching to it
+              window.cycleCAD?.tokens?.on?.('panel-opened', () => {});
+            }
+          }
+        });
+      });
+    }
+
+    // ========== Welcome Splash ==========
+    function setupWelcome() {
+      const splash = document.getElementById('welcome-splash');
+      if (!splash) return;
+
+      const hide = () => splash.classList.add('hidden');
+
+      // Empty Project — just dismiss splash and show empty workspace
+      const emptyBtn = document.getElementById('btn-empty-project');
+      if (emptyBtn) emptyBtn.addEventListener('click', () => {
+        hide();
+        updateStatus('Empty project — use toolbar to sketch, import, or generate');
+      });
+
+      // New Sketch — start sketching immediately
+      const newSketchBtn = document.getElementById('btn-new-sketch');
+      if (newSketchBtn) newSketchBtn.addEventListener('click', () => { hide(); startNewSketch(); });
+
+      // Import Inventor — open the Inventor parser panel
+      const invBtn = document.getElementById('btn-import-inventor');
+      if (invBtn) invBtn.addEventListener('click', () => {
+        hide();
+        createInventorPanel((parsedData) => {
+          console.log('Inventor file parsed:', parsedData);
+          if (parsedData.allFeatures && parsedData.allFeatures.length > 0) {
+            parsedData.allFeatures.forEach((f, i) => {
+              addFeature({
+                id: `inv-${i}`,
+                type: f.type || 'Unknown',
+                name: `${f.icon || '📦'} ${f.type} ${i + 1}`,
+                params: {},
+                icon: f.icon || '📦'
+              });
+            });
+          }
+          updateStatus(`Inventor file loaded: ${parsedData.filename} — ${parsedData.allFeatures?.length || 0} features`);
+        });
+      });
+
+      // AI Generate — switch to chat tab
+      const aiBtn = document.getElementById('btn-ai-generate');
+      if (aiBtn) aiBtn.addEventListener('click', () => {
+        hide();
+        document.querySelectorAll('.properties-tab').forEach(t => t.classList.remove('active'));
+        const chatTabBtn = document.querySelector('[data-tab="chat"]');
+        if (chatTabBtn) chatTabBtn.classList.add('active');
+        document.getElementById('tab-properties').style.display = 'none';
+        document.getElementById('tab-chat').style.display = 'flex';
+        const chatInput = document.getElementById('chat-input');
+        if (chatInput) chatInput.focus();
+      });
+
+      // DUO Project Browser — load manifest and show browser
+      const browserBtn = document.getElementById('btn-open-browser');
+      if (browserBtn) browserBtn.addEventListener('click', async () => {
+        try {
+          hide();
+          const spinner = document.getElementById('kernel-spinner');
+          if (spinner) spinner.classList.add('active');
+          updateStatus('Loading DUO project manifest...');
+
+          // Fetch pre-built manifest (local dev only — not in public repo)
+          const resp = await fetch('duo-manifest.json');
+          if (!resp.ok) {
+            // Manifest not available (e.g. on public site) — fall back to folder picker
+            if (spinner) spinner.classList.remove('active');
+            updateStatus('DUO manifest not found — use File System Access to open a project folder');
+            try {
+              const handle = await showFolderPicker();
+              if (handle) {
+                const project = await loadProject(handle);
+                APP.project = project;
+                setProject(project);
+                populateInlineBrowser(project);
+                showBrowser();
+                switchLeftTab('browser');
+                updateStatus(`Project loaded: ${project.stats?.parts || 0} parts`);
+              }
+            } catch (e) { updateStatus('Folder selection cancelled'); }
+            return;
+          }
+          const manifest = await resp.json();
+
+          // Transform file types: manifest uses type:"file" + ext:".ipt"
+          // but project-browser expects type:"ipt" directly
+          function transformTree(node) {
+            if (node.type === 'file' && node.ext) {
+              node.type = node.ext.replace('.', ''); // ".ipt" → "ipt"
+            }
+            if (node.children) node.children.forEach(transformTree);
+            return node;
+          }
+          transformTree(manifest.tree);
+
+          // Store project data
+          APP.project = manifest;
+
+          // Pass tree root to overlay browser (it needs .children at top level)
+          setProject(manifest.tree);
+
+          // Also populate the inline left-panel browser
+          populateInlineBrowser(manifest.tree);
+
+          // Show browser overlay (dismiss with close button, then left panel has it too)
+          showBrowser();
+
+          // Switch left panel to Project Browser tab
+          switchLeftTab('browser');
+
+          const stats = manifest.stats || {};
+          updateStatus(`DUO project loaded: ${stats.parts || 0} parts, ${stats.assemblies || 0} assemblies, ${stats.total || 0} total files`);
+
+          if (spinner) spinner.classList.remove('active');
+        } catch (err) {
+          console.error('Failed to load DUO project:', err);
+          updateStatus('Failed to load project: ' + err.message);
+          const spinner = document.getElementById('kernel-spinner');
+          if (spinner) spinner.classList.remove('active');
+        }
+      });
+    }
+
+    // ========== Core Operations ==========
+    function startNewSketch() {
+      if (APP.mode === 'sketch') {
+        updateStatus('Finish current sketch first (Enter=extrude, Esc=cancel)');
+        return;
+      }
+      const splash = document.getElementById('welcome-splash');
+      if (splash) splash.classList.add('hidden');
+
+      APP.mode = 'sketch';
+      APP.currentSketch = startSketch('XY', getCamera(), getControls());
+      updateStatus('Sketch mode — L=Line, R=Rect, C=Circle, A=Arc. Enter=Extrude, Esc=Cancel');
+      document.getElementById('mode-indicator').textContent = 'Sketch: XY';
+      document.getElementById('mode-value').textContent = 'Sketch';
+    }
+
+    function doExtrude() {
+      if (APP.mode !== 'sketch') {
+        updateStatus('Start a sketch first');
+        return;
+      }
+      const entities = getEntities();
+      if (!entities || entities.length === 0) {
+        updateStatus('No sketch geometry to extrude — draw something first');
+        return;
+      }
+
+      const height = prompt('Enter extrusion height (mm):', '20');
+      if (height === null) return;
+      const h = parseFloat(height);
+      if (isNaN(h) || h === 0) { updateStatus('Invalid height'); return; }
+
+      try {
+        const result = extrudeProfile(entities, h);
+        const mesh = result.mesh || result;
+        endSketch();
+        APP.currentSketch = null;
+        APP.mode = 'idle';
+        addToScene(mesh);
+        if (result.wireframe) addToScene(result.wireframe);
+
+        const feature = {
+          id: 'feature_' + Date.now(),
+          name: `Extrusion (${h}mm)`,
+          type: 'extrude',
+          mesh,
+          params: { height: h },
+          _geometryJSON: mesh.geometry ? mesh.geometry.toJSON() : null,
+          _materialColor: mesh.material ? (mesh.material.color ? '#' + mesh.material.color.getHexString() : '#58a6ff') : '#58a6ff',
+        };
+        APP.features.push(feature);
+        addFeature(feature);
+        pushHistory();
+
+        updateStatus(`Created extrusion: ${h}mm`);
+        document.getElementById('mode-indicator').textContent = 'Ready';
+        document.getElementById('mode-value').textContent = 'Normal';
+      } catch (err) {
+        console.error('Extrude failed:', err);
+        updateStatus('Extrude failed: ' + err.message);
+      }
+    }
+
+    function executeParsedPrompt(prompt) {
+      try {
+        const splash = document.getElementById('welcome-splash');
+        if (splash) splash.classList.add('hidden');
+
+        const result = createPrimitive(prompt.type || prompt.action, prompt.params || prompt);
+        const mesh = result.mesh || result;
+        addToScene(mesh);
+        if (result.wireframe) addToScene(result.wireframe);
+
+        const feature = {
+          id: 'feature_' + Date.now(),
+          name: prompt.name || prompt.type || prompt.action || 'Part',
+          type: prompt.type || prompt.action,
+          mesh: mesh,
+          params: prompt.params || prompt,
+        };
+        APP.features.push(feature);
+        addFeature(feature);
+        pushHistory();
+        updateStatus(`Created: ${feature.name}`);
+      } catch (err) {
+        console.error('AI create failed:', err);
+        updateStatus('Failed: ' + err.message);
+      }
+    }
+
+    function cancelOperation() {
+      if (APP.mode === 'sketch') {
+        endSketch();
+        APP.currentSketch = null;
+        APP.mode = 'idle';
+        updateStatus('Sketch cancelled');
+        document.getElementById('mode-indicator').textContent = 'Ready';
+        document.getElementById('mode-value').textContent = 'Normal';
+      }
+    }
+
+    function confirmOperation() {
+      if (APP.mode === 'sketch') {
+        const entities = getEntities();
+        if (entities && entities.length > 0) doExtrude();
+      }
+    }
+
+    function deleteSelected() {
+      if (!APP.selectedFeature) return;
+      removeFromScene(APP.selectedFeature.mesh);
+      APP.features = APP.features.filter(f => f.id !== APP.selectedFeature.id);
+      APP.selectedFeature = null;
+      pushHistory();
+      updateStatus('Feature deleted');
+    }
+
+    function undo() {
+      if (APP.historyIndex > 0) {
+        APP.historyIndex--;
+        restoreFromHistory();
+        updateStatus('Undo');
+      } else {
+        updateStatus('Nothing to undo');
+      }
+    }
+
+    function redo() {
+      if (APP.historyIndex < APP.history.length - 1) {
+        APP.historyIndex++;
+        restoreFromHistory();
+        updateStatus('Redo');
+      } else {
+        updateStatus('Nothing to redo');
+      }
+    }
+
+    function restoreFromHistory() {
+      const state = APP.history[APP.historyIndex];
+      if (state) {
+        // Clear current scene
+        APP.features.forEach((f) => {
+          if (f.mesh) removeFromScene(f.mesh);
+        });
+
+        // Restore features from history state
+        APP.features = [];
+        if (state.features && Array.isArray(state.features)) {
+          state.features.forEach((featureData) => {
+            try {
+              let mesh;
+
+              // Try geometry JSON first (works for ALL feature types including extrude)
+              if (featureData._geometryJSON) {
+                const loader = new THREE.BufferGeometryLoader();
+                const geometry = loader.parse(featureData._geometryJSON);
+                const color = featureData._materialColor || '#58a6ff';
+                const mat = new THREE.MeshStandardMaterial({
+                  color: color,
+                  metalness: 0.3,
+                  roughness: 0.6,
+                  flatShading: false,
+                });
+                mesh = new THREE.Mesh(geometry, mat);
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+              } else {
+                // Fall back to createPrimitive for basic primitives (box, cylinder, etc.)
+                const primitive = createPrimitive(featureData.type, featureData.params);
+                mesh = primitive.mesh;
+              }
+
+              addToScene(mesh);
+
+              const feature = {
+                id: featureData.id,
+                name: featureData.name,
+                type: featureData.type,
+                mesh: mesh,
+                params: featureData.params,
+                _geometryJSON: featureData._geometryJSON,
+                _materialColor: featureData._materialColor,
+              };
+
+              APP.features.push(feature);
+              addFeature(feature);
+            } catch (err) {
+              console.warn(`Failed to restore feature ${featureData.name}:`, err);
+            }
+          });
+        }
+      }
+    }
+
+    function fitAllFeatures() {
+      if (APP.features.length === 0) {
+        // No local features — use imported fitAll from viewport
+        fitAll();
+        return;
+      }
+
+      // Create a temporary group of all features to fit camera
+      const group = new THREE.Group();
+      APP.features.forEach((f) => {
+        if (f.mesh) {
+          group.add(f.mesh);
+        }
+      });
+
+      // Create a bounding box to check if there's anything to show
+      const box = new THREE.Box3().setFromObject(group);
+      if (box.isEmpty()) {
+        updateStatus('No visible features to fit');
+        return;
+      }
+
+      // Fit camera to all features with padding
+      fitToObject(group, 1.3);
+      updateStatus('Fit all features');
+    }
+
+    function doExportSTL() {
+      if (APP.features.length === 0) { updateStatus('Nothing to export'); return; }
+      try {
+        exportSTL(APP.features);
+        updateStatus('Exported STL');
+      } catch (err) {
+        updateStatus('Export failed: ' + err.message);
+      }
+    }
+
+    function saveProject() {
+      const data = {
+        version: '1.0',
+        timestamp: new Date().toISOString(),
+        features: APP.features.map(f => ({ id: f.id, name: f.name, type: f.type, params: f.params })),
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `cyclecad_project_${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      updateStatus('Project saved');
+    }
+
+    function updateStatus(msg) {
+      const el = document.getElementById('status-bar');
+      if (el) el.textContent = msg;
+      // Also update mode indicator if it exists
+      const modeEl = document.getElementById('mode-indicator');
+      if (modeEl && APP.mode === 'idle') modeEl.textContent = 'Ready';
+    }
+
+    function pushHistory() {
+      // Trim redo stack if not at end
+      if (APP.historyIndex < APP.history.length - 1) {
+        APP.history = APP.history.slice(0, APP.historyIndex + 1);
+      }
+
+      // Save state snapshot — include geometry JSON so undo/redo can recreate meshes
+      APP.history.push({
+        features: APP.features.map((f) => {
+          const data = {
+            id: f.id,
+            name: f.name,
+            type: f.type,
+            params: f.params,
+          };
+          // Store geometry so we can restore without createPrimitive
+          try {
+            if (f._geometryJSON) {
+              data._geometryJSON = f._geometryJSON;
+            } else if (f.mesh && f.mesh.geometry) {
+              data._geometryJSON = f.mesh.geometry.toJSON();
+            }
+            if (f._materialColor) {
+              data._materialColor = f._materialColor;
+            } else if (f.mesh && f.mesh.material && f.mesh.material.color) {
+              data._materialColor = '#' + f.mesh.material.color.getHexString();
+            }
+          } catch(e) { /* geometry serialization failed, will try createPrimitive on restore */ }
+          return data;
+        }),
+        timestamp: Date.now(),
+      });
+
+      APP.historyIndex = APP.history.length - 1;
+
+      // Keep history limited to 50 entries
+      if (APP.history.length > 50) {
+        APP.history.shift();
+        APP.historyIndex--;
+      }
+    }
+
+    // ========== FPS Counter ==========
+    let frameCount = 0;
+    let lastFPSTime = performance.now();
+    function updateFPS() {
+      frameCount++;
+      const now = performance.now();
+      if (now - lastFPSTime >= 1000) {
+        const fpsEl = document.getElementById('fps-value');
+        if (fpsEl) fpsEl.textContent = frameCount;
+        frameCount = 0;
+        lastFPSTime = now;
+      }
+      requestAnimationFrame(updateFPS);
+    }
+    requestAnimationFrame(updateFPS);
+
+    // ========== Start ==========
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+
+    window.cycleCAD = Object.assign(window.cycleCAD || {}, { version: '1.0.0', APP, init });
+
+    // Expose dialog functions globally so inline onclick="" handlers work
+    window.openDialog = openDialog;
+    window.closeDialog = closeDialog;
+    window.applyRevolve = typeof applyRevolve === 'function' ? applyRevolve : () => {};
+    window.applyFillet = typeof applyFillet === 'function' ? applyFillet : () => {};
+    window.applyChamfer = typeof applyChamer === 'function' ? applyChamer : () => {};
+    window.applyChamer = window.applyChamfer; // alias for typo in dialog onclick
+    window.applyBoolean = typeof applyBoolean === 'function' ? applyBoolean : () => {};
+    window.applyShell = typeof applyShell === 'function' ? applyShell : () => {};
+    window.applyPattern = typeof applyPattern === 'function' ? applyPattern : () => {};
+
+    // ========== Hard Reset (with browser detection) ==========
+    const hardResetBtn = document.getElementById('btn-hard-reset');
+    if (hardResetBtn) {
+      function detectBrowserCC() {
+        const ua = navigator.userAgent;
+        if (/Edg\//i.test(ua)) return 'Edge';
+        if (/Chrome\//i.test(ua) && !/Edg\//i.test(ua)) return 'Chrome';
+        if (/Safari\//i.test(ua) && !/Chrome\//i.test(ua)) return 'Safari';
+        if (/Firefox\//i.test(ua)) return 'Firefox';
+        return 'Unknown';
+      }
+      hardResetBtn.addEventListener('click', async () => {
+        const browser = detectBrowserCC();
+        const msg = `Clear ALL cached data and reload?\n\nDetected browser: ${browser}\n\nThis will clear:\n• Service Workers\n• Cache API storage\n• IndexedDB databases\n• OPFS storage\n• localStorage & sessionStorage`;
+        if (!confirm(msg)) return;
+        const log = [];
+        // 1. Unregister service workers
+        try {
+          if ('serviceWorker' in navigator) {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            for (const r of regs) await r.unregister();
+            log.push('SW: ' + regs.length);
+          }
+        } catch(e) {}
+        // 2. Cache API
+        try {
+          if ('caches' in window) {
+            const names = await caches.keys();
+            for (const n of names) await caches.delete(n);
+            log.push('Caches: ' + names.length);
+          }
+        } catch(e) {}
+        // 3. IndexedDB — clear all
+        try {
+          if (indexedDB.databases) {
+            const allDBs = await indexedDB.databases();
+            for (const db of allDBs) { if (db.name) indexedDB.deleteDatabase(db.name); }
+            log.push('IDB: ' + allDBs.length);
+          }
+        } catch(e) {}
+        // 4. OPFS
+        try {
+          if (navigator.storage && navigator.storage.getDirectory) {
+            const root = await navigator.storage.getDirectory();
+            for await (const [name] of root.entries()) {
+              try { await root.removeEntry(name, { recursive: true }); } catch(e) {}
+            }
+            log.push('OPFS: cleared');
+          }
+        } catch(e) {}
+        // 5. Storage
+        try { localStorage.clear(); } catch(e) {}
+        try { sessionStorage.clear(); } catch(e) {}
+        log.push('Storage: cleared');
+        console.log('[Hard Reset]', browser, log.join(' | '));
+        // 6. Browser-specific reload
+        // Always use cache-bust URL to guarantee fresh load
+        setTimeout(() => {
+          window.location.href = window.location.pathname + '?v=' + Date.now();
+        }, 300);
+      });
+    }
+
+    // Splash screen reset button — same logic, no confirm dialog
+    const splashResetBtn = document.getElementById('btn-splash-reset');
+    if (splashResetBtn) {
+      splashResetBtn.addEventListener('click', async () => {
+        splashResetBtn.textContent = '⏳ Clearing...';
+        try {
+          if ('serviceWorker' in navigator) {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            for (const r of regs) await r.unregister();
+          }
+        } catch(e) {}
+        try {
+          if ('caches' in window) {
+            const names = await caches.keys();
+            for (const n of names) await caches.delete(n);
+          }
+        } catch(e) {}
+        try {
+          if (indexedDB.databases) {
+            const allDBs = await indexedDB.databases();
+            for (const db of allDBs) { if (db.name) indexedDB.deleteDatabase(db.name); }
+          }
+        } catch(e) {}
+        try { localStorage.clear(); } catch(e) {}
+        try { sessionStorage.clear(); } catch(e) {}
+        window.location.href = window.location.pathname + '?v=' + Date.now();
+      });
+    }
+
+    // ========== Operation Dialog Management ==========
+    let currentDialogId = null;
+
+    function openDialog(dialogId) {
+      // Close any open dialog first
+      if (currentDialogId) closeDialog(currentDialogId);
+
+      const dialog = document.getElementById(`dialog-${dialogId}`);
+      const backdrop = document.getElementById('dialog-backdrop');
+
+      if (dialog && backdrop) {
+        currentDialogId = dialogId;
+        dialog.classList.add('visible');
+        backdrop.classList.add('visible');
+        updateStatus(`${dialogId.charAt(0).toUpperCase() + dialogId.slice(1)} dialog opened`);
+      }
+    }
+
+    function closeDialog(dialogId) {
+      const dialog = document.getElementById(`dialog-${dialogId}`);
+      const backdrop = document.getElementById('dialog-backdrop');
+
+      if (dialog) {
+        dialog.classList.remove('visible');
+      }
+
+      // Check if any dialog is still visible
+      const visibleDialogs = document.querySelectorAll('.operation-dialog.visible');
+      if (visibleDialogs.length === 0) {
+        if (backdrop) backdrop.classList.remove('visible');
+        currentDialogId = null;
+      }
+    }
+
+    function applyRevolve() {
+      const axis = document.getElementById('revolve-axis').value;
+      const angle = parseFloat(document.getElementById('revolve-angle').value);
+      const direction = document.querySelector('input[name="revolve-direction"]:checked').value;
+
+      try {
+        revolveProfile({ axis, angle, direction });
+        updateStatus(`Revolved: ${angle}° around ${axis.toUpperCase()} axis`);
+        pushHistory();
+        closeDialog('revolve');
+      } catch (err) {
+        updateStatus('Revolve failed: ' + err.message);
+      }
+    }
+
+    function applyFillet() {
+      const radius = parseFloat(document.getElementById('fillet-radius').value);
+      const preview = document.getElementById('fillet-preview').checked;
+
+      try {
+        filletEdges({ radius, preview });
+        updateStatus(`Fillet applied: ${radius}mm radius`);
+        pushHistory();
+        closeDialog('fillet');
+      } catch (err) {
+        updateStatus('Fillet failed: ' + err.message);
+      }
+    }
+
+    function applyChamer() {
+      const distance = parseFloat(document.getElementById('chamfer-distance').value);
+
+      try {
+        chamferEdges({ distance });
+        updateStatus(`Chamfer applied: ${distance}mm`);
+        pushHistory();
+        closeDialog('chamfer');
+      } catch (err) {
+        updateStatus('Chamfer failed: ' + err.message);
+      }
+    }
+
+    function applyBoolean() {
+      const operation = document.querySelector('input[name="boolean-op"]:checked').value;
+
+      try {
+        booleanOperation({ operation });
+        updateStatus(`Boolean ${operation} applied`);
+        pushHistory();
+        closeDialog('boolean');
+      } catch (err) {
+        updateStatus('Boolean operation failed: ' + err.message);
+      }
+    }
+
+    function applyShell() {
+      const thickness = parseFloat(document.getElementById('shell-thickness').value);
+
+      try {
+        shellOperation({ thickness });
+        updateStatus(`Shell created: ${thickness}mm wall thickness`);
+        pushHistory();
+        closeDialog('shell');
+      } catch (err) {
+        updateStatus('Shell failed: ' + err.message);
+      }
+    }
+
+    function updatePatternUI() {
+      const patternType = document.querySelector('input[name="pattern-type"]:checked').value;
+      const rectFields = document.getElementById('pattern-rectangular');
+      const circFields = document.getElementById('pattern-circular');
+
+      if (patternType === 'rectangular') {
+        rectFields.style.display = 'block';
+        circFields.style.display = 'none';
+      } else {
+        rectFields.style.display = 'none';
+        circFields.style.display = 'block';
+      }
+    }
+
+    function applyPattern() {
+      const patternType = document.querySelector('input[name="pattern-type"]:checked').value;
+      let params = { type: patternType };
+
+      try {
+        if (patternType === 'rectangular') {
+          params.countX = parseInt(document.getElementById('pattern-count-x').value);
+          params.countY = parseInt(document.getElementById('pattern-count-y').value);
+          params.spacingX = parseFloat(document.getElementById('pattern-spacing-x').value);
+          params.spacingY = parseFloat(document.getElementById('pattern-spacing-y').value);
+          patternFeature(params);
+          updateStatus(`Rectangular pattern: ${params.countX}×${params.countY}`);
+        } else {
+          params.count = parseInt(document.getElementById('pattern-count').value);
+          params.radius = parseFloat(document.getElementById('pattern-radius').value);
+          params.axis = document.getElementById('pattern-axis').value;
+          patternFeature(params);
+          updateStatus(`Circular pattern: ${params.count} instances`);
+        }
+        pushHistory();
+        closeDialog('pattern');
+      } catch (err) {
+        updateStatus('Pattern failed: ' + err.message);
+      }
+    }
+
+    // ========== Advanced Operation Apply Functions ==========
+    function generateProfilePoints(shape, size, segments = 32) {
+      const pts = [];
+      if (shape === 'circle') {
+        for (let i = 0; i < segments; i++) {
+          const a = (i / segments) * Math.PI * 2;
+          pts.push({ x: Math.cos(a) * size, y: Math.sin(a) * size });
+        }
+      } else if (shape === 'rectangle') {
+        const h = size * 0.6;
+        pts.push({ x: -size, y: -h }, { x: size, y: -h }, { x: size, y: h }, { x: -size, y: h });
+      } else if (shape === 'hexagon') {
+        for (let i = 0; i < 6; i++) {
+          const a = (i / 6) * Math.PI * 2;
+          pts.push({ x: Math.cos(a) * size, y: Math.sin(a) * size });
+        }
+      }
+      return pts;
+    }
+
+    function applySweep() {
+      const profileShape = document.getElementById('sweep-profile').value;
+      const profileSize = parseFloat(document.getElementById('sweep-size').value);
+      const pathType = document.getElementById('sweep-path').value;
+      const length = parseFloat(document.getElementById('sweep-length').value);
+      const segments = parseInt(document.getElementById('sweep-segments').value);
+      const twist = parseFloat(document.getElementById('sweep-twist').value);
+
+      const profile = generateProfilePoints(profileShape, profileSize);
+      let path = [];
+
+      if (pathType === 'helix') {
+        const turns = 3;
+        const radius = length / 4;
+        for (let i = 0; i <= segments; i++) {
+          const t = i / segments;
+          const a = t * Math.PI * 2 * turns;
+          path.push({ x: Math.cos(a) * radius, y: Math.sin(a) * radius, z: t * length });
+        }
+      } else if (pathType === 'line') {
+        path = [{ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: length }];
+      } else if (pathType === 'arc') {
+        const arcRadius = length / 2;
+        for (let i = 0; i <= segments; i++) {
+          const a = (i / segments) * Math.PI;
+          path.push({ x: Math.cos(a) * arcRadius - arcRadius, y: 0, z: Math.sin(a) * arcRadius });
+        }
+      }
+
+      try {
+        const mesh = createSweep(profile, path, { segments, twist });
+        addToScene(mesh);
+        const feature = { id: 'feature_' + Date.now(), name: `Sweep (${profileShape})`, type: 'sweep', mesh, params: { profileShape, profileSize, pathType, length, segments, twist } };
+        APP.features.push(feature);
+        addFeature(feature);
+        pushHistory();
+        updateStatus(`Created sweep: ${profileShape} profile along ${pathType} path`);
+        closeDialog('sweep');
+      } catch (err) { updateStatus('Sweep failed: ' + err.message); console.error(err); }
+    }
+
+    function applyLoft() {
+      const startShape = document.getElementById('loft-start').value;
+      const startSize = parseFloat(document.getElementById('loft-start-size').value);
+      const endShape = document.getElementById('loft-end').value;
+      const endSize = parseFloat(document.getElementById('loft-end-size').value);
+      const height = parseFloat(document.getElementById('loft-height').value);
+      const segments = parseInt(document.getElementById('loft-segments').value);
+
+      const profiles = [
+        { points: generateProfilePoints(startShape, startSize), position: { x: 0, y: 0, z: 0 } },
+        { points: generateProfilePoints(endShape, endSize), position: { x: 0, y: 0, z: height } }
+      ];
+
+      try {
+        const mesh = createLoft(profiles, { segments });
+        addToScene(mesh);
+        const feature = { id: 'feature_' + Date.now(), name: `Loft (${startShape}→${endShape})`, type: 'loft', mesh, params: { startShape, startSize, endShape, endSize, height, segments } };
+        APP.features.push(feature);
+        addFeature(feature);
+        pushHistory();
+        updateStatus(`Created loft: ${startShape} to ${endShape}, H${height}mm`);
+        closeDialog('loft');
+      } catch (err) { updateStatus('Loft failed: ' + err.message); console.error(err); }
+    }
+
+    function applyBend() {
+      const angle = parseFloat(document.getElementById('bend-angle').value);
+      const radius = parseFloat(document.getElementById('bend-radius').value);
+      const kFactor = parseFloat(document.getElementById('bend-kfactor').value);
+
+      if (!APP.selectedFeature || !APP.selectedFeature.mesh) {
+        updateStatus('Select a flat plate first, then apply bend');
+        return;
+      }
+
+      try {
+        const bendLine = { start: { x: 0, y: 0, z: 0 }, end: { x: 0, y: 20, z: 0 } };
+        const mesh = createBend(APP.selectedFeature.mesh, bendLine, angle, radius, { kFactor });
+        addToScene(mesh);
+        const feature = { id: 'feature_' + Date.now(), name: `Bend (${angle}°, R${radius})`, type: 'bend', mesh, params: { angle, radius, kFactor } };
+        APP.features.push(feature);
+        addFeature(feature);
+        pushHistory();
+        updateStatus(`Applied bend: ${angle}° with R${radius}mm inner radius`);
+        closeDialog('bend');
+      } catch (err) { updateStatus('Bend failed: ' + err.message); console.error(err); }
+    }
+
+    function applyFlange() {
+      const length = parseFloat(document.getElementById('flange-length').value);
+      const angle = parseFloat(document.getElementById('flange-angle').value);
+
+      if (!APP.selectedFeature || !APP.selectedFeature.mesh) {
+        updateStatus('Select a sheet metal part first, then apply flange');
+        return;
+      }
+
+      try {
+        const edge = { start: { x: -10, y: 0, z: 0 }, end: { x: 10, y: 0, z: 0 } };
+        const mesh = createFlange(APP.selectedFeature.mesh, edge, length, angle);
+        addToScene(mesh);
+        const feature = { id: 'feature_' + Date.now(), name: `Flange (L${length}, ${angle}°)`, type: 'flange', mesh, params: { length, angle } };
+        APP.features.push(feature);
+        addFeature(feature);
+        pushHistory();
+        updateStatus(`Applied flange: L${length}mm at ${angle}°`);
+        closeDialog('flange');
+      } catch (err) { updateStatus('Flange failed: ' + err.message); console.error(err); }
+    }
+
+    // Close dialog when backdrop is clicked
+    document.getElementById('dialog-backdrop').addEventListener('click', () => {
+      if (currentDialogId) closeDialog(currentDialogId);
+    });
+
+    // Close dialog on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && currentDialogId) {
+        closeDialog(currentDialogId);
+      }
+    });
+
+    // ========== Agent Command Panel ==========
+    const agentPanel = {
+      executeCommand() {
+        const input = document.getElementById('agent-command-input');
+        const cmd = input.value.trim();
+        if (!cmd) return;
+
+        this.log(`> ${cmd}`, 'input');
+        try {
+          const parsed = JSON.parse(cmd);
+          if (!window.cycleCAD || !window.cycleCAD.execute) {
+            this.log('❌ Agent API not initialized', 'error');
+            return;
+          }
+          const result = window.cycleCAD.execute(parsed);
+          this.log(`✓ ${JSON.stringify(result, null, 2)}`, 'output');
+          input.value = '';
+        } catch (e) {
+          this.log(`❌ ${e.message}`, 'error');
+        }
+      },
+
+      executeQuickCommand(cmd) {
+        const input = document.getElementById('agent-command-input');
+        const commands = {
+          'ping': { method: 'meta.ping', params: {} },
+          'schema': { method: 'meta.schema', params: {} },
+          'newsketch': { method: 'sketch.start', params: { plane: 'XY' } },
+          'features': { method: 'query.features', params: {} },
+        };
+        const cmdObj = commands[cmd];
+        if (cmdObj) {
+          input.value = JSON.stringify(cmdObj);
+          setTimeout(() => this.executeCommand(), 0);
+        }
+      },
+
+      log(msg, type = 'info') {
+        const logEl = document.getElementById('agent-log');
+        const div = document.createElement('div');
+        if (type === 'input') div.style.color = 'var(--accent-blue)';
+        if (type === 'output') div.style.color = 'var(--accent-green)';
+        if (type === 'error') div.style.color = 'var(--accent-red)';
+        div.textContent = msg;
+        logEl.appendChild(div);
+        logEl.scrollTop = logEl.scrollHeight;
+      },
+    };
+
+    // Wire Agent Panel button
+    const agentPanelBtn = document.getElementById('btn-agent-panel');
+    if (agentPanelBtn) {
+      agentPanelBtn.addEventListener('click', () => {
+        const panel = document.getElementById('agent-panel');
+        panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+      });
+    }
+
+    // Wire Enter key in command input
+    document.getElementById('agent-command-input')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        agentPanel.executeCommand();
+      }
+    });
+
+    // ========== New Module Toolbar Buttons ==========
+    function toggleModulePanel(moduleKey, panelId) {
+      let panel = document.getElementById(panelId);
+      if (panel) {
+        panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+        return;
+      }
+      // Create floating panel
+      panel = document.createElement('div');
+      panel.id = panelId;
+      panel.style.cssText = 'position:fixed;top:60px;right:320px;width:400px;max-height:80vh;overflow-y:auto;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:8px;z-index:500;display:flex;flex-direction:column;box-shadow:var(--shadow-lg);';
+
+      const header = document.createElement('div');
+      header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border-color);background:var(--bg-tertiary);border-radius:8px 8px 0 0;cursor:move;';
+
+      const titles = {
+        'copilot-panel': '✨ AI Copilot',
+        'dfm-panel': '🏭 DFM Analyzer',
+        'materials-panel': '🎨 Material Library',
+        'cam-panel': '⚙ CAM Pipeline',
+        'fabs-panel': '🏗 Connected Fabs',
+        'collab-panel': '👥 Collaboration',
+        'text2cad-panel': '🤖 Text-to-CAD',
+        'camops-panel': '🔧 CAM Operations',
+        'gcode-panel': '📄 G-Code Generator',
+        'machines-panel': '🖥 Machine Profiles',
+        'tools-panel': '🔩 Tool Library',
+        'stock-panel': '📦 Stock Manager',
+        'sketch-enhance-panel': '✏ Sketch Tools+',
+        'section-panel': '🔪 Section View',
+        'marketplace-v2-panel': '🏪 Model Marketplace',
+        'gdt-panel': '📐 GD&T Training',
+        'misumi-panel': '🔩 MISUMI Catalog',
+        'vr-panel': '🥽 CAD2VR',
+        'generative-panel': '🧬 Generative Design'
+      };
+      header.innerHTML = `<span style="font-weight:600;font-size:13px;">${titles[panelId] || moduleKey}</span><button onclick="document.getElementById('${panelId}').style.display='none'" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:16px;">✕</button>`;
+      panel.appendChild(header);
+
+      const body = document.createElement('div');
+      body.style.cssText = 'padding:14px;flex:1;min-height:0;overflow-y:auto;font-size:12px;';
+
+      const mod = window.cycleCAD?.[moduleKey];
+      if (mod?.getUI) {
+        body.innerHTML = mod.getUI();
+      } else if (mod?.getStatus) {
+        const status = mod.getStatus();
+        body.innerHTML = `<div style="color:var(--text-secondary);line-height:1.8;">${JSON.stringify(status, null, 2).replace(/\n/g, '<br>')}</div>`;
+      } else {
+        body.innerHTML = `<div style="color:var(--accent-green);padding:12px;text-align:center;"><p style="font-weight:600;margin-bottom:8px;">Module Loaded</p><p style="color:var(--text-secondary);">Access via console:<br><code style="background:var(--bg-tertiary);padding:2px 6px;border-radius:3px;">window.cycleCAD.${moduleKey}</code></p></div>`;
+      }
+      panel.appendChild(body);
+      document.body.appendChild(panel);
+    }
+
+    document.getElementById('btn-ai-copilot')?.addEventListener('click', () => toggleModulePanel('copilot', 'copilot-panel'));
+    document.getElementById('btn-dfm')?.addEventListener('click', () => toggleModulePanel('dfm', 'dfm-panel'));
+    document.getElementById('btn-materials')?.addEventListener('click', () => toggleModulePanel('materials', 'materials-panel'));
+    document.getElementById('btn-cam')?.addEventListener('click', () => toggleModulePanel('cam', 'cam-panel'));
+    document.getElementById('btn-fabs')?.addEventListener('click', () => toggleModulePanel('fabs', 'fabs-panel'));
+    document.getElementById('btn-collab')?.addEventListener('click', () => toggleModulePanel('collab', 'collab-panel'));
+    document.getElementById('btn-text2cad')?.addEventListener('click', () => toggleModulePanel('textToCAD', 'text2cad-panel'));
+    document.getElementById('btn-camops')?.addEventListener('click', () => toggleModulePanel('camOps', 'camops-panel'));
+    document.getElementById('btn-gcode')?.addEventListener('click', () => toggleModulePanel('gcode', 'gcode-panel'));
+    document.getElementById('btn-machines')?.addEventListener('click', () => toggleModulePanel('machines', 'machines-panel'));
+    document.getElementById('btn-tools')?.addEventListener('click', () => toggleModulePanel('tools', 'tools-panel'));
+    document.getElementById('btn-stock')?.addEventListener('click', () => toggleModulePanel('stock', 'stock-panel'));
+    document.getElementById('btn-sketch-enhance')?.addEventListener('click', () => toggleModulePanel('sketchEnhance', 'sketch-enhance-panel'));
+    document.getElementById('btn-section')?.addEventListener('click', () => toggleModulePanel('sectionView', 'section-panel'));
+    document.getElementById('btn-marketplace-v2')?.addEventListener('click', () => toggleModulePanel('marketplaceV2', 'marketplace-v2-panel'));
+    document.getElementById('btn-gdt')?.addEventListener('click', () => toggleModulePanel('gdtTraining', 'gdt-panel'));
+    document.getElementById('btn-misumi')?.addEventListener('click', () => toggleModulePanel('misumi', 'misumi-panel'));
+    document.getElementById('btn-vr')?.addEventListener('click', () => toggleModulePanel('cadVR', 'vr-panel'));
+    document.getElementById('btn-generative')?.addEventListener('click', () => toggleModulePanel('generativeDesign', 'generative-panel'));
+
+    // ========== Help & Tutorials Panel ==========
+    // ========== Light/Dark Mode Toggle ==========
+    document.getElementById('btn-theme-toggle')?.addEventListener('click', () => {
+      const root = document.documentElement;
+      const isLight = root.classList.toggle('light-mode');
+      const icon = document.getElementById('theme-icon');
+      if (icon) icon.textContent = isLight ? '🌙' : '☀';
+
+      // Update Three.js renderer background
+      try {
+        const scene = getScene();
+        const renderer = window._renderer || document.querySelector('#viewport-container canvas')?.getContext('webgl');
+        if (scene) {
+          if (isLight) {
+            scene.background = new THREE.Color(0xe8e8e8);
+            scene.fog = null;
+          } else {
+            scene.background = new THREE.Color(0x1a1a2e);
+            scene.fog = null;
+          }
+        }
+      } catch(e) { console.warn('Theme: renderer update skipped', e); }
+
+      // Persist preference
+      localStorage.setItem('cyclecad_theme', isLight ? 'light' : 'dark');
+      updateStatus(isLight ? 'Light mode' : 'Dark mode');
+    });
+
+    // Auto-restore saved theme
+    if (localStorage.getItem('cyclecad_theme') === 'light') {
+      document.documentElement.classList.add('light-mode');
+      const icon = document.getElementById('theme-icon');
+      if (icon) icon.textContent = '🌙';
+      try {
+        const scene = getScene();
+        if (scene) scene.background = new THREE.Color(0xe8e8e8);
+      } catch(e) {}
+    }
+
+    // ========== ViewCube Navigation ==========
+    document.querySelectorAll('.vc-face').forEach(face => {
+      face.addEventListener('click', () => {
+        const view = face.dataset.vc;
+        if (view) {
+          try { setView(view); } catch(e) {}
+          updateStatus(view.charAt(0).toUpperCase() + view.slice(1) + ' view');
+        }
+      });
+    });
+
+    // Continuously sync ViewCube rotation with camera using rAF
+    // (controls.addEventListener('change') fails if getControls() is null at init)
+    (function syncViewCube() {
+      const cube = document.getElementById('vc-cube');
+      if (!cube) return;
+      let lastRotX = null, lastRotY = null;
+      function updateCubeFromCamera() {
+        try {
+          const cam = getCamera();
+          if (cam) {
+            const dir = new THREE.Vector3();
+            cam.getWorldDirection(dir);
+            // Camera looks along -Z in its local space, so direction gives us where it points
+            const rotY = Math.atan2(dir.x, dir.z) * (180 / Math.PI);
+            const rotX = Math.asin(-dir.y) * (180 / Math.PI);
+            // Only update DOM if values changed (avoid layout thrash)
+            const rxi = Math.round(rotX * 10);
+            const ryi = Math.round(rotY * 10);
+            if (rxi !== lastRotX || ryi !== lastRotY) {
+              lastRotX = rxi;
+              lastRotY = ryi;
+              cube.style.transform = `rotateX(${rotX}deg) rotateY(${rotY + 180}deg)`;
+            }
+          }
+        } catch(e) {}
+        requestAnimationFrame(updateCubeFromCamera);
+      }
+      requestAnimationFrame(updateCubeFromCamera);
+    })();
+
+    document.getElementById('btn-help')?.addEventListener('click', () => {
+      let panel = document.getElementById('help-tutorials-panel');
+      if (panel) { panel.style.display = panel.style.display === 'none' ? 'flex' : 'none'; return; }
+      panel = document.createElement('div');
+      panel.id = 'help-tutorials-panel';
+      panel.style.cssText = 'position:fixed;top:60px;left:50%;transform:translateX(-50%);width:680px;max-height:85vh;overflow-y:auto;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:10px;z-index:600;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.6);';
+      panel.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border-color);background:var(--bg-tertiary);border-radius:10px 10px 0 0;">
+          <span style="font-weight:700;font-size:15px;">? Help & Tutorials</span>
+          <button onclick="document.getElementById('help-tutorials-panel').style.display='none'" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:18px;">x</button>
+        </div>
+        <div style="padding:18px;">
+          <!-- Tutorials Section -->
+          <div style="margin-bottom:20px;">
+            <h3 style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--accent-blue);">Tutorials</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+              <a href="./tutorials/basic.html" style="text-decoration:none;display:block;padding:16px;background:linear-gradient(135deg,rgba(63,185,80,0.12),rgba(63,185,80,0.04));border:1px solid rgba(63,185,80,0.3);border-radius:8px;text-align:center;">
+                <div style="font-size:28px;margin-bottom:8px;">&#x1F331;</div>
+                <div style="font-weight:600;color:#3fb950;font-size:13px;">Basic</div>
+                <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">First 3D part, sketches, extrude, export</div>
+              </a>
+              <a href="./tutorials/intermediate.html" style="text-decoration:none;display:block;padding:16px;background:linear-gradient(135deg,rgba(88,166,255,0.12),rgba(88,166,255,0.04));border:1px solid rgba(88,166,255,0.3);border-radius:8px;text-align:center;">
+                <div style="font-size:28px;margin-bottom:8px;">&#x1F680;</div>
+                <div style="font-weight:600;color:#58a6ff;font-size:13px;">Intermediate</div>
+                <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">CAM, Text-to-CAD, assemblies, DFM</div>
+              </a>
+              <a href="./tutorials/advanced.html" style="text-decoration:none;display:block;padding:16px;background:linear-gradient(135deg,rgba(210,153,34,0.12),rgba(210,153,34,0.04));border:1px solid rgba(210,153,34,0.3);border-radius:8px;text-align:center;">
+                <div style="font-size:28px;margin-bottom:8px;">&#x26A1;</div>
+                <div style="font-weight:600;color:#d29922;font-size:13px;">Advanced</div>
+                <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">Agent API, MCP, tokens, Docker, plugins</div>
+              </a>
+            </div>
+          </div>
+
+          <!-- Keyboard Shortcuts -->
+          <div style="margin-bottom:20px;">
+            <h3 style="font-size:14px;font-weight:600;margin-bottom:10px;color:var(--accent-blue);">Keyboard Shortcuts</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;">
+              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Undo</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">Ctrl+Z</kbd></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Redo</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">Ctrl+Y</kbd></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Extrude</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">E</kbd></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Revolve</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">R</kbd></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Toggle Grid</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">G</kbd></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Wireframe</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">W</kbd></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Fit All</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">V</kbd></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Delete</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">Del</kbd></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Cancel</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">Esc</kbd></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Save</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">Ctrl+S</kbd></div>
+            </div>
+          </div>
+
+          <!-- Feature Catalog -->
+          <div style="margin-bottom:16px;">
+            <h3 style="font-size:14px;font-weight:600;margin-bottom:10px;color:var(--accent-blue);">All Features (${Object.keys(window.cycleCAD || {}).length}+ modules)</h3>
+            <div id="help-feature-list" style="max-height:280px;overflow-y:auto;border:1px solid var(--border-color);border-radius:6px;"></div>
+          </div>
+
+          <!-- Links -->
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <a href="https://github.com/vvlars-cmd/cyclecad" target="_blank" style="text-decoration:none;padding:8px 14px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);font-size:12px;">GitHub Repo</a>
+            <a href="https://www.npmjs.com/package/cyclecad" target="_blank" style="text-decoration:none;padding:8px 14px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);font-size:12px;">npm Package</a>
+            <a href="../" style="text-decoration:none;padding:8px 14px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);font-size:12px;">cyclecad.com</a>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(panel);
+
+      // Populate feature list
+      const features = [
+        { cat: 'Core', items: ['3D Viewport (Three.js r170)', 'Sketch Engine (line, rect, circle, arc, polyline)', 'Constraint Solver (12 types)', 'Feature Tree', 'Parameter Editor', 'Undo/Redo History'] },
+        { cat: 'Operations', items: ['Extrude', 'Revolve', 'Fillet', 'Chamfer', 'Boolean (union/cut/intersect)', 'Shell', 'Rectangular Pattern', 'Circular Pattern'] },
+        { cat: 'Advanced Ops', items: ['Sweep (twist + scale)', 'Loft', 'Sheet Metal (bend/flange/tab/slot/unfold)', 'Spring Generator', 'Thread Generator'] },
+        { cat: 'Sketch+', items: ['Spline', 'Polygon', 'Text', 'Ellipse', 'Slot', 'Trim/Extend/Split', 'Offset/Mirror/Scale'] },
+        { cat: 'AI Tools', items: ['Text-to-CAD (6-step pipeline)', 'AI Copilot', 'AI Chatbot (Gemini + Groq)', 'DFM Analyzer', 'Batch AI Scan'] },
+        { cat: 'CAM', items: ['CAM Operations (8 types)', 'G-Code Generator', 'Machine Profiles (15+)', 'Tool Library (30+ tools)', 'Stock Manager', 'Connected Fabs'] },
+        { cat: 'Analysis', items: ['Section View', 'Material Library', 'Weight Estimator', 'Part Comparison', 'Clearance Checker'] },
+        { cat: 'Import/Export', items: ['STL (ASCII + binary)', 'OBJ', 'glTF 2.0', 'DXF (2D + 3D)', 'cycleCAD JSON', 'Inventor .ipt/.iam', 'STEP (via server)'] },
+        { cat: 'Platform', items: ['Agent API (55 commands)', 'MCP Server', 'REST API', 'CLI Tool', '$CYCLE Token Engine', 'Model Marketplace V2 (GrabCAD-style)', 'Collaboration', 'CAD2VR (WebXR)'] },
+        { cat: 'Simulation', items: ['Generative Design (Topology Optimization)', 'SIMP Solver (Web Worker)', '15 Materials Library', 'Loads & Constraints', 'Marching Cubes Mesh Generation', 'Manufacturing Constraints'] },
+        { cat: 'Reference', items: ['GD&T Training (14 symbols, 50 quiz questions)', 'MISUMI Component Catalog (80+ parts)', 'McMaster-Carr Integration', 'FCF Builder', 'Tolerance Calculator'] },
+        { cat: 'Utilities', items: ['Keyboard Shortcuts (25+)', 'Dark Theme', 'Performance Monitor', 'Grid Floor', 'Wireframe Toggle'] }
+      ];
+      const fl = document.getElementById('help-feature-list');
+      if (fl) {
+        fl.innerHTML = features.map(c => `
+          <div style="border-bottom:1px solid var(--border-color);">
+            <div style="padding:8px 12px;font-weight:600;font-size:12px;color:var(--accent-blue);background:var(--bg-tertiary);cursor:pointer;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('span').textContent=this.nextElementSibling.style.display==='none'?'+':'-'">
+              <span style="margin-right:6px;font-family:monospace;">-</span>${c.cat} <span style="color:var(--text-muted);font-weight:400;">(${c.items.length})</span>
+            </div>
+            <div style="padding:4px 12px 8px 28px;">
+              ${c.items.map(i => `<div style="padding:2px 0;font-size:11px;color:var(--text-secondary);">${i}</div>`).join('')}
+            </div>
+          </div>
+        `).join('');
+      }
+    });
+
+    // ? key opens help
+    document.addEventListener('keydown', e => {
+      if (e.key === '?' && !e.ctrlKey && !e.metaKey && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+        document.getElementById('btn-help')?.click();
+      }
+    });
+
+  </script>
+
+  <!-- Operation Dialogs -->
+  <div class="dialog-backdrop" id="dialog-backdrop"></div>
+
+  <!-- Revolve Dialog -->
+  <div class="operation-dialog" id="dialog-revolve">
+    <div class="dialog-header">
+      <div class="dialog-title">Revolve Profile</div>
+      <div class="dialog-close-btn" onclick="closeDialog('revolve')">✕</div>
+    </div>
+    <div class="dialog-content">
+      <div class="dialog-form-group">
+        <label class="dialog-label">Axis</label>
+        <select class="dialog-select" id="revolve-axis">
+          <option value="z">Z Axis</option>
+          <option value="x">X Axis</option>
+          <option value="y">Y Axis</option>
+        </select>
+      </div>
+      <div class="dialog-form-group">
+        <label class="dialog-label">Angle: <span id="revolve-angle-value">360</span>°</label>
+        <input type="range" class="dialog-input" id="revolve-angle" min="1" max="360" value="360" oninput="document.getElementById('revolve-angle-value').textContent = this.value">
+      </div>
+      <div class="dialog-form-group">
+        <label class="dialog-label">Direction</label>
+        <div class="dialog-radio-group">
+          <div class="dialog-radio-item">
+            <input type="radio" id="revolve-dir-ccw" name="revolve-direction" value="ccw" checked>
+            <label for="revolve-dir-ccw">Counter-Clockwise</label>
+          </div>
+          <div class="dialog-radio-item">
+            <input type="radio" id="revolve-dir-cw" name="revolve-direction" value="cw">
+            <label for="revolve-dir-cw">Clockwise</label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button class="dialog-button secondary" onclick="closeDialog('revolve')">Cancel</button>
+      <button class="dialog-button primary" onclick="applyRevolve()">OK</button>
+    </div>
+  </div>
+
+  <!-- Fillet Dialog -->
+  <div class="operation-dialog" id="dialog-fillet">
+    <div class="dialog-header">
+      <div class="dialog-title">Fillet Edges</div>
+      <div class="dialog-close-btn" onclick="closeDialog('fillet')">✕</div>
+    </div>
+    <div class="dialog-content">
+      <div class="dialog-form-group">
+        <label class="dialog-label">Radius (mm)</label>
+        <input type="number" class="dialog-input" id="fillet-radius" value="3" min="0.1" step="0.1">
+      </div>
+      <div class="dialog-form-group">
+        <div class="dialog-checkbox">
+          <input type="checkbox" id="fillet-preview" checked>
+          <label for="fillet-preview">Preview</label>
+        </div>
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button class="dialog-button secondary" onclick="closeDialog('fillet')">Cancel</button>
+      <button class="dialog-button primary" onclick="applyFillet()">OK</button>
+    </div>
+  </div>
+
+  <!-- Chamfer Dialog -->
+  <div class="operation-dialog" id="dialog-chamfer">
+    <div class="dialog-header">
+      <div class="dialog-title">Chamfer Edges</div>
+      <div class="dialog-close-btn" onclick="closeDialog('chamfer')">✕</div>
+    </div>
+    <div class="dialog-content">
+      <div class="dialog-form-group">
+        <label class="dialog-label">Distance (mm)</label>
+        <input type="number" class="dialog-input" id="chamfer-distance" value="2" min="0.1" step="0.1">
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button class="dialog-button secondary" onclick="closeDialog('chamfer')">Cancel</button>
+      <button class="dialog-button primary" onclick="applyChamer()">OK</button>
+    </div>
+  </div>
+
+  <!-- Boolean Dialog -->
+  <div class="operation-dialog" id="dialog-boolean">
+    <div class="dialog-header">
+      <div class="dialog-title">Boolean Operation</div>
+      <div class="dialog-close-btn" onclick="closeDialog('boolean')">✕</div>
+    </div>
+    <div class="dialog-content">
+      <div class="dialog-form-group">
+        <label class="dialog-label">Operation</label>
+        <div class="dialog-radio-group">
+          <div class="dialog-radio-item">
+            <input type="radio" id="bool-union" name="boolean-op" value="union" checked>
+            <label for="bool-union">Union (Combine)</label>
+          </div>
+          <div class="dialog-radio-item">
+            <input type="radio" id="bool-cut" name="boolean-op" value="cut">
+            <label for="bool-cut">Cut (Subtract)</label>
+          </div>
+          <div class="dialog-radio-item">
+            <input type="radio" id="bool-intersect" name="boolean-op" value="intersect">
+            <label for="bool-intersect">Intersect (Common)</label>
+          </div>
+        </div>
+      </div>
+      <div class="dialog-form-group">
+        <p style="font-size: 11px; color: var(--text-secondary); line-height: 1.6;">
+          <strong>Instructions:</strong> Select the first body, then click OK. Select the second body, then click OK again.
+        </p>
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button class="dialog-button secondary" onclick="closeDialog('boolean')">Cancel</button>
+      <button class="dialog-button primary" onclick="applyBoolean()">OK</button>
+    </div>
+  </div>
+
+  <!-- Shell Dialog -->
+  <div class="operation-dialog" id="dialog-shell">
+    <div class="dialog-header">
+      <div class="dialog-title">Shell (Hollow)</div>
+      <div class="dialog-close-btn" onclick="closeDialog('shell')">✕</div>
+    </div>
+    <div class="dialog-content">
+      <div class="dialog-form-group">
+        <label class="dialog-label">Wall Thickness (mm)</label>
+        <input type="number" class="dialog-input" id="shell-thickness" value="2" min="0.1" step="0.1">
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button class="dialog-button secondary" onclick="closeDialog('shell')">Cancel</button>
+      <button class="dialog-button primary" onclick="applyShell()">OK</button>
+    </div>
+  </div>
+
+  <!-- Pattern Dialog -->
+  <div class="operation-dialog" id="dialog-pattern">
+    <div class="dialog-header">
+      <div class="dialog-title">Pattern Features</div>
+      <div class="dialog-close-btn" onclick="closeDialog('pattern')">✕</div>
+    </div>
+    <div class="dialog-content">
+      <div class="dialog-form-group">
+        <label class="dialog-label">Pattern Type</label>
+        <div class="dialog-radio-group">
+          <div class="dialog-radio-item">
+            <input type="radio" id="pattern-rect" name="pattern-type" value="rectangular" checked onchange="updatePatternUI()">
+            <label for="pattern-rect">Rectangular</label>
+          </div>
+          <div class="dialog-radio-item">
+            <input type="radio" id="pattern-circ" name="pattern-type" value="circular" onchange="updatePatternUI()">
+            <label for="pattern-circ">Circular</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rectangular Pattern Fields -->
+      <div id="pattern-rectangular">
+        <div class="dialog-form-group">
+          <label class="dialog-label">Count X</label>
+          <input type="number" class="dialog-input" id="pattern-count-x" value="3" min="1" step="1">
+        </div>
+        <div class="dialog-form-group">
+          <label class="dialog-label">Count Y</label>
+          <input type="number" class="dialog-input" id="pattern-count-y" value="3" min="1" step="1">
+        </div>
+        <div class="dialog-form-group">
+          <label class="dialog-label">Spacing X (mm)</label>
+          <input type="number" class="dialog-input" id="pattern-spacing-x" value="10" min="0.1" step="0.1">
+        </div>
+        <div class="dialog-form-group">
+          <label class="dialog-label">Spacing Y (mm)</label>
+          <input type="number" class="dialog-input" id="pattern-spacing-y" value="10" min="0.1" step="0.1">
+        </div>
+      </div>
+
+      <!-- Circular Pattern Fields -->
+      <div id="pattern-circular" style="display:none;">
+        <div class="dialog-form-group">
+          <label class="dialog-label">Count</label>
+          <input type="number" class="dialog-input" id="pattern-count" value="6" min="1" step="1">
+        </div>
+        <div class="dialog-form-group">
+          <label class="dialog-label">Radius (mm)</label>
+          <input type="number" class="dialog-input" id="pattern-radius" value="20" min="0.1" step="0.1">
+        </div>
+        <div class="dialog-form-group">
+          <label class="dialog-label">Axis</label>
+          <select class="dialog-select" id="pattern-axis">
+            <option value="z">Z Axis</option>
+            <option value="x">X Axis</option>
+            <option value="y">Y Axis</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button class="dialog-button secondary" onclick="closeDialog('pattern')">Cancel</button>
+      <button class="dialog-button primary" onclick="applyPattern()">OK</button>
+    </div>
+  </div>
+
+  <!-- Sweep Dialog -->
+  <div class="operation-dialog" id="dialog-sweep">
+    <div class="dialog-header">
+      <div class="dialog-title">Sweep (Profile Along Path)</div>
+      <div class="dialog-close-btn" onclick="closeDialog('sweep')">&#10005;</div>
+    </div>
+    <div class="dialog-content">
+      <div class="dialog-form-group">
+        <label class="dialog-label">Profile Shape</label>
+        <select class="dialog-select" id="sweep-profile">
+          <option value="circle">Circle</option>
+          <option value="rectangle">Rectangle</option>
+          <option value="sketch">From Sketch</option>
+        </select>
+      </div>
+      <div class="dialog-form-group">
+        <label class="dialog-label">Profile Radius / Width (mm)</label>
+        <input type="number" class="dialog-input" id="sweep-size" value="3" min="0.1" step="0.1">
+      </div>
+      <div class="dialog-form-group">
+        <label class="dialog-label">Path Shape</label>
+        <select class="dialog-select" id="sweep-path">
+          <option value="helix">Helix</option>
+          <option value="line">Straight Line</option>
+          <option value="arc">Arc</option>
+        </select>
+      </div>
+      <div class="dialog-form-group">
+        <label class="dialog-label">Path Length (mm)</label>
+        <input type="number" class="dialog-input" id="sweep-length" value="40" min="1" step="1">
+      </div>
+      <div class="dialog-form-group">
+        <label class="dialog-label">Segments</label>
+        <input type="range" class="dialog-range" id="sweep-segments" min="8" max="128" value="64">
+      </div>
+      <div class="dialog-form-group">
+        <label class="dialog-label">Twist (deg/mm)</label>
+        <input type="number" class="dialog-input" id="sweep-twist" value="0" step="0.1">
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button class="dialog-button secondary" onclick="closeDialog('sweep')">Cancel</button>
+      <button class="dialog-button primary" onclick="applySweep()">OK</button>
+    </div>
+  </div>
+
+  <!-- Loft Dialog -->
+  <div class="operation-dialog" id="dialog-loft">
+    <div class="dialog-header">
+      <div class="dialog-title">Loft (Between Profiles)</div>
+      <div class="dialog-close-btn" onclick="closeDialog('loft')">&#10005;</div>
+    </div>
+    <div class="dialog-content">
+      <div class="dialog-form-group">
+        <label class="dialog-label">Start Profile</label>
+        <select class="dialog-select" id="loft-start">
+          <option value="circle">Circle</option>
+          <option value="rectangle">Rectangle</option>
+          <option value="hexagon">Hexagon</option>
+        </select>
+      </div>
+      <div class="dialog-form-group">
+        <label class="dialog-label">Start Size (mm)</label>
+        <input type="number" class="dialog-input" id="loft-start-size" value="10" min="0.1" step="0.1">
+      </div>
+      <div class="dialog-form-group">
+        <label class="dialog-label">End Profile</label>
+        <select class="dialog-select" id="loft-end">
+          <option value="circle">Circle</option>
+          <option value="rectangle">Rectangle</option>
+          <option value="hexagon">Hexagon</option>
+        </select>
+      </div>
+      <div class="dialog-form-group">
+        <label class="dialog-label">End Size (mm)</label>
+        <input type="number" class="dialog-input" id="loft-end-size" value="5" min="0.1" step="0.1">
+      </div>
+      <div class="dialog-form-group">
+        <label class="dialog-label">Height (mm)</label>
+        <input type="number" class="dialog-input" id="loft-height" value="30" min="1" step="1">
+      </div>
+      <div class="dialog-form-group">
+        <label class="dialog-label">Segments</label>
+        <input type="range" class="dialog-range" id="loft-segments" min="4" max="64" value="32">
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button class="dialog-button secondary" onclick="closeDialog('loft')">Cancel</button>
+      <button class="dialog-button primary" onclick="applyLoft()">OK</button>
+    </div>
+  </div>
+
+  <!-- Bend Dialog -->
+  <div class="operation-dialog" id="dialog-bend">
+    <div class="dialog-header">
+      <div class="dialog-title">Sheet Metal Bend</div>
+      <div class="dialog-close-btn" onclick="closeDialog('bend')">&#10005;</div>
+    </div>
+    <div class="dialog-content">
+      <div class="dialog-form-group">
+        <label class="dialog-label">Bend Angle (degrees)</label>
+        <input type="number" class="dialog-input" id="bend-angle" value="90" min="1" max="180" step="1">
+      </div>
+      <div class="dialog-form-group">
+        <label class="dialog-label">Inner Bend Radius (mm)</label>
+        <input type="number" class="dialog-input" id="bend-radius" value="2" min="0.1" step="0.1">
+      </div>
+      <div class="dialog-form-group">
+        <label class="dialog-label">K-Factor</label>
+        <input type="number" class="dialog-input" id="bend-kfactor" value="0.44" min="0.1" max="0.9" step="0.01">
+      </div>
+      <p style="font-size:10px;color:var(--text-muted);margin-top:4px;">Select a flat plate first, then define the bend line by clicking two points.</p>
+    </div>
+    <div class="dialog-footer">
+      <button class="dialog-button secondary" onclick="closeDialog('bend')">Cancel</button>
+      <button class="dialog-button primary" onclick="applyBend()">OK</button>
+    </div>
+  </div>
+
+  <!-- Flange Dialog -->
+  <div class="operation-dialog" id="dialog-flange">
+    <div class="dialog-header">
+      <div class="dialog-title">Sheet Metal Flange</div>
+      <div class="dialog-close-btn" onclick="closeDialog('flange')">&#10005;</div>
+    </div>
+    <div class="dialog-content">
+      <div class="dialog-form-group">
+        <label class="dialog-label">Flange Length (mm)</label>
+        <input type="number" class="dialog-input" id="flange-length" value="15" min="0.1" step="0.1">
+      </div>
+      <div class="dialog-form-group">
+        <label class="dialog-label">Flange Angle (degrees)</label>
+        <input type="number" class="dialog-input" id="flange-angle" value="90" min="1" max="180" step="1">
+      </div>
+      <p style="font-size:10px;color:var(--text-muted);margin-top:4px;">Select an edge on a sheet metal part, then apply the flange.</p>
+    </div>
+    <div class="dialog-footer">
+      <button class="dialog-button secondary" onclick="closeDialog('flange')">Cancel</button>
+      <button class="dialog-button primary" onclick="applyFlange()">OK</button>
+    </div>
+  </div>
+
+  <span id="version-badge" style="position:fixed;bottom:42px;left:50%;transform:translateX(-50%);z-index:999;font-size:0.9rem;color:rgba(255,255,255,0.9);letter-spacing:0.1em;white-space:nowrap;padding:6px 16px;user-select:all;pointer-events:auto;font-family:monospace;font-weight:700;background:rgba(0,0,0,0.7);border:1px solid rgba(88,166,255,0.4);border-radius:6px;text-shadow:0 1px 3px rgba(0,0,0,0.5);" title="cycleCAD version">cycleCAD v0.8.3</span>
+</body>
+</html>

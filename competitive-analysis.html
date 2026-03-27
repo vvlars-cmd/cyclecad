@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>cycleCAD — Competitive Analysis & Roadmap</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0d1117;color:#c9d1d9;line-height:1.6}
+.container{max-width:1400px;margin:0 auto;padding:24px}
+h1{font-size:2.2rem;color:#58a6ff;margin-bottom:8px}
+h2{font-size:1.5rem;color:#58a6ff;margin:32px 0 16px;border-bottom:1px solid #21262d;padding-bottom:8px}
+h3{font-size:1.1rem;color:#f0883e;margin:20px 0 10px}
+.subtitle{color:#8b949e;font-size:1rem;margin-bottom:32px}
+.date{color:#8b949e;font-size:0.85rem}
+
+/* Competitor Cards */
+.competitors{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;margin:16px 0}
+.comp-card{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:20px;transition:border-color .2s}
+.comp-card:hover{border-color:#58a6ff}
+.comp-card .name{font-size:1.2rem;font-weight:700;color:#f0f6fc;display:flex;align-items:center;gap:8px}
+.comp-card .tag{font-size:0.7rem;padding:2px 8px;border-radius:12px;font-weight:600}
+.tag-paid{background:#da3633;color:#fff}
+.tag-oss{background:#238636;color:#fff}
+.tag-ai{background:#a371f7;color:#fff}
+.tag-new{background:#f0883e;color:#fff}
+.comp-card .desc{color:#8b949e;margin:8px 0 12px;font-size:0.9rem}
+.comp-card .price{color:#f0883e;font-weight:600;font-size:0.85rem;margin-bottom:8px}
+.comp-card .strengths,.comp-card .weaknesses{font-size:0.85rem;margin:4px 0}
+.comp-card .strengths span{color:#3fb950}
+.comp-card .weaknesses span{color:#f85149}
+.our-edge{background:#0d2818;border:1px solid #238636;border-radius:8px;padding:10px 14px;margin-top:12px;font-size:0.85rem;color:#3fb950}
+
+/* Feature Matrix */
+.matrix-wrap{overflow-x:auto;margin:16px 0;border-radius:12px;border:1px solid #30363d}
+table{width:100%;border-collapse:collapse;font-size:0.82rem}
+th{background:#161b22;color:#58a6ff;padding:10px 12px;text-align:left;position:sticky;top:0;border-bottom:2px solid #30363d;white-space:nowrap}
+td{padding:8px 12px;border-bottom:1px solid #21262d}
+tr:hover{background:#161b2288}
+.cat-row td{background:#0d1117;color:#f0883e;font-weight:700;font-size:0.9rem;padding:12px;border-bottom:2px solid #30363d}
+.y{color:#3fb950;font-weight:700;text-align:center}
+.n{color:#484f58;text-align:center}
+.p{color:#f0883e;font-weight:600;text-align:center}
+.s{color:#a371f7;font-weight:600;text-align:center}
+td:first-child{color:#c9d1d9;font-weight:500}
+
+/* Legend */
+.legend{display:flex;gap:20px;margin:12px 0;font-size:0.85rem;flex-wrap:wrap}
+.legend span{display:flex;align-items:center;gap:6px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.dot-y{background:#3fb950}
+.dot-p{background:#f0883e}
+.dot-s{background:#a371f7}
+.dot-n{background:#484f58}
+
+/* Roadmap */
+.roadmap{position:relative;padding-left:32px;margin:16px 0}
+.roadmap::before{content:'';position:absolute;left:11px;top:0;bottom:0;width:2px;background:#30363d}
+.phase{position:relative;margin-bottom:24px}
+.phase::before{content:'';position:absolute;left:-25px;top:4px;width:14px;height:14px;border-radius:50%;border:2px solid #30363d;background:#0d1117}
+.phase.done::before{background:#238636;border-color:#238636}
+.phase.active::before{background:#f0883e;border-color:#f0883e;box-shadow:0 0 8px #f0883e55}
+.phase.next::before{background:#58a6ff;border-color:#58a6ff}
+.phase-title{font-weight:700;color:#f0f6fc;font-size:1rem}
+.phase-desc{color:#8b949e;font-size:0.85rem;margin:4px 0}
+.phase-features{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.feat{font-size:0.75rem;padding:3px 10px;border-radius:12px;background:#21262d;color:#c9d1d9}
+.feat-done{background:#0d2818;color:#3fb950;border:1px solid #23863655}
+.feat-ai{background:#1c0f30;color:#a371f7;border:1px solid #a371f755}
+.feat-new{background:#2a1a00;color:#f0883e;border:1px solid #f0883e55}
+
+/* Diff Section */
+.diff-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin:16px 0}
+.diff-card{background:#161b22;border-radius:12px;padding:20px;border:1px solid #30363d}
+.diff-card h4{color:#58a6ff;font-size:1rem;margin-bottom:8px}
+.diff-card p{color:#8b949e;font-size:0.88rem}
+.diff-card .killer{color:#3fb950;font-weight:600;margin-top:8px;font-size:0.85rem}
+
+/* Stats */
+.stats{display:flex;gap:16px;flex-wrap:wrap;margin:16px 0}
+.stat{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:16px 24px;text-align:center;min-width:140px}
+.stat .num{font-size:2rem;font-weight:800;color:#58a6ff}
+.stat .label{font-size:0.8rem;color:#8b949e}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;margin:24px 0 0;border-bottom:2px solid #21262d;flex-wrap:wrap}
+.tab{padding:10px 20px;cursor:pointer;color:#8b949e;font-size:0.9rem;font-weight:600;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;background:none;border-top:none;border-left:none;border-right:none}
+.tab:hover{color:#c9d1d9}
+.tab.active{color:#58a6ff;border-bottom-color:#58a6ff}
+.tab-content{display:none;padding:8px 0}
+.tab-content.active{display:block}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>cycleCAD + ExplodeView — Competitive Analysis</h1>
+<p class="subtitle">The open-source browser CAD platform vs. everyone else</p>
+<p class="date">March 24, 2026 — Prepared for cycleWASH</p>
+
+<div class="stats">
+  <div class="stat"><div class="num">19</div><div class="label">ES Modules</div></div>
+  <div class="stat"><div class="num">18.8K+</div><div class="label">Lines of Code</div></div>
+  <div class="stat"><div class="num">0</div><div class="label">Dependencies</div></div>
+  <div class="stat"><div class="num">$0</div><div class="label">License Cost</div></div>
+  <div class="stat"><div class="num">397</div><div class="label">npm Weekly DL</div></div>
+  <div class="stat"><div class="num">MIT</div><div class="label">License</div></div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('competitors')">Competitors</button>
+  <button class="tab" onclick="switchTab('matrix')">Feature Matrix</button>
+  <button class="tab" onclick="switchTab('diff')">Our Differentiation</button>
+  <button class="tab" onclick="switchTab('roadmap')">Killer App Roadmap</button>
+  <button class="tab" onclick="switchTab('copilot')">AI Copilot Plan</button>
+</div>
+
+<!-- ===== COMPETITORS TAB ===== -->
+<div id="competitors" class="tab-content active">
+<h2>The Competition</h2>
+
+<h3>Enterprise CAD ($$$, closed-source)</h3>
+<div class="competitors">
+  <div class="comp-card">
+    <div class="name">OnShape <span class="tag tag-paid">$1,500/yr</span></div>
+    <div class="desc">Browser-native parametric CAD by PTC. The current gold standard for cloud CAD. Real-time multi-user editing, git-style branching, FeatureScript extensibility.</div>
+    <div class="strengths"><span>✓</span> Real B-rep kernel, real-time collab, version control, FeatureScript API, simulation, CAM Studio, Render Studio</div>
+    <div class="weaknesses"><span>✗</span> $1,500+/yr, free plan forces designs public, no AI tools, no Inventor import, data lives on their servers, no self-hosting</div>
+    <div class="our-edge">We're free, open-source, self-hostable. We open Inventor files natively. We have AI part identification, smart BOM, maintenance heatmaps — things OnShape charges extra for via partners.</div>
+  </div>
+  <div class="comp-card">
+    <div class="name">Fusion 360 <span class="tag tag-paid">$545/yr</span></div>
+    <div class="desc">Autodesk's cloud-desktop hybrid. Powerful but increasingly locked down — free features removed in 2024-25.</div>
+    <div class="strengths"><span>✓</span> Full parametric + direct modeling, simulation, CAM, rendering, generative design</div>
+    <div class="weaknesses"><span>✗</span> Desktop install required, subscription lock-in, poor Inventor interop despite same company, killed free features</div>
+    <div class="our-edge">Browser-native (no install), free forever, opens Inventor projects directly, generates Fusion migration guides automatically.</div>
+  </div>
+  <div class="comp-card">
+    <div class="name">SolidWorks <span class="tag tag-paid">$4,000+/yr</span></div>
+    <div class="desc">Industry standard desktop CAD by Dassault. 3DEXPERIENCE browser version is clunky and expensive.</div>
+    <div class="strengths"><span>✓</span> Massive ecosystem, simulation, PDM, enterprise workflows</div>
+    <div class="weaknesses"><span>✗</span> Desktop-only (browser version poor), $4K+/yr, heavy install, Windows-only for full features</div>
+    <div class="our-edge">A URL that just works on any device. Zero cost. With ExplodeView merged: full analysis suite that SolidWorks doesn't have built-in.</div>
+  </div>
+</div>
+
+<h3>AI-Native CAD (your direct threat)</h3>
+<div class="competitors">
+  <div class="comp-card">
+    <div class="name">Aurorin CAD <span class="tag tag-ai">AI-Native</span> <span class="tag tag-new">YC W26</span></div>
+    <div class="desc">Built a custom CAD kernel from scratch to be AI-native. Creates parts in seconds vs 20 minutes in SolidWorks. YC-backed, well-funded.</div>
+    <div class="price">Pricing TBD (early access)</div>
+    <div class="strengths"><span>✓</span> Custom B-rep kernel built for AI, blazing fast, modern GPU-accelerated, text-to-CAD</div>
+    <div class="weaknesses"><span>✗</span> Closed-source, desktop app (not browser), no existing file support, no assembly analysis, no BOM/maintenance tools, very early stage</div>
+    <div class="our-edge">Open-source (they're closed). Browser-native (they're desktop). We already have Inventor import + ExplodeView's full analysis suite. They model fast but can't analyze existing assemblies.</div>
+  </div>
+  <div class="comp-card">
+    <div class="name">MecAgent <span class="tag tag-ai">AI Copilot</span></div>
+    <div class="desc">AI copilot plugin for existing CAD tools (SolidWorks, Inventor, Fusion, Creo, CATIA). Text-to-CAD, standards checking, part generation. Raised $3M.</div>
+    <div class="price">Pricing TBD (early access)</div>
+    <div class="strengths"><span>✓</span> Works inside existing CAD tools, text-to-parametric-parts, standards compliance, real-time pricing, component library</div>
+    <div class="weaknesses"><span>✗</span> Plugin only (needs host CAD software), closed-source, no standalone product, no viewing/analysis tools</div>
+    <div class="our-edge">MecAgent is a plugin for someone else's software — cycleCAD IS the software. With ExplodeView merged, we have AI identification + smart BOM + maintenance scheduling that MecAgent doesn't touch. We can build the same copilot features INTO our platform.</div>
+  </div>
+</div>
+
+<h3>Open-Source Browser CAD (closest competitors)</h3>
+<div class="competitors">
+  <div class="comp-card">
+    <div class="name">Chili3D <span class="tag tag-oss">Open Source</span></div>
+    <div class="desc">TypeScript browser CAD with full OpenCascade WASM kernel. Real B-rep geometry, boolean operations. Alpha stage.</div>
+    <div class="strengths"><span>✓</span> Real OpenCascade kernel in browser, proper B-rep, STEP import/export, TypeScript</div>
+    <div class="weaknesses"><span>✗</span> Alpha stage, no AI features, no Inventor support, no analysis tools, no BOM, no mobile viewer, small community</div>
+    <div class="our-edge">We have a complete platform: modeling + viewing + AI analysis + BOM + maintenance + mobile. They have geometry only. Merging ExplodeView gives us 40+ features they can't match.</div>
+  </div>
+  <div class="comp-card">
+    <div class="name">bitbybit.dev <span class="tag tag-oss">Open Source</span></div>
+    <div class="desc">3D platform with OpenCascade + visual node programming. Targets developers building product configurators. Just hit v1.0 RC.</div>
+    <div class="strengths"><span>✓</span> Real OCCT kernel, visual + code programming, Three.js/Babylon/PlayCanvas, REST API, enterprise cloud</div>
+    <div class="weaknesses"><span>✗</span> Developer-focused (not end-user CAD), no GUI modeler, no Inventor support, no assembly analysis, steep learning curve</div>
+    <div class="our-edge">We're a CAD tool for engineers, not a dev platform. Direct GUI, feature tree, sketch engine. They can't open a .ipt file or generate a BOM.</div>
+  </div>
+  <div class="comp-card">
+    <div class="name">FreeCAD <span class="tag tag-oss">Open Source</span></div>
+    <div class="desc">Largest open-source parametric CAD. Desktop-only (Qt/Python). Massive community.</div>
+    <div class="strengths"><span>✓</span> Full parametric modeling, huge community, FEM simulation, assembly, many workbenches, STEP support</div>
+    <div class="weaknesses"><span>✗</span> Desktop-only, no browser version, clunky UX, Python-heavy, no AI features, no mobile, no collaboration</div>
+    <div class="our-edge">Browser-native, modern UI, AI-powered, mobile viewer, zero install. FreeCAD can't run on a phone or share a link.</div>
+  </div>
+  <div class="comp-card">
+    <div class="name">CascadeStudio <span class="tag tag-oss">Open Source</span></div>
+    <div class="desc">Scripted CAD in browser using OpenCascade.js. Code-only (no GUI).</div>
+    <div class="strengths"><span>✓</span> Real OCCT kernel, instant browser start, good for programmatic geometry</div>
+    <div class="weaknesses"><span>✗</span> Code-only (no visual editing), no GUI, no feature tree, no assemblies, limited maintenance</div>
+    <div class="our-edge">Full GUI, sketch engine, feature tree, 19 modules, AI chatbot. CascadeStudio is OpenSCAD in a browser — we're SolidWorks in a browser.</div>
+  </div>
+</div>
+
+<h3>Collaboration / Review Tools</h3>
+<div class="competitors">
+  <div class="comp-card">
+    <div class="name">CoLab Software <span class="tag tag-paid">Paid SaaS</span></div>
+    <div class="desc">Browser-based design review platform. View CAD, add annotations, track issues. Used by engineering teams.</div>
+    <div class="strengths"><span>✓</span> Universal CAD viewer, annotation tools, issue tracking, integrates with PLM</div>
+    <div class="weaknesses"><span>✗</span> View-only (no editing), paid, no modeling capability, no AI analysis</div>
+    <div class="our-edge">With ExplodeView merged, we get the same review capabilities PLUS full modeling + AI analysis. Free.</div>
+  </div>
+  <div class="comp-card">
+    <div class="name">CAD Rooms <span class="tag tag-paid">Paid SaaS</span></div>
+    <div class="desc">Real-time 3D walkthrough with synchronized cameras for design reviews.</div>
+    <div class="strengths"><span>✓</span> Real-time follow mode, synchronized views, easy sharing</div>
+    <div class="weaknesses"><span>✗</span> Review-only, paid, no modeling, no AI</div>
+    <div class="our-edge">Same collab features planned + modeling + AI + free.</div>
+  </div>
+</div>
+</div>
+
+<!-- ===== FEATURE MATRIX TAB ===== -->
+<div id="matrix" class="tab-content">
+<h2>Feature Matrix — cycleCAD+ExplodeView vs. Competition</h2>
+<div class="legend">
+  <span><span class="dot dot-y"></span> Full support</span>
+  <span><span class="dot dot-p"></span> Partial / approximation</span>
+  <span><span class="dot dot-s"></span> Planned (roadmap)</span>
+  <span><span class="dot dot-n"></span> Not available</span>
+</div>
+
+<div class="matrix-wrap">
+<table>
+<thead>
+<tr>
+  <th style="min-width:220px">Feature</th>
+  <th>cycleCAD<br>+ExplodeView</th>
+  <th>OnShape<br>$1,500/yr</th>
+  <th>Fusion 360<br>$545/yr</th>
+  <th>Aurorin<br>AI-Native</th>
+  <th>MecAgent<br>AI Copilot</th>
+  <th>Chili3D<br>OSS</th>
+  <th>FreeCAD<br>OSS</th>
+</tr>
+</thead>
+<tbody>
+<!-- CORE MODELING -->
+<tr class="cat-row"><td colspan="8">Core Modeling</td></tr>
+<tr><td>Parametric sketch (line, rect, circle, arc)</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="p">~</td><td class="y">✓</td></tr>
+<tr><td>Sketch constraints (12+ types)</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="p">~</td><td class="y">✓</td></tr>
+<tr><td>Extrude / Cut</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td></tr>
+<tr><td>Revolve</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td></tr>
+<tr><td>Sweep along path</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="p">~</td><td class="n">—</td><td class="p">~</td><td class="y">✓</td></tr>
+<tr><td>Loft between profiles</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="p">~</td><td class="n">—</td><td class="p">~</td><td class="y">✓</td></tr>
+<tr><td>Fillet / Chamfer</td><td class="p">~</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td></tr>
+<tr><td>Boolean (union, cut, intersect)</td><td class="p">~</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td></tr>
+<tr><td>Shell</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="p">~</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td></tr>
+<tr><td>Pattern (rect + circular)</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="p">~</td><td class="n">—</td><td class="p">~</td><td class="y">✓</td></tr>
+<tr><td>Sheet metal (bend, flange, unfold)</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td></tr>
+<tr><td>Thread / Spring generator</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td></tr>
+<tr><td>Direct editing (push/pull)</td><td class="s">★</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="p">~</td></tr>
+<tr><td>Real B-rep kernel (OCCT)</td><td class="s">★</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td></tr>
+<tr><td>Hole wizard</td><td class="s">★</td><td class="y">✓</td><td class="y">✓</td><td class="p">~</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td></tr>
+<tr><td>Multi-body Part Studio</td><td class="s">★</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td></tr>
+<tr><td>Configurations / Variants</td><td class="s">★</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td></tr>
+
+<!-- ASSEMBLY -->
+<tr class="cat-row"><td colspan="8">Assembly</td></tr>
+<tr><td>Assembly workspace</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td></tr>
+<tr><td>Mate constraints (6+ types)</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td></tr>
+<tr><td>Joint types (revolute, slider, etc.)</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td></tr>
+<tr><td>Exploded views</td><td class="y">✓ EV</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="p">~</td></tr>
+<tr><td>Motion simulation</td><td class="s">★</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="p">~</td></tr>
+<tr><td>Interference detection</td><td class="s">★</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="p">~</td></tr>
+
+<!-- FILE FORMATS -->
+<tr class="cat-row"><td colspan="8">File Format Support</td></tr>
+<tr><td>STEP import</td><td class="y">✓ mobile</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td></tr>
+<tr><td>STEP export</td><td class="s">★</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td></tr>
+<tr><td>Inventor .ipt/.iam import</td><td class="y">✓</td><td class="n">—</td><td class="p">~</td><td class="n">—</td><td class="p">~</td><td class="n">—</td><td class="n">—</td></tr>
+<tr><td>STL export</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td></tr>
+<tr><td>OBJ export</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td></tr>
+<tr><td>glTF export</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="p">~</td></tr>
+<tr><td>DXF/DWG export</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td></tr>
+<tr><td>2D engineering drawings</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td></tr>
+
+<!-- VIEWING & ANALYSIS (ExplodeView features) -->
+<tr class="cat-row"><td colspan="8">Viewing & Analysis (ExplodeView merge)</td></tr>
+<tr><td>AI part identification (geometry)</td><td class="y">✓ EV</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="p">~</td><td class="n">—</td><td class="n">—</td></tr>
+<tr><td>AI Vision identification (Gemini)</td><td class="y">✓ EV</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+<tr><td>Batch AI scan (all parts)</td><td class="y">✓ EV</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+<tr><td>Smart BOM with pricing</td><td class="y">✓ EV</td><td class="p">~</td><td class="p">~</td><td class="n">—</td><td class="p">~</td><td class="n">—</td><td class="n">—</td></tr>
+<tr><td>McMaster-Carr integration</td><td class="y">✓ EV</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td></tr>
+<tr><td>Maintenance heatmap</td><td class="y">✓ EV</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+<tr><td>Part wear timeline (5yr Gantt)</td><td class="y">✓ EV</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+<tr><td>Service mode (field tech)</td><td class="y">✓ EV</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+<tr><td>Assembly/disassembly animation</td><td class="y">✓ EV</td><td class="n">—</td><td class="p">~</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+<tr><td>Auto assembly instructions</td><td class="y">✓ EV</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+<tr><td>Section cut / cross-section</td><td class="y">✓ EV</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td></tr>
+<tr><td>Measurement tool</td><td class="y">✓ EV</td><td class="y">✓</td><td class="y">✓</td><td class="p">~</td><td class="n">—</td><td class="p">~</td><td class="y">✓</td></tr>
+<tr><td>Annotations / markup</td><td class="y">✓ EV</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="p">~</td></tr>
+<tr><td>QR code per part</td><td class="y">✓ EV</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+<tr><td>Technical report export (HTML)</td><td class="y">✓ EV</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+<tr><td>Natural language search</td><td class="y">✓ EV</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+
+<!-- AI FEATURES -->
+<tr class="cat-row"><td colspan="8">AI Features</td></tr>
+<tr><td>AI chatbot (multi-LLM)</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="p">~</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td></tr>
+<tr><td>Text-to-CAD (describe → model)</td><td class="s">★</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td></tr>
+<tr><td>Natural language editing</td><td class="s">★</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td></tr>
+<tr><td>Smart autocomplete</td><td class="s">★</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td><td class="p">~</td><td class="n">—</td><td class="n">—</td></tr>
+<tr><td>Standards compliance check</td><td class="y">✓ EV</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td></tr>
+<tr><td>Manufacturability analysis</td><td class="s">★</td><td class="n">—</td><td class="p">~</td><td class="n">—</td><td class="p">~</td><td class="n">—</td><td class="n">—</td></tr>
+<tr><td>Cost estimation</td><td class="s">★</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="p">~</td><td class="n">—</td><td class="n">—</td></tr>
+<tr><td>Offline AI fallback</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+<tr><td>Voice input</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+
+<!-- COLLABORATION -->
+<tr class="cat-row"><td colspan="8">Collaboration & Sharing</td></tr>
+<tr><td>Real-time multi-user editing</td><td class="s">★</td><td class="y">✓</td><td class="p">~</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+<tr><td>Git-style version control</td><td class="s">★</td><td class="y">✓</td><td class="p">~</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+<tr><td>Branching & merging</td><td class="s">★</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+<tr><td>Share link (view without login)</td><td class="s">★</td><td class="p">~</td><td class="p">~</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+<tr><td>Embeddable viewer widget</td><td class="s">★</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+<tr><td>Comments / task assignment</td><td class="s">★</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+<tr><td>Follow mode (see what others see)</td><td class="s">★</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+
+<!-- MANUFACTURING -->
+<tr class="cat-row"><td colspan="8">Manufacturing</td></tr>
+<tr><td>3D print slicer / G-code</td><td class="y">✓ EV</td><td class="n">—</td><td class="p">~</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="p">~</td></tr>
+<tr><td>Kiri:Moto integration</td><td class="y">✓ EV</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+<tr><td>CAM toolpaths</td><td class="s">★</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="p">~</td></tr>
+<tr><td>Simulation (FEA)</td><td class="s">★</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td></tr>
+<tr><td>Render Studio / visualization</td><td class="s">★</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="p">~</td></tr>
+<tr><td>GD&T / tolerance annotations</td><td class="s">★</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="p">~</td></tr>
+
+<!-- PLATFORM -->
+<tr class="cat-row"><td colspan="8">Platform</td></tr>
+<tr><td>Browser-based (zero install)</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td><td class="n">—</td></tr>
+<tr><td>Mobile / phone viewer</td><td class="y">✓</td><td class="p">~</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+<tr><td>Open source (MIT)</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td></tr>
+<tr><td>Self-hostable</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td></tr>
+<tr><td>Plugin / extension API</td><td class="s">★</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td></tr>
+<tr><td>Multi-language (6+ langs)</td><td class="y">✓ EV</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td></tr>
+<tr><td>PWA / offline</td><td class="s">★</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+<tr><td>Zero dependencies (CDN only)</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- ===== DIFFERENTIATION TAB ===== -->
+<div id="diff" class="tab-content">
+<h2>Why cycleCAD + ExplodeView Wins</h2>
+
+<div class="diff-grid">
+  <div class="diff-card">
+    <h4>vs. OnShape</h4>
+    <p>OnShape is the closest feature-match, but costs $1,500/yr and your designs live on PTC's servers. Free tier forces all designs public. No AI analysis, no maintenance tools, no Inventor native import.</p>
+    <div class="killer">Our edge: Free, open-source, self-hosted, AI-powered analysis, Inventor import, maintenance heatmaps, service mode for field techs.</div>
+  </div>
+  <div class="diff-card">
+    <h4>vs. Aurorin CAD</h4>
+    <p>Aurorin's AI-native modeling is impressive — seconds vs minutes. But it's a desktop app, closed-source, early stage, and only does modeling. No viewing, no analysis, no BOM, no maintenance.</p>
+    <div class="killer">Our edge: Browser-native, open-source, ExplodeView's 40+ analysis tools, Inventor import, works today with real production data (DUO 473 parts).</div>
+  </div>
+  <div class="diff-card">
+    <h4>vs. MecAgent</h4>
+    <p>MecAgent is a plugin that requires SolidWorks/Inventor/Fusion as a host. $3M raised but still early. Good text-to-CAD and standards checking.</p>
+    <div class="killer">Our edge: We ARE the CAD tool — no host required. Building the same copilot features directly into the platform. Free, open-source.</div>
+  </div>
+  <div class="diff-card">
+    <h4>vs. Chili3D</h4>
+    <p>Real OpenCascade kernel in browser — solid geometry foundation. But alpha stage, no AI, no analysis, no file format support beyond STEP.</p>
+    <div class="killer">Our edge: Complete platform (model + view + analyze + export), 19 modules, AI chatbot, Inventor import, mobile viewer, 40+ ExplodeView tools.</div>
+  </div>
+  <div class="diff-card">
+    <h4>vs. FreeCAD</h4>
+    <p>Biggest OSS CAD with massive community and real FEM simulation. But desktop-only, clunky UI, no browser, no AI, no mobile.</p>
+    <div class="killer">Our edge: Browser-native, modern UI, AI-powered, mobile viewer, zero install, share-a-link collaboration.</div>
+  </div>
+  <div class="diff-card">
+    <h4>The Unique Combo Nobody Has</h4>
+    <p>No single tool combines all of these: parametric modeling + Inventor import + STEP viewing + AI part ID + smart BOM with pricing + maintenance heatmaps + exploded animations + collaborative review + mobile viewer + embeddable widget.</p>
+    <div class="killer">Open an Inventor project → model new parts → AI-analyze the assembly → generate BOM with McMaster links → share a review link → export maintenance schedule. All in one tab. $0.</div>
+  </div>
+</div>
+</div>
+
+<!-- ===== ROADMAP TAB ===== -->
+<div id="roadmap" class="tab-content">
+<h2>Killer App Roadmap — OnShape Feature Parity + Beyond</h2>
+
+<div class="roadmap">
+  <div class="phase done">
+    <div class="phase-title">Phase 1-3: Foundation + Inventor + Ops ✅</div>
+    <div class="phase-desc">Already built: 19 modules, 18.8K+ lines, parametric modeling, Inventor parsing, constraint solver, sheet metal, assembly workspace.</div>
+    <div class="phase-features">
+      <span class="feat feat-done">Sketch engine</span>
+      <span class="feat feat-done">Extrude/Revolve</span>
+      <span class="feat feat-done">Sweep/Loft</span>
+      <span class="feat feat-done">Constraints (12)</span>
+      <span class="feat feat-done">Sheet metal</span>
+      <span class="feat feat-done">Assembly</span>
+      <span class="feat feat-done">DXF export</span>
+      <span class="feat feat-done">AI chatbot</span>
+      <span class="feat feat-done">Inventor parser</span>
+      <span class="feat feat-done">Mobile viewer</span>
+    </div>
+  </div>
+
+  <div class="phase active">
+    <div class="phase-title">Phase A: ExplodeView Merge + STEP Import 🔥 NOW</div>
+    <div class="phase-desc">Merge ExplodeView as "Viewer Mode" into cycleCAD. Add OpenCascade.js for real STEP import. This is the foundation for everything.</div>
+    <div class="phase-features">
+      <span class="feat feat-new">ExplodeView viewer mode</span>
+      <span class="feat feat-new">OpenCascade.js WASM</span>
+      <span class="feat feat-new">STEP import (editable)</span>
+      <span class="feat feat-new">STEP export</span>
+      <span class="feat feat-new">Real B-rep booleans</span>
+      <span class="feat feat-new">Real fillet/chamfer</span>
+      <span class="feat feat-new">All 40+ EV analysis tools</span>
+    </div>
+  </div>
+
+  <div class="phase next">
+    <div class="phase-title">Phase B: AI Copilot 🤖</div>
+    <div class="phase-desc">Build the MecAgent-killer: text-to-CAD, natural language editing, smart autocomplete, design validation. Multi-LLM (Gemini + Groq + Claude + local).</div>
+    <div class="phase-features">
+      <span class="feat feat-ai">Text-to-CAD ("make a 50mm gear")</span>
+      <span class="feat feat-ai">NL editing ("make the hole 2mm bigger")</span>
+      <span class="feat feat-ai">Smart autocomplete</span>
+      <span class="feat feat-ai">Manufacturability check</span>
+      <span class="feat feat-ai">Cost estimation</span>
+      <span class="feat feat-ai">Standards compliance</span>
+      <span class="feat feat-ai">Photo → identify part</span>
+      <span class="feat feat-ai">Voice commands</span>
+    </div>
+  </div>
+
+  <div class="phase next">
+    <div class="phase-title">Phase C: OnShape Parity — Collaboration</div>
+    <div class="phase-desc">Real-time multi-user editing, git-style version control, sharing, comments. The features that make OnShape worth $1,500/yr — but free.</div>
+    <div class="phase-features">
+      <span class="feat feat-new">Real-time collab (WebRTC/CRDT)</span>
+      <span class="feat feat-new">Presence indicators</span>
+      <span class="feat feat-new">Follow mode</span>
+      <span class="feat feat-new">Git-style branching</span>
+      <span class="feat feat-new">Visual diff (compare versions)</span>
+      <span class="feat feat-new">Comments + task assignment</span>
+      <span class="feat feat-new">Share link (no login)</span>
+      <span class="feat feat-new">Embed widget</span>
+    </div>
+  </div>
+
+  <div class="phase next">
+    <div class="phase-title">Phase D: OnShape Parity — Advanced Modeling</div>
+    <div class="phase-desc">Close remaining modeling gaps: direct editing, configurations, multi-body, hole wizard, 3D sketch.</div>
+    <div class="phase-features">
+      <span class="feat feat-new">Direct edit (push/pull)</span>
+      <span class="feat feat-new">Configurations / variants</span>
+      <span class="feat feat-new">Multi-body Part Studio</span>
+      <span class="feat feat-new">Hole wizard</span>
+      <span class="feat feat-new">3D sketch</span>
+      <span class="feat feat-new">Work features (planes/axes)</span>
+      <span class="feat feat-new">Variable Studio</span>
+      <span class="feat feat-new">Query Variables</span>
+    </div>
+  </div>
+
+  <div class="phase next">
+    <div class="phase-title">Phase E: OnShape Parity — Simulation & Manufacturing</div>
+    <div class="phase-desc">FEA simulation, CAM toolpaths, rendering, GD&T — the professional features.</div>
+    <div class="phase-features">
+      <span class="feat feat-new">FEA (linear static)</span>
+      <span class="feat feat-new">Modal analysis</span>
+      <span class="feat feat-new">CAM 2.5D milling</span>
+      <span class="feat feat-new">Render Studio</span>
+      <span class="feat feat-new">GD&T annotations</span>
+      <span class="feat feat-new">Tolerance analysis</span>
+      <span class="feat feat-new">Motion simulation</span>
+    </div>
+  </div>
+
+  <div class="phase next">
+    <div class="phase-title">Phase F: FeatureScript Equivalent — Plugin API</div>
+    <div class="phase-desc">OnShape's FeatureScript lets users create custom features. We build the same: a JS API for creating custom parametric operations.</div>
+    <div class="phase-features">
+      <span class="feat feat-new">Plugin API (JS)</span>
+      <span class="feat feat-new">Custom feature types</span>
+      <span class="feat feat-new">Plugin marketplace</span>
+      <span class="feat feat-new">REST API</span>
+      <span class="feat feat-new">Webhook integrations</span>
+    </div>
+  </div>
+
+  <div class="phase next">
+    <div class="phase-title">Phase G: Platform — PWA, Desktop, Community</div>
+    <div class="phase-desc">PWA for offline use, Electron desktop app, model library, template gallery.</div>
+    <div class="phase-features">
+      <span class="feat feat-new">PWA (offline)</span>
+      <span class="feat feat-new">Electron desktop</span>
+      <span class="feat feat-new">Model library</span>
+      <span class="feat feat-new">Template gallery</span>
+      <span class="feat feat-new">Community forum</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ===== AI COPILOT TAB ===== -->
+<div id="copilot" class="tab-content">
+<h2>AI CAD Copilot — The MecAgent + Aurorin Killer</h2>
+<p style="color:#8b949e;margin-bottom:20px">What MecAgent charges for as a plugin and Aurorin locks behind a desktop app, cycleCAD ships free in the browser.</p>
+
+<h3>Architecture</h3>
+<div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:20px;font-family:monospace;font-size:0.85rem;color:#c9d1d9;line-height:1.8;overflow-x:auto;margin:12px 0">
+<pre>
+┌─────────────────────────────────────────────────────────────┐
+│  AI Copilot Layer                                            │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  User Input ──→ Intent Parser ──→ Action Router              │
+│  "make a 50mm spur gear"   │         │                       │
+│  "make the hole bigger"    │         ├→ Text-to-CAD          │
+│  "check DIN standards"     │         ├→ NL Edit              │
+│  "what's this part?"       │         ├→ Standards Check      │
+│  voice / text / photo      │         ├→ Part Identifier      │
+│                             │         ├→ Smart Autocomplete   │
+│                             │         ├→ Cost Estimator       │
+│                             │         └→ Design Validator     │
+│                             │                                 │
+│  LLM Backends (multi-provider, auto-fallback):               │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐       │
+│  │ Gemini   │ │ Groq     │ │ Claude   │ │ Offline  │       │
+│  │ Flash    │ │ Llama 3  │ │ Sonnet   │ │ NLP      │       │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘       │
+│                                                              │
+│  CAD Action API (maps AI output → geometry operations):      │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │ createSketch() → extrude() → fillet() → pattern()    │   │
+│  │ modifyDimension() → addConstraint() → boolean()      │   │
+│  │ createGear() → createBearing() → createBolt()        │   │
+│  │ importSTEP() → analyzePart() → exportBOM()           │   │
+│  └──────────────────────────────────────────────────────┘   │
+│                                                              │
+│  Context Engine (understands what you're working on):        │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │ Current selection │ Feature tree │ Assembly context    │   │
+│  │ Materials         │ Constraints  │ History             │   │
+│  │ Project metadata  │ Standards    │ Previous commands   │   │
+│  └──────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+</pre>
+</div>
+
+<h3>Copilot Features — Detailed</h3>
+<div class="diff-grid">
+  <div class="diff-card">
+    <h4>1. Text-to-CAD</h4>
+    <p>Describe a part in plain English → get a fully parametric 3D model. "Create a 50mm spur gear with 20 teeth and a 10mm bore" → sketch + extrude + pattern + hole.</p>
+    <div class="killer">vs. MecAgent: works in our tool, not as a plugin. vs. Aurorin: open-source + browser.</div>
+  </div>
+  <div class="diff-card">
+    <h4>2. Natural Language Editing</h4>
+    <p>"Make the hole 2mm larger" → finds the hole feature, updates the dimension, rebuilds. "Add a 3mm fillet to all edges" → selects edges, applies fillet.</p>
+    <div class="killer">Context-aware: knows your current selection, feature tree, and assembly.</div>
+  </div>
+  <div class="diff-card">
+    <h4>3. Smart Autocomplete</h4>
+    <p>Predicts your next operation based on what you've done. Just extruded a boss? Suggests "Add fillet?" with optimal radius. Building a bracket? Suggests hole pattern.</p>
+    <div class="killer">Learns from your workflow patterns within the session.</div>
+  </div>
+  <div class="diff-card">
+    <h4>4. Manufacturability Check</h4>
+    <p>Analyzes geometry for DFM issues: wall thickness too thin, draft angles missing, undercuts that can't be machined, tolerances that are too tight for the material.</p>
+    <div class="killer">Runs automatically on every feature, not as a separate step.</div>
+  </div>
+  <div class="diff-card">
+    <h4>5. Cost Estimation</h4>
+    <p>Estimates manufacturing cost from geometry + material + process. "This part costs ~$12 to CNC from 6061 aluminum, ~$3 to 3D print in PLA, ~$0.80 injection molded at 10K units."</p>
+    <div class="killer">Integrated with McMaster pricing for standard parts.</div>
+  </div>
+  <div class="diff-card">
+    <h4>6. Photo → Part Identification</h4>
+    <p>Take a photo of a physical part → AI identifies it → suggests McMaster-Carr match → imports CAD model. Already have Gemini Vision in ExplodeView, extend to real photos.</p>
+    <div class="killer">Camera on phone → identified → ordered → in your assembly. End to end.</div>
+  </div>
+  <div class="diff-card">
+    <h4>7. Standards Compliance</h4>
+    <p>Auto-check against DIN/ISO standards. Flag non-standard bolt sizes, verify thread specs, check material compatibility. Already have DIN/ISO identifier in ExplodeView.</p>
+    <div class="killer">vs. MecAgent: same feature but free and built-in.</div>
+  </div>
+  <div class="diff-card">
+    <h4>8. Assembly Intelligence</h4>
+    <p>"How do I disassemble the motor?" → AI reads assembly tree + mate constraints → generates step-by-step removal instructions with tool requirements.</p>
+    <div class="killer">Already have assembly instructions in ExplodeView. Copilot makes them conversational.</div>
+  </div>
+</div>
+
+<h3>Why This Beats MecAgent and Aurorin</h3>
+<div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:20px;margin:12px 0">
+<table style="width:100%;font-size:0.88rem">
+<tr><th style="text-align:left;padding:8px;color:#58a6ff">Capability</th><th style="text-align:center;padding:8px;color:#3fb950">cycleCAD Copilot</th><th style="text-align:center;padding:8px;color:#8b949e">MecAgent</th><th style="text-align:center;padding:8px;color:#8b949e">Aurorin</th></tr>
+<tr><td style="padding:8px">Standalone (no host CAD needed)</td><td style="text-align:center;color:#3fb950;padding:8px">✓</td><td style="text-align:center;color:#f85149;padding:8px">✗</td><td style="text-align:center;color:#3fb950;padding:8px">✓</td></tr>
+<tr><td style="padding:8px">Browser-based</td><td style="text-align:center;color:#3fb950;padding:8px">✓</td><td style="text-align:center;color:#f85149;padding:8px">✗</td><td style="text-align:center;color:#f85149;padding:8px">✗</td></tr>
+<tr><td style="padding:8px">Open source</td><td style="text-align:center;color:#3fb950;padding:8px">✓</td><td style="text-align:center;color:#f85149;padding:8px">✗</td><td style="text-align:center;color:#f85149;padding:8px">✗</td></tr>
+<tr><td style="padding:8px">Free</td><td style="text-align:center;color:#3fb950;padding:8px">✓</td><td style="text-align:center;color:#f85149;padding:8px">✗</td><td style="text-align:center;color:#f85149;padding:8px">✗</td></tr>
+<tr><td style="padding:8px">Text-to-CAD</td><td style="text-align:center;color:#f0883e;padding:8px">★ planned</td><td style="text-align:center;color:#3fb950;padding:8px">✓</td><td style="text-align:center;color:#3fb950;padding:8px">✓</td></tr>
+<tr><td style="padding:8px">NL editing</td><td style="text-align:center;color:#f0883e;padding:8px">★ planned</td><td style="text-align:center;color:#3fb950;padding:8px">✓</td><td style="text-align:center;color:#3fb950;padding:8px">✓</td></tr>
+<tr><td style="padding:8px">Assembly analysis (BOM, maintenance)</td><td style="text-align:center;color:#3fb950;padding:8px">✓</td><td style="text-align:center;color:#f85149;padding:8px">✗</td><td style="text-align:center;color:#f85149;padding:8px">✗</td></tr>
+<tr><td style="padding:8px">Part identification (AI Vision)</td><td style="text-align:center;color:#3fb950;padding:8px">✓</td><td style="text-align:center;color:#f85149;padding:8px">✗</td><td style="text-align:center;color:#f85149;padding:8px">✗</td></tr>
+<tr><td style="padding:8px">Maintenance heatmap / wear timeline</td><td style="text-align:center;color:#3fb950;padding:8px">✓</td><td style="text-align:center;color:#f85149;padding:8px">✗</td><td style="text-align:center;color:#f85149;padding:8px">✗</td></tr>
+<tr><td style="padding:8px">Inventor .ipt/.iam native import</td><td style="text-align:center;color:#3fb950;padding:8px">✓</td><td style="text-align:center;color:#f0883e;padding:8px">~plugin</td><td style="text-align:center;color:#f85149;padding:8px">✗</td></tr>
+<tr><td style="padding:8px">Mobile viewer</td><td style="text-align:center;color:#3fb950;padding:8px">✓</td><td style="text-align:center;color:#f85149;padding:8px">✗</td><td style="text-align:center;color:#f85149;padding:8px">✗</td></tr>
+<tr><td style="padding:8px">Multi-LLM (Gemini + Groq + Claude + offline)</td><td style="text-align:center;color:#3fb950;padding:8px">✓</td><td style="text-align:center;color:#f85149;padding:8px">✗</td><td style="text-align:center;color:#f85149;padding:8px">✗</td></tr>
+<tr><td style="padding:8px">Offline fallback (works without internet)</td><td style="text-align:center;color:#3fb950;padding:8px">✓</td><td style="text-align:center;color:#f85149;padding:8px">✗</td><td style="text-align:center;color:#f85149;padding:8px">✗</td></tr>
+</table>
+</div>
+</div>
+
+</div>
+
+<script>
+function switchTab(id) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>

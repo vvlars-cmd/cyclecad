@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>cycleCAD — Model Marketplace & Token Economy</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0e1a;--card:#111827;--border:#1e293b;--accent:#06b6d4;--green:#10b981;
+  --orange:#f59e0b;--pink:#ec4899;--purple:#8b5cf6;--red:#ef4444;--blue:#3b82f6;
+  --text:#f1f5f9;--muted:#94a3b8;--dim:#475569;
+}
+body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+a{color:var(--accent);text-decoration:none}
+
+/* Hero */
+.hero{text-align:center;padding:80px 24px 40px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:800px;height:800px;background:radial-gradient(circle,rgba(6,182,212,0.08) 0%,transparent 70%);pointer-events:none}
+.hero h1{font-size:3rem;font-weight:800;background:linear-gradient(135deg,#06b6d4,#8b5cf6,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px}
+.hero p{font-size:1.2rem;color:var(--muted);max-width:700px;margin:0 auto}
+.badge{display:inline-block;background:linear-gradient(135deg,var(--accent),var(--purple));color:#fff;font-size:0.75rem;font-weight:700;padding:4px 14px;border-radius:20px;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:16px}
+.diff-badge{background:linear-gradient(135deg,var(--green),var(--accent));margin-top:12px;font-size:0.85rem;padding:6px 18px}
+
+/* Section */
+.section{max-width:1200px;margin:0 auto;padding:40px 24px}
+.section-title{font-size:1.6rem;font-weight:700;margin-bottom:8px}
+.section-sub{color:var(--muted);margin-bottom:32px;font-size:1rem}
+
+/* Flow Diagram */
+.flow{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:0;margin:40px 0}
+.flow-node{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px 20px;text-align:center;min-width:160px;max-width:200px;position:relative;transition:all .3s}
+.flow-node:hover{border-color:var(--accent);transform:translateY(-4px);box-shadow:0 8px 32px rgba(6,182,212,0.15)}
+.flow-icon{font-size:2.2rem;margin-bottom:8px}
+.flow-label{font-weight:700;font-size:0.95rem;margin-bottom:4px}
+.flow-desc{font-size:0.78rem;color:var(--muted);line-height:1.4}
+.flow-arrow{font-size:1.8rem;color:var(--accent);padding:0 8px;flex-shrink:0}
+.flow-tokens{display:inline-block;background:rgba(6,182,212,0.15);color:var(--accent);font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:8px;margin-top:6px}
+
+/* Cards Grid */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin:24px 0}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px 24px;transition:all .3s}
+.card:hover{border-color:var(--accent);transform:translateY(-3px)}
+.card-icon{font-size:2rem;margin-bottom:12px}
+.card h3{font-size:1.1rem;font-weight:700;margin-bottom:8px}
+.card p{font-size:0.88rem;color:var(--muted);line-height:1.6}
+.card .highlight{color:var(--accent);font-weight:700}
+.card .money{color:var(--green);font-weight:700}
+
+/* Marketplace Visual */
+.marketplace{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin:32px 0}
+@media(max-width:768px){.marketplace{grid-template-columns:1fr}}
+.mp-panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;overflow:hidden}
+.mp-panel h3{font-size:1.15rem;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.mp-item{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(255,255,255,0.02);border-radius:10px;margin-bottom:8px;border:1px solid rgba(255,255,255,0.04);transition:all .2s}
+.mp-item:hover{background:rgba(6,182,212,0.06);border-color:rgba(6,182,212,0.2)}
+.mp-item-left{display:flex;align-items:center;gap:12px}
+.mp-item-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem}
+.mp-item-name{font-weight:600;font-size:0.9rem}
+.mp-item-meta{font-size:0.75rem;color:var(--muted)}
+.mp-item-price{text-align:right}
+.mp-item-tokens{font-weight:700;color:var(--accent);font-size:0.95rem}
+.mp-item-eur{font-size:0.75rem;color:var(--muted)}
+
+/* Token Engine */
+.engine{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin:24px 0}
+.engine-block{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:center;transition:all .3s}
+.engine-block:hover{border-color:var(--purple);box-shadow:0 4px 20px rgba(139,92,246,0.1)}
+.engine-block .icon{font-size:1.8rem;margin-bottom:8px}
+.engine-block h4{font-size:0.9rem;font-weight:700;margin-bottom:4px}
+.engine-block p{font-size:0.75rem;color:var(--muted);line-height:1.4}
+
+/* Comparison Table */
+.comp-table{width:100%;border-collapse:collapse;margin:24px 0;font-size:0.88rem}
+.comp-table th{background:rgba(6,182,212,0.1);color:var(--accent);padding:14px 16px;text-align:left;font-weight:700;border-bottom:2px solid var(--border)}
+.comp-table td{padding:12px 16px;border-bottom:1px solid var(--border)}
+.comp-table tr:hover td{background:rgba(255,255,255,0.02)}
+.comp-table .feature{font-weight:600}
+.comp-table .yes{color:var(--green);font-weight:700}
+.comp-table .no{color:var(--red);opacity:0.6}
+.comp-table .partial{color:var(--orange)}
+.comp-table .unique{background:rgba(6,182,212,0.08);border-left:3px solid var(--accent)}
+
+/* Stats Bar */
+.stats{display:flex;justify-content:center;gap:48px;margin:40px 0;flex-wrap:wrap}
+.stat{text-align:center}
+.stat-val{font-size:2.2rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat-label{font-size:0.8rem;color:var(--muted);margin-top:4px}
+
+/* Flywheel */
+.flywheel{position:relative;width:400px;height:400px;margin:40px auto;display:flex;align-items:center;justify-content:center}
+.flywheel-ring{position:absolute;width:100%;height:100%;border:2px dashed var(--border);border-radius:50%;animation:spin 30s linear infinite}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.flywheel-center{width:140px;height:140px;border-radius:50%;background:linear-gradient(135deg,rgba(6,182,212,0.2),rgba(139,92,246,0.2));border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:2}
+.flywheel-center span{font-size:1.8rem}
+.flywheel-center small{font-size:0.7rem;color:var(--accent);font-weight:700;margin-top:4px}
+.fly-node{position:absolute;width:90px;height:90px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;font-size:0.7rem;font-weight:600;border:2px solid;z-index:3;background:var(--bg)}
+.fly-node span{font-size:1.4rem;margin-bottom:2px}
+.fly-n1{top:-10px;left:50%;transform:translateX(-50%);border-color:var(--green);color:var(--green)}
+.fly-n2{top:50%;right:-10px;transform:translateY(-50%);border-color:var(--accent);color:var(--accent)}
+.fly-n3{bottom:-10px;left:50%;transform:translateX(-50%);border-color:var(--orange);color:var(--orange)}
+.fly-n4{top:50%;left:-10px;transform:translateY(-50%);border-color:var(--purple);color:var(--purple)}
+
+/* Payout */
+.payout-flow{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin:32px 0;padding:24px;background:var(--card);border-radius:16px;border:1px solid var(--border)}
+.payout-step{text-align:center;padding:16px;min-width:120px}
+.payout-step .icon{font-size:2rem;margin-bottom:6px}
+.payout-step .label{font-weight:700;font-size:0.85rem}
+.payout-step .desc{font-size:0.72rem;color:var(--muted);margin-top:4px}
+.payout-arrow{font-size:1.4rem;color:var(--green)}
+
+/* Royalty Tiers */
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin:24px 0}
+@media(max-width:768px){.tiers{grid-template-columns:1fr}}
+.tier{background:var(--card);border-radius:16px;padding:28px;text-align:center;border:2px solid var(--border);transition:all .3s}
+.tier:hover{transform:translateY(-4px)}
+.tier.featured{border-color:var(--accent);box-shadow:0 0 40px rgba(6,182,212,0.1)}
+.tier h3{font-size:1.3rem;margin-bottom:4px}
+.tier .pct{font-size:2.4rem;font-weight:800;margin:12px 0}
+.tier .pct-label{font-size:0.8rem;color:var(--muted)}
+.tier ul{list-style:none;text-align:left;margin-top:16px}
+.tier li{padding:6px 0;font-size:0.85rem;color:var(--muted);border-bottom:1px solid rgba(255,255,255,0.04)}
+.tier li::before{content:'✓ ';color:var(--green);font-weight:700}
+
+/* Footer */
+.footer{text-align:center;padding:60px 24px;color:var(--dim);font-size:0.85rem}
+.footer strong{color:var(--accent)}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="badge">What No Other CAD Platform Does</div>
+  <h1>The Model Economy</h1>
+  <p>Create CAD models with AI agents. Share them on the marketplace. Earn real money. This is what makes cycleCAD fundamentally different from OnShape, Fusion 360, and SolidWorks.</p>
+  <div class="badge diff-badge">🏆 #1 Competitive Differentiator</div>
+</div>
+
+<!-- KEY STATS -->
+<div class="stats">
+  <div class="stat"><div class="stat-val">€1 = 100</div><div class="stat-label">$CYCLE Tokens</div></div>
+  <div class="stat"><div class="stat-val">70%</div><div class="stat-label">Creator Royalty</div></div>
+  <div class="stat"><div class="stat-val">∞</div><div class="stat-label">Passive Income Streams</div></div>
+  <div class="stat"><div class="stat-val">0%</div><div class="stat-label">Upfront Cost to Create</div></div>
+</div>
+
+<!-- THE BIG IDEA -->
+<div class="section">
+  <div class="section-title">💡 The Big Idea</div>
+  <div class="section-sub">Every other CAD tool charges you to use it. cycleCAD pays you to create with it.</div>
+  <div class="cards">
+    <div class="card">
+      <div class="card-icon">🤖</div>
+      <h3>AI Agents Create Models</h3>
+      <p>Describe what you need in plain language. AI agents design, validate, and optimize the CAD model. You own what they create — <span class="highlight">zero modeling skill required</span>.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🏪</div>
+      <h3>Share on the Marketplace</h3>
+      <p>Publish your model to the cycleCAD marketplace. Set your price in $CYCLE tokens. Other users and agents discover, preview, and purchase your designs.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">💰</div>
+      <h3>Earn Real Money</h3>
+      <p>Every download earns you $CYCLE tokens. Cash them out: <span class="money">100 tokens = €1</span> via Stripe to your bank, or <span class="money">withdraw as USDC/ETH to your crypto wallet</span>.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🔄</div>
+      <h3>Perpetual Royalties</h3>
+      <p>Unlike Thingiverse or GrabCAD where uploads are free and creators earn nothing, every use of your model on cycleCAD <span class="money">generates ongoing revenue</span>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- TOKEN FLOW -->
+<div class="section">
+  <div class="section-title">🪙 How $CYCLE Tokens Flow</div>
+  <div class="section-sub">A circular economy where every participant benefits.</div>
+
+  <div class="flow">
+    <div class="flow-node">
+      <div class="flow-icon">💳</div>
+      <div class="flow-label">Buy Tokens</div>
+      <div class="flow-desc">€1 or USDC/ETH/BTC → 100 $CYCLE via Stripe or crypto on-ramp</div>
+      <div class="flow-tokens">FIAT + CRYPTO → TOKENS</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">
+      <div class="flow-icon">⚡</div>
+      <div class="flow-label">Spend Tokens</div>
+      <div class="flow-desc">AI generation, model downloads, premium features</div>
+      <div class="flow-tokens">5-500 per action</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">
+      <div class="flow-icon">🏪</div>
+      <div class="flow-label">Creator Earns</div>
+      <div class="flow-desc">70% of every token spent on your model goes to you</div>
+      <div class="flow-tokens">70% ROYALTY</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">
+      <div class="flow-icon">🏦</div>
+      <div class="flow-label">Cash Out</div>
+      <div class="flow-desc">100 $CYCLE → €1 to bank (Stripe) or USDC/ETH to wallet</div>
+      <div class="flow-tokens">TOKENS → FIAT or CRYPTO</div>
+    </div>
+  </div>
+
+  <!-- FLYWHEEL -->
+  <div style="text-align:center;margin-top:48px">
+    <h3 style="color:var(--accent);margin-bottom:8px">The Flywheel Effect</h3>
+    <p style="color:var(--muted);font-size:0.9rem;margin-bottom:24px">More creators → more models → more users → more token demand → higher creator earnings → more creators</p>
+  </div>
+  <div class="flywheel">
+    <div class="flywheel-ring"></div>
+    <div class="flywheel-center"><span>🪙</span><small>$CYCLE</small></div>
+    <div class="fly-node fly-n1"><span>🧑‍🎨</span>Create</div>
+    <div class="fly-node fly-n2"><span>📤</span>Share</div>
+    <div class="fly-node fly-n3"><span>💸</span>Earn</div>
+    <div class="fly-node fly-n4"><span>🔁</span>Reinvest</div>
+  </div>
+</div>
+
+<!-- CRYPTO = CURRENCY OF AGENTS -->
+<div class="section">
+  <div class="section-title">🔗 Crypto Is the Currency of Agents</div>
+  <div class="section-sub">AI agents don't have bank accounts. They have wallets. Crypto is the native payment rail for autonomous machines.</div>
+
+  <div class="cards">
+    <div class="card" style="border-left:3px solid var(--accent)">
+      <div class="card-icon">🤖</div>
+      <h3>Agents Pay in Crypto</h3>
+      <p>When an AI agent needs a gearbox model for an assembly, it pays in USDC or ETH — instantly, programmatically, no invoicing. The crypto converts to $CYCLE tokens on-chain, the model unlocks, the agent continues designing. <span class="highlight">Zero human intervention.</span></p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--green)">
+      <div class="card-icon">🔄</div>
+      <h3>Crypto → $CYCLE Conversion</h3>
+      <p>All payments (fiat or crypto) convert to $CYCLE tokens at the platform level. <span class="money">1 USDC = 100 $CYCLE. 0.0003 ETH ≈ 100 $CYCLE.</span> The token is the internal unit of value — stable, auditable, and platform-native. Future: $CYCLE as ERC-20 on-chain.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--orange)">
+      <div class="card-icon">💸</div>
+      <h3>Creators Cash Out to Crypto</h3>
+      <p>Earned 50,000 $CYCLE from your models? Cash out as <span class="money">€500 via Stripe to your bank</span>, or <span class="money">500 USDC to your crypto wallet</span> — your choice. Agents that earn tokens can reinvest them autonomously into more model purchases.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--purple)">
+      <div class="card-icon">⛓️</div>
+      <h3>On-Chain Settlement</h3>
+      <p>Every token transaction is anchored on-chain for transparency. Royalty splits execute via smart contracts — <span class="highlight">70% to creator, 15% to derivative original, 10-30% to platform</span> — all verifiable, immutable, instant. No disputes.</p>
+    </div>
+  </div>
+
+  <div style="margin-top:24px;overflow-x:auto">
+  <table class="comp-table" style="min-width:600px">
+    <thead>
+      <tr>
+        <th>Payment Method</th>
+        <th>Buy $CYCLE Tokens</th>
+        <th>Cash Out Tokens</th>
+        <th>Best For</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="feature">💳 Credit Card (Stripe)</td>
+        <td style="color:var(--green);font-weight:700">€1 = 100 $CYCLE</td>
+        <td style="color:var(--green);font-weight:700">100 $CYCLE = €1</td>
+        <td style="color:var(--muted)">Human users, enterprises</td>
+      </tr>
+      <tr>
+        <td class="feature">💵 USDC (Stablecoin)</td>
+        <td style="color:var(--accent);font-weight:700">1 USDC = 100 $CYCLE</td>
+        <td style="color:var(--accent);font-weight:700">100 $CYCLE = 1 USDC</td>
+        <td style="color:var(--muted)">AI agents, global users, instant settlement</td>
+      </tr>
+      <tr>
+        <td class="feature">⟠ ETH</td>
+        <td style="color:var(--purple);font-weight:700">Market rate → $CYCLE</td>
+        <td style="color:var(--purple);font-weight:700">$CYCLE → ETH at market</td>
+        <td style="color:var(--muted)">Crypto-native creators, DeFi integration</td>
+      </tr>
+      <tr>
+        <td class="feature">₿ BTC</td>
+        <td style="color:var(--orange);font-weight:700">Market rate → $CYCLE</td>
+        <td style="color:var(--orange);font-weight:700">$CYCLE → BTC at market</td>
+        <td style="color:var(--muted)">Store of value, large transactions</td>
+      </tr>
+      <tr>
+        <td class="feature">🍎 Apple Pay / Google Pay</td>
+        <td style="color:var(--green);font-weight:700">€1 = 100 $CYCLE</td>
+        <td style="color:var(--muted)">N/A (use Stripe/crypto)</td>
+        <td style="color:var(--muted)">Mobile users, quick top-up</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="cards" style="margin-top:24px">
+    <div class="card" style="border-left:3px solid var(--pink)">
+      <div class="card-icon">🚀</div>
+      <h3>Why Crypto Matters for Agents</h3>
+      <p>Human engineers use credit cards. But the future of CAD is <strong>agent swarms</strong> — hundreds of AI agents designing, validating, and ordering parts autonomously. Agents need <span class="highlight">programmable money</span>: instant, borderless, API-native. That's crypto. $CYCLE tokens are the payment API that makes agent-to-agent commerce possible.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent)">
+      <div class="card-icon">🌍</div>
+      <h3>Global by Default</h3>
+      <p>A factory agent in Shenzhen buys a bracket model from a creator in Berlin. No bank transfer delays, no currency conversion fees, no invoicing. <span class="money">USDC → $CYCLE → model unlocked in 2 seconds.</span> Manufacturing is global. The payment layer should be too.</p>
+    </div>
+  </div>
+</div>
+
+<!-- MODEL MARKETPLACE -->
+<div class="section">
+  <div class="section-title">🏪 The Model Marketplace</div>
+  <div class="section-sub">A live marketplace where models are assets that generate income.</div>
+  <div class="marketplace">
+    <div class="mp-panel">
+      <h3>🔥 Trending Models</h3>
+      <div class="mp-item">
+        <div class="mp-item-left">
+          <div class="mp-item-icon" style="background:rgba(6,182,212,0.15)">⚙️</div>
+          <div><div class="mp-item-name">Planetary Gearbox (3-Stage)</div><div class="mp-item-meta">by @engineer_max · 1,247 downloads</div></div>
+        </div>
+        <div class="mp-item-price"><div class="mp-item-tokens">250 🪙</div><div class="mp-item-eur">≈ €2.50</div></div>
+      </div>
+      <div class="mp-item">
+        <div class="mp-item-left">
+          <div class="mp-item-icon" style="background:rgba(16,185,129,0.15)">🔩</div>
+          <div><div class="mp-item-name">M8 Bracket Assembly Kit</div><div class="mp-item-meta">by @cyclewash · 892 downloads</div></div>
+        </div>
+        <div class="mp-item-price"><div class="mp-item-tokens">50 🪙</div><div class="mp-item-eur">≈ €0.50</div></div>
+      </div>
+      <div class="mp-item">
+        <div class="mp-item-left">
+          <div class="mp-item-icon" style="background:rgba(245,158,11,0.15)">🏭</div>
+          <div><div class="mp-item-name">Industrial Conveyor Frame</div><div class="mp-item-meta">by @factory_ai · 634 downloads</div></div>
+        </div>
+        <div class="mp-item-price"><div class="mp-item-tokens">500 🪙</div><div class="mp-item-eur">≈ €5.00</div></div>
+      </div>
+      <div class="mp-item">
+        <div class="mp-item-left">
+          <div class="mp-item-icon" style="background:rgba(139,92,246,0.15)">💧</div>
+          <div><div class="mp-item-name">Bike Wash Nozzle Array</div><div class="mp-item-meta">by @sachin · 2,103 downloads</div></div>
+        </div>
+        <div class="mp-item-price"><div class="mp-item-tokens">150 🪙</div><div class="mp-item-eur">≈ €1.50</div></div>
+      </div>
+      <div class="mp-item">
+        <div class="mp-item-left">
+          <div class="mp-item-icon" style="background:rgba(236,72,153,0.15)">🔧</div>
+          <div><div class="mp-item-name">Quick-Release Motor Mount</div><div class="mp-item-meta">by @mech_agent · 456 downloads</div></div>
+        </div>
+        <div class="mp-item-price"><div class="mp-item-tokens">100 🪙</div><div class="mp-item-eur">≈ €1.00</div></div>
+      </div>
+    </div>
+    <div class="mp-panel">
+      <h3>💰 Top Earners This Month</h3>
+      <div class="mp-item">
+        <div class="mp-item-left">
+          <div class="mp-item-icon" style="background:rgba(16,185,129,0.15)">🥇</div>
+          <div><div class="mp-item-name">@engineer_max</div><div class="mp-item-meta">47 models · Mechanical specialist</div></div>
+        </div>
+        <div class="mp-item-price"><div class="mp-item-tokens" style="color:var(--green)">€2,340</div><div class="mp-item-eur">234,000 🪙 earned</div></div>
+      </div>
+      <div class="mp-item">
+        <div class="mp-item-left">
+          <div class="mp-item-icon" style="background:rgba(6,182,212,0.15)">🥈</div>
+          <div><div class="mp-item-name">@factory_ai</div><div class="mp-item-meta">23 models · Industrial automation</div></div>
+        </div>
+        <div class="mp-item-price"><div class="mp-item-tokens" style="color:var(--green)">€1,870</div><div class="mp-item-eur">187,000 🪙 earned</div></div>
+      </div>
+      <div class="mp-item">
+        <div class="mp-item-left">
+          <div class="mp-item-icon" style="background:rgba(245,158,11,0.15)">🥉</div>
+          <div><div class="mp-item-name">@sachin</div><div class="mp-item-meta">12 models · Bike wash systems</div></div>
+        </div>
+        <div class="mp-item-price"><div class="mp-item-tokens" style="color:var(--green)">€1,520</div><div class="mp-item-eur">152,000 🪙 earned</div></div>
+      </div>
+      <div class="mp-item">
+        <div class="mp-item-left">
+          <div class="mp-item-icon" style="background:rgba(139,92,246,0.15)">4</div>
+          <div><div class="mp-item-name">@mech_agent</div><div class="mp-item-meta">AI agent · Auto-generated parts</div></div>
+        </div>
+        <div class="mp-item-price"><div class="mp-item-tokens" style="color:var(--green)">€980</div><div class="mp-item-eur">98,000 🪙 earned</div></div>
+      </div>
+      <div class="mp-item">
+        <div class="mp-item-left">
+          <div class="mp-item-icon" style="background:rgba(236,72,153,0.15)">5</div>
+          <div><div class="mp-item-name">@bracket_king</div><div class="mp-item-meta">89 models · Brackets & mounts</div></div>
+        </div>
+        <div class="mp-item-price"><div class="mp-item-tokens" style="color:var(--green)">€740</div><div class="mp-item-eur">74,000 🪙 earned</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HOW MODELS ARE MONETIZED -->
+<div class="section">
+  <div class="section-title">📊 5 Ways Models Generate Revenue</div>
+  <div class="section-sub">Every model you share is an asset with multiple income streams.</div>
+  <div class="cards">
+    <div class="card">
+      <div class="card-icon">🛒</div>
+      <h3>1. Direct Downloads</h3>
+      <p>Users pay tokens to download your STEP/GLB/STL files. You set the price. <span class="money">You earn 70% of every sale</span>. Popular models generate passive income for years.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🤖</div>
+      <h3>2. Agent Usage Fees</h3>
+      <p>When AI agents reference your model as a component in someone else's design, <span class="money">you earn micro-royalties per use</span>. An M8 bracket used 10,000 times = 10,000 payouts.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🧬</div>
+      <h3>3. Derivative Royalties</h3>
+      <p>Someone forks your gearbox and modifies it? The original creator <span class="money">earns 15% of derivative sales</span>. Your work compounds across the entire ecosystem.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">📐</div>
+      <h3>4. Template Licensing</h3>
+      <p>Parametric models used as templates earn tokens every time someone generates a variant. A configurable bracket template = <span class="money">infinite variations, infinite earnings</span>.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🏢</div>
+      <h3>5. Enterprise Procurement</h3>
+      <p>Companies buy bulk token packages for their teams. When engineers use marketplace models in production, <span class="money">creators earn enterprise-grade payouts</span>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- GRANULAR ACCESS LEVELS — AGENT-DEFINED PRICING -->
+<div class="section">
+  <div class="section-title">🎚️ Granular Access Levels — Agents Set the Price</div>
+  <div class="section-sub">Models aren't all-or-nothing. The creator's agent defines exactly what each buyer gets at each price tier — down to individual features, dimensions, and file formats.</div>
+
+  <div style="overflow-x:auto">
+  <table class="comp-table" style="min-width:700px">
+    <thead>
+      <tr>
+        <th>Access Tier</th>
+        <th>What You Get</th>
+        <th>Token Cost</th>
+        <th>Use Case</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="feature">👁️ Preview</td>
+        <td>3D viewport render, bounding box dimensions, part count</td>
+        <td style="color:var(--green);font-weight:700">FREE</td>
+        <td style="color:var(--muted)">Browse before you buy</td>
+      </tr>
+      <tr>
+        <td class="feature">📊 Metadata</td>
+        <td>Full BOM, material list, weight estimates, assembly tree structure</td>
+        <td style="color:var(--accent);font-weight:700">10 🪙</td>
+        <td style="color:var(--muted)">Cost estimation, procurement planning</td>
+      </tr>
+      <tr>
+        <td class="feature">📐 Dimensions</td>
+        <td>All exact dimensions, tolerances, feature parameters, measurement data</td>
+        <td style="color:var(--accent);font-weight:700">25 🪙</td>
+        <td style="color:var(--muted)">Reference for own designs, reverse engineering</td>
+      </tr>
+      <tr>
+        <td class="feature">📦 Mesh Export</td>
+        <td>STL / OBJ / GLB download — triangulated mesh, no parametric data</td>
+        <td style="color:var(--orange);font-weight:700">50 🪙</td>
+        <td style="color:var(--muted)">3D printing, visualization, rendering</td>
+      </tr>
+      <tr>
+        <td class="feature">⚙️ Parametric</td>
+        <td>Full STEP/native file with editable feature tree, constraints, history</td>
+        <td style="color:var(--purple);font-weight:700">200 🪙</td>
+        <td style="color:var(--muted)">Modify, customize, integrate into assemblies</td>
+      </tr>
+      <tr>
+        <td class="feature">🏭 CAM-Ready</td>
+        <td>Parametric + pre-generated toolpaths (CNC G-code, laser DXF, 3D print sliced)</td>
+        <td style="color:var(--pink);font-weight:700">500 🪙</td>
+        <td style="color:var(--muted)">Send directly to machine — zero prep</td>
+      </tr>
+      <tr>
+        <td class="feature">👑 Full IP</td>
+        <td>Everything above + commercial license + derivative rights + source parametrics</td>
+        <td style="color:var(--orange);font-weight:700">1,000+ 🪙</td>
+        <td style="color:var(--muted)">Enterprise OEM, white-label, mass production</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="cards" style="margin-top:28px">
+    <div class="card" style="border-left:3px solid var(--accent)">
+      <div class="card-icon">🤖</div>
+      <h3>Agent-Defined Pricing</h3>
+      <p>The creator's AI agent sets prices for each tier based on model complexity, market demand, and competitive analysis. Agents can <span class="highlight">auto-adjust prices dynamically</span> — raise price on popular models, discount stale inventory, bundle related parts.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--purple)">
+      <div class="card-icon">🔒</div>
+      <h3>Per-Feature Gating</h3>
+      <p>A gearbox model might give away the housing dimensions for free, charge 25 🪙 for gear ratios, and 200 🪙 for the full parametric model. <span class="highlight">Every feature is individually priced</span> by the agent.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--green)">
+      <div class="card-icon">📈</div>
+      <h3>Progressive Unlock</h3>
+      <p>Tokens spent on lower tiers <span class="money">count toward higher tiers</span>. Spent 50 🪙 on mesh? Only 150 🪙 more for parametric. No buyer remorse. Encourages upselling naturally.</p>
+    </div>
+  </div>
+</div>
+
+<!-- CAM PIPELINE — LASER, 3D PRINT, CNC -->
+<div class="section">
+  <div class="section-title">🏭 CAM Pipeline — From Model to Machine</div>
+  <div class="section-sub">The missing piece that makes cycleCAD a complete design-to-manufacturing platform. Every CAM operation is tokenized.</div>
+
+  <div class="flow">
+    <div class="flow-node">
+      <div class="flow-icon">📐</div>
+      <div class="flow-label">CAD Model</div>
+      <div class="flow-desc">Parametric 3D model from cycleCAD or marketplace</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node" style="border-color:var(--green)">
+      <div class="flow-icon">🖨️</div>
+      <div class="flow-label">3D Print</div>
+      <div class="flow-desc">Auto-slice, support gen, G-code for FDM/SLA/SLS</div>
+      <div class="flow-tokens">20 🪙 per slice</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node" style="border-color:var(--orange)">
+      <div class="flow-icon">⚡</div>
+      <div class="flow-label">Laser Cut</div>
+      <div class="flow-desc">DXF nesting, kerf compensation, power/speed tables</div>
+      <div class="flow-tokens">15 🪙 per sheet</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node" style="border-color:var(--purple)">
+      <div class="flow-icon">🔩</div>
+      <div class="flow-label">CNC Mill</div>
+      <div class="flow-desc">Toolpath generation, feeds/speeds, multi-axis strategies</div>
+      <div class="flow-tokens">50 🪙 per toolpath</div>
+    </div>
+  </div>
+
+  <div class="cards" style="margin-top:32px">
+    <div class="card">
+      <div class="card-icon">🖨️</div>
+      <h3>3D Print Pipeline</h3>
+      <p><strong>AI-powered slicing</strong> — auto-orient for strength, generate optimal supports, estimate print time & material cost. Supports FDM, SLA, SLS, and MJF. Export G-code for Prusa, Bambu, Creality, or send directly to cloud print services. <span class="highlight">20 🪙 per slice job</span>.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">⚡</div>
+      <h3>Laser Cutting Pipeline</h3>
+      <p><strong>Sheet metal to DXF</strong> — auto-unfold 3D sheet metal parts, nest multiple parts on a sheet for minimum waste, calculate kerf compensation, generate power/speed/frequency tables for steel, aluminum, acrylic. <span class="highlight">15 🪙 per nested sheet</span>.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🔩</div>
+      <h3>CNC Toolpath Pipeline</h3>
+      <p><strong>3-axis to 5-axis</strong> — roughing, finishing, adaptive clearing, contour, pocket, drilling, thread milling. AI selects optimal cutting strategies, calculates feeds/speeds per material. Post-processors for Fanuc, Haas, Siemens, Heidenhain. <span class="highlight">50 🪙 per toolpath set</span>.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🔄</div>
+      <h3>CNC Lathe / Turn-Mill</h3>
+      <p><strong>Rotational parts</strong> — facing, OD/ID turning, grooving, threading, parting. Live tooling for turn-mill centers. AI detects rotational symmetry and auto-generates lathe ops. <span class="highlight">40 🪙 per program</span>.</p>
+    </div>
+  </div>
+
+  <div style="margin-top:28px">
+  <table class="comp-table">
+    <thead>
+      <tr>
+        <th>CAM Operation</th>
+        <th>Token Cost</th>
+        <th>What's Included</th>
+        <th>Creator Earns</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="feature">🖨️ FDM Slice (basic)</td>
+        <td style="color:var(--accent);font-weight:700">20 🪙</td>
+        <td>G-code, support gen, time estimate, material weight</td>
+        <td style="color:var(--green)">—</td>
+      </tr>
+      <tr>
+        <td class="feature">🖨️ SLA/SLS Slice (advanced)</td>
+        <td style="color:var(--accent);font-weight:700">35 🪙</td>
+        <td>Resin exposure profile, drain holes, island detection</td>
+        <td style="color:var(--green)">—</td>
+      </tr>
+      <tr>
+        <td class="feature">⚡ Laser DXF (single part)</td>
+        <td style="color:var(--accent);font-weight:700">10 🪙</td>
+        <td>Flat pattern, kerf offset, cut order optimization</td>
+        <td style="color:var(--green)">—</td>
+      </tr>
+      <tr>
+        <td class="feature">⚡ Laser Nesting (multi-part sheet)</td>
+        <td style="color:var(--accent);font-weight:700">30 🪙</td>
+        <td>AI nesting, material utilization %, cut path optimization</td>
+        <td style="color:var(--green)">—</td>
+      </tr>
+      <tr>
+        <td class="feature">🔩 CNC 3-Axis Toolpath</td>
+        <td style="color:var(--orange);font-weight:700">50 🪙</td>
+        <td>Roughing + finishing, tool selection, feeds/speeds</td>
+        <td style="color:var(--green)">—</td>
+      </tr>
+      <tr>
+        <td class="feature">🔩 CNC 5-Axis Toolpath</td>
+        <td style="color:var(--purple);font-weight:700">100 🪙</td>
+        <td>Multi-axis strategies, collision detection, simulation</td>
+        <td style="color:var(--green)">—</td>
+      </tr>
+      <tr>
+        <td class="feature">🔄 CNC Lathe Program</td>
+        <td style="color:var(--orange);font-weight:700">40 🪙</td>
+        <td>Facing, turning, threading, grooving, parting</td>
+        <td style="color:var(--green)">—</td>
+      </tr>
+      <tr style="background:rgba(6,182,212,0.06)">
+        <td class="feature">🏭 <strong>CAM-Ready Marketplace Model</strong></td>
+        <td style="color:var(--pink);font-weight:700">500 🪙</td>
+        <td>Pre-generated toolpaths by creator — download & run</td>
+        <td style="color:var(--green);font-weight:700">70-90% to creator</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="cards" style="margin-top:28px">
+    <div class="card" style="border-left:3px solid var(--green)">
+      <div class="card-icon">💡</div>
+      <h3>The CAM Monetization Play</h3>
+      <p>Creators can sell <strong>CAM-ready models</strong> — pre-sliced, pre-toolpathed, ready to send to a machine. A CNC-ready bracket with optimized toolpaths for Haas VF-2 is worth <span class="money">10× more than a raw STEP file</span>. Creators who invest the effort to validate on real machines earn premium prices.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--orange)">
+      <div class="card-icon">🤖</div>
+      <h3>AI Agent CAM Generation</h3>
+      <p>Don't know CNC programming? Your agent does. Tell it: <em>"Generate 3-axis toolpaths for aluminum, Haas VF-2, 0.05mm tolerance"</em> and it selects tools, calculates feeds/speeds, generates collision-free paths. <span class="highlight">AI agents make CAM accessible to everyone.</span></p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--purple)">
+      <div class="card-icon">🏪</div>
+      <h3>Toolpath Marketplace</h3>
+      <p>Machinist experts sell validated toolpath strategies (not just models) — proven cutting recipes for specific materials + machines. A "316SS Roughing Strategy for Haas" template earns the creator <span class="money">tokens every time it's used</span>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- PAYOUT FLOW -->
+<div class="section">
+  <div class="section-title">🏦 From Creation to Cash</div>
+  <div class="section-sub">The complete journey from CAD model to real money in your bank account.</div>
+  <div class="payout-flow">
+    <div class="payout-step">
+      <div class="icon">🎨</div>
+      <div class="label">Design</div>
+      <div class="desc">You or your AI agent creates a CAD model</div>
+    </div>
+    <div class="payout-arrow">→</div>
+    <div class="payout-step">
+      <div class="icon">✅</div>
+      <div class="label">Validate</div>
+      <div class="desc">AI checks DFM, integrity, quality score</div>
+    </div>
+    <div class="payout-arrow">→</div>
+    <div class="payout-step">
+      <div class="icon">📤</div>
+      <div class="label">Publish</div>
+      <div class="desc">List on marketplace with price + license</div>
+    </div>
+    <div class="payout-arrow">→</div>
+    <div class="payout-step">
+      <div class="icon">🪙</div>
+      <div class="label">Earn</div>
+      <div class="desc">Tokens accumulate from downloads + agent usage</div>
+    </div>
+    <div class="payout-arrow">→</div>
+    <div class="payout-step">
+      <div class="icon">🏦</div>
+      <div class="label">Cash Out</div>
+      <div class="desc">100 🪙 = €1 via Stripe to your bank</div>
+    </div>
+  </div>
+</div>
+
+<!-- CREATOR ROYALTY TIERS -->
+<div class="section">
+  <div class="section-title">⭐ Creator Royalty Tiers</div>
+  <div class="section-sub">The more you share, the more you earn per download.</div>
+  <div class="tiers">
+    <div class="tier">
+      <h3>🌱 Starter</h3>
+      <div class="pct" style="color:var(--green)">70%</div>
+      <div class="pct-label">Royalty Rate</div>
+      <ul>
+        <li>1–10 published models</li>
+        <li>Standard marketplace listing</li>
+        <li>Monthly payout (min €10)</li>
+        <li>Basic analytics dashboard</li>
+        <li>Community support</li>
+      </ul>
+    </div>
+    <div class="tier featured">
+      <h3>🚀 Pro Creator</h3>
+      <div class="pct" style="color:var(--accent)">80%</div>
+      <div class="pct-label">Royalty Rate</div>
+      <ul>
+        <li>11–100 published models</li>
+        <li>Featured placement + badges</li>
+        <li>Weekly payouts (min €5)</li>
+        <li>Advanced analytics + trends</li>
+        <li>Priority review queue</li>
+      </ul>
+    </div>
+    <div class="tier">
+      <h3>👑 Elite</h3>
+      <div class="pct" style="color:var(--orange)">90%</div>
+      <div class="pct-label">Royalty Rate</div>
+      <ul>
+        <li>100+ models or 50K+ downloads</li>
+        <li>Homepage spotlight</li>
+        <li>Instant payouts (no minimum)</li>
+        <li>Revenue forecasting tools</li>
+        <li>Direct enterprise matching</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- TOKEN ENGINE INTERNALS -->
+<div class="section">
+  <div class="section-title">⚙️ Token Engine Architecture</div>
+  <div class="section-sub">The infrastructure that makes instant, secure, auditable payments possible.</div>
+  <div class="engine">
+    <div class="engine-block">
+      <div class="icon">📒</div>
+      <h4>Balance Ledger</h4>
+      <p>Double-entry bookkeeping. Every token movement is an immutable transaction.</p>
+    </div>
+    <div class="engine-block">
+      <div class="icon">🔐</div>
+      <h4>Billing Middleware</h4>
+      <p>Pre-debit check before every action. No overdrafts. Instant balance updates.</p>
+    </div>
+    <div class="engine-block">
+      <div class="icon">⏱️</div>
+      <h4>Rate Limiter</h4>
+      <p>Prevents abuse. Per-user + per-agent limits. Burst allowance for power users.</p>
+    </div>
+    <div class="engine-block">
+      <div class="icon">💱</div>
+      <h4>Price Oracle</h4>
+      <p>Dynamic pricing based on compute cost + model complexity + demand signals.</p>
+    </div>
+    <div class="engine-block">
+      <div class="icon">📝</div>
+      <h4>Audit Log</h4>
+      <p>Every token flow tracked. Royalty splits calculated. Creator dashboards in real-time.</p>
+    </div>
+    <div class="engine-block">
+      <div class="icon">🏦</div>
+      <h4>Payout Engine</h4>
+      <p>Stripe Connect for creators. Auto-payout on threshold. Multi-currency support.</p>
+    </div>
+    <div class="engine-block">
+      <div class="icon">🔀</div>
+      <h4>Royalty Splitter</h4>
+      <p>Auto-splits: 70-90% creator, 15% derivative, 10-30% platform. Instant settlement.</p>
+    </div>
+    <div class="engine-block">
+      <div class="icon">📊</div>
+      <h4>Analytics Engine</h4>
+      <p>Download trends, revenue forecasts, audience insights, competitive pricing data.</p>
+    </div>
+  </div>
+</div>
+
+<!-- COMPETITIVE COMPARISON -->
+<div class="section">
+  <div class="section-title">🏆 Why This Changes Everything</div>
+  <div class="section-sub">No other CAD platform has a model economy. This is the moat.</div>
+  <table class="comp-table">
+    <thead>
+      <tr>
+        <th>Feature</th>
+        <th>cycleCAD</th>
+        <th>OnShape</th>
+        <th>Fusion 360</th>
+        <th>SolidWorks</th>
+        <th>GrabCAD</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="unique">
+        <td class="feature">🪙 Token-Based Model Economy</td>
+        <td class="yes">✓ $CYCLE</td>
+        <td class="no">✗</td>
+        <td class="no">✗</td>
+        <td class="no">✗</td>
+        <td class="no">✗</td>
+      </tr>
+      <tr class="unique">
+        <td class="feature">💰 Creators Earn Real Money</td>
+        <td class="yes">✓ 70-90%</td>
+        <td class="no">✗</td>
+        <td class="no">✗</td>
+        <td class="no">✗</td>
+        <td class="no">✗ Free only</td>
+      </tr>
+      <tr class="unique">
+        <td class="feature">🤖 AI Agent Model Creation</td>
+        <td class="yes">✓ Built-in</td>
+        <td class="no">✗</td>
+        <td class="partial">~ Copilot</td>
+        <td class="no">✗</td>
+        <td class="no">✗</td>
+      </tr>
+      <tr class="unique">
+        <td class="feature">🔄 Derivative Royalties</td>
+        <td class="yes">✓ 15%</td>
+        <td class="no">✗</td>
+        <td class="no">✗</td>
+        <td class="no">✗</td>
+        <td class="no">✗</td>
+      </tr>
+      <tr class="unique">
+        <td class="feature">⚡ Micro-Royalties (Agent Usage)</td>
+        <td class="yes">✓ Per-use</td>
+        <td class="no">✗</td>
+        <td class="no">✗</td>
+        <td class="no">✗</td>
+        <td class="no">✗</td>
+      </tr>
+      <tr>
+        <td class="feature">📤 Model Sharing</td>
+        <td class="yes">✓ Paid + Free</td>
+        <td class="partial">~ Link sharing</td>
+        <td class="partial">~ Gallery</td>
+        <td class="no">✗</td>
+        <td class="yes">✓ Free only</td>
+      </tr>
+      <tr>
+        <td class="feature">🌐 Browser-Based</td>
+        <td class="yes">✓</td>
+        <td class="yes">✓</td>
+        <td class="partial">~ Desktop+cloud</td>
+        <td class="no">✗ Desktop</td>
+        <td class="yes">✓ Viewer</td>
+      </tr>
+      <tr>
+        <td class="feature">🆓 Free Tier</td>
+        <td class="yes">✓ Full CAD</td>
+        <td class="partial">~ Limited</td>
+        <td class="partial">~ Personal</td>
+        <td class="no">✗ $4K+/yr</td>
+        <td class="yes">✓</td>
+      </tr>
+      <tr>
+        <td class="feature">🔓 Open Source</td>
+        <td class="yes">✓</td>
+        <td class="no">✗</td>
+        <td class="no">✗</td>
+        <td class="no">✗</td>
+        <td class="no">✗</td>
+      </tr>
+      <tr class="unique">
+        <td class="feature">🏦 Creator Payouts to Bank</td>
+        <td class="yes">✓ Stripe</td>
+        <td class="no">✗</td>
+        <td class="no">✗</td>
+        <td class="no">✗</td>
+        <td class="no">✗</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- THE MOAT -->
+<div class="section">
+  <div class="section-title">🏰 The Network Effect Moat</div>
+  <div class="section-sub">Once the model economy reaches critical mass, it becomes nearly impossible to replicate.</div>
+  <div class="cards">
+    <div class="card">
+      <div class="card-icon">1️⃣</div>
+      <h3>Content Lock-In</h3>
+      <p>Thousands of monetized models create a library competitors can't replicate. Users come for the models, stay for the ecosystem. <span class="highlight">GrabCAD has 7M+ models but pays creators $0.</span></p>
+    </div>
+    <div class="card">
+      <div class="card-icon">2️⃣</div>
+      <h3>Creator Loyalty</h3>
+      <p>When your models earn you <span class="money">€2,000/month</span>, you don't switch to OnShape. Financial incentives create stickiness no feature can match.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">3️⃣</div>
+      <h3>Agent Training Data</h3>
+      <p>Every model shared improves the AI agents. Better agents → better models → more sharing. <span class="highlight">This data flywheel compounds exponentially.</span></p>
+    </div>
+    <div class="card">
+      <div class="card-icon">4️⃣</div>
+      <h3>Cross-Pollination</h3>
+      <p>A bracket creator's work gets used by a factory automation agent in someone else's assembly. <span class="money">Both earn. Everyone wins.</span> OnShape can't replicate this.</p>
+    </div>
+  </div>
+</div>
+
+<!-- SECURITY -->
+<div class="section">
+  <div class="section-title">🔐 Open Architecture, Protected Models</div>
+  <div class="section-sub">The platform is open source. Your designs are encrypted and access-controlled.</div>
+  <div class="cards">
+    <div class="card">
+      <div class="card-icon">🔑</div>
+      <h3>Encrypted at Rest</h3>
+      <p>AES-256 encryption for all stored models. Only the owner and authorized purchasers can decrypt. Even platform admins can't see your geometry.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🎫</div>
+      <h3>Token-Gated Access</h3>
+      <p>No tokens, no access. Every download requires a valid $CYCLE balance. Agents must authenticate and pre-authorize before accessing any model data.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">📜</div>
+      <h3>License Enforcement</h3>
+      <p>Creators choose: View Only, Download, Modify, Commercial Use. Licenses are embedded in the model metadata and enforced by the platform.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🕵️</div>
+      <h3>Watermarking & Provenance</h3>
+      <p>Invisible geometric watermarks trace every model back to its creator. Blockchain-anchored provenance chain proves ownership in disputes.</p>
+    </div>
+  </div>
+</div>
+
+<!-- PLATFORM REVENUE — HOW CYCLECAD EARNS -->
+<div class="section">
+  <div class="section-title">💼 Platform Revenue — How cycleCAD Earns</div>
+  <div class="section-sub">Three revenue streams: subscriptions, marketplace commission on every sale, and CAM compute fees. The platform earns when creators earn.</div>
+
+  <div class="tiers">
+    <div class="tier">
+      <h3>🆓 Free</h3>
+      <div class="pct" style="color:var(--green)">€0</div>
+      <div class="pct-label">/month</div>
+      <ul>
+        <li>Full CAD modeling engine</li>
+        <li>AI agent (50 calls/day)</li>
+        <li>3 marketplace listings</li>
+        <li>Mesh export (STL/OBJ)</li>
+        <li>Community support</li>
+        <li>100 free tokens/month</li>
+        <li>View marketplace models</li>
+      </ul>
+    </div>
+    <div class="tier featured">
+      <h3>🚀 Pro</h3>
+      <div class="pct" style="color:var(--accent)">€49</div>
+      <div class="pct-label">/month · billed annually €588/yr</div>
+      <ul>
+        <li>Everything in Free</li>
+        <li>Unlimited AI agent calls</li>
+        <li>Unlimited marketplace listings</li>
+        <li>STEP/IGES/Inventor import</li>
+        <li>Full CAM pipeline access</li>
+        <li>5,000 tokens/month included</li>
+        <li>80% royalty rate (vs 70%)</li>
+        <li>Weekly payouts</li>
+        <li>Advanced analytics</li>
+        <li>Priority support</li>
+      </ul>
+    </div>
+    <div class="tier">
+      <h3>🏢 Enterprise</h3>
+      <div class="pct" style="color:var(--orange)">€299</div>
+      <div class="pct-label">/month · billed annually €3,588/yr</div>
+      <ul>
+        <li>Everything in Pro</li>
+        <li>Self-hosted deployment</li>
+        <li>SSO / SAML / SCIM</li>
+        <li>Private marketplace (internal)</li>
+        <li>50,000 tokens/month included</li>
+        <li>90% royalty rate</li>
+        <li>Instant payouts (no minimum)</li>
+        <li>Custom agent training</li>
+        <li>SLA + dedicated support</li>
+        <li>Volume token discounts</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- REVENUE SPLIT — WHERE THE MONEY FLOWS -->
+<div class="section">
+  <div class="section-title">💸 Revenue Split — Every Transaction</div>
+  <div class="section-sub">When a model sells, the platform takes a commission. Higher tiers = lower commission = more incentive to subscribe.</div>
+
+  <div style="overflow-x:auto">
+  <table class="comp-table" style="min-width:700px">
+    <thead>
+      <tr>
+        <th>Event</th>
+        <th>Creator Gets</th>
+        <th>Platform Gets</th>
+        <th>Example (100 🪙 sale)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="feature">Free tier sale</td>
+        <td style="color:var(--green);font-weight:700">70%</td>
+        <td style="color:var(--accent);font-weight:700">30%</td>
+        <td style="color:var(--muted)">Creator: 70 🪙 (€0.70) · Platform: 30 🪙 (€0.30)</td>
+      </tr>
+      <tr>
+        <td class="feature">Pro tier sale</td>
+        <td style="color:var(--green);font-weight:700">80%</td>
+        <td style="color:var(--accent);font-weight:700">20%</td>
+        <td style="color:var(--muted)">Creator: 80 🪙 (€0.80) · Platform: 20 🪙 (€0.20)</td>
+      </tr>
+      <tr>
+        <td class="feature">Enterprise tier sale</td>
+        <td style="color:var(--green);font-weight:700">90%</td>
+        <td style="color:var(--accent);font-weight:700">10%</td>
+        <td style="color:var(--muted)">Creator: 90 🪙 (€0.90) · Platform: 10 🪙 (€0.10)</td>
+      </tr>
+      <tr>
+        <td class="feature">Derivative model sale</td>
+        <td style="color:var(--green);font-weight:700">55-75%</td>
+        <td style="color:var(--accent);font-weight:700">10%</td>
+        <td style="color:var(--muted)">Derivative: 55-75 🪙 · Original: 15 🪙 · Platform: 10 🪙</td>
+      </tr>
+      <tr>
+        <td class="feature">Agent micro-royalty (per use)</td>
+        <td style="color:var(--green);font-weight:700">60-80%</td>
+        <td style="color:var(--accent);font-weight:700">20-40%</td>
+        <td style="color:var(--muted)">Creator: 3-4 🪙 · Platform: 1-2 🪙 per agent call</td>
+      </tr>
+      <tr>
+        <td class="feature">CAM toolpath generation</td>
+        <td style="color:var(--dim)">—</td>
+        <td style="color:var(--accent);font-weight:700">100%</td>
+        <td style="color:var(--muted)">Platform: 20-100 🪙 (compute cost)</td>
+      </tr>
+      <tr>
+        <td class="feature">CAM-ready model sale</td>
+        <td style="color:var(--green);font-weight:700">70-90%</td>
+        <td style="color:var(--accent);font-weight:700">10-30%</td>
+        <td style="color:var(--muted)">Creator: 350-450 🪙 · Platform: 50-150 🪙</td>
+      </tr>
+      <tr style="background:rgba(6,182,212,0.06)">
+        <td class="feature"><strong>Subscription revenue</strong></td>
+        <td style="color:var(--dim)">—</td>
+        <td style="color:var(--accent);font-weight:700">100%</td>
+        <td style="color:var(--muted)">€49/mo (Pro) or €299/mo (Enterprise) recurring</td>
+      </tr>
+      <tr style="background:rgba(6,182,212,0.06)">
+        <td class="feature"><strong>Token purchase spread</strong></td>
+        <td style="color:var(--dim)">—</td>
+        <td style="color:var(--accent);font-weight:700">~15%</td>
+        <td style="color:var(--muted)">Buy at €1=100 🪙, cash out at 100 🪙=€0.85 effective</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- FINANCIAL PROJECTIONS -->
+<div class="section">
+  <div class="section-title">📈 Financial Projections — Platform Revenue</div>
+  <div class="section-sub">Conservative growth model based on 5% monthly user growth, 8% conversion to Pro, 1% to Enterprise.</div>
+
+  <div style="overflow-x:auto">
+  <table class="comp-table" style="min-width:800px">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Year 1</th>
+        <th>Year 2</th>
+        <th>Year 3</th>
+        <th>Year 5</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="feature">Total Users</td>
+        <td>5,000</td>
+        <td>25,000</td>
+        <td>100,000</td>
+        <td>500,000</td>
+      </tr>
+      <tr>
+        <td class="feature">Pro Subscribers (8%)</td>
+        <td>400</td>
+        <td>2,000</td>
+        <td>8,000</td>
+        <td>40,000</td>
+      </tr>
+      <tr>
+        <td class="feature">Enterprise (1%)</td>
+        <td>50</td>
+        <td>250</td>
+        <td>1,000</td>
+        <td>5,000</td>
+      </tr>
+      <tr style="background:rgba(6,182,212,0.04)">
+        <td class="feature">Subscription Revenue</td>
+        <td style="color:var(--accent);font-weight:700">€415K</td>
+        <td style="color:var(--accent);font-weight:700">€2.1M</td>
+        <td style="color:var(--accent);font-weight:700">€8.3M</td>
+        <td style="color:var(--accent);font-weight:700">€41.4M</td>
+      </tr>
+      <tr>
+        <td class="feature">Marketplace Models Listed</td>
+        <td>2,000</td>
+        <td>25,000</td>
+        <td>200,000</td>
+        <td>2,000,000</td>
+      </tr>
+      <tr>
+        <td class="feature">Model Transactions/month</td>
+        <td>8,000</td>
+        <td>80,000</td>
+        <td>500,000</td>
+        <td>5,000,000</td>
+      </tr>
+      <tr style="background:rgba(6,182,212,0.04)">
+        <td class="feature">Marketplace Commission</td>
+        <td style="color:var(--accent);font-weight:700">€96K</td>
+        <td style="color:var(--accent);font-weight:700">€720K</td>
+        <td style="color:var(--accent);font-weight:700">€3.6M</td>
+        <td style="color:var(--accent);font-weight:700">€24M</td>
+      </tr>
+      <tr>
+        <td class="feature">CAM Jobs/month</td>
+        <td>1,000</td>
+        <td>12,000</td>
+        <td>80,000</td>
+        <td>600,000</td>
+      </tr>
+      <tr style="background:rgba(6,182,212,0.04)">
+        <td class="feature">CAM Compute Revenue</td>
+        <td style="color:var(--accent);font-weight:700">€36K</td>
+        <td style="color:var(--accent);font-weight:700">€360K</td>
+        <td style="color:var(--accent);font-weight:700">€2.4M</td>
+        <td style="color:var(--accent);font-weight:700">€18M</td>
+      </tr>
+      <tr>
+        <td class="feature">Token Purchase Revenue (spread)</td>
+        <td style="color:var(--accent);font-weight:700">€24K</td>
+        <td style="color:var(--accent);font-weight:700">€180K</td>
+        <td style="color:var(--accent);font-weight:700">€900K</td>
+        <td style="color:var(--accent);font-weight:700">€6M</td>
+      </tr>
+      <tr style="background:rgba(16,185,129,0.08);border-top:2px solid var(--green)">
+        <td class="feature" style="font-size:1.05rem"><strong>Total Platform ARR</strong></td>
+        <td style="color:var(--green);font-weight:800;font-size:1.1rem">€571K</td>
+        <td style="color:var(--green);font-weight:800;font-size:1.1rem">€3.4M</td>
+        <td style="color:var(--green);font-weight:800;font-size:1.1rem">€15.2M</td>
+        <td style="color:var(--green);font-weight:800;font-size:1.1rem">€89.4M</td>
+      </tr>
+      <tr style="background:rgba(16,185,129,0.08)">
+        <td class="feature"><strong>Paid to Creators (total)</strong></td>
+        <td style="color:var(--green);font-weight:700">€224K</td>
+        <td style="color:var(--green);font-weight:700">€1.7M</td>
+        <td style="color:var(--green);font-weight:700">€8.4M</td>
+        <td style="color:var(--green);font-weight:700">€56M</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="cards" style="margin-top:28px">
+    <div class="card" style="border-left:3px solid var(--green)">
+      <div class="card-icon">📊</div>
+      <h3>4 Revenue Streams</h3>
+      <p><strong>Subscriptions</strong> (predictable, recurring) + <strong>Marketplace commission</strong> (scales with GMV) + <strong>CAM compute</strong> (usage-based) + <strong>Token spread</strong> (buy/sell margin). Diversified revenue that compounds as the ecosystem grows.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent)">
+      <div class="card-icon">🔄</div>
+      <h3>Aligned Incentives</h3>
+      <p>We earn more when creators earn more. Every marketplace sale generates commission. Every subscription unlocks higher royalties. <span class="highlight">There's no scenario where we win and creators lose.</span></p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--orange)">
+      <div class="card-icon">💎</div>
+      <h3>Why Creators Subscribe</h3>
+      <p>A Pro creator with 80% royalty earns <span class="money">€10 more per €100 in sales</span> than a Free creator at 70%. If you sell €500/mo+ in models, Pro pays for itself. Enterprise at €299/mo pays for itself at €3K/mo in sales — which top creators easily exceed.</p>
+    </div>
+  </div>
+</div>
+
+<!-- UNIT ECONOMICS -->
+<div class="section">
+  <div class="section-title">🧮 Unit Economics</div>
+  <div class="section-sub">The numbers that matter to investors.</div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-val">€84</div><div class="stat-label">Avg Revenue Per User/yr (blended)</div></div>
+    <div class="stat"><div class="stat-val">€588</div><div class="stat-label">Pro ARPU/yr</div></div>
+    <div class="stat"><div class="stat-val">€3,588</div><div class="stat-label">Enterprise ARPU/yr</div></div>
+    <div class="stat"><div class="stat-val">~20%</div><div class="stat-label">Avg Marketplace Take Rate</div></div>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-icon">📉</div>
+      <h3>Customer Acquisition Cost</h3>
+      <p>Free tier + open source + AI virality = organic growth. Model marketplace creates SEO content (every model is a landing page). Target <span class="highlight">CAC under €5</span> via word-of-mouth + creator referrals (creators earn 5% bonus tokens on referral sales).</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">📈</div>
+      <h3>Lifetime Value</h3>
+      <p>Pro subscriber at 24-month avg retention = <span class="money">€1,176 LTV</span>. Enterprise at 36-month retention = <span class="money">€10,764 LTV</span>. Plus marketplace commission that grows as they publish more models. LTV/CAC ratio target: <span class="highlight">>50x</span>.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">💰</div>
+      <h3>Gross Margin</h3>
+      <p>Subscriptions: <span class="money">~90% margin</span> (hosting + CDN). Marketplace: <span class="money">~95% margin</span> (just ledger entries). CAM compute: <span class="money">~60% margin</span> (server costs). Blended: <span class="highlight">~85% gross margin</span>.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🏦</div>
+      <h3>Path to Profitability</h3>
+      <p>Break-even at ~2,000 Pro subscribers + marketplace volume. With €1.5M seed runway of 18 months, target profitability by <span class="highlight">month 14</span>. Token spread provides additional float income on unspent balances.</p>
+    </div>
+  </div>
+</div>
+
+<!-- EXAMPLE SCENARIOS -->
+<div class="section">
+  <div class="section-title">📖 Real Monetization Scenarios</div>
+  <div class="section-sub">How different users turn CAD skills (or no skills) into income.</div>
+  <div class="cards">
+    <div class="card" style="border-left:3px solid var(--green)">
+      <div class="card-icon">👨‍🔧</div>
+      <h3>Sachin — Machine Builder</h3>
+      <p>Publishes 12 bike wash component models from real production parts. Popular nozzle array gets 2,103 downloads at 150 🪙 each. <span class="money">Earns €2,205 in royalties</span> — models he already had sitting on his hard drive.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent)">
+      <div class="card-icon">🤖</div>
+      <h3>AI Agent "MechBot"</h3>
+      <p>Autonomous agent generates 500 parametric bracket templates overnight. Each template sells for 50 🪙, used 8,000 times across the platform. <span class="money">Agent owner earns €2,800/month</span> on autopilot.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--orange)">
+      <div class="card-icon">🏢</div>
+      <h3>Factory Floor Team</h3>
+      <p>Enterprise buys 500,000 token bulk package (€5,000). Engineers download jigs, fixtures, and tooling from marketplace instead of designing from scratch. <span class="money">Saves 400 engineering hours = €40K value.</span></p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--purple)">
+      <div class="card-icon">🎓</div>
+      <h3>Student — Zero CAD Skills</h3>
+      <p>Uses voice commands: "Build a phone stand with 15° angle." AI agent creates the model. Student publishes it. Gets 340 downloads. <span class="money">Earns €23.80</span> — first money ever earned from engineering.</p>
+    </div>
+  </div>
+</div>
+
+<!-- VISION -->
+<div class="section" style="text-align:center;padding:60px 24px">
+  <div class="badge" style="font-size:0.9rem;padding:8px 24px">The Future of CAD</div>
+  <h2 style="font-size:2.2rem;font-weight:800;margin:20px 0;max-width:800px;margin-left:auto;margin-right:auto;line-height:1.3">
+    Every other CAD company charges you to create.<br>
+    <span style="background:linear-gradient(135deg,var(--green),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent">cycleCAD pays you.</span>
+  </h2>
+  <p style="color:var(--muted);max-width:600px;margin:0 auto;font-size:1rem;line-height:1.6">
+    The model marketplace isn't a feature. It's the foundation. It's why engineers, AI agents, students, and enterprises will all converge on one platform — and why competitors can't follow.
+  </p>
+</div>
+
+<div class="footer">
+  <strong>cycleCAD</strong> — Agent-First OS for Manufacturing · Model Marketplace · $CYCLE Token Economy<br>
+  <span style="margin-top:8px;display:inline-block">cyclecad.com · Open Source · Built by cycleWASH</span>
+</div>
+
+</body>
+</html>

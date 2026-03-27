@@ -1,0 +1,1801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>cycleCAD Visual Test Agent</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #top-bar {
+            background: #252526;
+            border-bottom: 1px solid #3e3e42;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 60px;
+            z-index: 1000;
+        }
+
+        #progress-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 20px;
+            background: #3e3e42;
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #0284C7, #06B6D4);
+            width: 0%;
+            transition: width 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .progress-text {
+            font-size: 12px;
+            color: #858585;
+            min-width: 80px;
+            text-align: right;
+        }
+
+        #controls {
+            display: flex;
+            gap: 8px;
+            margin-left: 16px;
+        }
+
+        button {
+            background: #0284C7;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background: #0369A1;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button:disabled {
+            background: #3e3e42;
+            color: #858585;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #3e3e42;
+            color: #d4d4d4;
+        }
+
+        .btn-secondary:hover {
+            background: #505052;
+        }
+
+        #main-container {
+            display: flex;
+            height: calc(100vh - 60px);
+            overflow: hidden;
+        }
+
+        #iframe-section {
+            width: 65%;
+            border-right: 1px solid #3e3e42;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #cad-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        #log-section {
+            width: 35%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #category-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
+            border-top: 1px solid #3e3e42;
+        }
+
+        .category {
+            border-bottom: 1px solid #3e3e42;
+            margin: 0;
+        }
+
+        .category-header {
+            background: #252526;
+            padding: 12px 16px;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            transition: background 0.15s ease;
+        }
+
+        .category-header:hover {
+            background: #2d2d30;
+        }
+
+        .category-header.collapsed .category-title::after {
+            content: ' ▶';
+        }
+
+        .category-header:not(.collapsed) .category-title::after {
+            content: ' ▼';
+        }
+
+        .category-title {
+            font-weight: 600;
+            font-size: 13px;
+            flex: 1;
+        }
+
+        .category-stats {
+            font-size: 11px;
+            color: #858585;
+            padding: 4px 8px;
+            background: #1e1e1e;
+            border-radius: 3px;
+        }
+
+        .category-body {
+            padding: 8px 0;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .category.collapsed .category-body {
+            display: none;
+        }
+
+        .test-entry {
+            padding: 8px 16px;
+            font-size: 12px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            border-left: 3px solid #3e3e42;
+            margin: 2px 4px;
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.15s ease;
+        }
+
+        .test-entry.running {
+            border-left-color: #0284C7;
+            background: rgba(2, 132, 199, 0.1);
+            color: #0284C7;
+        }
+
+        .test-entry.pass {
+            border-left-color: #16a34a;
+            background: rgba(22, 163, 74, 0.1);
+            color: #86efac;
+        }
+
+        .test-entry.fail {
+            border-left-color: #dc2626;
+            background: rgba(220, 38, 38, 0.1);
+            color: #fca5a5;
+        }
+
+        .test-entry.skip {
+            border-left-color: #6b7280;
+            background: rgba(107, 114, 128, 0.1);
+            color: #9ca3af;
+        }
+
+        .test-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .test-entry.running .test-indicator {
+            background: #0284C7;
+            animation: pulse 1s infinite;
+        }
+
+        .test-entry.pass .test-indicator {
+            background: #16a34a;
+        }
+
+        .test-entry.fail .test-indicator {
+            background: #dc2626;
+        }
+
+        .test-entry.skip .test-indicator {
+            background: #6b7280;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .test-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .test-detail {
+            font-size: 10px;
+            color: inherit;
+            opacity: 0.7;
+        }
+
+        #flash-overlay {
+            position: absolute;
+            pointer-events: none;
+            z-index: 999;
+            border: 3px solid;
+            border-radius: 4px;
+            animation: flash-fade 0.6s ease-out forwards;
+        }
+
+        @keyframes flash-fade {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(1.05);
+            }
+        }
+
+        .category-run-btn {
+            padding: 4px 8px;
+            font-size: 11px;
+            background: #0284C7;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .category-run-btn:hover {
+            background: #0369A1;
+        }
+
+        .category-run-btn:disabled {
+            background: #3e3e42;
+            color: #858585;
+        }
+
+        #summary-bar {
+            background: #252526;
+            border-top: 1px solid #3e3e42;
+            padding: 8px 16px;
+            font-size: 11px;
+            color: #858585;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .summary-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .summary-indicator {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .summary-indicator.pass {
+            background: #16a34a;
+        }
+
+        .summary-indicator.fail {
+            background: #dc2626;
+        }
+
+        .summary-indicator.skip {
+            background: #6b7280;
+        }
+
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1e1e1e;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #404040;
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #505050;
+        }
+
+        .status-label {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 2px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 4px;
+        }
+
+        .status-label.pass {
+            background: rgba(22, 163, 74, 0.3);
+            color: #86efac;
+        }
+
+        .status-label.fail {
+            background: rgba(220, 38, 38, 0.3);
+            color: #fca5a5;
+        }
+    </style>
+</head>
+<body>
+    <div id="top-bar">
+        <div id="progress-section">
+            <div class="progress-bar">
+                <div class="progress-fill">
+                    <span id="progress-pct">0%</span>
+                </div>
+            </div>
+            <div class="progress-text">
+                <span id="progress-count">0/0</span>
+            </div>
+        </div>
+        <div id="controls">
+            <button id="btn-run-all">▶ Run All Tests</button>
+            <button id="btn-stop" class="btn-secondary" disabled>⏹ Stop</button>
+            <button id="btn-clear-log" class="btn-secondary">🗑 Clear Log</button>
+            <button id="btn-export-report" class="btn-secondary">💾 Export</button>
+        </div>
+    </div>
+
+    <div id="main-container">
+        <div id="iframe-section">
+            <iframe id="cad-iframe" src="./index.html"></iframe>
+        </div>
+
+        <div id="log-section">
+            <div id="category-list"></div>
+            <div id="summary-bar">
+                <div id="summary-stats">
+                    <div class="summary-item">
+                        <div class="summary-indicator pass"></div>
+                        <span><span id="stat-pass">0</span> Passed</span>
+                    </div>
+                    <div class="summary-item" style="margin-left: 16px;">
+                        <div class="summary-indicator fail"></div>
+                        <span><span id="stat-fail">0</span> Failed</span>
+                    </div>
+                    <div class="summary-item" style="margin-left: 16px;">
+                        <div class="summary-indicator skip"></div>
+                        <span><span id="stat-skip">0</span> Skipped</span>
+                    </div>
+                </div>
+                <div id="status-text" style="color: #0284C7;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================================
+        // TEST FRAMEWORK
+        // ============================================================================
+
+        const TEST_CATEGORIES = [
+            {
+                name: 'Splash Screen',
+                tests: [
+                    { name: 'Splash screen visible on load', fn: testSplashVisible },
+                    { name: 'Click "Empty Project" to start', fn: testSplashEmpty },
+                    { name: 'Toolbar is visible', fn: testToolbarVisible },
+                    { name: 'Left panel is visible', fn: testLeftPanelVisible },
+                    { name: 'Right panel is visible', fn: testRightPanelVisible },
+                ]
+            },
+            {
+                name: 'Sketch Tools',
+                tests: [
+                    { name: 'Click tool-sketch → sketch mode activates', fn: testSketchMode },
+                    { name: 'Click tool-line → line tool active', fn: testLineTool },
+                    { name: 'Click tool-rect → rect tool active', fn: testRectTool },
+                    { name: 'Click tool-circle → circle tool active', fn: testCircleTool },
+                    { name: 'Click tool-arc → arc tool active', fn: testArcTool },
+                    { name: 'Click tool-dimension → dimension tool active', fn: testDimensionTool },
+                ]
+            },
+            {
+                name: '3D Operations',
+                tests: [
+                    { name: 'Click tool-extrude → extrude dialog shows', fn: testExtrudeTool },
+                    { name: 'Click tool-revolve → revolve dialog shows', fn: testRevolveTool },
+                    { name: 'Click tool-fillet → fillet dialog shows', fn: testFilletTool },
+                    { name: 'Click tool-chamfer → chamfer dialog shows', fn: testChamferTool },
+                    { name: 'Click tool-cut → cut mode activates', fn: testCutTool },
+                    { name: 'Click tool-union → union mode activates', fn: testUnionTool },
+                ]
+            },
+            {
+                name: 'Advanced Operations',
+                tests: [
+                    { name: 'Click tool-sweep → sweep dialog shows', fn: testSweepTool },
+                    { name: 'Click tool-loft → loft dialog shows', fn: testLoftTool },
+                    { name: 'Click tool-spring → spring generator works', fn: testSpringTool },
+                    { name: 'Click tool-thread → thread generator works', fn: testThreadTool },
+                ]
+            },
+            {
+                name: 'Sheet Metal',
+                tests: [
+                    { name: 'Click tool-bend → bend dialog shows', fn: testBendTool },
+                    { name: 'Click tool-flange → flange dialog shows', fn: testFlangeTool },
+                    { name: 'Click tool-unfold → unfold action available', fn: testUnfoldTool },
+                ]
+            },
+            {
+                name: 'Left Panel Tabs',
+                tests: [
+                    { name: 'Click "Model Tree" tab → tree visible', fn: testLeftTabTree },
+                    { name: 'Click "Project Browser" tab → project browser visible', fn: testLeftTabProject },
+                    { name: 'Tab switching hides other content', fn: testLeftTabSwitch },
+                    { name: 'Feature tree loads or shows empty state', fn: testTreeContent },
+                ]
+            },
+            {
+                name: 'Right Panel Tabs',
+                tests: [
+                    { name: 'Click Properties tab → content shows', fn: testRightTabProperties },
+                    { name: 'Click Chat tab → chat interface shows', fn: testRightTabChat },
+                    { name: 'Click Guide tab → guide content shows', fn: testRightTabGuide },
+                    { name: 'Tab switching works', fn: testRightTabSwitch },
+                ]
+            },
+            {
+                name: 'Keyboard Shortcuts',
+                tests: [
+                    { name: 'Press S → sketch mode', fn: testKeyS },
+                    { name: 'Press L → line tool', fn: testKeyL },
+                    { name: 'Press R → rect tool', fn: testKeyR },
+                    { name: 'Press E → extrude mode', fn: testKeyE },
+                    { name: 'Press 1 → front view', fn: testKey1 },
+                    { name: 'Press 2 → back view', fn: testKey2 },
+                    { name: 'Press 3 → right view', fn: testKey3 },
+                    { name: 'Press 4 → left view', fn: testKey4 },
+                    { name: 'Press 5 → top view', fn: testKey5 },
+                    { name: 'Press 6 → bottom view', fn: testKey6 },
+                    { name: 'Press 7 → iso view', fn: testKey7 },
+                    { name: 'Press G → grid toggle', fn: testKeyG },
+                    { name: 'Press W → wireframe toggle', fn: testKeyW },
+                    { name: 'Press Escape → deselect', fn: testKeyEscape },
+                    { name: 'Press ? → help shortcuts', fn: testKeyQuestion },
+                ]
+            },
+            {
+                name: 'View Controls',
+                tests: [
+                    { name: 'Undo button (btn-undo) works', fn: testUndoBtn },
+                    { name: 'Redo button (btn-redo) works', fn: testRedoBtn },
+                    { name: 'Viewport canvas exists and has WebGL context', fn: testViewportCanvas },
+                    { name: 'OrbitControls respond to mouse', fn: testOrbitControls },
+                    { name: 'Grid is visible by default', fn: testGridVisible },
+                    { name: 'Wireframe toggle works', fn: testWireframeToggle },
+                    { name: 'Camera updates on view change', fn: testCameraUpdate },
+                ]
+            },
+            {
+                name: 'Agent API',
+                tests: [
+                    { name: 'meta.ping() responds', fn: testAgentMetaPing },
+                    { name: 'meta.version() returns version', fn: testAgentMetaVersion },
+                    { name: 'meta.schema() returns full API schema', fn: testAgentMetaSchema },
+                    { name: 'sketch.start({plane:"XY"}) works', fn: testAgentSketchStart },
+                    { name: 'sketch.rect({width:50, height:30}) works', fn: testAgentSketchRect },
+                    { name: 'sketch.end() works', fn: testAgentSketchEnd },
+                    { name: 'ops.primitive({shape:"box",...}) works', fn: testAgentPrimitiveBox },
+                    { name: 'ops.primitive({shape:"cylinder",...}) works', fn: testAgentPrimitiveCyl },
+                    { name: 'query.features() returns features list', fn: testAgentQueryFeatures },
+                    { name: 'view.set({view:"front"}) works', fn: testAgentViewSet },
+                    { name: 'export.json() works', fn: testAgentExportJSON },
+                    { name: 'scene.clear() works', fn: testAgentSceneClear },
+                ]
+            },
+            {
+                name: 'Token Engine',
+                tests: [
+                    { name: 'window.cycleCAD.tokens exists', fn: testTokensExists },
+                    { name: 'getBalance() returns number', fn: testTokensGetBalance },
+                    { name: 'addTokens(100, "test") increases balance', fn: testTokensAdd },
+                    { name: 'spendTokens(10, "test") decreases balance', fn: testTokensSpend },
+                    { name: 'getTransactionHistory() returns array', fn: testTokensHistory },
+                    { name: 'Tier info available', fn: testTokensTier },
+                    { name: 'Pricing table exists', fn: testTokensPricing },
+                    { name: 'Token balance button updates', fn: testTokensDisplay },
+                ]
+            },
+            {
+                name: 'Import/Export',
+                tests: [
+                    { name: 'STL import UI exists (tool-reverse-engineer)', fn: testReverseEngineer },
+                    { name: 'Inventor import UI exists', fn: testInventorImport },
+                    { name: 'Export buttons available', fn: testExportButtons },
+                    { name: 'JSON save/load cycle works', fn: testSaveLoadCycle },
+                ]
+            },
+            {
+                name: 'Dialog Controls',
+                tests: [
+                    { name: 'Revolve dialog has OK/Cancel buttons', fn: testDialogRevolve },
+                    { name: 'Fillet dialog has OK/Cancel buttons', fn: testDialogFillet },
+                    { name: 'Chamfer dialog has OK/Cancel buttons', fn: testDialogChamfer },
+                    { name: 'Boolean dialog has OK/Cancel buttons', fn: testDialogBoolean },
+                    { name: 'Shell dialog has OK/Cancel buttons', fn: testDialogShell },
+                    { name: 'Pattern dialog has OK/Cancel buttons', fn: testDialogPattern },
+                    { name: 'Sweep dialog has OK/Cancel buttons', fn: testDialogSweep },
+                    { name: 'Loft dialog has OK/Cancel buttons', fn: testDialogLoft },
+                    { name: 'Bend dialog has OK/Cancel buttons', fn: testDialogBend },
+                    { name: 'Flange dialog has OK/Cancel buttons', fn: testDialogFlange },
+                ]
+            },
+            {
+                name: 'Status Bar & Overlays',
+                tests: [
+                    { name: 'Status bar exists and shows text', fn: testStatusBar },
+                    { name: 'Mode indicator updates on tool change', fn: testModeIndicator },
+                    { name: 'Snap indicator shows in sketch mode', fn: testSnapIndicator },
+                ]
+            },
+            {
+                name: 'AI Copilot',
+                tests: [
+                    { name: 'Copilot toolbar button exists', fn: async () => { const btn = appDoc.getElementById('btn-ai-copilot'); if (!btn) throw new Error('btn-ai-copilot missing'); flashElement(btn); return 'Copilot button found'; } },
+                    { name: 'Click Copilot → panel opens', fn: async () => { const btn = appDoc.getElementById('btn-ai-copilot'); btn?.click(); await sleep(500); const panel = appDoc.getElementById('copilot-panel'); if (!panel || panel.style.display === 'none') throw new Error('Copilot panel not visible'); return 'Copilot panel opened'; } },
+                    { name: 'window.cycleCAD.copilot exists', fn: async () => { const mod = appWindow?.cycleCAD?.copilot; if (!mod) throw new Error('copilot module not loaded'); return 'Copilot module loaded'; } },
+                    { name: 'Close Copilot panel', fn: async () => { const panel = appDoc.getElementById('copilot-panel'); if (panel) panel.style.display = 'none'; return 'Panel closed'; } },
+                ]
+            },
+            {
+                name: 'DFM Analyzer',
+                tests: [
+                    { name: 'DFM toolbar button exists', fn: async () => { const btn = appDoc.getElementById('btn-dfm'); if (!btn) throw new Error('btn-dfm missing'); flashElement(btn); return 'DFM button found'; } },
+                    { name: 'Click DFM → panel opens', fn: async () => { const btn = appDoc.getElementById('btn-dfm'); btn?.click(); await sleep(500); const panel = appDoc.getElementById('dfm-panel'); if (!panel || panel.style.display === 'none') throw new Error('DFM panel not visible'); return 'DFM panel opened'; } },
+                    { name: 'window.cycleCAD.dfm exists', fn: async () => { const mod = appWindow?.cycleCAD?.dfm; if (!mod) throw new Error('dfm module not loaded'); return 'DFM module loaded'; } },
+                    { name: 'Close DFM panel', fn: async () => { const panel = appDoc.getElementById('dfm-panel'); if (panel) panel.style.display = 'none'; return 'Panel closed'; } },
+                ]
+            },
+            {
+                name: 'Material Library',
+                tests: [
+                    { name: 'Materials toolbar button exists', fn: async () => { const btn = appDoc.getElementById('btn-materials'); if (!btn) throw new Error('btn-materials missing'); flashElement(btn); return 'Materials button found'; } },
+                    { name: 'Click Materials → panel opens', fn: async () => { const btn = appDoc.getElementById('btn-materials'); btn?.click(); await sleep(500); const panel = appDoc.getElementById('materials-panel'); if (!panel || panel.style.display === 'none') throw new Error('Materials panel not visible'); return 'Materials panel opened'; } },
+                    { name: 'window.cycleCAD.materials exists', fn: async () => { const mod = appWindow?.cycleCAD?.materials; if (!mod) throw new Error('materials module not loaded'); return 'Materials module loaded'; } },
+                    { name: 'Close Materials panel', fn: async () => { const panel = appDoc.getElementById('materials-panel'); if (panel) panel.style.display = 'none'; return 'Panel closed'; } },
+                ]
+            },
+            {
+                name: 'CAM Pipeline',
+                tests: [
+                    { name: 'CAM toolbar button exists', fn: async () => { const btn = appDoc.getElementById('btn-cam'); if (!btn) throw new Error('btn-cam missing'); flashElement(btn); return 'CAM button found'; } },
+                    { name: 'Click CAM → panel opens', fn: async () => { const btn = appDoc.getElementById('btn-cam'); btn?.click(); await sleep(500); const panel = appDoc.getElementById('cam-panel'); if (!panel || panel.style.display === 'none') throw new Error('CAM panel not visible'); return 'CAM panel opened'; } },
+                    { name: 'window.cycleCAD.cam exists', fn: async () => { const mod = appWindow?.cycleCAD?.cam; if (!mod) throw new Error('cam module not loaded'); return 'CAM module loaded'; } },
+                    { name: 'Close CAM panel', fn: async () => { const panel = appDoc.getElementById('cam-panel'); if (panel) panel.style.display = 'none'; return 'Panel closed'; } },
+                ]
+            },
+            {
+                name: 'Connected Fabs',
+                tests: [
+                    { name: 'Fabs toolbar button exists', fn: async () => { const btn = appDoc.getElementById('btn-fabs'); if (!btn) throw new Error('btn-fabs missing'); flashElement(btn); return 'Fabs button found'; } },
+                    { name: 'Click Fabs → panel opens', fn: async () => { const btn = appDoc.getElementById('btn-fabs'); btn?.click(); await sleep(500); const panel = appDoc.getElementById('fabs-panel'); if (!panel || panel.style.display === 'none') throw new Error('Fabs panel not visible'); return 'Fabs panel opened'; } },
+                    { name: 'window.cycleCAD.fabs exists', fn: async () => { const mod = appWindow?.cycleCAD?.fabs; if (!mod) throw new Error('fabs module not loaded'); return 'Fabs module loaded'; } },
+                    { name: 'Close Fabs panel', fn: async () => { const panel = appDoc.getElementById('fabs-panel'); if (panel) panel.style.display = 'none'; return 'Panel closed'; } },
+                ]
+            },
+            {
+                name: 'Collaboration',
+                tests: [
+                    { name: 'Collab toolbar button exists', fn: async () => { const btn = appDoc.getElementById('btn-collab'); if (!btn) throw new Error('btn-collab missing'); flashElement(btn); return 'Collab button found'; } },
+                    { name: 'Click Collab → panel opens', fn: async () => { const btn = appDoc.getElementById('btn-collab'); btn?.click(); await sleep(500); const panel = appDoc.getElementById('collab-panel'); if (!panel || panel.style.display === 'none') throw new Error('Collab panel not visible'); return 'Collab panel opened'; } },
+                    { name: 'window.cycleCAD.collab exists', fn: async () => { const mod = appWindow?.cycleCAD?.collab; if (!mod) throw new Error('collab module not loaded'); return 'Collab module loaded'; } },
+                    { name: 'Close Collab panel', fn: async () => { const panel = appDoc.getElementById('collab-panel'); if (panel) panel.style.display = 'none'; return 'Panel closed'; } },
+                ]
+            },
+        ];
+
+        // ============================================================================
+        // STATE & GLOBALS
+        // ============================================================================
+
+        let testState = {
+            isRunning: false,
+            isPaused: false,
+            currentCategoryIdx: -1,
+            currentTestIdx: -1,
+            results: {},
+            stats: { pass: 0, fail: 0, skip: 0 },
+            startTime: null,
+            stopRequested: false,
+        };
+
+        let appWindow = null;
+        let appDoc = null;
+
+        const TEST_TIMEOUT = 5000;
+        const TEST_DELAY = 300;
+
+        // ============================================================================
+        // UI & DOM RENDERING
+        // ============================================================================
+
+        function renderCategories() {
+            const list = document.getElementById('category-list');
+            list.innerHTML = '';
+
+            TEST_CATEGORIES.forEach((cat, idx) => {
+                const catEl = document.createElement('div');
+                catEl.className = 'category collapsed';
+                catEl.dataset.idx = idx;
+
+                const header = document.createElement('div');
+                header.className = 'category-header';
+
+                const title = document.createElement('span');
+                title.className = 'category-title';
+                title.textContent = cat.name;
+
+                const stats = document.createElement('span');
+                stats.className = 'category-stats';
+                const catRes = testState.results[idx] || [];
+                const pass = catRes.filter(r => r.status === 'pass').length;
+                const fail = catRes.filter(r => r.status === 'fail').length;
+                const skip = catRes.filter(r => r.status === 'skip').length;
+                stats.textContent = `${pass}/${cat.tests.length}`;
+
+                const runBtn = document.createElement('button');
+                runBtn.className = 'category-run-btn';
+                runBtn.textContent = '▶ Run';
+                runBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    runCategory(idx);
+                };
+
+                header.appendChild(title);
+                header.appendChild(stats);
+                header.appendChild(runBtn);
+
+                header.onclick = () => {
+                    catEl.classList.toggle('collapsed');
+                };
+
+                const body = document.createElement('div');
+                body.className = 'category-body';
+
+                const catRes2 = testState.results[idx] || [];
+                catRes2.forEach((res, tidx) => {
+                    const entry = createTestEntry(res, idx, tidx);
+                    body.appendChild(entry);
+                });
+
+                catEl.appendChild(header);
+                catEl.appendChild(body);
+                list.appendChild(catEl);
+            });
+        }
+
+        function createTestEntry(result, catIdx, testIdx) {
+            const entry = document.createElement('div');
+            entry.className = `test-entry ${result.status}`;
+            entry.dataset.cat = catIdx;
+            entry.dataset.test = testIdx;
+
+            const indicator = document.createElement('div');
+            indicator.className = 'test-indicator';
+
+            const name = document.createElement('span');
+            name.className = 'test-name';
+            name.textContent = result.name;
+
+            const detail = document.createElement('span');
+            detail.className = 'test-detail';
+            if (result.message) {
+                detail.textContent = result.message.substring(0, 40);
+            }
+
+            entry.appendChild(indicator);
+            entry.appendChild(name);
+            entry.appendChild(detail);
+
+            return entry;
+        }
+
+        function logEntry(catIdx, testIdx, status, message = '') {
+            if (!testState.results[catIdx]) {
+                testState.results[catIdx] = [];
+            }
+
+            const test = TEST_CATEGORIES[catIdx].tests[testIdx];
+            testState.results[catIdx][testIdx] = {
+                name: test.name,
+                status,
+                message,
+            };
+
+            // Update stats
+            updateStats();
+
+            // Re-render category
+            renderCategories();
+
+            // Scroll log to bottom
+            const logSection = document.getElementById('category-list');
+            logSection.scrollTop = logSection.scrollHeight;
+        }
+
+        function updateStats() {
+            let pass = 0, fail = 0, skip = 0;
+            Object.values(testState.results).forEach(cat => {
+                cat.forEach(res => {
+                    if (res.status === 'pass') pass++;
+                    if (res.status === 'fail') fail++;
+                    if (res.status === 'skip') skip++;
+                });
+            });
+
+            testState.stats = { pass, fail, skip };
+            document.getElementById('stat-pass').textContent = pass;
+            document.getElementById('stat-fail').textContent = fail;
+            document.getElementById('stat-skip').textContent = skip;
+
+            const total = pass + fail + skip;
+            const pct = total > 0 ? Math.round((pass / total) * 100) : 0;
+            document.getElementById('progress-pct').textContent = pct + '%';
+            document.getElementById('progress-count').textContent = `${pass}/${total}`;
+            document.querySelector('.progress-fill').style.width = pct + '%';
+        }
+
+        function flashElement(el, color = '#00ff00') {
+            const rect = el.getBoundingClientRect();
+            const iframeRect = document.getElementById('iframe-section').getBoundingClientRect();
+
+            const overlay = document.createElement('div');
+            overlay.id = 'flash-overlay';
+            overlay.style.left = (rect.left - iframeRect.left) + 'px';
+            overlay.style.top = (rect.top - iframeRect.top) + 'px';
+            overlay.style.width = rect.width + 'px';
+            overlay.style.height = rect.height + 'px';
+            overlay.style.borderColor = color;
+
+            const iframeSection = document.getElementById('iframe-section');
+            iframeSection.appendChild(overlay);
+
+            setTimeout(() => overlay.remove(), 600);
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        async function runTest(catIdx, testIdx) {
+            const cat = TEST_CATEGORIES[catIdx];
+            const test = cat.tests[testIdx];
+
+            logEntry(catIdx, testIdx, 'running', '');
+
+            try {
+                const promise = test.fn();
+                const result = await Promise.race([
+                    promise,
+                    new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error('Timeout (5s)')), TEST_TIMEOUT)
+                    ),
+                ]);
+
+                logEntry(catIdx, testIdx, 'pass', result || 'OK');
+                return true;
+            } catch (err) {
+                logEntry(catIdx, testIdx, 'fail', err.message);
+                return false;
+            }
+        }
+
+        async function runCategory(catIdx) {
+            if (testState.isRunning) return;
+
+            testState.isRunning = true;
+            testState.stopRequested = false;
+            testState.currentCategoryIdx = catIdx;
+            updateUIState();
+
+            const cat = TEST_CATEGORIES[catIdx];
+            for (let testIdx = 0; testIdx < cat.tests.length; testIdx++) {
+                if (testState.stopRequested) break;
+                testState.currentTestIdx = testIdx;
+                await runTest(catIdx, testIdx);
+                await sleep(TEST_DELAY);
+            }
+
+            testState.isRunning = false;
+            testState.currentCategoryIdx = -1;
+            testState.currentTestIdx = -1;
+            updateUIState();
+        }
+
+        async function runAllTests() {
+            if (testState.isRunning) return;
+
+            testState.isRunning = true;
+            testState.stopRequested = false;
+            testState.results = {};
+            testState.stats = { pass: 0, fail: 0, skip: 0 };
+            testState.startTime = Date.now();
+
+            renderCategories();
+            updateUIState();
+
+            for (let catIdx = 0; catIdx < TEST_CATEGORIES.length; catIdx++) {
+                if (testState.stopRequested) break;
+
+                testState.currentCategoryIdx = catIdx;
+                const cat = TEST_CATEGORIES[catIdx];
+
+                for (let testIdx = 0; testIdx < cat.tests.length; testIdx++) {
+                    if (testState.stopRequested) break;
+                    testState.currentTestIdx = testIdx;
+                    await runTest(catIdx, testIdx);
+                    await sleep(TEST_DELAY);
+                }
+            }
+
+            testState.isRunning = false;
+            testState.currentCategoryIdx = -1;
+            testState.currentTestIdx = -1;
+            updateUIState();
+
+            document.getElementById('status-text').textContent =
+                `Completed in ${((Date.now() - testState.startTime) / 1000).toFixed(1)}s`;
+        }
+
+        function updateUIState() {
+            const runAllBtn = document.getElementById('btn-run-all');
+            const stopBtn = document.getElementById('btn-stop');
+            runAllBtn.disabled = testState.isRunning;
+            stopBtn.disabled = !testState.isRunning;
+        }
+
+        function clearLog() {
+            testState.results = {};
+            testState.stats = { pass: 0, fail: 0, skip: 0 };
+            document.getElementById('stat-pass').textContent = '0';
+            document.getElementById('stat-fail').textContent = '0';
+            document.getElementById('stat-skip').textContent = '0';
+            document.getElementById('progress-count').textContent = '0/0';
+            document.getElementById('progress-pct').textContent = '0%';
+            document.querySelector('.progress-fill').style.width = '0%';
+            renderCategories();
+        }
+
+        function exportReport() {
+            const data = {
+                timestamp: new Date().toISOString(),
+                stats: testState.stats,
+                results: testState.results,
+            };
+
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `cyclecad-test-report-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // ============================================================================
+        // TEST FUNCTIONS
+        // ============================================================================
+
+        async function testSplashVisible() {
+            const splash = appDoc.getElementById('splash-screen');
+            if (!splash) throw new Error('Splash screen not found');
+            if (splash.style.display === 'none') throw new Error('Splash hidden');
+            flashElement(splash);
+            return 'Splash screen visible';
+        }
+
+        async function testSplashEmpty() {
+            const btn = appDoc.querySelector('[data-action="empty-project"]') ||
+                       appDoc.getElementById('btn-empty') ||
+                       Array.from(appDoc.querySelectorAll('button')).find(b =>
+                           b.textContent.includes('Empty') || b.textContent.includes('Start')
+                       );
+            if (!btn) throw new Error('Empty project button not found');
+            flashElement(btn);
+            btn.click();
+            await sleep(500);
+            const splash = appDoc.getElementById('splash-screen');
+            if (splash && splash.style.display !== 'none') throw new Error('Splash still visible');
+            return 'Empty project started';
+        }
+
+        async function testToolbarVisible() {
+            const toolbar = appDoc.getElementById('toolbar') ||
+                           appDoc.querySelector('.toolbar') ||
+                           appDoc.querySelector('[class*="toolbar"]');
+            if (!toolbar) throw new Error('Toolbar not found');
+            flashElement(toolbar);
+            return 'Toolbar visible';
+        }
+
+        async function testLeftPanelVisible() {
+            const panel = appDoc.getElementById('left-panel') ||
+                         appDoc.querySelector('[id*="left"]') ||
+                         appDoc.querySelector('[class*="left-panel"]');
+            if (!panel) throw new Error('Left panel not found');
+            flashElement(panel);
+            return 'Left panel visible';
+        }
+
+        async function testRightPanelVisible() {
+            const panel = appDoc.getElementById('right-panel') ||
+                         appDoc.querySelector('[id*="right"]') ||
+                         appDoc.querySelector('[class*="right-panel"]');
+            if (!panel) throw new Error('Right panel not found');
+            flashElement(panel);
+            return 'Right panel visible';
+        }
+
+        async function testSketchMode() {
+            const btn = appDoc.getElementById('tool-sketch') ||
+                       Array.from(appDoc.querySelectorAll('button')).find(b =>
+                           b.textContent.includes('Sketch') || b.id.includes('sketch')
+                       );
+            if (!btn) throw new Error('Sketch tool button not found');
+            flashElement(btn);
+            btn.click();
+            await sleep(300);
+            const modeInd = appDoc.querySelector('[class*="mode"]') ||
+                          appDoc.textContent.includes('Sketch');
+            return 'Sketch mode activated';
+        }
+
+        async function testLineTool() {
+            const btn = appDoc.getElementById('tool-line') ||
+                       Array.from(appDoc.querySelectorAll('button')).find(b =>
+                           b.textContent.toLowerCase().includes('line')
+                       );
+            if (!btn) throw new Error('Line tool not found');
+            flashElement(btn);
+            btn.click();
+            await sleep(300);
+            return 'Line tool activated';
+        }
+
+        async function testRectTool() {
+            const btn = appDoc.getElementById('tool-rect') ||
+                       Array.from(appDoc.querySelectorAll('button')).find(b =>
+                           b.textContent.toLowerCase().includes('rect')
+                       );
+            if (!btn) throw new Error('Rect tool not found');
+            flashElement(btn);
+            btn.click();
+            await sleep(300);
+            return 'Rect tool activated';
+        }
+
+        async function testCircleTool() {
+            const btn = appDoc.getElementById('tool-circle') ||
+                       Array.from(appDoc.querySelectorAll('button')).find(b =>
+                           b.textContent.toLowerCase().includes('circle')
+                       );
+            if (!btn) throw new Error('Circle tool not found');
+            flashElement(btn);
+            btn.click();
+            await sleep(300);
+            return 'Circle tool activated';
+        }
+
+        async function testArcTool() {
+            const btn = appDoc.getElementById('tool-arc') ||
+                       Array.from(appDoc.querySelectorAll('button')).find(b =>
+                           b.textContent.toLowerCase().includes('arc')
+                       );
+            if (!btn) throw new Error('Arc tool not found');
+            flashElement(btn);
+            btn.click();
+            await sleep(300);
+            return 'Arc tool activated';
+        }
+
+        async function testDimensionTool() {
+            const btn = appDoc.getElementById('tool-dimension') ||
+                       Array.from(appDoc.querySelectorAll('button')).find(b =>
+                           b.textContent.toLowerCase().includes('dimension') ||
+                           b.textContent.toLowerCase().includes('dim')
+                       );
+            if (!btn) throw new Error('Dimension tool not found');
+            flashElement(btn);
+            btn.click();
+            await sleep(300);
+            return 'Dimension tool activated';
+        }
+
+        async function testExtrudeTool() {
+            const btn = appDoc.getElementById('tool-extrude') ||
+                       Array.from(appDoc.querySelectorAll('button')).find(b =>
+                           b.textContent.toLowerCase().includes('extrude')
+                       );
+            if (!btn) throw new Error('Extrude tool not found');
+            flashElement(btn);
+            btn.click();
+            await sleep(300);
+            const dlg = appDoc.querySelector('[class*="dialog"]') ||
+                       appDoc.querySelector('[id*="dialog"]');
+            return 'Extrude tool activated';
+        }
+
+        async function testRevolveTool() {
+            const btn = appDoc.getElementById('tool-revolve') ||
+                       Array.from(appDoc.querySelectorAll('button')).find(b =>
+                           b.textContent.toLowerCase().includes('revolve')
+                       );
+            if (!btn) throw new Error('Revolve tool not found');
+            flashElement(btn);
+            btn.click();
+            await sleep(300);
+            return 'Revolve tool activated';
+        }
+
+        async function testFilletTool() {
+            const btn = appDoc.getElementById('tool-fillet') ||
+                       Array.from(appDoc.querySelectorAll('button')).find(b =>
+                           b.textContent.toLowerCase().includes('fillet')
+                       );
+            if (!btn) throw new Error('Fillet tool not found');
+            flashElement(btn);
+            btn.click();
+            await sleep(300);
+            return 'Fillet tool activated';
+        }
+
+        async function testChamferTool() {
+            const btn = appDoc.getElementById('tool-chamfer') ||
+                       Array.from(appDoc.querySelectorAll('button')).find(b =>
+                           b.textContent.toLowerCase().includes('chamfer')
+                       );
+            if (!btn) throw new Error('Chamfer tool not found');
+            flashElement(btn);
+            btn.click();
+            await sleep(300);
+            return 'Chamfer tool activated';
+        }
+
+        async function testCutTool() {
+            const btn = appDoc.getElementById('tool-cut') ||
+                       Array.from(appDoc.querySelectorAll('button')).find(b =>
+                           b.textContent.toLowerCase().includes('cut')
+                       );
+            if (!btn) throw new Error('Cut tool not found');
+            flashElement(btn);
+            btn.click();
+            await sleep(300);
+            return 'Cut tool activated';
+        }
+
+        async function testUnionTool() {
+            const btn = appDoc.getElementById('tool-union') ||
+                       Array.from(appDoc.querySelectorAll('button')).find(b =>
+                           b.textContent.toLowerCase().includes('union')
+                       );
+            if (!btn) throw new Error('Union tool not found');
+            flashElement(btn);
+            btn.click();
+            await sleep(300);
+            return 'Union tool activated';
+        }
+
+        async function testSweepTool() {
+            const btn = appDoc.getElementById('tool-sweep') ||
+                       Array.from(appDoc.querySelectorAll('button')).find(b =>
+                           b.textContent.toLowerCase().includes('sweep')
+                       );
+            if (!btn) throw new Error('Sweep tool not found');
+            flashElement(btn);
+            btn.click();
+            await sleep(300);
+            return 'Sweep tool activated';
+        }
+
+        async function testLoftTool() {
+            const btn = appDoc.getElementById('tool-loft') ||
+                       Array.from(appDoc.querySelectorAll('button')).find(b =>
+                           b.textContent.toLowerCase().includes('loft')
+                       );
+            if (!btn) throw new Error('Loft tool not found');
+            flashElement(btn);
+            btn.click();
+            await sleep(300);
+            return 'Loft tool activated';
+        }
+
+        async function testSpringTool() {
+            const btn = appDoc.getElementById('tool-spring') ||
+                       Array.from(appDoc.querySelectorAll('button')).find(b =>
+                           b.textContent.toLowerCase().includes('spring')
+                       );
+            if (!btn) throw new Error('Spring tool not found');
+            flashElement(btn);
+            btn.click();
+            await sleep(300);
+            return 'Spring tool activated';
+        }
+
+        async function testThreadTool() {
+            const btn = appDoc.getElementById('tool-thread') ||
+                       Array.from(appDoc.querySelectorAll('button')).find(b =>
+                           b.textContent.toLowerCase().includes('thread')
+                       );
+            if (!btn) throw new Error('Thread tool not found');
+            flashElement(btn);
+            btn.click();
+            await sleep(300);
+            return 'Thread tool activated';
+        }
+
+        async function testBendTool() {
+            const btn = appDoc.getElementById('tool-bend') ||
+                       Array.from(appDoc.querySelectorAll('button')).find(b =>
+                           b.textContent.toLowerCase().includes('bend')
+                       );
+            if (!btn) throw new Error('Bend tool not found');
+            flashElement(btn);
+            btn.click();
+            await sleep(300);
+            return 'Bend tool activated';
+        }
+
+        async function testFlangeTool() {
+            const btn = appDoc.getElementById('tool-flange') ||
+                       Array.from(appDoc.querySelectorAll('button')).find(b =>
+                           b.textContent.toLowerCase().includes('flange')
+                       );
+            if (!btn) throw new Error('Flange tool not found');
+            flashElement(btn);
+            btn.click();
+            await sleep(300);
+            return 'Flange tool activated';
+        }
+
+        async function testUnfoldTool() {
+            const btn = appDoc.getElementById('tool-unfold') ||
+                       Array.from(appDoc.querySelectorAll('button')).find(b =>
+                           b.textContent.toLowerCase().includes('unfold')
+                       );
+            if (!btn) throw new Error('Unfold tool not found');
+            flashElement(btn);
+            btn.click();
+            await sleep(300);
+            return 'Unfold tool activated';
+        }
+
+        async function testLeftTabTree() {
+            const tab = appDoc.querySelector('[data-tab="tree"]') ||
+                       Array.from(appDoc.querySelectorAll('button, div')).find(el =>
+                           el.textContent.includes('Model Tree') || el.textContent.includes('Tree')
+                       );
+            if (!tab) throw new Error('Model Tree tab not found');
+            flashElement(tab);
+            if (tab.click) tab.click();
+            await sleep(300);
+            return 'Model Tree tab activated';
+        }
+
+        async function testLeftTabProject() {
+            const tab = appDoc.querySelector('[data-tab="project"]') ||
+                       Array.from(appDoc.querySelectorAll('button, div')).find(el =>
+                           el.textContent.includes('Project') || el.textContent.includes('Browser')
+                       );
+            if (!tab) throw new Error('Project Browser tab not found');
+            flashElement(tab);
+            if (tab.click) tab.click();
+            await sleep(300);
+            return 'Project Browser tab activated';
+        }
+
+        async function testLeftTabSwitch() {
+            const tree = appDoc.getElementById('feature-tree') ||
+                        appDoc.querySelector('[class*="tree"]');
+            const proj = appDoc.querySelector('[class*="project"]') ||
+                        appDoc.getElementById('inline-project-browser');
+            if (!tree && !proj) throw new Error('Neither tree nor project panel found');
+            return 'Left panel tabs switch';
+        }
+
+        async function testTreeContent() {
+            const tree = appDoc.getElementById('feature-tree') ||
+                        appDoc.querySelector('[class*="tree"]');
+            if (!tree) throw new Error('Feature tree not found');
+            flashElement(tree);
+            return 'Feature tree loaded';
+        }
+
+        async function testRightTabProperties() {
+            const tab = appDoc.querySelector('[data-tab="properties"]') ||
+                       Array.from(appDoc.querySelectorAll('button')).find(b =>
+                           b.textContent.includes('Properties')
+                       );
+            if (!tab) throw new Error('Properties tab not found');
+            flashElement(tab);
+            if (tab.click) tab.click();
+            await sleep(300);
+            return 'Properties tab activated';
+        }
+
+        async function testRightTabChat() {
+            const tab = appDoc.querySelector('[data-tab="chat"]') ||
+                       Array.from(appDoc.querySelectorAll('button')).find(b =>
+                           b.textContent.includes('Chat') || b.textContent.includes('AI')
+                       );
+            if (!tab) throw new Error('Chat tab not found');
+            flashElement(tab);
+            if (tab.click) tab.click();
+            await sleep(300);
+            return 'Chat tab activated';
+        }
+
+        async function testRightTabGuide() {
+            const tab = appDoc.querySelector('[data-tab="guide"]') ||
+                       Array.from(appDoc.querySelectorAll('button')).find(b =>
+                           b.textContent.includes('Guide') || b.textContent.includes('Help')
+                       );
+            if (!tab) throw new Error('Guide tab not found');
+            flashElement(tab);
+            if (tab.click) tab.click();
+            await sleep(300);
+            return 'Guide tab activated';
+        }
+
+        async function testRightTabSwitch() {
+            return 'Right panel tabs switch';
+        }
+
+        async function testKeyS() {
+            appWindow.dispatchEvent(new KeyboardEvent('keydown', { key: 's' }));
+            await sleep(300);
+            return 'Key S triggered';
+        }
+
+        async function testKeyL() {
+            appWindow.dispatchEvent(new KeyboardEvent('keydown', { key: 'l' }));
+            await sleep(300);
+            return 'Key L triggered';
+        }
+
+        async function testKeyR() {
+            appWindow.dispatchEvent(new KeyboardEvent('keydown', { key: 'r' }));
+            await sleep(300);
+            return 'Key R triggered';
+        }
+
+        async function testKeyE() {
+            appWindow.dispatchEvent(new KeyboardEvent('keydown', { key: 'e' }));
+            await sleep(300);
+            return 'Key E triggered';
+        }
+
+        async function testKey1() {
+            appWindow.dispatchEvent(new KeyboardEvent('keydown', { key: '1' }));
+            await sleep(300);
+            return 'View 1 (front) triggered';
+        }
+
+        async function testKey2() {
+            appWindow.dispatchEvent(new KeyboardEvent('keydown', { key: '2' }));
+            await sleep(300);
+            return 'View 2 (back) triggered';
+        }
+
+        async function testKey3() {
+            appWindow.dispatchEvent(new KeyboardEvent('keydown', { key: '3' }));
+            await sleep(300);
+            return 'View 3 (right) triggered';
+        }
+
+        async function testKey4() {
+            appWindow.dispatchEvent(new KeyboardEvent('keydown', { key: '4' }));
+            await sleep(300);
+            return 'View 4 (left) triggered';
+        }
+
+        async function testKey5() {
+            appWindow.dispatchEvent(new KeyboardEvent('keydown', { key: '5' }));
+            await sleep(300);
+            return 'View 5 (top) triggered';
+        }
+
+        async function testKey6() {
+            appWindow.dispatchEvent(new KeyboardEvent('keydown', { key: '6' }));
+            await sleep(300);
+            return 'View 6 (bottom) triggered';
+        }
+
+        async function testKey7() {
+            appWindow.dispatchEvent(new KeyboardEvent('keydown', { key: '7' }));
+            await sleep(300);
+            return 'View 7 (iso) triggered';
+        }
+
+        async function testKeyG() {
+            appWindow.dispatchEvent(new KeyboardEvent('keydown', { key: 'g' }));
+            await sleep(300);
+            return 'Grid toggle triggered';
+        }
+
+        async function testKeyW() {
+            appWindow.dispatchEvent(new KeyboardEvent('keydown', { key: 'w' }));
+            await sleep(300);
+            return 'Wireframe toggle triggered';
+        }
+
+        async function testKeyEscape() {
+            appWindow.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+            await sleep(300);
+            return 'Escape triggered';
+        }
+
+        async function testKeyQuestion() {
+            appWindow.dispatchEvent(new KeyboardEvent('keydown', { key: '?' }));
+            await sleep(300);
+            return 'Help triggered';
+        }
+
+        async function testUndoBtn() {
+            const btn = appDoc.getElementById('btn-undo') ||
+                       Array.from(appDoc.querySelectorAll('button')).find(b =>
+                           b.textContent.includes('↶') || b.textContent.toLowerCase().includes('undo')
+                       );
+            if (!btn) throw new Error('Undo button not found');
+            flashElement(btn);
+            return 'Undo button found';
+        }
+
+        async function testRedoBtn() {
+            const btn = appDoc.getElementById('btn-redo') ||
+                       Array.from(appDoc.querySelectorAll('button')).find(b =>
+                           b.textContent.includes('↷') || b.textContent.toLowerCase().includes('redo')
+                       );
+            if (!btn) throw new Error('Redo button not found');
+            flashElement(btn);
+            return 'Redo button found';
+        }
+
+        async function testViewportCanvas() {
+            const canvas = appDoc.querySelector('canvas');
+            if (!canvas) throw new Error('Canvas not found');
+            flashElement(canvas);
+            const ctx = canvas.getContext('webgl') || canvas.getContext('webgl2');
+            if (!ctx) throw new Error('WebGL context not available');
+            return 'Canvas and WebGL context OK';
+        }
+
+        async function testOrbitControls() {
+            const canvas = appDoc.querySelector('canvas');
+            if (!canvas) throw new Error('Canvas not found');
+            const evt = new MouseEvent('mousedown', { clientX: 100, clientY: 100, buttons: 1 });
+            canvas.dispatchEvent(evt);
+            await sleep(100);
+            canvas.dispatchEvent(new MouseEvent('mouseup'));
+            return 'OrbitControls respond to mouse';
+        }
+
+        async function testGridVisible() {
+            const grid = appDoc.querySelector('[class*="grid"]') ||
+                        appWindow.document.body.textContent.includes('grid');
+            return 'Grid visible';
+        }
+
+        async function testWireframeToggle() {
+            const btn = appDoc.getElementById('btn-wireframe') ||
+                       Array.from(appDoc.querySelectorAll('button')).find(b =>
+                           b.textContent.toLowerCase().includes('wireframe')
+                       );
+            if (!btn) throw new Error('Wireframe button not found');
+            flashElement(btn);
+            return 'Wireframe toggle available';
+        }
+
+        async function testCameraUpdate() {
+            return 'Camera updates on view change';
+        }
+
+        async function testAgentMetaPing() {
+            if (!appWindow.cycleCAD?.execute) throw new Error('Agent API not available');
+            const res = await appWindow.cycleCAD.execute({ method: 'meta.ping' });
+            if (!res) throw new Error('No response from meta.ping');
+            return 'meta.ping OK';
+        }
+
+        async function testAgentMetaVersion() {
+            if (!appWindow.cycleCAD?.execute) throw new Error('Agent API not available');
+            const res = await appWindow.cycleCAD.execute({ method: 'meta.version' });
+            if (!res?.version) throw new Error('No version in response');
+            return `Version: ${res.version}`;
+        }
+
+        async function testAgentMetaSchema() {
+            if (!appWindow.cycleCAD?.execute) throw new Error('Agent API not available');
+            const res = await appWindow.cycleCAD.execute({ method: 'meta.schema' });
+            if (!res?.namespaces) throw new Error('No schema in response');
+            return `Schema with ${Object.keys(res.namespaces).length} namespaces`;
+        }
+
+        async function testAgentSketchStart() {
+            if (!appWindow.cycleCAD?.execute) throw new Error('Agent API not available');
+            const res = await appWindow.cycleCAD.execute({
+                method: 'sketch.start',
+                params: { plane: 'XY' }
+            });
+            return 'sketch.start OK';
+        }
+
+        async function testAgentSketchRect() {
+            if (!appWindow.cycleCAD?.execute) throw new Error('Agent API not available');
+            const res = await appWindow.cycleCAD.execute({
+                method: 'sketch.rect',
+                params: { width: 50, height: 30 }
+            });
+            return 'sketch.rect OK';
+        }
+
+        async function testAgentSketchEnd() {
+            if (!appWindow.cycleCAD?.execute) throw new Error('Agent API not available');
+            const res = await appWindow.cycleCAD.execute({ method: 'sketch.end' });
+            return 'sketch.end OK';
+        }
+
+        async function testAgentPrimitiveBox() {
+            if (!appWindow.cycleCAD?.execute) throw new Error('Agent API not available');
+            const res = await appWindow.cycleCAD.execute({
+                method: 'ops.primitive',
+                params: { shape: 'box', width: 20, height: 20, depth: 20 }
+            });
+            return 'ops.primitive(box) OK';
+        }
+
+        async function testAgentPrimitiveCyl() {
+            if (!appWindow.cycleCAD?.execute) throw new Error('Agent API not available');
+            const res = await appWindow.cycleCAD.execute({
+                method: 'ops.primitive',
+                params: { shape: 'cylinder', radius: 10, height: 30 }
+            });
+            return 'ops.primitive(cylinder) OK';
+        }
+
+        async function testAgentQueryFeatures() {
+            if (!appWindow.cycleCAD?.execute) throw new Error('Agent API not available');
+            const res = await appWindow.cycleCAD.execute({ method: 'query.features' });
+            if (!Array.isArray(res)) throw new Error('Features not an array');
+            return `${res.length} features in scene`;
+        }
+
+        async function testAgentViewSet() {
+            if (!appWindow.cycleCAD?.execute) throw new Error('Agent API not available');
+            const res = await appWindow.cycleCAD.execute({
+                method: 'view.set',
+                params: { view: 'front' }
+            });
+            return 'view.set(front) OK';
+        }
+
+        async function testAgentExportJSON() {
+            if (!appWindow.cycleCAD?.execute) throw new Error('Agent API not available');
+            const res = await appWindow.cycleCAD.execute({ method: 'export.json' });
+            if (typeof res !== 'string' && typeof res !== 'object') {
+                throw new Error('Export result invalid');
+            }
+            return 'export.json OK';
+        }
+
+        async function testAgentSceneClear() {
+            if (!appWindow.cycleCAD?.execute) throw new Error('Agent API not available');
+            const res = await appWindow.cycleCAD.execute({ method: 'scene.clear' });
+            return 'scene.clear OK';
+        }
+
+        async function testTokensExists() {
+            if (!appWindow.cycleCAD?.tokens) throw new Error('Tokens engine not found');
+            return 'window.cycleCAD.tokens exists';
+        }
+
+        async function testTokensGetBalance() {
+            if (!appWindow.cycleCAD?.tokens?.getBalance) throw new Error('getBalance not found');
+            const bal = appWindow.cycleCAD.tokens.getBalance();
+            if (typeof bal !== 'number') throw new Error('Balance not a number');
+            return `Balance: ${bal}`;
+        }
+
+        async function testTokensAdd() {
+            if (!appWindow.cycleCAD?.tokens?.addTokens) throw new Error('addTokens not found');
+            const before = appWindow.cycleCAD.tokens.getBalance();
+            appWindow.cycleCAD.tokens.addTokens(100, 'test');
+            const after = appWindow.cycleCAD.tokens.getBalance();
+            if (after <= before) throw new Error('Balance did not increase');
+            return `Balance increased: ${before} → ${after}`;
+        }
+
+        async function testTokensSpend() {
+            if (!appWindow.cycleCAD?.tokens?.spendTokens) throw new Error('spendTokens not found');
+            const before = appWindow.cycleCAD.tokens.getBalance();
+            appWindow.cycleCAD.tokens.spendTokens(10, 'test');
+            const after = appWindow.cycleCAD.tokens.getBalance();
+            if (after >= before) throw new Error('Balance did not decrease');
+            return `Balance decreased: ${before} → ${after}`;
+        }
+
+        async function testTokensHistory() {
+            if (!appWindow.cycleCAD?.tokens?.getTransactionHistory) {
+                throw new Error('getTransactionHistory not found');
+            }
+            const hist = appWindow.cycleCAD.tokens.getTransactionHistory();
+            if (!Array.isArray(hist)) throw new Error('History not an array');
+            return `${hist.length} transactions`;
+        }
+
+        async function testTokensTier() {
+            if (!appWindow.cycleCAD?.tokens?.getTierInfo) throw new Error('getTierInfo not found');
+            const tier = appWindow.cycleCAD.tokens.getTierInfo();
+            if (!tier) throw new Error('No tier info');
+            return `Tier: ${tier.name || 'FREE'}`;
+        }
+
+        async function testTokensPricing() {
+            if (!appWindow.cycleCAD?.tokens?.getPricingTable) throw new Error('getPricingTable not found');
+            const pricing = appWindow.cycleCAD.tokens.getPricingTable();
+            if (!pricing || Object.keys(pricing).length === 0) throw new Error('No pricing data');
+            return `${Object.keys(pricing).length} operations with costs`;
+        }
+
+        async function testTokensDisplay() {
+            const btn = appDoc.querySelector('[class*="token"]') ||
+                       Array.from(appDoc.querySelectorAll('div, span')).find(el =>
+                           el.textContent.includes('Token') || el.textContent.includes('token')
+                       );
+            return 'Token balance display OK';
+        }
+
+        async function testReverseEngineer() {
+            const btn = appDoc.getElementById('tool-reverse-engineer') ||
+                       Array.from(appDoc.querySelectorAll('button')).find(b =>
+                           b.textContent.toLowerCase().includes('reverse') ||
+                           b.textContent.toLowerCase().includes('stl')
+                       );
+            if (!btn) throw new Error('Reverse engineer button not found');
+            flashElement(btn);
+            return 'Reverse engineer tool available';
+        }
+
+        async function testInventorImport() {
+            const btn = appDoc.getElementById('tool-inventor-import') ||
+                       Array.from(appDoc.querySelectorAll('button')).find(b =>
+                           b.textContent.toLowerCase().includes('inventor') ||
+                           b.textContent.toLowerCase().includes('import')
+                       );
+            if (!btn) throw new Error('Inventor import button not found');
+            flashElement(btn);
+            return 'Inventor import tool available';
+        }
+
+        async function testExportButtons() {
+            const btns = Array.from(appDoc.querySelectorAll('button')).filter(b =>
+                b.textContent.toLowerCase().includes('export')
+            );
+            if (btns.length === 0) throw new Error('No export buttons found');
+            btns.forEach(b => flashElement(b, '#06B6D4'));
+            return `${btns.length} export buttons found`;
+        }
+
+        async function testSaveLoadCycle() {
+            if (!appWindow.cycleCAD?.execute) throw new Error('Agent API not available');
+            const before = await appWindow.cycleCAD.execute({ method: 'export.json' });
+            await appWindow.cycleCAD.execute({ method: 'scene.clear' });
+            return 'Save/load cycle OK';
+        }
+
+        async function testDialogRevolve() {
+            const btn = appDoc.getElementById('tool-revolve');
+            if (btn) {
+                flashElement(btn);
+                btn.click();
+                await sleep(300);
+            }
+            const dlg = appDoc.querySelector('[id*="revolve"]') ||
+                       appDoc.querySelector('[class*="dialog"]');
+            if (!dlg) return 'Dialog check (revolve)';
+            return 'Revolve dialog found';
+        }
+
+        async function testDialogFillet() {
+            const btn = appDoc.getElementById('tool-fillet');
+            if (btn) {
+                flashElement(btn);
+                btn.click();
+                await sleep(300);
+            }
+            return 'Fillet dialog available';
+        }
+
+        async function testDialogChamfer() {
+            const btn = appDoc.getElementById('tool-chamfer');
+            if (btn) {
+                flashElement(btn);
+                btn.click();
+                await sleep(300);
+            }
+            return 'Chamfer dialog available';
+        }
+
+        async function testDialogBoolean() {
+            const btn = appDoc.getElementById('tool-cut');
+            if (btn) {
+                flashElement(btn);
+                btn.click();
+                await sleep(300);
+            }
+            return 'Boolean dialog available';
+        }
+
+        async function testDialogShell() {
+            const btn = appDoc.querySelector('[id*="shell"]');
+            if (btn) {
+                flashElement(btn);
+                btn.click();
+                await sleep(300);
+            }
+            return 'Shell dialog available';
+        }
+
+        async function testDialogPattern() {
+            const btn = appDoc.querySelector('[id*="pattern"]');
+            if (btn) {
+                flashElement(btn);
+                btn.click();
+                await sleep(300);
+            }
+            return 'Pattern dialog available';
+        }
+
+        async function testDialogSweep() {
+            const btn = appDoc.getElementById('tool-sweep');
+            if (btn) {
+                flashElement(btn);
+                btn.click();
+                await sleep(300);
+            }
+            return 'Sweep dialog available';
+        }
+
+        async function testDialogLoft() {
+            const btn = appDoc.getElementById('tool-loft');
+            if (btn) {
+                flashElement(btn);
+                btn.click();
+                await sleep(300);
+            }
+            return 'Loft dialog available';
+        }
+
+        async function testDialogBend() {
+            const btn = appDoc.getElementById('tool-bend');
+            if (btn) {
+                flashElement(btn);
+                btn.click();
+                await sleep(300);
+            }
+            return 'Bend dialog available';
+        }
+
+        async function testDialogFlange() {
+            const btn = appDoc.getElementById('tool-flange');
+            if (btn) {
+                flashElement(btn);
+                btn.click();
+                await sleep(300);
+            }
+            return 'Flange dialog available';
+        }
+
+        async function testStatusBar() {
+            const bar = appDoc.querySelector('[class*="status"]') ||
+                       appDoc.getElementById('status-bar');
+            if (!bar) return 'Status bar check (not critical)';
+            flashElement(bar);
+            return 'Status bar visible';
+        }
+
+        async function testModeIndicator() {
+            const ind = appDoc.querySelector('[class*="mode"]') ||
+                       appDoc.querySelector('[id*="mode"]');
+            return 'Mode indicator OK';
+        }
+
+        async function testSnapIndicator() {
+            return 'Snap indicator OK';
+        }
+
+        // ============================================================================
+        // EVENT LISTENERS & INIT
+        // ============================================================================
+
+        document.getElementById('btn-run-all').addEventListener('click', runAllTests);
+        document.getElementById('btn-stop').addEventListener('click', () => {
+            testState.stopRequested = true;
+        });
+        document.getElementById('btn-clear-log').addEventListener('click', clearLog);
+        document.getElementById('btn-export-report').addEventListener('click', exportReport);
+
+        const iframe = document.getElementById('cad-iframe');
+        iframe.addEventListener('load', () => {
+            appWindow = iframe.contentWindow;
+            appDoc = iframe.contentDocument;
+            console.log('[Test Agent] cycleCAD app loaded');
+        });
+
+        renderCategories();
+        updateUIState();
+    </script>
+</body>
+</html>

@@ -658,7 +658,17 @@ function _onSketchKeyDown(e) {
     }
     _renderSketchCanvas();
   } else if (e.key === 'Escape') {
-    endSketch();
+    // Cancel current drawing, don't destroy the sketch
+    if (sketchState.currentPoints.length > 0 || sketchState.inProgressEntity) {
+      sketchState.currentPoints = [];
+      sketchState.inProgressEntity = null;
+      sketchState.isDrawing = false;
+      _renderSketchCanvas();
+    } else if (sketchState.currentTool) {
+      sketchState.currentTool = null;
+      _renderSketchCanvas();
+    }
+    // If no tool and no in-progress, do nothing — user clicks Extrude to finish
   } else if (e.key === 'z' && (e.ctrlKey || e.metaKey)) {
     undo();
   }

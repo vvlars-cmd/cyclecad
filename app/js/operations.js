@@ -113,10 +113,11 @@ function entitiesToShape(entities) {
   // Rectangles → closed shape
   for (const r of rects) {
     const s = new THREE.Shape();
-    const x = r.x || 0;
-    const y = r.y || 0;
-    const w = r.width || 10;
-    const h = r.height || 10;
+    // Sketch stores corner in points[0], opposite corner in points[1], dims in dimensions
+    const x = r.points?.[0]?.x ?? r.x ?? 0;
+    const y = r.points?.[0]?.y ?? r.y ?? 0;
+    const w = r.dimensions?.width ?? r.width ?? 10;
+    const h = r.dimensions?.height ?? r.height ?? 10;
     s.moveTo(x, y);
     s.lineTo(x + w, y);
     s.lineTo(x + w, y + h);
@@ -128,9 +129,10 @@ function entitiesToShape(entities) {
   // Circles → closed shape
   for (const c of circles) {
     const s = new THREE.Shape();
-    const cx = c.x || c.center?.x || 0;
-    const cy = c.y || c.center?.y || 0;
-    const r = c.radius || 10;
+    // Sketch stores center in points[0], radius in dimensions.radius
+    const cx = c.points?.[0]?.x ?? c.x ?? c.center?.x ?? 0;
+    const cy = c.points?.[0]?.y ?? c.y ?? c.center?.y ?? 0;
+    const r = c.dimensions?.radius ?? c.radius ?? 10;
     s.absarc(cx, cy, r, 0, Math.PI * 2, false);
     shapes.push({ shape: s, area: Math.PI * r * r, type: 'circle' });
   }
@@ -229,9 +231,10 @@ export function extrudeProfile(entities, height, options = {}) {
   // Create shape from entities
   const shape = entitiesToShape(entities);
 
-  // Calculate extrusion settings
-  const extrudeHeight = symmetric ? height / 2 : height;
-  const depth = symmetric ? height : height;
+  // Handle negative height (cut direction) — use absolute depth, then translate
+  const isCut = height < 0;
+  const absHeight = Math.abs(height);
+  const depth = symmetric ? absHeight : absHeight;
 
   // Create extrude geometry
   const geometry = new THREE.ExtrudeGeometry(shape, {
@@ -243,16 +246,26 @@ export function extrudeProfile(entities, height, options = {}) {
     steps: Math.max(1, Math.floor(depth / 10))
   });
 
-  // Center if symmetric
+  // Position the extrusion
   if (symmetric) {
     geometry.translate(0, 0, -depth / 2);
+  } else if (isCut) {
+    // Negative extrude: move geometry in -Z direction
+    geometry.translate(0, 0, -depth);
   }
 
   // Create mesh with material
   const mat = createMaterial(material);
+  // For cuts, make semi-transparent red to show it's a cut operation
+  if (isCut) {
+    mat.color.setHex(0xf85149);
+    mat.transparent = true;
+    mat.opacity = 0.6;
+  }
   const mesh = new THREE.Mesh(geometry, mat);
   mesh.castShadow = true;
   mesh.receiveShadow = true;
+  mesh._isCut = isCut;
 
   // Create wireframe overlay
   const wireframe = createWireframeEdges(mesh);

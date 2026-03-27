@@ -1387,13 +1387,13 @@
   <!-- Token Engine — Initialize early so window.cycleCAD.tokens is available -->
   <script src="./js/token-engine.js"></script>
   <!-- New Architecture Modules (ES modules need type="module") -->
-  <script type="module" src="./js/material-library.js?v=60"></script>
+  <script type="module" src="./js/material-library.js?v=61"></script>
   <script src="./js/dfm-analyzer.js"></script>
-  <script type="module" src="./js/cam-pipeline.js?v=60"></script>
+  <script type="module" src="./js/cam-pipeline.js?v=61"></script>
   <script src="./js/connected-fabs.js"></script>
-  <script type="module" src="./js/ai-copilot.js?v=60"></script>
-  <script type="module" src="./js/collaboration.js?v=60"></script>
-  <script type="module" src="./js/collaboration-ui.js?v=60"></script>
+  <script type="module" src="./js/ai-copilot.js?v=61"></script>
+  <script type="module" src="./js/collaboration.js?v=61"></script>
+  <script type="module" src="./js/collaboration-ui.js?v=61"></script>
   <!-- CadXStudio-killer modules (IIFE, no imports) -->
   <script src="./js/text-to-cad.js"></script>
   <script src="./js/cam-operations.js"></script>
@@ -1419,7 +1419,7 @@
           <span class="splash-logo-cycle">cycle</span><span class="splash-logo-cad">CAD</span>
         </div>
         <p class="splash-subtitle">Parametric 3D CAD Modeler for the Mechanical Designer</p>
-        <p style="color: rgba(255,255,255,0.45); font-size: 0.8rem; margin: 4px 0 0 0; letter-spacing: 1px;">v0.8.3</p>
+        <p style="color: rgba(255,255,255,0.45); font-size: 0.8rem; margin: 4px 0 0 0; letter-spacing: 1px;">v0.8.4</p>
       </div>
       <div class="splash-options">
         <button class="splash-button splash-button-primary" id="btn-empty-project" style="grid-column: 1 / -1;">
@@ -1759,25 +1759,25 @@
   <script type="module">
     import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
     const _v = '50';
-    import { initViewport, setView, addToScene, removeFromScene, getScene, getCamera, getControls, toggleGrid as vpToggleGrid, fitToObject, fitAll } from './js/viewport.js?v=60';
-    import { startSketch, endSketch, setTool, getEntities, clearSketch } from './js/sketch.js?v=60';
-    import { extrudeProfile, createPrimitive, rebuildFeature, createMaterial } from './js/operations.js?v=60';
-    import { initChat, parseCADPrompt, addMessage } from './js/ai-chat.js?v=60';
-    import { initTree, addFeature, selectFeature, onSelect } from './js/tree.js?v=60';
-    import { initParams, showParams, onParamChange } from './js/params.js?v=60';
-    import { exportSTL, exportOBJ, exportJSON } from './js/export.js?v=60';
-    import { initShortcuts } from './js/shortcuts.js?v=60';
-    import { createReverseEngineerPanel, importFile, analyzeGeometry, reconstructFeatureTree, createWalkthrough } from './js/reverse-engineer.js?v=60';
-    import { createInventorPanel, parseInventorFile } from './js/inventor-parser.js?v=60';
-    import { loadProject, showFolderPicker, parseIPJ } from './js/project-loader.js?v=60';
-    import { initProjectBrowser, showBrowser, hideBrowser, setProject, onFileSelect } from './js/project-browser.js?v=60';
-    import { generateGuide, renderGuide, exportGuideHTML } from './js/rebuild-guide.js?v=60';
-    import { solveConstraints, addConstraint, removeConstraint, autoDetectConstraints, isFullyConstrained, getAllConstraints, clearAllConstraints } from './js/constraint-solver.js?v=60';
-    import { createSweep, createLoft, createBend, createFlange, createTab, createSlot, unfoldSheetMetal, createSpring, createThread } from './js/advanced-ops.js?v=60';
-    import Assembly from './js/assembly.js?v=60';
-    import { exportSketchToDXF, exportProjectionToDXF, exportMultiViewDXF, export3DDXF, downloadDXF } from './js/dxf-export.js?v=60';
-    import { initAgentAPI } from './js/agent-api.js?v=60';
-    import { initTokenDashboard } from './js/token-dashboard.js?v=60';
+    import { initViewport, setView, addToScene, removeFromScene, getScene, getCamera, getControls, toggleGrid as vpToggleGrid, fitToObject, fitAll } from './js/viewport.js?v=61';
+    import { startSketch, endSketch, setTool, getEntities, clearSketch } from './js/sketch.js?v=61';
+    import { extrudeProfile, createPrimitive, rebuildFeature, createMaterial } from './js/operations.js?v=61';
+    import { initChat, parseCADPrompt, addMessage } from './js/ai-chat.js?v=61';
+    import { initTree, addFeature, selectFeature, onSelect } from './js/tree.js?v=61';
+    import { initParams, showParams, onParamChange } from './js/params.js?v=61';
+    import { exportSTL, exportOBJ, exportJSON } from './js/export.js?v=61';
+    import { initShortcuts } from './js/shortcuts.js?v=61';
+    import { createReverseEngineerPanel, importFile, analyzeGeometry, reconstructFeatureTree, createWalkthrough } from './js/reverse-engineer.js?v=61';
+    import { createInventorPanel, parseInventorFile } from './js/inventor-parser.js?v=61';
+    import { loadProject, showFolderPicker, parseIPJ } from './js/project-loader.js?v=61';
+    import { initProjectBrowser, showBrowser, hideBrowser, setProject, onFileSelect } from './js/project-browser.js?v=61';
+    import { generateGuide, renderGuide, exportGuideHTML } from './js/rebuild-guide.js?v=61';
+    import { solveConstraints, addConstraint, removeConstraint, autoDetectConstraints, isFullyConstrained, getAllConstraints, clearAllConstraints } from './js/constraint-solver.js?v=61';
+    import { createSweep, createLoft, createBend, createFlange, createTab, createSlot, unfoldSheetMetal, createSpring, createThread } from './js/advanced-ops.js?v=61';
+    import Assembly from './js/assembly.js?v=61';
+    import { exportSketchToDXF, exportProjectionToDXF, exportMultiViewDXF, export3DDXF, downloadDXF } from './js/dxf-export.js?v=61';
+    import { initAgentAPI } from './js/agent-api.js?v=61';
+    import { initTokenDashboard } from './js/token-dashboard.js?v=61';
 
     // ========== Application State ==========
     const APP = {
@@ -1978,7 +1978,7 @@
 
         // Initialize Agent API — the primary interface
         await tryStepAsync('agentAPI', async () => {
-        const agentImports = await import('./js/agent-api.js?v=60');
+        const agentImports = await import('./js/agent-api.js?v=61');
         const agentSession = initAgentAPI({
           viewport: {
             getCamera,
@@ -2714,7 +2714,7 @@
         return;
       }
 
-      const height = prompt('Enter extrusion height (mm):', '20');
+      const height = prompt('Enter extrusion height in mm (negative = cut):', '20');
       if (height === null) return;
       const h = parseFloat(height);
       if (isNaN(h) || h === 0) { updateStatus('Invalid height'); return; }
@@ -2728,10 +2728,11 @@
         addToScene(mesh);
         if (result.wireframe) addToScene(result.wireframe);
 
+        const isCut = h < 0;
         const feature = {
           id: 'feature_' + Date.now(),
-          name: `Extrusion (${h}mm)`,
-          type: 'extrude',
+          name: isCut ? `Cut (${Math.abs(h)}mm)` : `Extrusion (${h}mm)`,
+          type: isCut ? 'cut' : 'extrude',
           mesh,
           params: { height: h },
           _geometryJSON: mesh.geometry ? mesh.geometry.toJSON() : null,
@@ -3589,7 +3590,6 @@
     });
 
     // Continuously sync ViewCube rotation with camera using rAF
-    // (controls.addEventListener('change') fails if getControls() is null at init)
     (function syncViewCube() {
       const cube = document.getElementById('vc-cube');
       if (!cube) return;
@@ -3600,10 +3600,8 @@
           if (cam) {
             const dir = new THREE.Vector3();
             cam.getWorldDirection(dir);
-            // Camera looks along -Z in its local space, so direction gives us where it points
             const rotY = Math.atan2(dir.x, dir.z) * (180 / Math.PI);
             const rotX = Math.asin(-dir.y) * (180 / Math.PI);
-            // Only update DOM if values changed (avoid layout thrash)
             const rxi = Math.round(rotX * 10);
             const ryi = Math.round(rotY * 10);
             if (rxi !== lastRotX || ryi !== lastRotY) {
@@ -3616,6 +3614,210 @@
         requestAnimationFrame(updateCubeFromCamera);
       }
       requestAnimationFrame(updateCubeFromCamera);
+    })();
+
+    // ViewCube drag-to-orbit: drag on the cube rotates the 3D camera
+    (function initViewCubeDrag() {
+      const vcEl = document.getElementById('viewcube');
+      if (!vcEl) return;
+      let dragging = false, startX = 0, startY = 0;
+      let startAzimuth = 0, startPolar = 0;
+
+      vcEl.addEventListener('pointerdown', (e) => {
+        // Only start drag if not clicking a face label directly
+        dragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        try {
+          const controls = getControls();
+          if (controls) {
+            startAzimuth = controls.getAzimuthalAngle();
+            startPolar = controls.getPolarAngle();
+          }
+        } catch(err) {}
+        vcEl.setPointerCapture(e.pointerId);
+        e.preventDefault();
+      });
+
+      vcEl.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        // Only orbit if dragged more than 4px (otherwise it's a click)
+        if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
+        try {
+          const controls = getControls();
+          const cam = getCamera();
+          if (controls && cam) {
+            // Spherical orbit: dx → azimuthal, dy → polar
+            const sensitivity = 0.02;
+            const target = controls.target.clone();
+            const offset = cam.position.clone().sub(target);
+            const spherical = new THREE.Spherical().setFromVector3(offset);
+            spherical.theta = startAzimuth - dx * sensitivity;
+            spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, startPolar + dy * sensitivity));
+            offset.setFromSpherical(spherical);
+            cam.position.copy(target).add(offset);
+            cam.lookAt(target);
+            controls.update();
+          }
+        } catch(err) {}
+      });
+
+      vcEl.addEventListener('pointerup', (e) => {
+        const dx = Math.abs(e.clientX - startX);
+        const dy = Math.abs(e.clientY - startY);
+        dragging = false;
+        // If it was a small move, let the face click handler fire
+      });
+    })();
+
+    // ========== Measurement Tool ==========
+    (function initMeasureTool() {
+      let measureMode = false;
+      let measurePoints = [];
+      let measureLines = [];
+      let measureLabels = [];
+
+      function clearMeasurements() {
+        const scene = getScene();
+        if (!scene) return;
+        measureLines.forEach(l => scene.remove(l));
+        measureLabels.forEach(l => l.remove());
+        measureLines = [];
+        measureLabels = [];
+        measurePoints = [];
+      }
+
+      function addMeasureLabel(text, position) {
+        const div = document.createElement('div');
+        div.className = 'measure-label';
+        div.textContent = text;
+        div.style.cssText = 'position:absolute;background:rgba(88,166,255,0.9);color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;font-weight:600;pointer-events:none;z-index:100;white-space:nowrap;';
+        document.getElementById('viewport-container').appendChild(div);
+        measureLabels.push(div);
+
+        function updatePos() {
+          if (!div.parentElement) return;
+          try {
+            const cam = getCamera();
+            const container = document.getElementById('viewport-container');
+            if (!cam || !container) return;
+            const vec = position.clone().project(cam);
+            const rect = container.getBoundingClientRect();
+            div.style.left = ((vec.x + 1) / 2 * rect.width) + 'px';
+            div.style.top = ((-vec.y + 1) / 2 * rect.height) + 'px';
+          } catch(e) {}
+          requestAnimationFrame(updatePos);
+        }
+        requestAnimationFrame(updatePos);
+        return div;
+      }
+
+      function onMeasureClick(e) {
+        if (!measureMode) return;
+        const cam = getCamera();
+        const scene = getScene();
+        if (!cam || !scene) return;
+
+        const container = document.getElementById('viewport-container');
+        const rect = container.getBoundingClientRect();
+        const mouse = new THREE.Vector2(
+          ((e.clientX - rect.left) / rect.width) * 2 - 1,
+          -((e.clientY - rect.top) / rect.height) * 2 + 1
+        );
+
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, cam);
+
+        const meshes = [];
+        scene.traverse(obj => { if (obj.isMesh) meshes.push(obj); });
+        const hits = raycaster.intersectObjects(meshes, true);
+        if (hits.length === 0) return;
+
+        const pt = hits[0].point.clone();
+        measurePoints.push(pt);
+
+        // Visual marker
+        const marker = new THREE.Mesh(
+          new THREE.SphereGeometry(0.3, 8, 8),
+          new THREE.MeshBasicMaterial({ color: 0x58a6ff })
+        );
+        marker.position.copy(pt);
+        scene.add(marker);
+        measureLines.push(marker);
+
+        if (measurePoints.length === 2) {
+          // Distance measurement
+          const p1 = measurePoints[0], p2 = measurePoints[1];
+          const dist = p1.distanceTo(p2);
+          const dx = Math.abs(p2.x - p1.x);
+          const dy = Math.abs(p2.y - p1.y);
+          const dz = Math.abs(p2.z - p1.z);
+
+          // Draw line
+          const lineGeo = new THREE.BufferGeometry().setFromPoints([p1, p2]);
+          const lineMat = new THREE.LineBasicMaterial({ color: 0x58a6ff, linewidth: 2 });
+          const line = new THREE.Line(lineGeo, lineMat);
+          scene.add(line);
+          measureLines.push(line);
+
+          // Label at midpoint
+          const mid = p1.clone().add(p2).multiplyScalar(0.5);
+          addMeasureLabel(`${dist.toFixed(1)}mm (dx:${dx.toFixed(1)} dy:${dy.toFixed(1)} dz:${dz.toFixed(1)})`, mid);
+          updateStatus(`Distance: ${dist.toFixed(2)}mm`);
+
+        } else if (measurePoints.length === 3) {
+          // Angle measurement between 3 points
+          const p1 = measurePoints[0], p2 = measurePoints[1], p3 = measurePoints[2];
+          const v1 = p1.clone().sub(p2).normalize();
+          const v2 = p3.clone().sub(p2).normalize();
+          const angle = Math.acos(Math.max(-1, Math.min(1, v1.dot(v2)))) * (180 / Math.PI);
+
+          // Draw angle lines
+          const lg1 = new THREE.BufferGeometry().setFromPoints([p1, p2]);
+          const lg2 = new THREE.BufferGeometry().setFromPoints([p2, p3]);
+          const lm = new THREE.LineBasicMaterial({ color: 0x3fb950, linewidth: 2 });
+          const l1 = new THREE.Line(lg1, lm);
+          const l2 = new THREE.Line(lg2, lm);
+          scene.add(l1); scene.add(l2);
+          measureLines.push(l1, l2);
+
+          addMeasureLabel(`${angle.toFixed(1)}°`, p2);
+          updateStatus(`Angle: ${angle.toFixed(2)}° | Distance 1→2: ${p1.distanceTo(p2).toFixed(1)}mm | Distance 2→3: ${p2.distanceTo(p3).toFixed(1)}mm`);
+          measurePoints = []; // Reset after angle
+        }
+      }
+
+      // Toggle measure mode with M key or toolbar button
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'm' && !e.ctrlKey && !e.metaKey && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+          measureMode = !measureMode;
+          if (measureMode) {
+            measurePoints = [];
+            updateStatus('Measure mode: Click 2 points for distance, 3 points for angle. Press M to exit.');
+            document.getElementById('viewport-container').addEventListener('click', onMeasureClick);
+          } else {
+            clearMeasurements();
+            document.getElementById('viewport-container').removeEventListener('click', onMeasureClick);
+            updateStatus('Measure mode off');
+          }
+        }
+      });
+
+      // Also wire up measure button if it exists
+      document.getElementById('tool-measure')?.addEventListener('click', () => {
+        measureMode = !measureMode;
+        if (measureMode) {
+          measurePoints = [];
+          updateStatus('Measure mode: Click 2 points for distance, 3 for angle. Press M to exit.');
+          document.getElementById('viewport-container').addEventListener('click', onMeasureClick);
+        } else {
+          clearMeasurements();
+          document.getElementById('viewport-container').removeEventListener('click', onMeasureClick);
+          updateStatus('Measure mode off');
+        }
+      });
     })();
 
     document.getElementById('btn-help')?.addEventListener('click', () => {
@@ -4071,6 +4273,6 @@
     </div>
   </div>
 
-  <span id="version-badge" style="position:fixed;bottom:42px;left:50%;transform:translateX(-50%);z-index:999;font-size:0.9rem;color:rgba(255,255,255,0.9);letter-spacing:0.1em;white-space:nowrap;padding:6px 16px;user-select:all;pointer-events:auto;font-family:monospace;font-weight:700;background:rgba(0,0,0,0.7);border:1px solid rgba(88,166,255,0.4);border-radius:6px;text-shadow:0 1px 3px rgba(0,0,0,0.5);" title="cycleCAD version">cycleCAD v0.8.3</span>
+  <span id="version-badge" style="position:fixed;bottom:42px;left:50%;transform:translateX(-50%);z-index:999;font-size:0.9rem;color:rgba(255,255,255,0.9);letter-spacing:0.1em;white-space:nowrap;padding:6px 16px;user-select:all;pointer-events:auto;font-family:monospace;font-weight:700;background:rgba(0,0,0,0.7);border:1px solid rgba(88,166,255,0.4);border-radius:6px;text-shadow:0 1px 3px rgba(0,0,0,0.5);" title="cycleCAD version">cycleCAD v0.8.4</span>
 </body>
 </html>

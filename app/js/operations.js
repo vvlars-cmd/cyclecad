@@ -231,10 +231,8 @@ export function extrudeProfile(entities, height, options = {}) {
   // Create shape from entities
   const shape = entitiesToShape(entities);
 
-  // Handle negative height (cut direction) — use absolute depth, then translate
-  const isCut = height < 0;
-  const absHeight = Math.abs(height);
-  const depth = symmetric ? absHeight : absHeight;
+  // Always use positive depth — cut logic is handled by doExtrude in index.html
+  const depth = symmetric ? Math.abs(height) : Math.abs(height);
 
   // Create extrude geometry
   const geometry = new THREE.ExtrudeGeometry(shape, {
@@ -249,23 +247,13 @@ export function extrudeProfile(entities, height, options = {}) {
   // Position the extrusion
   if (symmetric) {
     geometry.translate(0, 0, -depth / 2);
-  } else if (isCut) {
-    // Negative extrude: move geometry in -Z direction
-    geometry.translate(0, 0, -depth);
   }
 
   // Create mesh with material
   const mat = createMaterial(material);
-  // For cuts, make semi-transparent red to show it's a cut operation
-  if (isCut) {
-    mat.color.setHex(0xf85149);
-    mat.transparent = true;
-    mat.opacity = 0.6;
-  }
   const mesh = new THREE.Mesh(geometry, mat);
   mesh.castShadow = true;
   mesh.receiveShadow = true;
-  mesh._isCut = isCut;
 
   // Create wireframe overlay
   const wireframe = createWireframeEdges(mesh);

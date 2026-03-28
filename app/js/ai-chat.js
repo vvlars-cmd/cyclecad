@@ -17,17 +17,17 @@
 // ============================================================================
 
 const PART_TYPE_SYNONYMS = {
-  cube: ['cube', 'box', 'block', 'square block', 'rectangular block', 'cuboid'],
-  cylinder: ['cylinder', 'rod', 'post', 'pin', 'shaft', 'tube', 'pipe', 'bar', 'piston', 'axle'],
-  sphere: ['sphere', 'ball', 'round', 'globe', 'orb'],
+  cube: ['cube', 'box', 'block', 'square block', 'rectangular block', 'cuboid', 'qube', 'boks'],
+  cylinder: ['cylinder', 'cylindr', 'cylindre', 'cylnder', 'cyliner', 'rod', 'post', 'pin', 'shaft', 'tube', 'pipe', 'bar', 'piston', 'axle'],
+  sphere: ['sphere', 'spehre', 'shere', 'spehere', 'ball', 'round', 'globe', 'orb'],
   cone: ['cone', 'conical', 'funnel', 'tapered'],
-  plate: ['plate', 'flat plate', 'mounting plate', 'base plate', 'flat base', 'slab', 'panel'],
-  washer: ['washer', 'flat washer'],
-  spacer: ['spacer', 'shim', 'ring spacer', 'standoff', 'bushing'],
-  bracket: ['bracket', 'L-bracket', 'angle bracket', 'support bracket', 'corner bracket', 'L bracket', 'angle iron'],
-  flange: ['flange', 'flanged bearing', 'flanged housing', 'hub', 'collar'],
-  gear: ['gear', 'spur gear', 'pinion', 'toothed wheel', 'cog', 'sprocket'],
-  torus: ['torus', 'donut', 'ring', 'o-ring'],
+  plate: ['plate', 'plat', 'flat plate', 'mounting plate', 'base plate', 'flat base', 'slab', 'panel'],
+  washer: ['washer', 'wahser', 'flat washer'],
+  spacer: ['spacer', 'spacr', 'shim', 'ring spacer', 'standoff', 'bushing'],
+  bracket: ['bracket', 'brcket', 'braket', 'brackt', 'L-bracket', 'angle bracket', 'support bracket', 'corner bracket', 'L bracket', 'angle iron'],
+  flange: ['flange', 'flnge', 'flanged bearing', 'flanged housing', 'hub', 'collar'],
+  gear: ['gear', 'geer', 'spur gear', 'pinion', 'toothed wheel', 'cog', 'sprocket'],
+  torus: ['torus', 'torous', 'donut', 'doughnut', 'ring', 'o-ring'],
 };
 
 const UNIT_FACTORS = { mm: 1, m: 1000, cm: 10, in: 25.4, inch: 25.4, ft: 304.8, foot: 304.8 };
@@ -220,9 +220,9 @@ function handleSceneAction(lower, original) {
   const selectedIdx = window.APP?.selectedFeatureIndex ?? -1;
 
   // --- DELETE / REMOVE ---
-  if (/^(delete|remove|erase|trash|get rid of|destroy)\b/.test(lower) ||
-      /\b(delete|remove|erase)\s+(it|this|that|the last|last|selected|current)\b/.test(lower) ||
-      /^(remove|delete) it\s*$/.test(lower)) {
+  if (/^(delet|delete|remov|remove|erase|trash|get rid of|destroy)\w*\b/.test(lower) ||
+      /\b(delet|delete|remov|remove|erase)\w*\s+(it|this|that|the last|last|selected|current)\b/.test(lower) ||
+      /^(remove|delete|remov|delet)\w*\s+it\s*$/.test(lower)) {
 
     // Find which part to delete
     const targetIdx = resolveTarget(lower, features, selectedIdx);
@@ -999,39 +999,60 @@ function parseLLMResponse(text) {
 function localParseCADPrompt(text) {
   const commands = [];
 
-  // Split on "and" / "with" / "then" for multi-step
-  const parts = text.split(/\s+(?:and|with|then|plus|\+)\s+/);
+  // Strip "create/make/draw/build/generate" prefix for cleaner parsing
+  const cleaned = text.replace(/^(create|make|draw|build|generate|add|design|model|give me|i want|i need)\s+(a\s+|an\s+|me\s+a\s+|me\s+an\s+)?/i, '');
+
+  // FIRST: try parsing the FULL sentence (handles "cylinder with 30mm diameter and 45mm height")
+  const fullType = detectPartType(cleaned);
+  if (fullType) {
+    const allNumbers = parseNumbers(cleaned);
+    const allDims = parseDimensions(cleaned);
+    const cmd = parseByType(fullType, cleaned, allNumbers, allDims);
+    if (cmd) {
+      commands.push(cmd);
+      // Also check for trailing operations like "with 5mm fillet"
+      parseOperations(cleaned, allNumbers, commands);
+      return commands;
+    }
+  }
+
+  // FALLBACK: Split on "and" / "with" / "then" for multi-step
+  const parts = cleaned.split(/\s+(?:and|with|then|plus|\+)\s+/);
 
   for (const part of parts) {
     const partType = detectPartType(part);
     const numbers = parseNumbers(part);
     const dims = parseDimensions(part);
 
-    let cmd = null;
-    switch (partType) {
-      case 'cube':
-      case 'box': cmd = parseBoxCommand(part, numbers, dims); break;
-      case 'cylinder': cmd = parseCylinderCommand(part, numbers); break;
-      case 'sphere': cmd = parseSphereCommand(part, numbers); break;
-      case 'cone': cmd = parseConeCommand(part, numbers); break;
-      case 'torus': cmd = parseTorusCommand(part, numbers); break;
-      case 'plate': cmd = parsePlateCommand(part, numbers, dims); break;
-      case 'bracket': cmd = parseBracketCommand(part, numbers, dims); break;
-      case 'flange': cmd = parseFlangeCommand(part, numbers); break;
-      case 'washer': cmd = parseWasherCommand(part, numbers); break;
-      case 'spacer': cmd = parseSpacerCommand(part, numbers); break;
-      case 'gear': cmd = parseGearCommand(part, numbers); break;
-    }
+    const cmd = partType ? parseByType(partType, part, numbers, dims) : null;
 
     if (cmd) {
       commands.push(cmd);
     } else {
-      // Try as operation (fillet, chamfer, extrude, revolve)
+      // Try as operation (fillet, chamfer, extrude, revolve, hole)
       parseOperations(part, numbers, commands);
     }
   }
 
   return commands;
+}
+
+function parseByType(partType, text, numbers, dims) {
+  switch (partType) {
+    case 'cube':
+    case 'box': return parseBoxCommand(text, numbers, dims);
+    case 'cylinder': return parseCylinderCommand(text, numbers);
+    case 'sphere': return parseSphereCommand(text, numbers);
+    case 'cone': return parseConeCommand(text, numbers);
+    case 'torus': return parseTorusCommand(text, numbers);
+    case 'plate': return parsePlateCommand(text, numbers, dims);
+    case 'bracket': return parseBracketCommand(text, numbers, dims);
+    case 'flange': return parseFlangeCommand(text, numbers);
+    case 'washer': return parseWasherCommand(text, numbers);
+    case 'spacer': return parseSpacerCommand(text, numbers);
+    case 'gear': return parseGearCommand(text, numbers);
+    default: return null;
+  }
 }
 
 // ============================================================================
@@ -1220,13 +1241,61 @@ export function parseDimensions(text) {
 
 export function detectPartType(text) {
   text = text.toLowerCase();
+
+  // 1. Exact synonym match (fast path)
   for (const [type, synonyms] of Object.entries(PART_TYPE_SYNONYMS)) {
     for (const syn of synonyms) {
       if (text.includes(syn)) return type;
     }
   }
+
+  // 2. Dimension-only input like "100x50x20" → box
   if (/\d+\s*x\s*\d+/.test(text)) return 'box';
-  return null;
+
+  // 3. Fuzzy match — handle typos like "cylindr", "spehre", "brcket"
+  const words = text.replace(/[^a-z\s]/g, '').split(/\s+/).filter(w => w.length >= 3);
+  const allTargets = [];
+  for (const [type, synonyms] of Object.entries(PART_TYPE_SYNONYMS)) {
+    for (const syn of synonyms) {
+      if (syn.includes(' ')) continue; // skip multi-word for fuzzy
+      allTargets.push({ word: syn, type });
+    }
+  }
+
+  let bestMatch = null;
+  let bestDist = Infinity;
+  for (const w of words) {
+    for (const target of allTargets) {
+      const dist = levenshtein(w, target.word);
+      const threshold = target.word.length <= 4 ? 1 : 2; // stricter for short words
+      if (dist <= threshold && dist < bestDist) {
+        bestDist = dist;
+        bestMatch = target.type;
+      }
+    }
+  }
+
+  return bestMatch;
+}
+
+// Levenshtein distance for fuzzy matching
+function levenshtein(a, b) {
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+  const matrix = [];
+  for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+  for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      const cost = a[j - 1] === b[i - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,      // deletion
+        matrix[i][j - 1] + 1,      // insertion
+        matrix[i - 1][j - 1] + cost // substitution
+      );
+    }
+  }
+  return matrix[b.length][a.length];
 }
 
 export function generateDescription(command) {

@@ -44,7 +44,12 @@ export function initTree(containerEl) {
       </div>
       <div class="tree-list" id="tree-list"></div>
       <div class="tree-empty" id="tree-empty">
-        <p>Start with a sketch</p>
+        <div style="text-align:center;padding:20px 12px;">
+          <div style="font-size:32px;margin-bottom:8px;opacity:0.5;">&#x1F4D0;</div>
+          <p style="font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text-primary, #e0e0e0);">No features yet</p>
+          <p style="font-size:11px;color:var(--text-secondary, #a0a0a0);line-height:1.5;">Click <b>New Sketch</b> to draw a 2D profile, then <b>Extrude</b> to make it 3D.</p>
+          <p style="font-size:10px;color:var(--text-muted, #696969);margin-top:8px;">Features will appear here as you build.</p>
+        </div>
       </div>
     </div>
   `;
@@ -305,7 +310,20 @@ export function onSelect(callback) {
  */
 export function suppressFeature(index) {
   if (index >= 0 && index < treeState.features.length) {
-    treeState.features[index].suppressed = !treeState.features[index].suppressed;
+    const feature = treeState.features[index];
+    feature.suppressed = !feature.suppressed;
+    // Toggle mesh visibility in 3D scene
+    if (feature.mesh) {
+      feature.mesh.visible = !feature.suppressed;
+    }
+    // Also sync with APP.features if available
+    const appFeatures = window.APP?.features;
+    if (appFeatures && appFeatures[index]) {
+      appFeatures[index].suppressed = feature.suppressed;
+      if (appFeatures[index].mesh) {
+        appFeatures[index].mesh.visible = !feature.suppressed;
+      }
+    }
     renderTree();
   }
 }

@@ -310,7 +310,20 @@ export function onSelect(callback) {
  */
 export function suppressFeature(index) {
   if (index >= 0 && index < treeState.features.length) {
-    treeState.features[index].suppressed = !treeState.features[index].suppressed;
+    const feature = treeState.features[index];
+    feature.suppressed = !feature.suppressed;
+    // Toggle mesh visibility in 3D scene
+    if (feature.mesh) {
+      feature.mesh.visible = !feature.suppressed;
+    }
+    // Also sync with APP.features if available
+    const appFeatures = window.APP?.features;
+    if (appFeatures && appFeatures[index]) {
+      appFeatures[index].suppressed = feature.suppressed;
+      if (appFeatures[index].mesh) {
+        appFeatures[index].mesh.visible = !feature.suppressed;
+      }
+    }
     renderTree();
   }
 }

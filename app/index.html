@@ -1387,13 +1387,13 @@
   <!-- Token Engine — Initialize early so window.cycleCAD.tokens is available -->
   <script src="./js/token-engine.js"></script>
   <!-- New Architecture Modules (ES modules need type="module") -->
-  <script type="module" src="./js/material-library.js?v=67"></script>
+  <script type="module" src="./js/material-library.js?v=68"></script>
   <script src="./js/dfm-analyzer.js"></script>
-  <script type="module" src="./js/cam-pipeline.js?v=67"></script>
+  <script type="module" src="./js/cam-pipeline.js?v=68"></script>
   <script src="./js/connected-fabs.js"></script>
-  <script type="module" src="./js/ai-copilot.js?v=67"></script>
-  <script type="module" src="./js/collaboration.js?v=67"></script>
-  <script type="module" src="./js/collaboration-ui.js?v=67"></script>
+  <script type="module" src="./js/ai-copilot.js?v=68"></script>
+  <script type="module" src="./js/collaboration.js?v=68"></script>
+  <script type="module" src="./js/collaboration-ui.js?v=68"></script>
   <!-- CadXStudio-killer modules (IIFE, no imports) -->
   <script src="./js/text-to-cad.js"></script>
   <script src="./js/cam-operations.js"></script>
@@ -1419,7 +1419,7 @@
           <span class="splash-logo-cycle">cycle</span><span class="splash-logo-cad">CAD</span>
         </div>
         <p class="splash-subtitle">Parametric 3D CAD Modeler for the Mechanical Designer</p>
-        <p style="color: rgba(255,255,255,0.45); font-size: 0.8rem; margin: 4px 0 0 0; letter-spacing: 1px;">v0.9.0</p>
+        <p style="color: rgba(255,255,255,0.45); font-size: 0.8rem; margin: 4px 0 0 0; letter-spacing: 1px;">v0.9.1</p>
       </div>
       <div class="splash-options">
         <button class="splash-button splash-button-primary" id="btn-empty-project" style="grid-column: 1 / -1;">
@@ -1763,25 +1763,25 @@
   <script type="module">
     import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
     const _v = '50';
-    import { initViewport, setView, addToScene, removeFromScene, getScene, getCamera, getControls, toggleGrid as vpToggleGrid, toggleWireframe as vpToggleWireframe, fitToObject, fitAll } from './js/viewport.js?v=67';
-    import { startSketch, endSketch, setTool, getEntities, clearSketch } from './js/sketch.js?v=67';
-    import { extrudeProfile, createPrimitive, rebuildFeature, createMaterial } from './js/operations.js?v=67';
-    import { initChat, parseCADPrompt, addMessage } from './js/ai-chat.js?v=67';
-    import { initTree, addFeature, selectFeature, onSelect } from './js/tree.js?v=67';
-    import { initParams, showParams, onParamChange } from './js/params.js?v=67';
-    import { exportSTL, exportOBJ, exportJSON } from './js/export.js?v=67';
-    import { initShortcuts } from './js/shortcuts.js?v=67';
-    import { createReverseEngineerPanel, importFile, analyzeGeometry, reconstructFeatureTree, createWalkthrough } from './js/reverse-engineer.js?v=67';
-    import { createInventorPanel, parseInventorFile } from './js/inventor-parser.js?v=67';
-    import { loadProject, showFolderPicker, parseIPJ } from './js/project-loader.js?v=67';
-    import { initProjectBrowser, showBrowser, hideBrowser, setProject, onFileSelect } from './js/project-browser.js?v=67';
-    import { generateGuide, renderGuide, exportGuideHTML } from './js/rebuild-guide.js?v=67';
-    import { solveConstraints, addConstraint, removeConstraint, autoDetectConstraints, isFullyConstrained, getAllConstraints, clearAllConstraints } from './js/constraint-solver.js?v=67';
-    import { createSweep, createLoft, createBend, createFlange, createTab, createSlot, unfoldSheetMetal, createSpring, createThread } from './js/advanced-ops.js?v=67';
-    import Assembly from './js/assembly.js?v=67';
-    import { exportSketchToDXF, exportProjectionToDXF, exportMultiViewDXF, export3DDXF, downloadDXF } from './js/dxf-export.js?v=67';
-    import { initAgentAPI } from './js/agent-api.js?v=67';
-    import { initTokenDashboard } from './js/token-dashboard.js?v=67';
+    import { initViewport, setView, addToScene, removeFromScene, getScene, getCamera, getControls, toggleGrid as vpToggleGrid, toggleWireframe as vpToggleWireframe, fitToObject, fitAll } from './js/viewport.js?v=68';
+    import { startSketch, endSketch, setTool, getEntities, clearSketch } from './js/sketch.js?v=68';
+    import { extrudeProfile, createPrimitive, rebuildFeature, createMaterial } from './js/operations.js?v=68';
+    import { initChat, parseCADPrompt, addMessage } from './js/ai-chat.js?v=68';
+    import { initTree, addFeature, selectFeature, onSelect, removeFeature } from './js/tree.js?v=68';
+    import { initParams, showParams, onParamChange } from './js/params.js?v=68';
+    import { exportSTL, exportOBJ, exportJSON } from './js/export.js?v=68';
+    import { initShortcuts } from './js/shortcuts.js?v=68';
+    import { createReverseEngineerPanel, importFile, analyzeGeometry, reconstructFeatureTree, createWalkthrough } from './js/reverse-engineer.js?v=68';
+    import { createInventorPanel, parseInventorFile } from './js/inventor-parser.js?v=68';
+    import { loadProject, showFolderPicker, parseIPJ } from './js/project-loader.js?v=68';
+    import { initProjectBrowser, showBrowser, hideBrowser, setProject, onFileSelect } from './js/project-browser.js?v=68';
+    import { generateGuide, renderGuide, exportGuideHTML } from './js/rebuild-guide.js?v=68';
+    import { solveConstraints, addConstraint, removeConstraint, autoDetectConstraints, isFullyConstrained, getAllConstraints, clearAllConstraints } from './js/constraint-solver.js?v=68';
+    import { createSweep, createLoft, createBend, createFlange, createTab, createSlot, unfoldSheetMetal, createSpring, createThread } from './js/advanced-ops.js?v=68';
+    import Assembly from './js/assembly.js?v=68';
+    import { exportSketchToDXF, exportProjectionToDXF, exportMultiViewDXF, export3DDXF, downloadDXF } from './js/dxf-export.js?v=68';
+    import { initAgentAPI } from './js/agent-api.js?v=68';
+    import { initTokenDashboard } from './js/token-dashboard.js?v=68';
 
     // ========== Application State ==========
     const APP = {
@@ -1995,7 +1995,7 @@
 
         // Initialize Agent API — the primary interface
         await tryStepAsync('agentAPI', async () => {
-        const agentImports = await import('./js/agent-api.js?v=67');
+        const agentImports = await import('./js/agent-api.js?v=68');
         const agentSession = initAgentAPI({
           viewport: {
             getCamera,
@@ -2870,6 +2870,13 @@
         const splash = document.getElementById('welcome-splash');
         if (splash) splash.classList.add('hidden');
 
+        // ---- Handle ACTION commands (delete, undo, move, etc.) ----
+        if (prompt.action) {
+          executeAction(prompt);
+          return;
+        }
+
+        // ---- Handle CREATE commands (box, cylinder, etc.) ----
         const pType = prompt.type || prompt.action;
         const pParams = prompt.params || prompt;
         const result = createPrimitive(pType, pParams);
@@ -2904,6 +2911,178 @@
       }
     }
 
+    function executeAction(cmd) {
+      const features = APP.features;
+
+      switch (cmd.action) {
+        case 'delete': {
+          let idx = cmd.index;
+          if (idx === -1 || idx === undefined) idx = features.length - 1;
+          if (idx >= 0 && idx < features.length) {
+            const f = features[idx];
+            if (f.mesh) removeFromScene(f.mesh);
+            features.splice(idx, 1);
+            removeFeature(idx);
+            APP.selectedFeature = null;
+            pushHistory();
+            updateStatus(`Deleted: ${f.name || 'Part'}`);
+          }
+          break;
+        }
+        case 'undo': undo(); break;
+        case 'redo': redo(); break;
+        case 'clearScene': {
+          features.forEach(f => { if (f.mesh) removeFromScene(f.mesh); });
+          APP.features = [];
+          // Clear tree
+          const treeEl = document.getElementById('feature-tree');
+          if (treeEl) treeEl.innerHTML = '';
+          pushHistory();
+          updateStatus('Scene cleared');
+          break;
+        }
+        case 'hide': {
+          let idx = cmd.index;
+          if (idx === -1 || idx === undefined) idx = features.length - 1;
+          if (idx >= 0 && idx < features.length && features[idx].mesh) {
+            features[idx].mesh.visible = false;
+            updateStatus(`Hidden: ${features[idx].name || 'Part'}`);
+          }
+          break;
+        }
+        case 'showAll': {
+          features.forEach(f => { if (f.mesh) f.mesh.visible = true; });
+          updateStatus('All parts visible');
+          break;
+        }
+        case 'select': {
+          let idx = cmd.index;
+          if (idx >= 0 && idx < features.length) {
+            APP.selectedFeature = features[idx];
+            APP.selectedFeatureIndex = idx;
+            selectFeature(idx);
+            updateStatus(`Selected: ${features[idx].name || 'Part'}`);
+          }
+          break;
+        }
+        case 'move': {
+          let idx = cmd.index;
+          if (idx === -1 || idx === undefined) idx = features.length - 1;
+          if (idx >= 0 && idx < features.length && features[idx].mesh) {
+            const mesh = features[idx].mesh;
+            const dist = cmd.distance || 20;
+            if (cmd.axis === 'x') mesh.position.x += dist;
+            else if (cmd.axis === 'y') mesh.position.y += dist;
+            else if (cmd.axis === 'z') mesh.position.z += dist;
+            pushHistory();
+            updateStatus(`Moved: ${features[idx].name || 'Part'}`);
+          }
+          break;
+        }
+        case 'rotate': {
+          let idx = cmd.index;
+          if (idx === -1 || idx === undefined) idx = features.length - 1;
+          if (idx >= 0 && idx < features.length && features[idx].mesh) {
+            const mesh = features[idx].mesh;
+            const angle = (cmd.angle || 90) * Math.PI / 180;
+            if (cmd.axis === 'x') mesh.rotation.x += angle;
+            else if (cmd.axis === 'y') mesh.rotation.y += angle;
+            else if (cmd.axis === 'z') mesh.rotation.z += angle;
+            pushHistory();
+            updateStatus(`Rotated: ${features[idx].name || 'Part'}`);
+          }
+          break;
+        }
+        case 'scale': {
+          let idx = cmd.index;
+          if (idx === -1 || idx === undefined) idx = features.length - 1;
+          if (idx >= 0 && idx < features.length && features[idx].mesh) {
+            const mesh = features[idx].mesh;
+            const factor = cmd.factor || 1.5;
+            mesh.scale.multiplyScalar(factor);
+            pushHistory();
+            updateStatus(`Scaled: ${features[idx].name || 'Part'} × ${factor}`);
+          }
+          break;
+        }
+        case 'duplicate': {
+          let idx = cmd.index;
+          if (idx === -1 || idx === undefined) idx = features.length - 1;
+          if (idx >= 0 && idx < features.length && features[idx].mesh) {
+            const orig = features[idx];
+            const clonedMesh = orig.mesh.clone();
+            clonedMesh.position.x += 30; // offset so it's visible
+            addToScene(clonedMesh);
+            const newFeature = {
+              id: 'feature_' + Date.now(),
+              name: (orig.name || 'Part') + ' (copy)',
+              type: orig.type,
+              mesh: clonedMesh,
+              params: { ...(orig.params || {}) },
+              _geometryJSON: clonedMesh.geometry ? clonedMesh.geometry.toJSON() : null,
+              _materialColor: orig._materialColor || '#58a6ff',
+            };
+            APP.features.push(newFeature);
+            addFeature(newFeature);
+            pushHistory();
+            updateStatus(`Duplicated: ${orig.name || 'Part'}`);
+          }
+          break;
+        }
+        case 'color': {
+          let idx = cmd.index;
+          if (idx === -1 || idx === undefined) idx = features.length - 1;
+          if (idx >= 0 && idx < features.length && features[idx].mesh?.material) {
+            const colorMap = { red: 0xff0000, green: 0x00ff00, blue: 0x0000ff, yellow: 0xffff00, orange: 0xff8800, purple: 0x8800ff, white: 0xffffff, black: 0x222222, gray: 0x888888, grey: 0x888888, silver: 0xc0c0c0, gold: 0xffd700, pink: 0xff69b4, cyan: 0x00ffff, magenta: 0xff00ff };
+            const hex = colorMap[cmd.color] || 0x58a6ff;
+            features[idx].mesh.material.color.setHex(hex);
+            features[idx]._materialColor = '#' + hex.toString(16).padStart(6, '0');
+            updateStatus(`Colored: ${features[idx].name || 'Part'} → ${cmd.color}`);
+          }
+          break;
+        }
+        case 'rename': {
+          let idx = cmd.index;
+          if (idx === -1 || idx === undefined) idx = features.length - 1;
+          if (idx >= 0 && idx < features.length) {
+            features[idx].name = cmd.name;
+            updateStatus(`Renamed to: ${cmd.name}`);
+          }
+          break;
+        }
+        case 'fitAll': {
+          fitAll();
+          updateStatus('View reset');
+          break;
+        }
+        case 'wireframe': {
+          vpToggleWireframe();
+          updateStatus('Wireframe toggled');
+          break;
+        }
+        case 'grid': {
+          vpToggleGrid();
+          updateStatus('Grid toggled');
+          break;
+        }
+        case 'export': {
+          if (cmd.format === 'stl') exportSTL();
+          else if (cmd.format === 'obj') exportOBJ();
+          else exportSTL();
+          updateStatus(`Exported ${(cmd.format || 'STL').toUpperCase()}`);
+          break;
+        }
+        case 'booleanSubtract':
+        case 'booleanIntersect':
+        case 'booleanUnion': {
+          updateStatus(`Boolean ${cmd.action.replace('boolean', '')} — coming soon (requires CSG kernel)`);
+          break;
+        }
+        default:
+          updateStatus(`Unknown action: ${cmd.action}`);
+      }
+    }
+
     function cancelOperation() {
       if (APP.mode === 'sketch') {
         endSketch();
@@ -2924,9 +3103,14 @@
 
     function deleteSelected() {
       if (!APP.selectedFeature) return;
-      removeFromScene(APP.selectedFeature.mesh);
-      APP.features = APP.features.filter(f => f.id !== APP.selectedFeature.id);
+      const idx = APP.features.findIndex(f => f.id === APP.selectedFeature.id);
+      if (APP.selectedFeature.mesh) removeFromScene(APP.selectedFeature.mesh);
+      if (idx >= 0) {
+        APP.features.splice(idx, 1);
+        removeFeature(idx);
+      }
       APP.selectedFeature = null;
+      APP.selectedFeatureIndex = -1;
       pushHistory();
       updateStatus('Feature deleted');
     }
@@ -4539,6 +4723,6 @@
     </div>
   </div>
 
-  <span id="version-badge" style="position:fixed;bottom:42px;left:50%;transform:translateX(-50%);z-index:999;font-size:0.9rem;color:rgba(255,255,255,0.9);letter-spacing:0.1em;white-space:nowrap;padding:6px 16px;user-select:all;pointer-events:auto;font-family:monospace;font-weight:700;background:rgba(0,0,0,0.7);border:1px solid rgba(88,166,255,0.4);border-radius:6px;text-shadow:0 1px 3px rgba(0,0,0,0.5);" title="cycleCAD version">cycleCAD v0.9.0</span>
+  <span id="version-badge" style="position:fixed;bottom:42px;left:50%;transform:translateX(-50%);z-index:999;font-size:0.9rem;color:rgba(255,255,255,0.9);letter-spacing:0.1em;white-space:nowrap;padding:6px 16px;user-select:all;pointer-events:auto;font-family:monospace;font-weight:700;background:rgba(0,0,0,0.7);border:1px solid rgba(88,166,255,0.4);border-radius:6px;text-shadow:0 1px 3px rgba(0,0,0,0.5);" title="cycleCAD version">cycleCAD v0.9.1</span>
 </body>
 </html>

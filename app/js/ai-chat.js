@@ -3,8 +3,10 @@
  * cycleCAD: Browser-based parametric 3D modeler
  *
  * Features:
- * - Conversational AI that understands follow-ups ("make it bigger", "add a hole")
+ * - Conversational AI that understands follow-ups ("make it bigger", "remove it")
  * - Scene-aware: knows what parts exist and their dimensions
+ * - Scene operations: delete, move, rotate, scale, hide, show, undo, redo
+ * - Boolean ops: intersect, subtract, union
  * - Multi-step: "box 100x50x30 with a 20mm hole and 5mm fillet"
  * - Gemini 2.0 Flash (free tier) + Groq Llama + smart local fallback
  * - Command history with ArrowUp/Down (last 20, persisted)
@@ -106,7 +108,7 @@ export function initChat(messagesEl, inputEl, sendBtn, onCommand) {
     });
   }
 
-  addMessage('ai', 'Hi! I\'m your CAD assistant. I can create parts, answer questions, and help you design.\n\nTry: "cylinder 50mm diameter 80 tall", "bracket 80x40x5", or ask "what can you make?"');
+  addMessage('ai', 'Hi! I\'m your CAD assistant. I can create parts, modify them, and answer questions.\n\nTry: "cylinder 50mm diameter 80 tall", "bracket 80x40x5", "remove it", "undo", or "what can you do?"');
 }
 
 // ============================================================================
@@ -177,11 +179,15 @@ export function addMessage(role, text) {
 async function processMessage(text) {
   const lower = text.toLowerCase().trim();
 
-  // 1. Check for questions / conversational messages first
+  // 1. Check for scene action commands (delete, undo, move, etc.)
+  const actionResult = handleSceneAction(lower, text);
+  if (actionResult) return actionResult;
+
+  // 2. Check for questions / conversational messages
   const conversationalReply = handleConversational(lower, text);
   if (conversationalReply) return { reply: conversationalReply, commands: [] };
 
-  // 2. Try LLM if API key available
+  // 3. Try LLM if API key available
   if (chatState.apiKeys.gemini || chatState.apiKeys.groq) {
     try {
       const llmResult = await querySmartLLM(text);
@@ -191,18 +197,360 @@ async function processMessage(text) {
     }
   }
 
-  // 3. Smart local parsing
+  // 4. Smart local parsing for creation commands
   const commands = localParseCADPrompt(lower);
   if (commands.length > 0) {
     const desc = commands.map(c => generateDescription(c)).join(', then ');
     return { reply: `Creating: ${desc}`, commands };
   }
 
-  // 4. Nothing matched — give helpful response
+  // 5. Nothing matched — give helpful response
   return {
-    reply: `I didn't understand "${text}". Here's what I can do:\n\n**Create parts:** "box 100x50x30", "cylinder r25 h60", "sphere 40mm", "bracket 80x40x5", "gear 60mm 20 teeth", "flange OD80 ID30 h15"\n\n**Operations:** "fillet 5mm", "chamfer 3mm"\n\n**Questions:** "what shapes can you make?", "help"`,
+    reply: `I didn't understand "${text}". Here's what I can do:\n\n**Create:** "box 100x50x30", "cylinder r25 h60", "bracket 80x40x5"\n**Modify:** "remove it", "delete the box", "undo", "redo"\n**Transform:** "move it up 20", "rotate 45", "scale 2x"\n**Operations:** "fillet 5mm", "chamfer 3mm"\n**Booleans:** "subtract box from cylinder", "intersect"\n**Scene:** "hide it", "show all", "select the cylinder", "clear scene"\n**Questions:** "what shapes can you make?", "what's in the scene?"`,
     commands: []
   };
+}
+
+// ============================================================================
+// SCENE ACTION HANDLER (delete, undo, move, hide, booleans, etc.)
+// ============================================================================
+
+function handleSceneAction(lower, original) {
+  const features = window.APP?.features || [];
+  const selectedIdx = window.APP?.selectedFeatureIndex ?? -1;
+
+  // --- DELETE / REMOVE ---
+  if (/^(delete|remove|erase|trash|get rid of|destroy)\b/.test(lower) ||
+      /\b(delete|remove|erase)\s+(it|this|that|the last|last|selected|current)\b/.test(lower) ||
+      /^(remove|delete) it\s*$/.test(lower)) {
+
+    // Find which part to delete
+    const targetIdx = resolveTarget(lower, features, selectedIdx);
+    if (targetIdx >= 0 && targetIdx < features.length) {
+      const name = features[targetIdx].name || 'Part';
+      return {
+        reply: `Removed "${name}".`,
+        commands: [{ action: 'delete', index: targetIdx }]
+      };
+    }
+    if (features.length > 0) {
+      // Default: remove last part
+      const last = features[features.length - 1];
+      return {
+        reply: `Removed "${last.name || 'last part'}".`,
+        commands: [{ action: 'delete', index: features.length - 1 }]
+      };
+    }
+    return { reply: 'Nothing to remove — the scene is empty.', commands: [] };
+  }
+
+  // --- UNDO ---
+  if (/^undo\s*$/.test(lower) || /^(ctrl\+?z|go back|step back)\s*$/.test(lower)) {
+    return { reply: 'Undone.', commands: [{ action: 'undo' }] };
+  }
+
+  // --- REDO ---
+  if (/^redo\s*$/.test(lower) || /^(ctrl\+?y|step forward)\s*$/.test(lower)) {
+    return { reply: 'Redone.', commands: [{ action: 'redo' }] };
+  }
+
+  // --- CLEAR SCENE ---
+  if (/^(clear|clean|empty|reset)\s*(scene|all|everything|viewport)?\s*$/.test(lower)) {
+    return { reply: 'Scene cleared.', commands: [{ action: 'clearScene' }] };
+  }
+
+  // --- HIDE ---
+  if (/^hide\b/.test(lower) || /\bhide\s+(it|this|that|selected|the)\b/.test(lower)) {
+    const targetIdx = resolveTarget(lower, features, selectedIdx);
+    const idx = targetIdx >= 0 ? targetIdx : (selectedIdx >= 0 ? selectedIdx : features.length - 1);
+    if (idx >= 0 && idx < features.length) {
+      return {
+        reply: `Hidden "${features[idx].name || 'Part'}".`,
+        commands: [{ action: 'hide', index: idx }]
+      };
+    }
+    return { reply: 'Nothing to hide.', commands: [] };
+  }
+
+  // --- SHOW ALL ---
+  if (/^show\s*all\s*$/.test(lower) || /^unhide\s*all\s*$/.test(lower)) {
+    return { reply: 'All parts visible.', commands: [{ action: 'showAll' }] };
+  }
+
+  // --- SELECT ---
+  if (/^select\b/.test(lower)) {
+    const targetIdx = resolveTarget(lower, features, selectedIdx);
+    if (targetIdx >= 0) {
+      return {
+        reply: `Selected "${features[targetIdx].name || 'Part'}".`,
+        commands: [{ action: 'select', index: targetIdx }]
+      };
+    }
+    return { reply: 'Could not find that part. Use "what\'s in the scene?" to see available parts.', commands: [] };
+  }
+
+  // --- MOVE ---
+  if (/^move\b/.test(lower) || /\bmove\s+(it|this|that|the)\b/.test(lower)) {
+    const dir = parseDirection(lower);
+    const dist = parseFirstNumber(lower) || 20;
+    const targetIdx = resolveTarget(lower, features, selectedIdx);
+    const idx = targetIdx >= 0 ? targetIdx : (selectedIdx >= 0 ? selectedIdx : features.length - 1);
+    if (idx >= 0 && idx < features.length) {
+      return {
+        reply: `Moved "${features[idx].name || 'Part'}" ${dir.label} by ${dist}mm.`,
+        commands: [{ action: 'move', index: idx, axis: dir.axis, distance: dist * dir.sign }]
+      };
+    }
+    return { reply: 'Nothing to move.', commands: [] };
+  }
+
+  // --- ROTATE ---
+  if (/^rotate\b/.test(lower) || /\brotate\s+(it|this|that|the)\b/.test(lower)) {
+    const angle = parseFirstNumber(lower) || 90;
+    const axis = /\b[xX]\b/.test(lower) ? 'x' : /\b[zZ]\b/.test(lower) ? 'z' : 'y';
+    const targetIdx = resolveTarget(lower, features, selectedIdx);
+    const idx = targetIdx >= 0 ? targetIdx : (selectedIdx >= 0 ? selectedIdx : features.length - 1);
+    if (idx >= 0 && idx < features.length) {
+      return {
+        reply: `Rotated "${features[idx].name || 'Part'}" ${angle}° around ${axis.toUpperCase()}.`,
+        commands: [{ action: 'rotate', index: idx, axis, angle }]
+      };
+    }
+    return { reply: 'Nothing to rotate.', commands: [] };
+  }
+
+  // --- SCALE / MAKE BIGGER/SMALLER ---
+  if (/\b(scale|bigger|smaller|larger|resize|grow|shrink)\b/.test(lower) ||
+      /\bmake\s+it\s+(bigger|smaller|larger|taller|shorter|wider|thinner)\b/.test(lower)) {
+    let factor = parseFirstNumber(lower);
+    if (!factor) {
+      if (/bigger|larger|grow|taller|wider/i.test(lower)) factor = 1.5;
+      else if (/smaller|shrink|shorter|thinner/i.test(lower)) factor = 0.67;
+      else factor = 1.5;
+    }
+    // If user said "scale 2x" or "2x bigger"
+    if (/(\d+(?:\.\d+)?)\s*x\b/.test(lower)) {
+      factor = parseFloat(lower.match(/(\d+(?:\.\d+)?)\s*x\b/)[1]);
+    }
+    const targetIdx = resolveTarget(lower, features, selectedIdx);
+    const idx = targetIdx >= 0 ? targetIdx : (selectedIdx >= 0 ? selectedIdx : features.length - 1);
+    if (idx >= 0 && idx < features.length) {
+      return {
+        reply: `Scaled "${features[idx].name || 'Part'}" by ${factor}x.`,
+        commands: [{ action: 'scale', index: idx, factor }]
+      };
+    }
+    return { reply: 'Nothing to scale.', commands: [] };
+  }
+
+  // --- DUPLICATE / COPY ---
+  if (/^(duplicate|copy|clone)\b/.test(lower)) {
+    const targetIdx = resolveTarget(lower, features, selectedIdx);
+    const idx = targetIdx >= 0 ? targetIdx : (selectedIdx >= 0 ? selectedIdx : features.length - 1);
+    if (idx >= 0 && idx < features.length) {
+      return {
+        reply: `Duplicated "${features[idx].name || 'Part'}".`,
+        commands: [{ action: 'duplicate', index: idx }]
+      };
+    }
+    return { reply: 'Nothing to duplicate.', commands: [] };
+  }
+
+  // --- BOOLEAN: SUBTRACT / CUT ---
+  if (/\b(subtract|cut|difference|minus)\b/.test(lower)) {
+    if (features.length < 2) return { reply: 'Need at least 2 parts for boolean subtract.', commands: [] };
+    const { tool, target } = resolveBooleanPair(lower, features);
+    return {
+      reply: `Subtracted "${features[tool]?.name || 'tool'}" from "${features[target]?.name || 'target'}".`,
+      commands: [{ action: 'booleanSubtract', toolIndex: tool, targetIndex: target }]
+    };
+  }
+
+  // --- BOOLEAN: INTERSECT ---
+  if (/\b(intersect|intersection|overlap)\b/.test(lower)) {
+    if (features.length < 2) return { reply: 'Need at least 2 parts for boolean intersect.', commands: [] };
+    const { tool, target } = resolveBooleanPair(lower, features);
+    return {
+      reply: `Intersected "${features[tool]?.name || 'Part A'}" with "${features[target]?.name || 'Part B'}".`,
+      commands: [{ action: 'booleanIntersect', toolIndex: tool, targetIndex: target }]
+    };
+  }
+
+  // --- BOOLEAN: UNION / COMBINE / MERGE ---
+  if (/\b(union|combine|merge|join|fuse)\b/.test(lower)) {
+    if (features.length < 2) return { reply: 'Need at least 2 parts for boolean union.', commands: [] };
+    const { tool, target } = resolveBooleanPair(lower, features);
+    return {
+      reply: `Joined "${features[tool]?.name || 'Part A'}" with "${features[target]?.name || 'Part B'}".`,
+      commands: [{ action: 'booleanUnion', toolIndex: tool, targetIndex: target }]
+    };
+  }
+
+  // --- COLOR / MATERIAL ---
+  if (/\b(color|colour|paint|material)\b/.test(lower)) {
+    const colorMatch = lower.match(/\b(red|green|blue|yellow|orange|purple|white|black|gray|grey|silver|gold|pink|cyan|magenta)\b/);
+    if (colorMatch) {
+      const targetIdx = resolveTarget(lower, features, selectedIdx);
+      const idx = targetIdx >= 0 ? targetIdx : (selectedIdx >= 0 ? selectedIdx : features.length - 1);
+      if (idx >= 0 && idx < features.length) {
+        return {
+          reply: `Changed color of "${features[idx].name || 'Part'}" to ${colorMatch[1]}.`,
+          commands: [{ action: 'color', index: idx, color: colorMatch[1] }]
+        };
+      }
+    }
+    return { reply: 'Specify a color: "color it red", "make it blue", "paint the box green".', commands: [] };
+  }
+
+  // --- RENAME ---
+  if (/^rename\b/.test(lower)) {
+    const nameMatch = original.match(/rename\s+(?:it\s+)?(?:to\s+)?["']?([^"']+?)["']?\s*$/i);
+    if (nameMatch) {
+      const idx = selectedIdx >= 0 ? selectedIdx : features.length - 1;
+      if (idx >= 0 && idx < features.length) {
+        return {
+          reply: `Renamed to "${nameMatch[1].trim()}".`,
+          commands: [{ action: 'rename', index: idx, name: nameMatch[1].trim() }]
+        };
+      }
+    }
+    return { reply: 'Usage: "rename to My Part Name"', commands: [] };
+  }
+
+  // --- FIT VIEW / ZOOM TO FIT ---
+  if (/^(fit|zoom to fit|fit all|zoom all|reset view|home view|reset camera)\s*$/.test(lower)) {
+    return { reply: 'View reset.', commands: [{ action: 'fitAll' }] };
+  }
+
+  // --- WIREFRAME ---
+  if (/^(wireframe|toggle wireframe)\s*$/.test(lower)) {
+    return { reply: 'Wireframe toggled.', commands: [{ action: 'wireframe' }] };
+  }
+
+  // --- GRID ---
+  if (/^(grid|toggle grid)\s*$/.test(lower)) {
+    return { reply: 'Grid toggled.', commands: [{ action: 'grid' }] };
+  }
+
+  // --- EXPORT ---
+  if (/^export\b/.test(lower)) {
+    const fmt = /stl/i.test(lower) ? 'stl' : /obj/i.test(lower) ? 'obj' : /gltf|glb/i.test(lower) ? 'gltf' : 'stl';
+    return { reply: `Exporting as ${fmt.toUpperCase()}...`, commands: [{ action: 'export', format: fmt }] };
+  }
+
+  return null; // not a scene action
+}
+
+// ============================================================================
+// TARGET RESOLUTION (which part does the user mean?)
+// ============================================================================
+
+function resolveTarget(text, features, selectedIdx) {
+  if (!features || features.length === 0) return -1;
+
+  // "the selected" / "current" / "this"
+  if (/\b(selected|current|this)\b/.test(text) && selectedIdx >= 0) return selectedIdx;
+
+  // "the last" / "last one" / "it"
+  if (/\b(last|it|that)\b/.test(text)) return features.length - 1;
+
+  // "the first" / "first one"
+  if (/\b(first)\b/.test(text)) return 0;
+
+  // "the second" / "third" etc
+  const ordinals = { second: 1, third: 2, fourth: 3, fifth: 4, sixth: 5 };
+  for (const [word, idx] of Object.entries(ordinals)) {
+    if (text.includes(word) && idx < features.length) return idx;
+  }
+
+  // "the box" / "the cylinder" / part by type name
+  for (let i = features.length - 1; i >= 0; i--) {
+    const name = (features[i].name || '').toLowerCase();
+    const type = (features[i].type || '').toLowerCase();
+    // Check each part type synonym
+    for (const [pType, synonyms] of Object.entries(PART_TYPE_SYNONYMS)) {
+      for (const syn of synonyms) {
+        if (text.includes(syn) && (name.includes(syn) || name.includes(pType) || type === pType)) {
+          return i;
+        }
+      }
+    }
+  }
+
+  // "the square" → box
+  if (/\bsquare\b/.test(text)) {
+    for (let i = features.length - 1; i >= 0; i--) {
+      const name = (features[i].name || '').toLowerCase();
+      const type = (features[i].type || '').toLowerCase();
+      if (type === 'box' || name.includes('box') || name.includes('cube') || name.includes('square')) return i;
+    }
+  }
+
+  // By name substring
+  const nameMatch = text.match(/(?:the|named?)\s+["']?(\w+)["']?/);
+  if (nameMatch) {
+    const search = nameMatch[1].toLowerCase();
+    for (let i = features.length - 1; i >= 0; i--) {
+      if ((features[i].name || '').toLowerCase().includes(search)) return i;
+    }
+  }
+
+  return -1;
+}
+
+function resolveBooleanPair(text, features) {
+  // Try "subtract A from B" pattern
+  const fromMatch = text.match(/(?:subtract|cut|intersect)\s+(?:the\s+)?(\w+)\s+from\s+(?:the\s+)?(\w+)/i);
+  if (fromMatch) {
+    const toolIdx = findFeatureByKeyword(fromMatch[1], features);
+    const targetIdx = findFeatureByKeyword(fromMatch[2], features);
+    if (toolIdx >= 0 && targetIdx >= 0) return { tool: toolIdx, target: targetIdx };
+  }
+
+  // Try "intersect A and B" / "intersect A with B"
+  const andMatch = text.match(/(?:intersect|union|combine|merge)\s+(?:the\s+)?(\w+)\s+(?:and|with)\s+(?:the\s+)?(\w+)/i);
+  if (andMatch) {
+    const a = findFeatureByKeyword(andMatch[1], features);
+    const b = findFeatureByKeyword(andMatch[2], features);
+    if (a >= 0 && b >= 0) return { tool: a, target: b };
+  }
+
+  // Default: last two parts
+  return { tool: features.length - 1, target: features.length - 2 };
+}
+
+function findFeatureByKeyword(keyword, features) {
+  const kw = keyword.toLowerCase();
+  // "square" → box
+  const typeMap = { square: 'box', cube: 'box', block: 'box', rod: 'cylinder', shaft: 'cylinder', ball: 'sphere', ring: 'torus', donut: 'torus' };
+  const mapped = typeMap[kw] || kw;
+
+  for (let i = features.length - 1; i >= 0; i--) {
+    const name = (features[i].name || '').toLowerCase();
+    const type = (features[i].type || '').toLowerCase();
+    if (name.includes(mapped) || type.includes(mapped) || name.includes(kw)) return i;
+  }
+  return -1;
+}
+
+// ============================================================================
+// DIRECTION PARSING
+// ============================================================================
+
+function parseDirection(text) {
+  if (/\b(up|above|higher)\b/.test(text)) return { axis: 'y', sign: 1, label: 'up' };
+  if (/\b(down|below|lower)\b/.test(text)) return { axis: 'y', sign: -1, label: 'down' };
+  if (/\b(left)\b/.test(text)) return { axis: 'x', sign: -1, label: 'left' };
+  if (/\b(right)\b/.test(text)) return { axis: 'x', sign: 1, label: 'right' };
+  if (/\b(forward|front)\b/.test(text)) return { axis: 'z', sign: 1, label: 'forward' };
+  if (/\b(back|backward|behind)\b/.test(text)) return { axis: 'z', sign: -1, label: 'back' };
+  if (/\b(away|outside|out|apart)\b/.test(text)) return { axis: 'x', sign: 1, label: 'away' };
+  return { axis: 'y', sign: 1, label: 'up' }; // default
+}
+
+function parseFirstNumber(text) {
+  const m = text.match(/(\d+(?:\.\d+)?)/);
+  return m ? parseFloat(m[1]) : 0;
 }
 
 // ============================================================================
@@ -217,7 +565,7 @@ function handleConversational(lower, original) {
 
   // Help / what can you do
   if (/what can you (do|make|create|build)|help me|help$|what.*shapes|what.*types|capabilities/i.test(lower)) {
-    return `I can create these **3D shapes**:\n\n**Primitives:** box, cylinder, sphere, cone, torus\n**Mechanical:** bracket, plate, flange, washer, spacer, gear\n\n**Examples:**\n• "box 100x60x20"\n• "cylinder 30mm radius 80mm tall"\n• "bracket 80x40x5"\n• "gear 60mm diameter 24 teeth"\n• "flange OD100 ID40 h20"\n• "M10 washer"\n\n**Operations:** fillet, chamfer, extrude, revolve\n**Units:** mm (default), cm, in, ft\n\nJust describe what you want!`;
+    return `I can help you design in 3D!\n\n**Create shapes:** box, cylinder, sphere, cone, torus, bracket, plate, flange, washer, spacer, gear\n\n**Modify parts:** "remove it", "delete the box", "undo", "redo"\n**Transform:** "move it up 20", "rotate 45°", "scale 2x", "make it bigger"\n**Booleans:** "subtract box from cylinder", "intersect", "union"\n**Scene:** "hide it", "show all", "select the cylinder", "clear scene"\n**View:** "wireframe", "grid", "fit all", "export stl"\n\n**Examples:**\n• "cylinder 30mm diameter 80mm tall"\n• "bracket 80x40x5"\n• "gear 60mm diameter 24 teeth"\n• "move it left 50"\n• "delete the box"\n\nJust describe what you want!`;
   }
 
   // Thanks
@@ -232,11 +580,11 @@ function handleConversational(lower, original) {
 
   // How to use
   if (/how (do i|to|does)|tutorial|getting started|explain/i.test(lower)) {
-    return `**Quick start:**\n1. Type a shape: "cylinder 40mm diameter 100 tall"\n2. I\'ll create it in the 3D viewport\n3. Use the toolbar to sketch, extrude, fillet, etc.\n\n**Tips:**\n• Use "x" for dimensions: "100x50x20 box"\n• Specify units: "2 inch cylinder"\n• Combine: "plate 200x100x5 with 4 corner holes"\n\nPress **?** for the full help panel.`;
+    return `**Quick start:**\n1. Type a shape: "cylinder 40mm diameter 100 tall"\n2. I\'ll create it in the 3D viewport\n3. Modify: "fillet 5mm", "move it up 20", "make it bigger"\n4. Combine: "subtract box from cylinder"\n5. Clean up: "remove it", "undo"\n\nPress **?** for the full help panel.`;
   }
 
-  // What did you make / last part
-  if (/what did you (make|create|build)|last (part|shape|thing)|what.*scene/i.test(lower)) {
+  // What did you make / last part / what's in scene
+  if (/what('s| is)?\s+(in|on)\s+(the\s+)?(scene|viewport|view)|what did you (make|create|build)|list\s*parts|scene\s*info|inventory/i.test(lower)) {
     const scene = getSceneContext();
     if (scene.length === 0) return 'The scene is empty. Try creating something: "box 50mm"';
     return `**Parts in scene (${scene.length}):**\n${scene.map((p, i) => `${i + 1}. ${p}`).join('\n')}`;
@@ -263,7 +611,6 @@ function handleConversational(lower, original) {
 function getSceneContext() {
   const parts = [];
   try {
-    // Access app features from global scope
     const features = window.APP?.features || [];
     features.forEach(f => {
       const p = f.params || {};
@@ -280,54 +627,79 @@ function getSceneContext() {
 // SMART LLM INTEGRATION
 // ============================================================================
 
-const CAD_SYSTEM_PROMPT = `You are a CAD assistant for cycleCAD, a browser-based 3D modeler. You help users create 3D parts and answer CAD questions.
+const CAD_SYSTEM_PROMPT = `You are a CAD assistant for cycleCAD, a browser-based 3D modeler. You help users create and modify 3D parts.
 
 RESPONSE FORMAT: Always respond with valid JSON:
 {
   "reply": "Your conversational response to the user",
-  "commands": [array of CAD command objects, or empty array if just chatting]
+  "commands": [array of command objects, or empty array if just chatting]
 }
 
-AVAILABLE CAD COMMANDS (commands array):
+AVAILABLE COMMANDS:
+
+Create shapes:
 - {"type":"box","width":N,"height":N,"depth":N}
 - {"type":"cylinder","radius":N,"height":N}
 - {"type":"sphere","radius":N}
 - {"type":"cone","radius":N,"height":N}
 - {"type":"torus","radius":N,"tube":N}
-- {"type":"bracket","width":N,"height":N,"thickness":N} — L-shaped bracket
+- {"type":"bracket","width":N,"height":N,"thickness":N}
 - {"type":"plate","width":N,"height":N,"thickness":N}
 - {"type":"flange","outerDiameter":N,"innerDiameter":N,"height":N}
 - {"type":"washer","outerDiameter":N,"innerDiameter":N,"thickness":N}
 - {"type":"spacer","outerDiameter":N,"innerDiameter":N,"height":N}
 - {"type":"gear","diameter":N,"teeth":N,"thickness":N}
+
+Operations on existing parts:
 - {"type":"fillet","radius":N}
 - {"type":"chamfer","distance":N}
 
-RULES:
-1. All dimensions in mm. Convert from other units if specified.
-2. For "diameter X", use radius = X/2 for cylinders/spheres.
-3. For multi-step requests like "box with a hole", create multiple commands.
-4. For questions/chat, set commands to [] and put your answer in reply.
-5. Be concise but friendly in replies.
-6. If a request is vague, make reasonable assumptions and state them.
-7. "cube Nmm" means box with all sides N.
-8. Reply must be SHORT (1-2 sentences max for creation commands).
+Scene actions:
+- {"action":"delete","index":N} — delete part at index (0-based), or -1 for last
+- {"action":"undo"}
+- {"action":"redo"}
+- {"action":"clearScene"}
+- {"action":"hide","index":N}
+- {"action":"showAll"}
+- {"action":"select","index":N}
+- {"action":"move","index":N,"axis":"x|y|z","distance":N} — negative for opposite direction
+- {"action":"rotate","index":N,"axis":"x|y|z","angle":N}
+- {"action":"scale","index":N,"factor":N}
+- {"action":"duplicate","index":N}
+- {"action":"color","index":N,"color":"red|blue|green|..."}
+- {"action":"rename","index":N,"name":"New Name"}
+- {"action":"booleanSubtract","toolIndex":N,"targetIndex":N}
+- {"action":"booleanIntersect","toolIndex":N,"targetIndex":N}
+- {"action":"booleanUnion","toolIndex":N,"targetIndex":N}
+- {"action":"fitAll"}
+- {"action":"wireframe"}
+- {"action":"grid"}
+- {"action":"export","format":"stl|obj|gltf"}
 
-EXAMPLES:
-User: "50mm cube" → {"reply":"Here's a 50mm cube.","commands":[{"type":"box","width":50,"height":50,"depth":50}]}
-User: "cylinder 2 inch diameter 4 inch tall" → {"reply":"Creating a 2\" × 4\" cylinder (50.8 × 101.6mm).","commands":[{"type":"cylinder","radius":25.4,"height":101.6}]}
-User: "what's a fillet?" → {"reply":"A fillet is a rounded edge on a part. It reduces stress concentration and improves aesthetics. Try: \\"fillet 5mm\\" to apply one.","commands":[]}
-User: "bracket 80x40x5 with 3mm fillet" → {"reply":"L-bracket with filleted edges coming up.","commands":[{"type":"bracket","width":80,"height":40,"thickness":5},{"type":"fillet","radius":3}]}
-User: "make it bigger" → (use conversation context to understand which part and scale up)`;
+RULES:
+1. All dimensions in mm. Convert from other units if needed.
+2. "diameter X" → radius = X/2 for cylinders/spheres.
+3. For multi-step: "box with hole and fillet" → create multiple commands.
+4. For questions/chat, set commands to [] and put answer in reply.
+5. Be concise (1-2 sentences for creation, more for explanations).
+6. Use -1 for index to mean "last/most recent part".
+7. "it" / "that" / "the last one" = the most recently created part.
+8. "the box" / "the cylinder" = find by type name in scene.
+9. "remove it" / "delete it" → {"action":"delete","index":-1}
+10. "move it up 20" → {"action":"move","index":-1,"axis":"y","distance":20}
+11. "make it bigger" → {"action":"scale","index":-1,"factor":1.5}
+
+SCENE CONTEXT will be appended to user messages showing what parts exist.`;
 
 async function querySmartLLM(userText) {
-  // Build conversation context
   const recentHistory = chatState.conversationHistory.slice(-10);
   const sceneCtx = getSceneContext();
 
   let contextNote = '';
   if (sceneCtx.length > 0) {
-    contextNote = `\n[Scene has ${sceneCtx.length} parts: ${sceneCtx.slice(-3).join(', ')}]`;
+    contextNote = `\n[Scene has ${sceneCtx.length} parts: ${sceneCtx.map((p, i) => `[${i}] ${p}`).join(', ')}]`;
+  } else {
+    contextNote = '\n[Scene is empty]';
   }
 
   try {
@@ -344,9 +716,8 @@ async function querySmartLLM(userText) {
 }
 
 async function queryGeminiSmart(userText, history, contextNote) {
-  // Build Gemini conversation format
   const contents = [];
-  for (const msg of history.slice(0, -1)) { // exclude last (current user msg already in text)
+  for (const msg of history.slice(0, -1)) {
     contents.push({
       role: msg.role === 'model' ? 'model' : 'user',
       parts: [{ text: msg.text }]
@@ -354,7 +725,6 @@ async function queryGeminiSmart(userText, history, contextNote) {
   }
   contents.push({ role: 'user', parts: [{ text: userText + contextNote }] });
 
-  // Use gemini-2.0-flash (free tier, fast)
   const model = 'gemini-2.0-flash';
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${chatState.apiKeys.gemini}`, {
     method: 'POST',
@@ -412,7 +782,6 @@ async function queryGroqSmart(userText, history, contextNote) {
 
 function parseLLMResponse(text) {
   try {
-    // Clean up common LLM JSON issues
     let clean = text.trim();
     if (clean.startsWith('```json')) clean = clean.slice(7);
     if (clean.startsWith('```')) clean = clean.slice(3);
@@ -421,12 +790,10 @@ function parseLLMResponse(text) {
 
     const parsed = JSON.parse(clean);
 
-    // Validate structure
     if (parsed.reply && Array.isArray(parsed.commands)) {
       return { reply: parsed.reply, commands: parsed.commands };
     }
 
-    // Maybe it returned just an array (old format)
     if (Array.isArray(parsed)) {
       const desc = parsed.map(c => generateDescription(c)).join(', ');
       return { reply: `Creating: ${desc}`, commands: parsed };
@@ -438,7 +805,7 @@ function parseLLMResponse(text) {
 }
 
 // ============================================================================
-// SMART LOCAL PARSING (fallback when no LLM)
+// SMART LOCAL PARSING (creation commands fallback)
 // ============================================================================
 
 function localParseCADPrompt(text) {
@@ -471,7 +838,7 @@ function localParseCADPrompt(text) {
     if (cmd) {
       commands.push(cmd);
     } else {
-      // Try as operation
+      // Try as operation (fillet, chamfer, extrude, revolve)
       parseOperations(part, numbers, commands);
     }
   }
@@ -480,7 +847,7 @@ function localParseCADPrompt(text) {
 }
 
 // ============================================================================
-// PRIMITIVE PARSERS (improved)
+// PRIMITIVE PARSERS
 // ============================================================================
 
 function parseBoxCommand(text, numbers, dims) {
@@ -496,12 +863,10 @@ function parseBoxCommand(text, numbers, dims) {
 
 function parseCylinderCommand(text, numbers) {
   let radius, height;
-  // Handle "diameter X" → radius = X/2
   const diaMatch = text.match(/(?:diameter|dia)\s*(?:of\s*)?(\d+(?:\.\d+)?)/i);
   if (diaMatch) radius = parseFloat(diaMatch[1]) / 2;
   const rMatch = text.match(/(?:radius|rad)\s*(?:of\s*)?(\d+(?:\.\d+)?)/i);
   if (rMatch) radius = parseFloat(rMatch[1]);
-  // Handle standalone "r25" or "r 25"
   if (!radius) { const rm = text.match(/\br\s*(\d+(?:\.\d+)?)/i); if (rm) radius = parseFloat(rm[1]); }
 
   const hMatch = text.match(/(?:height|tall|long|h)\s*(?:of\s*)?(\d+(?:\.\d+)?)/i);
@@ -619,9 +984,15 @@ function parseOperations(text, numbers, commands) {
     const m = text.match(/(?:extrude|pull|raise)\s*(\d+(?:\.\d+)?)|(\d+(?:\.\d+)?)\s*(?:mm)?\s*extrude/i);
     commands.push({ type: 'extrude', height: r(m ? parseFloat(m[1] || m[2]) : (numbers[0] || 10)) });
   }
-  if (/revolve|rotate|spin/i.test(text)) {
+  if (/revolve|spin/i.test(text)) {
     const m = text.match(/(\d+(?:\.\d+)?)\s*deg/i);
     commands.push({ type: 'revolve', angle: m ? parseFloat(m[1]) : 360 });
+  }
+  // Hole
+  if (/\bhole\b/i.test(text)) {
+    const m = text.match(/(\d+(?:\.\d+)?)\s*(?:mm)?\s*(?:hole|diameter)|hole\s*(?:of\s*)?(\d+(?:\.\d+)?)/i);
+    const r_val = m ? parseFloat(m[1] || m[2]) / 2 : (numbers[0] ? numbers[0] / 2 : 5);
+    commands.push({ type: 'hole', radius: r(r_val) });
   }
 }
 
@@ -666,12 +1037,32 @@ export function detectPartType(text) {
       if (text.includes(syn)) return type;
     }
   }
-  // Check for dimension-only input like "100x50x20" → default to box
   if (/\d+\s*x\s*\d+/.test(text)) return 'box';
   return null;
 }
 
 export function generateDescription(command) {
+  if (command.action) {
+    switch (command.action) {
+      case 'delete': return 'delete part';
+      case 'undo': return 'undo';
+      case 'redo': return 'redo';
+      case 'move': return `move ${command.axis} ${command.distance}mm`;
+      case 'rotate': return `rotate ${command.angle}° ${command.axis}`;
+      case 'scale': return `scale ${command.factor}x`;
+      case 'hide': return 'hide part';
+      case 'showAll': return 'show all';
+      case 'clearScene': return 'clear scene';
+      case 'duplicate': return 'duplicate';
+      case 'color': return `color ${command.color}`;
+      case 'booleanSubtract': return 'boolean subtract';
+      case 'booleanIntersect': return 'boolean intersect';
+      case 'booleanUnion': return 'boolean union';
+      case 'fitAll': return 'fit view';
+      case 'export': return `export ${command.format}`;
+      default: return command.action;
+    }
+  }
   switch (command.type) {
     case 'box': return `${command.width}×${command.height}×${command.depth}mm box`;
     case 'cylinder': return `cylinder r${command.radius} h${command.height}mm`;
@@ -688,6 +1079,7 @@ export function generateDescription(command) {
     case 'chamfer': return `${command.distance}mm chamfer`;
     case 'extrude': return `extrude ${command.height}mm`;
     case 'revolve': return `revolve ${command.angle}°`;
+    case 'hole': return `hole r${command.radius}mm`;
     default: return JSON.stringify(command);
   }
 }

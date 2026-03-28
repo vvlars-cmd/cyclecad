@@ -1387,13 +1387,13 @@
   <!-- Token Engine — Initialize early so window.cycleCAD.tokens is available -->
   <script src="./js/token-engine.js"></script>
   <!-- New Architecture Modules (ES modules need type="module") -->
-  <script type="module" src="./js/material-library.js?v=73"></script>
+  <script type="module" src="./js/material-library.js?v=74"></script>
   <script src="./js/dfm-analyzer.js"></script>
-  <script type="module" src="./js/cam-pipeline.js?v=73"></script>
+  <script type="module" src="./js/cam-pipeline.js?v=74"></script>
   <script src="./js/connected-fabs.js"></script>
-  <script type="module" src="./js/ai-copilot.js?v=73"></script>
-  <script type="module" src="./js/collaboration.js?v=73"></script>
-  <script type="module" src="./js/collaboration-ui.js?v=73"></script>
+  <script type="module" src="./js/ai-copilot.js?v=74"></script>
+  <script type="module" src="./js/collaboration.js?v=74"></script>
+  <script type="module" src="./js/collaboration-ui.js?v=74"></script>
   <!-- CadXStudio-killer modules (IIFE, no imports) -->
   <script src="./js/text-to-cad.js"></script>
   <script src="./js/cam-operations.js"></script>
@@ -1763,25 +1763,25 @@
   <script type="module">
     import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
     const _v = '50';
-    import { initViewport, setView, addToScene, removeFromScene, getScene, getCamera, getControls, toggleGrid as vpToggleGrid, toggleWireframe as vpToggleWireframe, fitToObject, fitAll } from './js/viewport.js?v=73';
-    import { startSketch, endSketch, setTool, getEntities, clearSketch } from './js/sketch.js?v=73';
-    import { extrudeProfile, createPrimitive, rebuildFeature, createMaterial } from './js/operations.js?v=73';
-    import { initChat, parseCADPrompt, addMessage } from './js/ai-chat.js?v=73';
-    import { initTree, addFeature, selectFeature, onSelect, removeFeature } from './js/tree.js?v=73';
-    import { initParams, showParams, onParamChange } from './js/params.js?v=73';
-    import { exportSTL, exportOBJ, exportJSON } from './js/export.js?v=73';
-    import { initShortcuts } from './js/shortcuts.js?v=73';
-    import { createReverseEngineerPanel, importFile, analyzeGeometry, reconstructFeatureTree, createWalkthrough } from './js/reverse-engineer.js?v=73';
-    import { createInventorPanel, parseInventorFile } from './js/inventor-parser.js?v=73';
-    import { loadProject, showFolderPicker, parseIPJ } from './js/project-loader.js?v=73';
-    import { initProjectBrowser, showBrowser, hideBrowser, setProject, onFileSelect } from './js/project-browser.js?v=73';
-    import { generateGuide, renderGuide, exportGuideHTML } from './js/rebuild-guide.js?v=73';
-    import { solveConstraints, addConstraint, removeConstraint, autoDetectConstraints, isFullyConstrained, getAllConstraints, clearAllConstraints } from './js/constraint-solver.js?v=73';
-    import { createSweep, createLoft, createBend, createFlange, createTab, createSlot, unfoldSheetMetal, createSpring, createThread } from './js/advanced-ops.js?v=73';
-    import Assembly from './js/assembly.js?v=73';
-    import { exportSketchToDXF, exportProjectionToDXF, exportMultiViewDXF, export3DDXF, downloadDXF } from './js/dxf-export.js?v=73';
-    import { initAgentAPI } from './js/agent-api.js?v=73';
-    import { initTokenDashboard } from './js/token-dashboard.js?v=73';
+    import { initViewport, setView, addToScene, removeFromScene, getScene, getCamera, getControls, toggleGrid as vpToggleGrid, toggleWireframe as vpToggleWireframe, fitToObject, fitAll } from './js/viewport.js?v=74';
+    import { startSketch, endSketch, setTool, getEntities, clearSketch } from './js/sketch.js?v=74';
+    import { extrudeProfile, createPrimitive, rebuildFeature, createMaterial } from './js/operations.js?v=74';
+    import { initChat, parseCADPrompt, addMessage } from './js/ai-chat.js?v=74';
+    import { initTree, addFeature, selectFeature, onSelect, removeFeature } from './js/tree.js?v=74';
+    import { initParams, showParams, onParamChange } from './js/params.js?v=74';
+    import { exportSTL, exportOBJ, exportJSON } from './js/export.js?v=74';
+    import { initShortcuts } from './js/shortcuts.js?v=74';
+    import { createReverseEngineerPanel, importFile, analyzeGeometry, reconstructFeatureTree, createWalkthrough } from './js/reverse-engineer.js?v=74';
+    import { createInventorPanel, parseInventorFile } from './js/inventor-parser.js?v=74';
+    import { loadProject, showFolderPicker, parseIPJ } from './js/project-loader.js?v=74';
+    import { initProjectBrowser, showBrowser, hideBrowser, setProject, onFileSelect } from './js/project-browser.js?v=74';
+    import { generateGuide, renderGuide, exportGuideHTML } from './js/rebuild-guide.js?v=74';
+    import { solveConstraints, addConstraint, removeConstraint, autoDetectConstraints, isFullyConstrained, getAllConstraints, clearAllConstraints } from './js/constraint-solver.js?v=74';
+    import { createSweep, createLoft, createBend, createFlange, createTab, createSlot, unfoldSheetMetal, createSpring, createThread } from './js/advanced-ops.js?v=74';
+    import Assembly from './js/assembly.js?v=74';
+    import { exportSketchToDXF, exportProjectionToDXF, exportMultiViewDXF, export3DDXF, downloadDXF } from './js/dxf-export.js?v=74';
+    import { initAgentAPI } from './js/agent-api.js?v=74';
+    import { initTokenDashboard } from './js/token-dashboard.js?v=74';
 
     // ========== Application State ==========
     const APP = {
@@ -1995,7 +1995,7 @@
 
         // Initialize Agent API — the primary interface
         await tryStepAsync('agentAPI', async () => {
-        const agentImports = await import('./js/agent-api.js?v=73');
+        const agentImports = await import('./js/agent-api.js?v=74');
         const agentSession = initAgentAPI({
           viewport: {
             getCamera,
@@ -3076,6 +3076,73 @@
         case 'booleanIntersect':
         case 'booleanUnion': {
           updateStatus(`Boolean ${cmd.action.replace('boolean', '')} — coming soon (requires CSG kernel)`);
+          break;
+        }
+        // --- MODIFY DIMENSION (recreate part with new params) ---
+        case 'modifyDimension': {
+          let idx = cmd.index;
+          if (idx === -1 || idx === undefined) idx = features.length - 1;
+          if (idx >= 0 && idx < features.length) {
+            const f = features[idx];
+            const oldParams = { ...(f.params || {}) };
+            const dim = cmd.dimension;
+            const val = cmd.value;
+
+            // Map dimension name to param key
+            if (dim === 'height' || dim === 'tall' || dim === 'high') {
+              oldParams.height = val;
+            } else if (dim === 'width' || dim === 'wide') {
+              oldParams.width = val;
+            } else if (dim === 'depth' || dim === 'deep' || dim === 'long') {
+              oldParams.depth = val;
+            } else if (dim === 'radius') {
+              oldParams.radius = val;
+            } else if (dim === 'diameter') {
+              oldParams.radius = val / 2;
+            } else if (dim === 'thickness') {
+              oldParams.thickness = val;
+            } else if (dim === 'size') {
+              oldParams.width = val; oldParams.height = val; oldParams.depth = val;
+              if (oldParams.radius !== undefined) oldParams.radius = val / 2;
+            }
+
+            // Recreate the part with new params
+            try {
+              const pType = f.type || 'box';
+              const result = createPrimitive(pType, oldParams);
+              const newMesh = result.mesh || result;
+
+              // Copy position/rotation from old mesh
+              if (f.mesh) {
+                newMesh.position.copy(f.mesh.position);
+                newMesh.rotation.copy(f.mesh.rotation);
+                newMesh.scale.copy(f.mesh.scale);
+                removeFromScene(f.mesh);
+              }
+              addToScene(newMesh);
+              if (result.wireframe) addToScene(result.wireframe);
+
+              // Update feature in place
+              f.mesh = newMesh;
+              f.params = oldParams;
+              f._geometryJSON = newMesh.geometry ? newMesh.geometry.toJSON() : null;
+              f._materialColor = newMesh.material?.color ? '#' + newMesh.material.color.getHexString() : f._materialColor;
+
+              // Update name
+              let desc = pType;
+              if (oldParams.width && oldParams.height) desc = `${pType} ${oldParams.width}×${oldParams.height}${oldParams.depth ? '×' + oldParams.depth : ''}mm`;
+              else if (oldParams.radius && oldParams.height) desc = `${pType} r${oldParams.radius} h${oldParams.height}mm`;
+              else if (oldParams.radius) desc = `${pType} r${oldParams.radius}mm`;
+              f.name = desc;
+
+              pushHistory();
+              fitToObject(newMesh);
+              updateStatus(`Modified: ${f.name}`);
+            } catch (err) {
+              console.error('Modify failed:', err);
+              updateStatus('Modify failed: ' + err.message);
+            }
+          }
           break;
         }
         // --- SKETCH ---

@@ -319,6 +319,35 @@ function handleSceneAction(lower, original) {
     return { reply: 'Nothing to rotate.', commands: [] };
   }
 
+  // --- MODIFY / RESIZE / CHANGE DIMENSION ---
+  // "reduce the height to 20", "set width to 50", "change radius to 15", "make it 30mm tall"
+  if (/\b(reduce|increase|set|change|make|adjust|modify)\b.*\b(height|width|depth|radius|diameter|size|thickness|tall|wide|long|high)\b/.test(lower) ||
+      /\b(height|width|depth|radius|diameter|thickness)\s*(to|=)\s*\d/.test(lower)) {
+    const val = parseFirstNumber(lower.replace(/.*?(to|=)\s*/i, 'to '));
+    const num = val || parseFirstNumber(lower);
+    if (num > 0) {
+      const targetIdx = resolveTarget(lower, features, selectedIdx);
+      const idx = targetIdx >= 0 ? targetIdx : (selectedIdx >= 0 ? selectedIdx : features.length - 1);
+      if (idx >= 0 && idx < features.length) {
+        const f = features[idx];
+        // Determine which dimension to change
+        let dim = 'height';
+        if (/\b(width|wide)\b/.test(lower)) dim = 'width';
+        else if (/\b(depth|deep|long|length)\b/.test(lower)) dim = 'depth';
+        else if (/\b(radius|rad)\b/.test(lower)) dim = 'radius';
+        else if (/\b(diameter|dia)\b/.test(lower)) dim = 'diameter';
+        else if (/\b(thickness|thick)\b/.test(lower)) dim = 'thickness';
+        else if (/\b(height|tall|high)\b/.test(lower)) dim = 'height';
+        else if (/\b(size)\b/.test(lower)) dim = 'size';
+
+        return {
+          reply: `Changed ${dim} of "${f.name || 'Part'}" to ${num}mm.`,
+          commands: [{ action: 'modifyDimension', index: idx, dimension: dim, value: num }]
+        };
+      }
+    }
+  }
+
   // --- SCALE / MAKE BIGGER/SMALLER ---
   if (/\b(scale|bigger|smaller|larger|resize|grow|shrink)\b/.test(lower) ||
       /\bmake\s+it\s+(bigger|smaller|larger|taller|shorter|wider|thinner)\b/.test(lower)) {
@@ -764,8 +793,12 @@ function tryParseInlineShape(text) {
   const partType = detectPartType(cleaned);
   if (!partType) return null;
 
+  // Only create inline shape if dimensions are specified
+  // "intersect cube and cylinder" should NOT create new shapes — it refers to existing parts
   const numbers = parseNumbers(cleaned);
   const dims = parseDimensions(cleaned);
+  if (numbers.length === 0 && dims.length === 0) return null; // no dimensions = refers to existing part
+
   return parseByType(partType, cleaned, numbers, dims);
 }
 

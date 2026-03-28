@@ -1387,13 +1387,13 @@
   <!-- Token Engine — Initialize early so window.cycleCAD.tokens is available -->
   <script src="./js/token-engine.js"></script>
   <!-- New Architecture Modules (ES modules need type="module") -->
-  <script type="module" src="./js/material-library.js?v=69"></script>
+  <script type="module" src="./js/material-library.js?v=70"></script>
   <script src="./js/dfm-analyzer.js"></script>
-  <script type="module" src="./js/cam-pipeline.js?v=69"></script>
+  <script type="module" src="./js/cam-pipeline.js?v=70"></script>
   <script src="./js/connected-fabs.js"></script>
-  <script type="module" src="./js/ai-copilot.js?v=69"></script>
-  <script type="module" src="./js/collaboration.js?v=69"></script>
-  <script type="module" src="./js/collaboration-ui.js?v=69"></script>
+  <script type="module" src="./js/ai-copilot.js?v=70"></script>
+  <script type="module" src="./js/collaboration.js?v=70"></script>
+  <script type="module" src="./js/collaboration-ui.js?v=70"></script>
   <!-- CadXStudio-killer modules (IIFE, no imports) -->
   <script src="./js/text-to-cad.js"></script>
   <script src="./js/cam-operations.js"></script>
@@ -1419,7 +1419,7 @@
           <span class="splash-logo-cycle">cycle</span><span class="splash-logo-cad">CAD</span>
         </div>
         <p class="splash-subtitle">Parametric 3D CAD Modeler for the Mechanical Designer</p>
-        <p style="color: rgba(255,255,255,0.45); font-size: 0.8rem; margin: 4px 0 0 0; letter-spacing: 1px;">v0.9.2</p>
+        <p style="color: rgba(0,0,0,0.4); font-size: 0.9rem; margin: 8px 0 0 0; letter-spacing: 1.5px; font-family: monospace; font-weight: 600;">v0.9.2</p>
       </div>
       <div class="splash-options">
         <button class="splash-button splash-button-primary" id="btn-empty-project" style="grid-column: 1 / -1;">
@@ -1763,25 +1763,25 @@
   <script type="module">
     import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
     const _v = '50';
-    import { initViewport, setView, addToScene, removeFromScene, getScene, getCamera, getControls, toggleGrid as vpToggleGrid, toggleWireframe as vpToggleWireframe, fitToObject, fitAll } from './js/viewport.js?v=69';
-    import { startSketch, endSketch, setTool, getEntities, clearSketch } from './js/sketch.js?v=69';
-    import { extrudeProfile, createPrimitive, rebuildFeature, createMaterial } from './js/operations.js?v=69';
-    import { initChat, parseCADPrompt, addMessage } from './js/ai-chat.js?v=69';
-    import { initTree, addFeature, selectFeature, onSelect, removeFeature } from './js/tree.js?v=69';
-    import { initParams, showParams, onParamChange } from './js/params.js?v=69';
-    import { exportSTL, exportOBJ, exportJSON } from './js/export.js?v=69';
-    import { initShortcuts } from './js/shortcuts.js?v=69';
-    import { createReverseEngineerPanel, importFile, analyzeGeometry, reconstructFeatureTree, createWalkthrough } from './js/reverse-engineer.js?v=69';
-    import { createInventorPanel, parseInventorFile } from './js/inventor-parser.js?v=69';
-    import { loadProject, showFolderPicker, parseIPJ } from './js/project-loader.js?v=69';
-    import { initProjectBrowser, showBrowser, hideBrowser, setProject, onFileSelect } from './js/project-browser.js?v=69';
-    import { generateGuide, renderGuide, exportGuideHTML } from './js/rebuild-guide.js?v=69';
-    import { solveConstraints, addConstraint, removeConstraint, autoDetectConstraints, isFullyConstrained, getAllConstraints, clearAllConstraints } from './js/constraint-solver.js?v=69';
-    import { createSweep, createLoft, createBend, createFlange, createTab, createSlot, unfoldSheetMetal, createSpring, createThread } from './js/advanced-ops.js?v=69';
-    import Assembly from './js/assembly.js?v=69';
-    import { exportSketchToDXF, exportProjectionToDXF, exportMultiViewDXF, export3DDXF, downloadDXF } from './js/dxf-export.js?v=69';
-    import { initAgentAPI } from './js/agent-api.js?v=69';
-    import { initTokenDashboard } from './js/token-dashboard.js?v=69';
+    import { initViewport, setView, addToScene, removeFromScene, getScene, getCamera, getControls, toggleGrid as vpToggleGrid, toggleWireframe as vpToggleWireframe, fitToObject, fitAll } from './js/viewport.js?v=70';
+    import { startSketch, endSketch, setTool, getEntities, clearSketch } from './js/sketch.js?v=70';
+    import { extrudeProfile, createPrimitive, rebuildFeature, createMaterial } from './js/operations.js?v=70';
+    import { initChat, parseCADPrompt, addMessage } from './js/ai-chat.js?v=70';
+    import { initTree, addFeature, selectFeature, onSelect, removeFeature } from './js/tree.js?v=70';
+    import { initParams, showParams, onParamChange } from './js/params.js?v=70';
+    import { exportSTL, exportOBJ, exportJSON } from './js/export.js?v=70';
+    import { initShortcuts } from './js/shortcuts.js?v=70';
+    import { createReverseEngineerPanel, importFile, analyzeGeometry, reconstructFeatureTree, createWalkthrough } from './js/reverse-engineer.js?v=70';
+    import { createInventorPanel, parseInventorFile } from './js/inventor-parser.js?v=70';
+    import { loadProject, showFolderPicker, parseIPJ } from './js/project-loader.js?v=70';
+    import { initProjectBrowser, showBrowser, hideBrowser, setProject, onFileSelect } from './js/project-browser.js?v=70';
+    import { generateGuide, renderGuide, exportGuideHTML } from './js/rebuild-guide.js?v=70';
+    import { solveConstraints, addConstraint, removeConstraint, autoDetectConstraints, isFullyConstrained, getAllConstraints, clearAllConstraints } from './js/constraint-solver.js?v=70';
+    import { createSweep, createLoft, createBend, createFlange, createTab, createSlot, unfoldSheetMetal, createSpring, createThread } from './js/advanced-ops.js?v=70';
+    import Assembly from './js/assembly.js?v=70';
+    import { exportSketchToDXF, exportProjectionToDXF, exportMultiViewDXF, export3DDXF, downloadDXF } from './js/dxf-export.js?v=70';
+    import { initAgentAPI } from './js/agent-api.js?v=70';
+    import { initTokenDashboard } from './js/token-dashboard.js?v=70';
 
     // ========== Application State ==========
     const APP = {
@@ -1995,7 +1995,7 @@
 
         // Initialize Agent API — the primary interface
         await tryStepAsync('agentAPI', async () => {
-        const agentImports = await import('./js/agent-api.js?v=69');
+        const agentImports = await import('./js/agent-api.js?v=70');
         const agentSession = initAgentAPI({
           viewport: {
             getCamera,

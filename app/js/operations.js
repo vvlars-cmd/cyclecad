@@ -397,8 +397,106 @@ export function createPrimitive(type, params = {}, options = {}) {
       );
       break;
 
+    case 'bracket': {
+      // L-shaped bracket from width, height, thickness
+      const bw = params.width || 80;
+      const bh = params.height || 40;
+      const bt = params.thickness || 5;
+      const shape = new THREE.Shape();
+      shape.moveTo(0, 0);
+      shape.lineTo(bw, 0);
+      shape.lineTo(bw, bt);
+      shape.lineTo(bt, bt);
+      shape.lineTo(bt, bh);
+      shape.lineTo(0, bh);
+      shape.lineTo(0, 0);
+      geometry = new THREE.ExtrudeGeometry(shape, { depth: bt, bevelEnabled: false });
+      geometry.center();
+      break;
+    }
+
+    case 'flange': {
+      // Annular flange: outer ring with center hole
+      const fo = (params.outerDiameter || params.outerRadius * 2 || 60) / 2;
+      const fi = (params.innerDiameter || params.innerRadius * 2 || 20) / 2;
+      const fh = params.height || params.thickness || 10;
+      const outerShape = new THREE.Shape();
+      outerShape.absarc(0, 0, fo, 0, Math.PI * 2, false);
+      const holePath = new THREE.Path();
+      holePath.absarc(0, 0, fi, 0, Math.PI * 2, true);
+      outerShape.holes.push(holePath);
+      geometry = new THREE.ExtrudeGeometry(outerShape, { depth: fh, bevelEnabled: false });
+      geometry.center();
+      break;
+    }
+
+    case 'washer': {
+      const wo = (params.outerDiameter || 20) / 2;
+      const wi = (params.innerDiameter || 10) / 2;
+      const wt = params.thickness || 2;
+      const wShape = new THREE.Shape();
+      wShape.absarc(0, 0, wo, 0, Math.PI * 2, false);
+      const wHole = new THREE.Path();
+      wHole.absarc(0, 0, wi, 0, Math.PI * 2, true);
+      wShape.holes.push(wHole);
+      geometry = new THREE.ExtrudeGeometry(wShape, { depth: wt, bevelEnabled: false });
+      geometry.center();
+      break;
+    }
+
+    case 'spacer': {
+      const so = (params.outerDiameter || params.diameter || 15) / 2;
+      const si = (params.innerDiameter || params.holeDiameter || 6) / 2;
+      const sh = params.height || params.length || 20;
+      const sShape = new THREE.Shape();
+      sShape.absarc(0, 0, so, 0, Math.PI * 2, false);
+      const sHole = new THREE.Path();
+      sHole.absarc(0, 0, si, 0, Math.PI * 2, true);
+      sShape.holes.push(sHole);
+      geometry = new THREE.ExtrudeGeometry(sShape, { depth: sh, bevelEnabled: false });
+      geometry.center();
+      break;
+    }
+
+    case 'gear': {
+      // Simple spur gear approximation
+      const gr = params.radius || params.diameter / 2 || 30;
+      const gt = params.teeth || 20;
+      const gd = params.depth || params.thickness || 10;
+      const toothH = gr * 0.15;
+      const gShape = new THREE.Shape();
+      for (let i = 0; i < gt; i++) {
+        const a0 = (i / gt) * Math.PI * 2;
+        const a1 = ((i + 0.3) / gt) * Math.PI * 2;
+        const a2 = ((i + 0.5) / gt) * Math.PI * 2;
+        const a3 = ((i + 0.8) / gt) * Math.PI * 2;
+        if (i === 0) gShape.moveTo(Math.cos(a0) * gr, Math.sin(a0) * gr);
+        gShape.lineTo(Math.cos(a1) * (gr + toothH), Math.sin(a1) * (gr + toothH));
+        gShape.lineTo(Math.cos(a2) * (gr + toothH), Math.sin(a2) * (gr + toothH));
+        gShape.lineTo(Math.cos(a3) * gr, Math.sin(a3) * gr);
+      }
+      gShape.closePath();
+      geometry = new THREE.ExtrudeGeometry(gShape, { depth: gd, bevelEnabled: false });
+      geometry.center();
+      break;
+    }
+
+    case 'plate': {
+      const pw = params.width || 100;
+      const ph = params.height || params.depth || 50;
+      const pt = params.thickness || 5;
+      geometry = new THREE.BoxGeometry(pw, pt, ph);
+      break;
+    }
+
     default:
-      throw new Error(`Unknown primitive type: ${type}`);
+      // Fallback: treat unknown as a box with available dimensions
+      console.warn(`Unknown primitive type "${type}" — creating box fallback`);
+      geometry = new THREE.BoxGeometry(
+        params.width || params.diameter || 50,
+        params.height || params.thickness || 50,
+        params.depth || params.thickness || 50
+      );
   }
 
   // Create mesh

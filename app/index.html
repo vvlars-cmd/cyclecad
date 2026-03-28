@@ -1387,13 +1387,13 @@
   <!-- Token Engine — Initialize early so window.cycleCAD.tokens is available -->
   <script src="./js/token-engine.js"></script>
   <!-- New Architecture Modules (ES modules need type="module") -->
-  <script type="module" src="./js/material-library.js?v=64"></script>
+  <script type="module" src="./js/material-library.js?v=65"></script>
   <script src="./js/dfm-analyzer.js"></script>
-  <script type="module" src="./js/cam-pipeline.js?v=64"></script>
+  <script type="module" src="./js/cam-pipeline.js?v=65"></script>
   <script src="./js/connected-fabs.js"></script>
-  <script type="module" src="./js/ai-copilot.js?v=64"></script>
-  <script type="module" src="./js/collaboration.js?v=64"></script>
-  <script type="module" src="./js/collaboration-ui.js?v=64"></script>
+  <script type="module" src="./js/ai-copilot.js?v=65"></script>
+  <script type="module" src="./js/collaboration.js?v=65"></script>
+  <script type="module" src="./js/collaboration-ui.js?v=65"></script>
   <!-- CadXStudio-killer modules (IIFE, no imports) -->
   <script src="./js/text-to-cad.js"></script>
   <script src="./js/cam-operations.js"></script>
@@ -1762,25 +1762,25 @@
   <script type="module">
     import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
     const _v = '50';
-    import { initViewport, setView, addToScene, removeFromScene, getScene, getCamera, getControls, toggleGrid as vpToggleGrid, toggleWireframe as vpToggleWireframe, fitToObject, fitAll } from './js/viewport.js?v=64';
-    import { startSketch, endSketch, setTool, getEntities, clearSketch } from './js/sketch.js?v=64';
-    import { extrudeProfile, createPrimitive, rebuildFeature, createMaterial } from './js/operations.js?v=64';
-    import { initChat, parseCADPrompt, addMessage } from './js/ai-chat.js?v=64';
-    import { initTree, addFeature, selectFeature, onSelect } from './js/tree.js?v=64';
-    import { initParams, showParams, onParamChange } from './js/params.js?v=64';
-    import { exportSTL, exportOBJ, exportJSON } from './js/export.js?v=64';
-    import { initShortcuts } from './js/shortcuts.js?v=64';
-    import { createReverseEngineerPanel, importFile, analyzeGeometry, reconstructFeatureTree, createWalkthrough } from './js/reverse-engineer.js?v=64';
-    import { createInventorPanel, parseInventorFile } from './js/inventor-parser.js?v=64';
-    import { loadProject, showFolderPicker, parseIPJ } from './js/project-loader.js?v=64';
-    import { initProjectBrowser, showBrowser, hideBrowser, setProject, onFileSelect } from './js/project-browser.js?v=64';
-    import { generateGuide, renderGuide, exportGuideHTML } from './js/rebuild-guide.js?v=64';
-    import { solveConstraints, addConstraint, removeConstraint, autoDetectConstraints, isFullyConstrained, getAllConstraints, clearAllConstraints } from './js/constraint-solver.js?v=64';
-    import { createSweep, createLoft, createBend, createFlange, createTab, createSlot, unfoldSheetMetal, createSpring, createThread } from './js/advanced-ops.js?v=64';
-    import Assembly from './js/assembly.js?v=64';
-    import { exportSketchToDXF, exportProjectionToDXF, exportMultiViewDXF, export3DDXF, downloadDXF } from './js/dxf-export.js?v=64';
-    import { initAgentAPI } from './js/agent-api.js?v=64';
-    import { initTokenDashboard } from './js/token-dashboard.js?v=64';
+    import { initViewport, setView, addToScene, removeFromScene, getScene, getCamera, getControls, toggleGrid as vpToggleGrid, toggleWireframe as vpToggleWireframe, fitToObject, fitAll } from './js/viewport.js?v=65';
+    import { startSketch, endSketch, setTool, getEntities, clearSketch } from './js/sketch.js?v=65';
+    import { extrudeProfile, createPrimitive, rebuildFeature, createMaterial } from './js/operations.js?v=65';
+    import { initChat, parseCADPrompt, addMessage } from './js/ai-chat.js?v=65';
+    import { initTree, addFeature, selectFeature, onSelect } from './js/tree.js?v=65';
+    import { initParams, showParams, onParamChange } from './js/params.js?v=65';
+    import { exportSTL, exportOBJ, exportJSON } from './js/export.js?v=65';
+    import { initShortcuts } from './js/shortcuts.js?v=65';
+    import { createReverseEngineerPanel, importFile, analyzeGeometry, reconstructFeatureTree, createWalkthrough } from './js/reverse-engineer.js?v=65';
+    import { createInventorPanel, parseInventorFile } from './js/inventor-parser.js?v=65';
+    import { loadProject, showFolderPicker, parseIPJ } from './js/project-loader.js?v=65';
+    import { initProjectBrowser, showBrowser, hideBrowser, setProject, onFileSelect } from './js/project-browser.js?v=65';
+    import { generateGuide, renderGuide, exportGuideHTML } from './js/rebuild-guide.js?v=65';
+    import { solveConstraints, addConstraint, removeConstraint, autoDetectConstraints, isFullyConstrained, getAllConstraints, clearAllConstraints } from './js/constraint-solver.js?v=65';
+    import { createSweep, createLoft, createBend, createFlange, createTab, createSlot, unfoldSheetMetal, createSpring, createThread } from './js/advanced-ops.js?v=65';
+    import Assembly from './js/assembly.js?v=65';
+    import { exportSketchToDXF, exportProjectionToDXF, exportMultiViewDXF, export3DDXF, downloadDXF } from './js/dxf-export.js?v=65';
+    import { initAgentAPI } from './js/agent-api.js?v=65';
+    import { initTokenDashboard } from './js/token-dashboard.js?v=65';
 
     // ========== Application State ==========
     const APP = {
@@ -1994,7 +1994,7 @@
 
         // Initialize Agent API — the primary interface
         await tryStepAsync('agentAPI', async () => {
-        const agentImports = await import('./js/agent-api.js?v=64');
+        const agentImports = await import('./js/agent-api.js?v=65');
         const agentSession = initAgentAPI({
           viewport: {
             getCamera,
@@ -2869,21 +2869,33 @@
         const splash = document.getElementById('welcome-splash');
         if (splash) splash.classList.add('hidden');
 
-        const result = createPrimitive(prompt.type || prompt.action, prompt.params || prompt);
+        const pType = prompt.type || prompt.action;
+        const pParams = prompt.params || prompt;
+        const result = createPrimitive(pType, pParams);
         const mesh = result.mesh || result;
         addToScene(mesh);
         if (result.wireframe) addToScene(result.wireframe);
 
+        // Build descriptive name
+        let desc = pType;
+        if (pParams.width && pParams.height) desc = `${pType} ${pParams.width}×${pParams.height}${pParams.thickness ? '×' + pParams.thickness : ''}mm`;
+        else if (pParams.radius && pParams.height) desc = `${pType} r${pParams.radius} h${pParams.height}mm`;
+        else if (pParams.radius) desc = `${pType} r${pParams.radius}mm`;
+        else if (pParams.width) desc = `${pType} ${pParams.width}mm`;
+
         const feature = {
           id: 'feature_' + Date.now(),
-          name: prompt.name || prompt.type || prompt.action || 'Part',
-          type: prompt.type || prompt.action,
+          name: prompt.name || desc || 'Part',
+          type: pType,
           mesh: mesh,
-          params: prompt.params || prompt,
+          params: pParams,
+          _geometryJSON: mesh.geometry ? mesh.geometry.toJSON() : null,
+          _materialColor: mesh.material?.color ? '#' + mesh.material.color.getHexString() : '#58a6ff',
         };
         APP.features.push(feature);
         addFeature(feature);
         pushHistory();
+        fitToObject(mesh);
         updateStatus(`Created: ${feature.name}`);
       } catch (err) {
         console.error('AI create failed:', err);

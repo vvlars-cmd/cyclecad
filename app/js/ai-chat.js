@@ -116,12 +116,41 @@ export function initChat(messagesEl, inputEl, sendBtn, onCommand) {
     sendBtn.addEventListener('click', () => handleSendMessage());
   }
 
-  // Wire up input field Enter key
+  // Command history (last 20 commands, persisted)
+  chatState.commandHistory = JSON.parse(localStorage.getItem('cyclecad_chat_history') || '[]').slice(-20);
+  chatState.historyIndex = -1;
+  chatState.tempInput = '';
+
+  // Wire up input field Enter + ArrowUp/Down history
   if (inputEl) {
     inputEl.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         handleSendMessage();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        const hist = chatState.commandHistory;
+        if (hist.length === 0) return;
+        if (chatState.historyIndex === -1) {
+          chatState.tempInput = inputEl.value;
+          chatState.historyIndex = hist.length - 1;
+        } else if (chatState.historyIndex > 0) {
+          chatState.historyIndex--;
+        }
+        inputEl.value = hist[chatState.historyIndex] || '';
+        setTimeout(() => inputEl.setSelectionRange(inputEl.value.length, inputEl.value.length), 0);
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        const hist = chatState.commandHistory;
+        if (chatState.historyIndex === -1) return;
+        if (chatState.historyIndex < hist.length - 1) {
+          chatState.historyIndex++;
+          inputEl.value = hist[chatState.historyIndex] || '';
+        } else {
+          chatState.historyIndex = -1;
+          inputEl.value = chatState.tempInput || '';
+        }
+        setTimeout(() => inputEl.setSelectionRange(inputEl.value.length, inputEl.value.length), 0);
       }
     });
   }
@@ -135,6 +164,13 @@ export function initChat(messagesEl, inputEl, sendBtn, onCommand) {
 async function handleSendMessage() {
   const text = chatState.inputEl?.value.trim();
   if (!text) return;
+
+  // Save to command history (last 20, persisted)
+  chatState.commandHistory.push(text);
+  if (chatState.commandHistory.length > 20) chatState.commandHistory.shift();
+  chatState.historyIndex = -1;
+  chatState.tempInput = '';
+  try { localStorage.setItem('cyclecad_chat_history', JSON.stringify(chatState.commandHistory)); } catch(e) {}
 
   // Clear input and add user message
   if (chatState.inputEl) {

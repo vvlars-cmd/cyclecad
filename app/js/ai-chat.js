@@ -173,6 +173,55 @@ export function addMessage(role, text) {
 }
 
 // ============================================================================
+// FUZZY ACTION KEYWORD MATCHING
+// ============================================================================
+
+const ACTION_KEYWORDS = {
+  intersect: ['intersect', 'interset', 'intersec', 'interect', 'intersct', 'intesect', 'inersect', 'intersekt', 'intersection', 'overlap'],
+  subtract: ['subtract', 'subtrat', 'substract', 'subract', 'subtarct', 'subt', 'cut', 'difference', 'minus'],
+  union: ['union', 'combine', 'merge', 'join', 'fuse', 'unoin', 'uniom'],
+  delete: ['delete', 'delet', 'deleet', 'remove', 'remov', 'erase', 'trash', 'destroy', 'get rid of'],
+  move: ['move', 'mov', 'shift', 'translate', 'drag', 'push', 'pull', 'nudge'],
+  rotate: ['rotate', 'rotat', 'rotaet', 'spin', 'turn', 'twist'],
+  scale: ['scale', 'scael', 'resize', 'bigger', 'smaller', 'larger', 'grow', 'shrink'],
+  duplicate: ['duplicate', 'duplicat', 'copy', 'clone'],
+  hide: ['hide', 'hid', 'invisible'],
+  undo: ['undo', 'unod', 'undoo'],
+  redo: ['redo', 'redoo'],
+  fillet: ['fillet', 'filet', 'fillt', 'round edge', 'rounded'],
+  chamfer: ['chamfer', 'chamfr', 'chamfar', 'bevel'],
+  color: ['color', 'colour', 'paint', 'material'],
+  export: ['export', 'exprot', 'exprt', 'download', 'save as'],
+};
+
+function fuzzyMatchAction(text) {
+  const lower = text.toLowerCase();
+  // 1. Direct keyword match
+  for (const [action, keywords] of Object.entries(ACTION_KEYWORDS)) {
+    for (const kw of keywords) {
+      if (lower.includes(kw)) return action;
+    }
+  }
+  // 2. Levenshtein fuzzy match on individual words
+  const words = lower.replace(/[^a-z\s]/g, '').split(/\s+/).filter(w => w.length >= 3);
+  const targets = [];
+  for (const [action, keywords] of Object.entries(ACTION_KEYWORDS)) {
+    for (const kw of keywords) {
+      if (!kw.includes(' ')) targets.push({ word: kw, action });
+    }
+  }
+  let best = null, bestDist = Infinity;
+  for (const w of words) {
+    for (const t of targets) {
+      const d = levenshtein(w, t.word);
+      const threshold = t.word.length <= 4 ? 1 : 2;
+      if (d <= threshold && d < bestDist) { bestDist = d; best = t.action; }
+    }
+  }
+  return best;
+}
+
+// ============================================================================
 // SMART MESSAGE PROCESSING
 // ============================================================================
 
@@ -182,6 +231,22 @@ async function processMessage(text) {
   // 1. Check for scene action commands (delete, undo, move, etc.)
   const actionResult = handleSceneAction(lower, text);
   if (actionResult) return actionResult;
+
+  // 1b. Fuzzy action matching — catches typos like "interset", "subtrat", "deleet"
+  const fuzzyAction = fuzzyMatchAction(lower);
+  if (fuzzyAction) {
+    const corrected = lower.replace(
+      new RegExp(lower.split(/\s+/).find(w => {
+        for (const kw of (ACTION_KEYWORDS[fuzzyAction] || [])) {
+          if (levenshtein(w, kw) <= 2) return true;
+        }
+        return false;
+      }) || '', 'i'),
+      fuzzyAction
+    );
+    const retryResult = handleSceneAction(corrected, text);
+    if (retryResult) return retryResult;
+  }
 
   // 2. Check for questions / conversational messages
   const conversationalReply = handleConversational(lower, text);
@@ -385,61 +450,11 @@ function handleSceneAction(lower, original) {
     return { reply: 'Nothing to duplicate.', commands: [] };
   }
 
-  // --- BOOLEAN: SUBTRACT / CUT ---
-  if (/\b(subtract|cut|difference|minus)\b/.test(lower)) {
-    // Check if user is specifying a new shape inline: "subtract a box 20mm from the cylinder"
-    const inlineShape = tryParseInlineShape(lower);
-    if (inlineShape) {
-      const boolOp = 'booleanSubtract';
-      const targetIdx = features.length - 1; // the last existing part
-      return {
-        reply: `Creating ${generateDescription(inlineShape)}, then subtracting from "${features[targetIdx]?.name || 'Part'}".`,
-        commands: [inlineShape, { action: boolOp, toolIndex: -1, targetIndex: targetIdx }]
-      };
-    }
-    if (features.length < 2) return { reply: 'Need at least 2 parts for boolean subtract. Create a second part first, or say "subtract a box 20mm from it".', commands: [] };
-    const { tool, target } = resolveBooleanPair(lower, features);
-    return {
-      reply: `Subtracted "${features[tool]?.name || 'tool'}" from "${features[target]?.name || 'target'}".`,
-      commands: [{ action: 'booleanSubtract', toolIndex: tool, targetIndex: target }]
-    };
-  }
-
-  // --- BOOLEAN: INTERSECT ---
-  if (/\b(intersect|intersection|overlap)\b/.test(lower)) {
-    // Check if user is specifying a new shape inline: "intersect with a square of 20mm"
-    const inlineShape = tryParseInlineShape(lower);
-    if (inlineShape) {
-      const targetIdx = features.length - 1;
-      return {
-        reply: `Creating ${generateDescription(inlineShape)}, then intersecting with "${features[targetIdx]?.name || 'Part'}".`,
-        commands: [inlineShape, { action: 'booleanIntersect', toolIndex: -1, targetIndex: targetIdx }]
-      };
-    }
-    if (features.length < 2) return { reply: 'Need at least 2 parts for boolean intersect. Create a second part first, or say "intersect with a box 20mm".', commands: [] };
-    const { tool, target } = resolveBooleanPair(lower, features);
-    return {
-      reply: `Intersected "${features[tool]?.name || 'Part A'}" with "${features[target]?.name || 'Part B'}".`,
-      commands: [{ action: 'booleanIntersect', toolIndex: tool, targetIndex: target }]
-    };
-  }
-
-  // --- BOOLEAN: UNION / COMBINE / MERGE ---
-  if (/\b(union|combine|merge|join|fuse)\b/.test(lower)) {
-    const inlineShape = tryParseInlineShape(lower);
-    if (inlineShape) {
-      const targetIdx = features.length - 1;
-      return {
-        reply: `Creating ${generateDescription(inlineShape)}, then joining with "${features[targetIdx]?.name || 'Part'}".`,
-        commands: [inlineShape, { action: 'booleanUnion', toolIndex: -1, targetIndex: targetIdx }]
-      };
-    }
-    if (features.length < 2) return { reply: 'Need at least 2 parts for boolean union. Create a second part first.', commands: [] };
-    const { tool, target } = resolveBooleanPair(lower, features);
-    return {
-      reply: `Joined "${features[tool]?.name || 'Part A'}" with "${features[target]?.name || 'Part B'}".`,
-      commands: [{ action: 'booleanUnion', toolIndex: tool, targetIndex: target }]
-    };
+  // --- BOOLEAN OPERATIONS (subtract / intersect / union) ---
+  // Detect boolean intent via exact match OR fuzzy
+  const booleanOp = detectBooleanOp(lower);
+  if (booleanOp) {
+    return handleBoolean(booleanOp, lower, features, selectedIdx);
   }
 
   // --- COLOR / MATERIAL ---
@@ -683,6 +698,85 @@ function handleSceneAction(lower, original) {
   }
 
   return null; // not a scene action
+}
+
+// ============================================================================
+// BOOLEAN OPERATION HANDLER
+// ============================================================================
+
+function detectBooleanOp(text) {
+  // Exact keyword match
+  if (/\b(subtract|substract|cut\s+from|difference|minus)\b/i.test(text)) return 'booleanSubtract';
+  if (/\b(intersect|intersection|overlap)\b/i.test(text)) return 'booleanIntersect';
+  if (/\b(union|combine|merge|join|fuse)\b/i.test(text)) return 'booleanUnion';
+
+  // Fuzzy match for typos like "interset", "subtrat", "intersec"
+  const boolKeywords = {
+    booleanIntersect: ['intersect', 'intersection', 'overlap'],
+    booleanSubtract: ['subtract', 'substract', 'difference'],
+    booleanUnion: ['union', 'combine', 'merge', 'join', 'fuse'],
+  };
+  const words = text.replace(/[^a-z\s]/g, '').split(/\s+/).filter(w => w.length >= 4);
+  for (const w of words) {
+    for (const [op, keywords] of Object.entries(boolKeywords)) {
+      for (const kw of keywords) {
+        if (levenshtein(w, kw) <= 2) return op;
+      }
+    }
+  }
+  return null;
+}
+
+function handleBoolean(booleanOp, lower, features, selectedIdx) {
+  const opName = booleanOp.replace('boolean', '').toLowerCase();
+
+  // 1. Check for inline shape with dimensions: "intersect with a box 20mm"
+  const inlineShape = tryParseInlineShape(lower);
+  if (inlineShape && features.length >= 1) {
+    const targetIdx = selectedIdx >= 0 ? selectedIdx : features.length - 1;
+    return {
+      reply: `Creating ${generateDescription(inlineShape)}, then ${opName}ing with "${features[targetIdx]?.name || 'Part'}".`,
+      commands: [inlineShape, { action: booleanOp, toolIndex: -1, targetIndex: targetIdx }]
+    };
+  }
+
+  // 2. Check for "intersect with box" / "intersect box and cylinder" — referring to existing parts
+  // Try to resolve named parts from the text
+  const { tool, target } = resolveBooleanPair(lower, features);
+  if (tool >= 0 && target >= 0 && tool !== target) {
+    return {
+      reply: `${opName.charAt(0).toUpperCase() + opName.slice(1)}ed "${features[tool]?.name || 'Part A'}" with "${features[target]?.name || 'Part B'}".`,
+      commands: [{ action: booleanOp, toolIndex: tool, targetIndex: target }]
+    };
+  }
+
+  // 3. "intersect with [partname]" — one part named, use selected/last as the other
+  const withMatch = lower.match(/(?:with|and)\s+(?:the\s+)?(\w+)/);
+  if (withMatch && features.length >= 2) {
+    const namedIdx = findFeatureByKeyword(withMatch[1], features);
+    if (namedIdx >= 0) {
+      const otherIdx = selectedIdx >= 0 && selectedIdx !== namedIdx ? selectedIdx :
+        (features.length - 1 !== namedIdx ? features.length - 1 : features.length - 2);
+      if (otherIdx >= 0 && otherIdx !== namedIdx) {
+        return {
+          reply: `${opName.charAt(0).toUpperCase() + opName.slice(1)}ed "${features[otherIdx]?.name || 'Part A'}" with "${features[namedIdx]?.name || 'Part B'}".`,
+          commands: [{ action: booleanOp, toolIndex: namedIdx, targetIndex: otherIdx }]
+        };
+      }
+    }
+  }
+
+  // 4. Just "intersect" with 2+ parts — use last two
+  if (features.length >= 2) {
+    const t = features.length - 1;
+    const s = features.length - 2;
+    return {
+      reply: `${opName.charAt(0).toUpperCase() + opName.slice(1)}ed "${features[s]?.name || 'Part A'}" with "${features[t]?.name || 'Part B'}".`,
+      commands: [{ action: booleanOp, toolIndex: t, targetIndex: s }]
+    };
+  }
+
+  return { reply: `Need at least 2 parts for ${opName}. Create a second part first, or say "${opName} with a box 20mm".`, commands: [] };
 }
 
 // ============================================================================

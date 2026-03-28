@@ -521,14 +521,6 @@ export function toggleReferencePlanes(visible, plane = null) {
  * @param {boolean} enabled - Enable/disable wireframe mode
  */
 export function toggleWireframe(enabled) {
-  // If no argument, toggle based on current state
-  if (enabled === undefined) {
-    window._wireframeEnabled = !window._wireframeEnabled;
-    enabled = window._wireframeEnabled;
-  } else {
-    window._wireframeEnabled = !!enabled;
-  }
-
   if (scene) {
     scene.traverse((obj) => {
       // Skip reference planes and grid
@@ -634,14 +626,6 @@ export function getRenderer() {
  */
 export function getControls() {
   return controls;
-}
-
-/**
- * Fit camera to show entire scene
- * @param {number} padding - Padding multiplier (default 1.2)
- */
-export function fitAll(padding = 1.2) {
-  if (scene) fitToObject(scene, padding);
 }
 
 // ============================================================================

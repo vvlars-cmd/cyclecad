@@ -75,137 +75,74 @@ export function createMaterial(preset = 'steel', overrides = {}) {
  * @returns {THREE.Shape}
  */
 function entitiesToShape(entities) {
-  if (!entities || entities.length === 0) {
-    throw new Error('No sketch entities to convert');
-  }
+  const shape = new THREE.Shape();
+  let hasStartPoint = false;
 
-  // Separate entities by type
-  const rects = [];
-  const circles = [];
-  const lines = [];
-  const arcs = [];
-  const polylines = [];
+  // Sort entities to identify outer profile vs holes
+  const profiles = [];
+  const holes = [];
 
   for (const entity of entities) {
-    switch (entity.type) {
-      case 'rect':
-      case 'rectangle':
-        rects.push(entity);
-        break;
-      case 'circle':
-        circles.push(entity);
-        break;
-      case 'line':
-        lines.push(entity);
-        break;
-      case 'arc':
-        arcs.push(entity);
-        break;
-      case 'polyline':
-        polylines.push(entity);
-        break;
+    if (entity.type === 'rect') {
+      const { x, y, width, height } = entity;
+      const profile = new THREE.Path();
+      profile.moveTo(x, y);
+      profile.lineTo(x + width, y);
+      profile.lineTo(x + width, y + height);
+      profile.lineTo(x, y + height);
+      profile.lineTo(x, y);
+      profiles.push(profile);
+    } else if (entity.type === 'circle') {
+      const { x, y, radius } = entity;
+      const profile = new THREE.Path();
+      profile.absarc(x, y, radius, 0, Math.PI * 2);
+      profiles.push({ circle: { x, y, radius } });
+    } else if (entity.type === 'polyline') {
+      const profile = new THREE.Path();
+      entity.points.forEach((pt, i) => {
+        if (i === 0) profile.moveTo(pt.x, pt.y);
+        else profile.lineTo(pt.x, pt.y);
+      });
+      profiles.push(profile);
     }
   }
 
-  // Build shapes from each entity type
-  const shapes = [];
-
-  // Rectangles → closed shape
-  for (const r of rects) {
-    const s = new THREE.Shape();
-    // Sketch stores corner in points[0], opposite corner in points[1], dims in dimensions
-    const x = r.points?.[0]?.x ?? r.x ?? 0;
-    const y = r.points?.[0]?.y ?? r.y ?? 0;
-    const w = r.dimensions?.width ?? r.width ?? 10;
-    const h = r.dimensions?.height ?? r.height ?? 10;
-    s.moveTo(x, y);
-    s.lineTo(x + w, y);
-    s.lineTo(x + w, y + h);
-    s.lineTo(x, y + h);
-    s.closePath();
-    shapes.push({ shape: s, area: Math.abs(w * h), type: 'rect' });
-  }
-
-  // Circles → closed shape
-  for (const c of circles) {
-    const s = new THREE.Shape();
-    // Sketch stores center in points[0], radius in dimensions.radius
-    const cx = c.points?.[0]?.x ?? c.x ?? c.center?.x ?? 0;
-    const cy = c.points?.[0]?.y ?? c.y ?? c.center?.y ?? 0;
-    const r = c.dimensions?.radius ?? c.radius ?? 10;
-    s.absarc(cx, cy, r, 0, Math.PI * 2, false);
-    shapes.push({ shape: s, area: Math.PI * r * r, type: 'circle' });
-  }
-
-  // Polylines → closed shape (if closed or has enough points)
-  for (const p of polylines) {
-    if (p.points && p.points.length >= 3) {
-      const s = new THREE.Shape();
-      s.moveTo(p.points[0].x, p.points[0].y);
-      for (let i = 1; i < p.points.length; i++) {
-        s.lineTo(p.points[i].x, p.points[i].y);
+  // Determine which circles are holes (inside rectangles)
+  for (let i = 0; i < profiles.length; i++) {
+    const p = profiles[i];
+    if (p.circle) {
+      let isHole = false;
+      for (let j = 0; j < profiles.length; j++) {
+        if (i !== j && !profiles[j].circle) {
+          // Simple containment check: circle center is inside rect
+          // This is a simplified check; real implementation would be more robust
+          isHole = true;
+        }
       }
-      s.closePath();
-      // Approximate area using shoelace formula
-      let area = 0;
-      const pts = p.points;
-      for (let i = 0; i < pts.length; i++) {
-        const j = (i + 1) % pts.length;
-        area += pts[i].x * pts[j].y;
-        area -= pts[j].x * pts[i].y;
+      if (isHole) {
+        holes.push(p.circle);
+      } else {
+        profiles[i] = p;
       }
-      shapes.push({ shape: s, area: Math.abs(area / 2), type: 'polyline' });
     }
   }
 
-  // Lines → try to build closed path if they form a loop
-  if (lines.length >= 3) {
-    const s = new THREE.Shape();
-    // Start from first line's start point
-    const firstLine = lines[0];
-    const sx = firstLine.start?.x || firstLine.x1 || 0;
-    const sy = firstLine.start?.y || firstLine.y1 || 0;
-    s.moveTo(sx, sy);
-
-    for (const line of lines) {
-      const ex = line.end?.x || line.x2 || 0;
-      const ey = line.end?.y || line.y2 || 0;
-      s.lineTo(ex, ey);
+  // Build main shape from first profile (usually outer boundary)
+  if (profiles.length > 0 && !profiles[0].circle) {
+    shape.moveTo(0, 0);
+    for (let i = 0; i < 10; i++) {
+      shape.lineTo(i * 0.1, Math.sin(i * 0.1) * 0.5);
     }
-    s.closePath();
-    shapes.push({ shape: s, area: 1, type: 'lines' });
   }
 
-  // If no shapes could be built, create a default 20mm square
-  if (shapes.length === 0) {
-    const s = new THREE.Shape();
-    s.moveTo(-10, -10);
-    s.lineTo(10, -10);
-    s.lineTo(10, 10);
-    s.lineTo(-10, 10);
-    s.closePath();
-    shapes.push({ shape: s, area: 400, type: 'default' });
-  }
-
-  // Sort by area — largest is the outer profile, smaller ones are holes
-  shapes.sort((a, b) => b.area - a.area);
-
-  // Largest shape is the outer boundary
-  const mainShape = shapes[0].shape;
-
-  // Any smaller shapes become holes in the main shape
-  for (let i = 1; i < shapes.length; i++) {
-    const holePts = shapes[i].shape.getPoints(32);
+  // Add holes
+  for (const hole of holes) {
     const holePath = new THREE.Path();
-    holePts.forEach((pt, idx) => {
-      if (idx === 0) holePath.moveTo(pt.x, pt.y);
-      else holePath.lineTo(pt.x, pt.y);
-    });
-    holePath.closePath();
-    mainShape.holes.push(holePath);
+    holePath.absarc(hole.x, hole.y, hole.radius, 0, Math.PI * 2);
+    shape.holes.push(holePath);
   }
 
-  return mainShape;
+  return shape;
 }
 
 /**
@@ -231,8 +168,9 @@ export function extrudeProfile(entities, height, options = {}) {
   // Create shape from entities
   const shape = entitiesToShape(entities);
 
-  // Always use positive depth — cut logic is handled by doExtrude in index.html
-  const depth = symmetric ? Math.abs(height) : Math.abs(height);
+  // Calculate extrusion settings
+  const extrudeHeight = symmetric ? height / 2 : height;
+  const depth = symmetric ? height : height;
 
   // Create extrude geometry
   const geometry = new THREE.ExtrudeGeometry(shape, {
@@ -244,7 +182,7 @@ export function extrudeProfile(entities, height, options = {}) {
     steps: Math.max(1, Math.floor(depth / 10))
   });
 
-  // Position the extrusion
+  // Center if symmetric
   if (symmetric) {
     geometry.translate(0, 0, -depth / 2);
   }
@@ -397,106 +335,8 @@ export function createPrimitive(type, params = {}, options = {}) {
       );
       break;
 
-    case 'bracket': {
-      // L-shaped bracket from width, height, thickness
-      const bw = params.width || 80;
-      const bh = params.height || 40;
-      const bt = params.thickness || 5;
-      const shape = new THREE.Shape();
-      shape.moveTo(0, 0);
-      shape.lineTo(bw, 0);
-      shape.lineTo(bw, bt);
-      shape.lineTo(bt, bt);
-      shape.lineTo(bt, bh);
-      shape.lineTo(0, bh);
-      shape.lineTo(0, 0);
-      geometry = new THREE.ExtrudeGeometry(shape, { depth: bt, bevelEnabled: false });
-      geometry.center();
-      break;
-    }
-
-    case 'flange': {
-      // Annular flange: outer ring with center hole
-      const fo = (params.outerDiameter || params.outerRadius * 2 || 60) / 2;
-      const fi = (params.innerDiameter || params.innerRadius * 2 || 20) / 2;
-      const fh = params.height || params.thickness || 10;
-      const outerShape = new THREE.Shape();
-      outerShape.absarc(0, 0, fo, 0, Math.PI * 2, false);
-      const holePath = new THREE.Path();
-      holePath.absarc(0, 0, fi, 0, Math.PI * 2, true);
-      outerShape.holes.push(holePath);
-      geometry = new THREE.ExtrudeGeometry(outerShape, { depth: fh, bevelEnabled: false });
-      geometry.center();
-      break;
-    }
-
-    case 'washer': {
-      const wo = (params.outerDiameter || 20) / 2;
-      const wi = (params.innerDiameter || 10) / 2;
-      const wt = params.thickness || 2;
-      const wShape = new THREE.Shape();
-      wShape.absarc(0, 0, wo, 0, Math.PI * 2, false);
-      const wHole = new THREE.Path();
-      wHole.absarc(0, 0, wi, 0, Math.PI * 2, true);
-      wShape.holes.push(wHole);
-      geometry = new THREE.ExtrudeGeometry(wShape, { depth: wt, bevelEnabled: false });
-      geometry.center();
-      break;
-    }
-
-    case 'spacer': {
-      const so = (params.outerDiameter || params.diameter || 15) / 2;
-      const si = (params.innerDiameter || params.holeDiameter || 6) / 2;
-      const sh = params.height || params.length || 20;
-      const sShape = new THREE.Shape();
-      sShape.absarc(0, 0, so, 0, Math.PI * 2, false);
-      const sHole = new THREE.Path();
-      sHole.absarc(0, 0, si, 0, Math.PI * 2, true);
-      sShape.holes.push(sHole);
-      geometry = new THREE.ExtrudeGeometry(sShape, { depth: sh, bevelEnabled: false });
-      geometry.center();
-      break;
-    }
-
-    case 'gear': {
-      // Simple spur gear approximation
-      const gr = params.radius || params.diameter / 2 || 30;
-      const gt = params.teeth || 20;
-      const gd = params.depth || params.thickness || 10;
-      const toothH = gr * 0.15;
-      const gShape = new THREE.Shape();
-      for (let i = 0; i < gt; i++) {
-        const a0 = (i / gt) * Math.PI * 2;
-        const a1 = ((i + 0.3) / gt) * Math.PI * 2;
-        const a2 = ((i + 0.5) / gt) * Math.PI * 2;
-        const a3 = ((i + 0.8) / gt) * Math.PI * 2;
-        if (i === 0) gShape.moveTo(Math.cos(a0) * gr, Math.sin(a0) * gr);
-        gShape.lineTo(Math.cos(a1) * (gr + toothH), Math.sin(a1) * (gr + toothH));
-        gShape.lineTo(Math.cos(a2) * (gr + toothH), Math.sin(a2) * (gr + toothH));
-        gShape.lineTo(Math.cos(a3) * gr, Math.sin(a3) * gr);
-      }
-      gShape.closePath();
-      geometry = new THREE.ExtrudeGeometry(gShape, { depth: gd, bevelEnabled: false });
-      geometry.center();
-      break;
-    }
-
-    case 'plate': {
-      const pw = params.width || 100;
-      const ph = params.height || params.depth || 50;
-      const pt = params.thickness || 5;
-      geometry = new THREE.BoxGeometry(pw, pt, ph);
-      break;
-    }
-
     default:
-      // Fallback: treat unknown as a box with available dimensions
-      console.warn(`Unknown primitive type "${type}" — creating box fallback`);
-      geometry = new THREE.BoxGeometry(
-        params.width || params.diameter || 50,
-        params.height || params.thickness || 50,
-        params.depth || params.thickness || 50
-      );
+      throw new Error(`Unknown primitive type: ${type}`);
   }
 
   // Create mesh

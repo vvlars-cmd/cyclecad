@@ -50,20 +50,17 @@ export function startSketch(plane, camera, controls) {
   // Disable orbit controls
   if (controls) controls.enabled = false;
 
-  // Create canvas overlay — constrained to viewport area only
-  const container = document.getElementById('viewport-container') || document.body;
+  // Create canvas overlay
+  const container = document.body;
   const canvas = document.createElement('canvas');
   canvas.id = 'sketch-canvas';
-  const vpRect = container.getBoundingClientRect();
-  canvas.width = vpRect.width || window.innerWidth;
-  canvas.height = vpRect.height || window.innerHeight;
-  canvas.style.position = 'absolute';
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  canvas.style.position = 'fixed';
   canvas.style.top = '0';
   canvas.style.left = '0';
-  canvas.style.width = '100%';
-  canvas.style.height = '100%';
   canvas.style.cursor = 'crosshair';
-  canvas.style.zIndex = '30';
+  canvas.style.zIndex = '9999';
   canvas.style.backgroundColor = 'rgba(0,0,0,0)';
 
   container.appendChild(canvas);
@@ -182,14 +179,9 @@ export function canvasToWorld(clientX, clientY, camera, plane) {
   const canvas = sketchState.canvas;
   if (!canvas) return { x: 0, y: 0, z: 0 };
 
-  // Account for canvas position offset (left panel, toolbar, etc.)
-  const rect = canvas.getBoundingClientRect();
-  const localX = clientX - rect.left;
-  const localY = clientY - rect.top;
-
   // Normalized device coordinates
-  const ndcX = (localX / rect.width) * 2 - 1;
-  const ndcY = -(localY / rect.height) * 2 + 1;
+  const ndcX = (clientX / canvas.width) * 2 - 1;
+  const ndcY = -(clientY / canvas.height) * 2 + 1;
 
   // Ray from camera through pixel
   const raycaster = sketchState.raycaster;
@@ -200,10 +192,7 @@ export function canvasToWorld(clientX, clientY, camera, plane) {
   const planeObj = new THREE.Plane(planeNormal, 0);
   const intersection = new THREE.Vector3();
 
-  const hit = raycaster.ray.intersectPlane(planeObj, intersection);
-  if (!hit) {
-    return { x: 0, y: 0, z: 0 }; // fallback if ray is parallel to plane
-  }
+  raycaster.ray.intersectPlane(planeObj, intersection);
 
   return { x: intersection.x, y: intersection.y, z: intersection.z };
 }
@@ -613,24 +602,17 @@ function _onSketchClick(e) {
 function _onSketchContextMenu(e) {
   e.preventDefault();
 
-  const tool = sketchState.currentTool;
-
-  if (tool === 'line' && sketchState.currentPoints.length > 0) {
+  if (sketchState.currentTool === 'line' && sketchState.currentPoints.length > 0) {
     // Stop line chain mode
     if (sketchState.currentPoints.length >= 2) {
       _finalizeEntity();
     }
     sketchState.currentPoints = [];
     sketchState.isDrawing = false;
-  } else if (tool === 'polyline' && sketchState.currentPoints.length >= 2) {
+  } else if (sketchState.currentTool === 'polyline' && sketchState.currentPoints.length >= 2) {
     // Close polyline
     _finalizeEntity();
     sketchState.isDrawing = false;
-  } else if ((tool === 'rectangle' || tool === 'rect' || tool === 'circle' || tool === 'arc') && sketchState.isDrawing) {
-    // Cancel in-progress rect/circle/arc on right-click
-    sketchState.currentPoints = [];
-    sketchState.isDrawing = false;
-    sketchState.inProgressEntity = null;
   }
 
   _renderSketchCanvas();
@@ -658,17 +640,7 @@ function _onSketchKeyDown(e) {
     }
     _renderSketchCanvas();
   } else if (e.key === 'Escape') {
-    // Cancel current drawing, don't destroy the sketch
-    if (sketchState.currentPoints.length > 0 || sketchState.inProgressEntity) {
-      sketchState.currentPoints = [];
-      sketchState.inProgressEntity = null;
-      sketchState.isDrawing = false;
-      _renderSketchCanvas();
-    } else if (sketchState.currentTool) {
-      sketchState.currentTool = null;
-      _renderSketchCanvas();
-    }
-    // If no tool and no in-progress, do nothing — user clicks Extrude to finish
+    endSketch();
   } else if (e.key === 'z' && (e.ctrlKey || e.metaKey)) {
     undo();
   }
@@ -679,10 +651,8 @@ function _onSketchKeyDown(e) {
  */
 function _onSketchResize() {
   if (sketchState.canvas) {
-    const vp = document.getElementById('viewport-container');
-    const rect = vp ? vp.getBoundingClientRect() : { width: window.innerWidth, height: window.innerHeight };
-    sketchState.canvas.width = rect.width;
-    sketchState.canvas.height = rect.height;
+    sketchState.canvas.width = window.innerWidth;
+    sketchState.canvas.height = window.innerHeight;
     _renderSketchCanvas();
   }
 }

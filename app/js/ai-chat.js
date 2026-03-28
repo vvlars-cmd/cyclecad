@@ -434,8 +434,196 @@ function handleSceneAction(lower, original) {
 
   // --- EXPORT ---
   if (/^export\b/.test(lower)) {
-    const fmt = /stl/i.test(lower) ? 'stl' : /obj/i.test(lower) ? 'obj' : /gltf|glb/i.test(lower) ? 'gltf' : 'stl';
+    const fmt = /stl/i.test(lower) ? 'stl' : /obj/i.test(lower) ? 'obj' : /gltf|glb/i.test(lower) ? 'gltf' : /dxf/i.test(lower) ? 'dxf' : /json/i.test(lower) ? 'json' : 'stl';
     return { reply: `Exporting as ${fmt.toUpperCase()}...`, commands: [{ action: 'export', format: fmt }] };
+  }
+
+  // --- SKETCH TOOLS ---
+  if (/^(start|begin|new)\s*sketch\s*$/i.test(lower) || /^sketch\s*$/i.test(lower)) {
+    return { reply: 'Starting sketch mode. Draw on the grid plane.', commands: [{ action: 'startSketch' }] };
+  }
+  if (/^(end|finish|done|close)\s*sketch\s*$/i.test(lower)) {
+    return { reply: 'Sketch completed.', commands: [{ action: 'endSketch' }] };
+  }
+  if (/^(draw\s+)?line\s*$/i.test(lower)) {
+    return { reply: 'Line tool active. Click to place points.', commands: [{ action: 'sketchTool', tool: 'line' }] };
+  }
+  if (/^(draw\s+)?rect(angle)?\s*$/i.test(lower)) {
+    return { reply: 'Rectangle tool active. Click to place corners.', commands: [{ action: 'sketchTool', tool: 'rect' }] };
+  }
+  if (/^(draw\s+)?circle\s*$/i.test(lower)) {
+    return { reply: 'Circle tool active. Click center, then radius.', commands: [{ action: 'sketchTool', tool: 'circle' }] };
+  }
+  if (/^(draw\s+)?arc\s*$/i.test(lower)) {
+    return { reply: 'Arc tool active. Click start, mid, end.', commands: [{ action: 'sketchTool', tool: 'arc' }] };
+  }
+
+  // --- 3D OPERATIONS ---
+  if (/^extrude\s*$/i.test(lower) || /^extrude\s+sketch\s*$/i.test(lower)) {
+    return { reply: 'Extruding sketch...', commands: [{ action: 'extrude' }] };
+  }
+  if (/^revolve\s*$/i.test(lower)) {
+    return { reply: 'Revolving sketch...', commands: [{ action: 'revolve' }] };
+  }
+  if (/^(cut|boolean cut)\s*$/i.test(lower)) {
+    return { reply: 'Cut mode active. Select tool body.', commands: [{ action: 'cut' }] };
+  }
+
+  // --- ADVANCED OPERATIONS ---
+  if (/\b(sweep)\b/i.test(lower)) {
+    return { reply: 'Sweep operation. Select profile and path.', commands: [{ action: 'sweep' }] };
+  }
+  if (/\b(loft)\b/i.test(lower)) {
+    return { reply: 'Loft operation. Select profiles to blend.', commands: [{ action: 'loft' }] };
+  }
+  if (/\b(shell|hollow)\b/i.test(lower)) {
+    const t = parseFirstNumber(lower) || 2;
+    return { reply: `Shell with ${t}mm wall thickness.`, commands: [{ action: 'shell', thickness: t }] };
+  }
+  if (/\b(pattern|array)\b/i.test(lower)) {
+    const n = parseFirstNumber(lower) || 4;
+    return { reply: `Pattern: ${n} copies.`, commands: [{ action: 'pattern', count: n }] };
+  }
+  if (/\b(mirror)\b/i.test(lower)) {
+    const plane = /\b[xX]\b/.test(lower) ? 'x' : /\b[zZ]\b/.test(lower) ? 'z' : 'y';
+    return { reply: `Mirrored across ${plane.toUpperCase()} plane.`, commands: [{ action: 'mirror', plane }] };
+  }
+  if (/\b(thread)\b/i.test(lower)) {
+    return { reply: 'Adding thread to selected cylinder.', commands: [{ action: 'thread' }] };
+  }
+  if (/\b(spring)\b/i.test(lower)) {
+    const d = parseFirstNumber(lower) || 20;
+    return { reply: `Creating spring (d=${d}mm).`, commands: [{ action: 'spring', diameter: d }] };
+  }
+
+  // --- SHEET METAL ---
+  if (/\b(bend|sheet\s*metal\s*bend)\b/i.test(lower)) {
+    return { reply: 'Sheet metal bend.', commands: [{ action: 'bend' }] };
+  }
+  if (/\b(unfold|flat\s*pattern)\b/i.test(lower)) {
+    return { reply: 'Unfolding sheet metal to flat pattern.', commands: [{ action: 'unfold' }] };
+  }
+
+  // --- VIEWS ---
+  if (/^(front|top|right|left|back|bottom|isometric|iso)\s*(view)?\s*$/i.test(lower)) {
+    const view = lower.replace(/\s*view\s*$/, '').trim();
+    return { reply: `${view.charAt(0).toUpperCase() + view.slice(1)} view.`, commands: [{ action: 'setView', view }] };
+  }
+  if (/\b(zoom\s*in)\b/i.test(lower)) {
+    return { reply: 'Zoomed in.', commands: [{ action: 'zoomIn' }] };
+  }
+  if (/\b(zoom\s*out)\b/i.test(lower)) {
+    return { reply: 'Zoomed out.', commands: [{ action: 'zoomOut' }] };
+  }
+  if (/\b(dark\s*mode|light\s*mode|toggle\s*theme)\b/i.test(lower)) {
+    return { reply: 'Theme toggled.', commands: [{ action: 'toggleTheme' }] };
+  }
+
+  // --- PANELS ---
+  if (/\b(open|show)\s*(help|keyboard|shortcuts)\b/i.test(lower)) {
+    return { reply: 'Opening help panel.', commands: [{ action: 'openPanel', panel: 'help' }] };
+  }
+  if (/\b(open|show)\s*(properties|params|parameters)\b/i.test(lower)) {
+    return { reply: 'Showing properties panel.', commands: [{ action: 'openPanel', panel: 'properties' }] };
+  }
+  if (/\b(open|show)\s*(guide|rebuild)\b/i.test(lower)) {
+    return { reply: 'Opening guide panel.', commands: [{ action: 'openPanel', panel: 'guide' }] };
+  }
+  if (/\b(open|show)\s*(token|billing)\b/i.test(lower)) {
+    return { reply: 'Opening tokens panel.', commands: [{ action: 'openPanel', panel: 'tokens' }] };
+  }
+  if (/\b(open|show)\s*(marketplace|store)\b/i.test(lower)) {
+    return { reply: 'Opening marketplace.', commands: [{ action: 'openPanel', panel: 'marketplace' }] };
+  }
+  if (/\b(open|show)\s*(gd&?t|gdt|tolerance)\b/i.test(lower)) {
+    return { reply: 'Opening GD&T training.', commands: [{ action: 'openPanel', panel: 'gdt' }] };
+  }
+  if (/\b(open|show)\s*(misumi|catalog)\b/i.test(lower)) {
+    return { reply: 'Opening MISUMI catalog.', commands: [{ action: 'openPanel', panel: 'misumi' }] };
+  }
+  if (/\b(open|show)\s*(console|log)\b/i.test(lower)) {
+    return { reply: 'Opening console.', commands: [{ action: 'openPanel', panel: 'console' }] };
+  }
+
+  // --- IMPORT ---
+  if (/\b(import|open|load)\s*(step|stp|inventor|ipt|iam|stl|obj)\b/i.test(lower)) {
+    const format = /step|stp/i.test(lower) ? 'step' : /inventor|ipt|iam/i.test(lower) ? 'inventor' : /stl/i.test(lower) ? 'stl' : 'obj';
+    return { reply: `Opening ${format} import dialog...`, commands: [{ action: 'import', format }] };
+  }
+
+  // --- AI TOOLS ---
+  if (/\b(dfm|manufacturab|design\s*for\s*manuf)/i.test(lower)) {
+    return { reply: 'Running DFM analysis...', commands: [{ action: 'openPanel', panel: 'dfm' }] };
+  }
+  if (/\b(copilot|ai\s*assist|suggest)\b/i.test(lower)) {
+    return { reply: 'Opening AI Copilot.', commands: [{ action: 'openPanel', panel: 'copilot' }] };
+  }
+  if (/\b(reverse\s*engineer)/i.test(lower)) {
+    return { reply: 'Opening reverse engineering tool.', commands: [{ action: 'openPanel', panel: 'reverseEngineer' }] };
+  }
+  if (/\b(material\s*library|materials?\s*selector)\b/i.test(lower)) {
+    return { reply: 'Opening material library.', commands: [{ action: 'openPanel', panel: 'materials' }] };
+  }
+  if (/\b(generative\s*design)\b/i.test(lower)) {
+    return { reply: 'Opening generative design tool.', commands: [{ action: 'openPanel', panel: 'generative' }] };
+  }
+
+  // --- CAM ---
+  if (/\b(cam|toolpath|cnc|machining)\b/i.test(lower)) {
+    return { reply: 'Opening CAM pipeline.', commands: [{ action: 'openPanel', panel: 'cam' }] };
+  }
+  if (/\b(g-?code|gcode)\b/i.test(lower)) {
+    return { reply: 'Opening G-code viewer.', commands: [{ action: 'openPanel', panel: 'gcode' }] };
+  }
+
+  // --- COLLABORATION ---
+  if (/\b(collab|share|collaboration)\b/i.test(lower)) {
+    return { reply: 'Opening collaboration panel.', commands: [{ action: 'openPanel', panel: 'collab' }] };
+  }
+  if (/\b(vr|virtual\s*reality|immersive)\b/i.test(lower)) {
+    return { reply: 'Opening VR mode.', commands: [{ action: 'openPanel', panel: 'vr' }] };
+  }
+
+  // --- ASSEMBLY ---
+  if (/^(assembly|assembly mode)\s*$/i.test(lower)) {
+    return { reply: 'Switching to assembly mode.', commands: [{ action: 'assemblyMode' }] };
+  }
+  if (/\b(explode|exploded\s*view)\b/i.test(lower)) {
+    return { reply: 'Toggling exploded view.', commands: [{ action: 'explode' }] };
+  }
+
+  // --- MEASURE ---
+  if (/\b(measure|distance|dimension|ruler)\b/i.test(lower)) {
+    return { reply: 'Measure tool active. Click two points to measure distance.', commands: [{ action: 'measure' }] };
+  }
+
+  // --- SECTION VIEW ---
+  if (/\b(section|cross\s*section|section\s*cut|slice)\b/i.test(lower)) {
+    return { reply: 'Section cut tool active.', commands: [{ action: 'section' }] };
+  }
+
+  // --- SCREENSHOT ---
+  if (/\b(screenshot|capture|snapshot|save\s*image)\b/i.test(lower)) {
+    return { reply: 'Capturing screenshot...', commands: [{ action: 'screenshot' }] };
+  }
+
+  // --- DXF EXPORT ---
+  if (/\b(dxf|engineering\s*drawing|2d\s*drawing)\b/i.test(lower)) {
+    return { reply: 'Exporting DXF engineering drawing...', commands: [{ action: 'export', format: 'dxf' }] };
+  }
+
+  // --- SAVE / LOAD ---
+  if (/^save\s*(project|file|model)?\s*$/i.test(lower)) {
+    return { reply: 'Saving project...', commands: [{ action: 'save' }] };
+  }
+  if (/^(load|open)\s*(project|file|model)?\s*$/i.test(lower)) {
+    return { reply: 'Opening file picker...', commands: [{ action: 'load' }] };
+  }
+
+  // --- CONSTRAINT COMMANDS ---
+  if (/\b(constrain|constraint|lock|fix)\s*(horizontal|vertical|equal|parallel|perpendicular|tangent|coincident|concentric|symmetric)?\b/i.test(lower)) {
+    const type = (lower.match(/(horizontal|vertical|equal|parallel|perpendicular|tangent|coincident|concentric|symmetric)/)?.[1]) || 'fixed';
+    return { reply: `Adding ${type} constraint.`, commands: [{ action: 'addConstraint', type }] };
   }
 
   return null; // not a scene action

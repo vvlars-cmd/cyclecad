@@ -17,7 +17,7 @@
 // ============================================================================
 
 const PART_TYPE_SYNONYMS = {
-  cube: ['cube', 'box', 'block', 'square block', 'rectangular block', 'cuboid', 'qube', 'boks'],
+  cube: ['cube', 'box', 'block', 'square', 'square block', 'rectangular block', 'cuboid', 'qube', 'boks', 'sqare', 'squere'],
   cylinder: ['cylinder', 'cylindr', 'cylindre', 'cylnder', 'cyliner', 'rod', 'post', 'pin', 'shaft', 'tube', 'pipe', 'bar', 'piston', 'axle'],
   sphere: ['sphere', 'spehre', 'shere', 'spehere', 'ball', 'round', 'globe', 'orb'],
   cone: ['cone', 'conical', 'funnel', 'tapered'],
@@ -358,7 +358,17 @@ function handleSceneAction(lower, original) {
 
   // --- BOOLEAN: SUBTRACT / CUT ---
   if (/\b(subtract|cut|difference|minus)\b/.test(lower)) {
-    if (features.length < 2) return { reply: 'Need at least 2 parts for boolean subtract.', commands: [] };
+    // Check if user is specifying a new shape inline: "subtract a box 20mm from the cylinder"
+    const inlineShape = tryParseInlineShape(lower);
+    if (inlineShape) {
+      const boolOp = 'booleanSubtract';
+      const targetIdx = features.length - 1; // the last existing part
+      return {
+        reply: `Creating ${generateDescription(inlineShape)}, then subtracting from "${features[targetIdx]?.name || 'Part'}".`,
+        commands: [inlineShape, { action: boolOp, toolIndex: -1, targetIndex: targetIdx }]
+      };
+    }
+    if (features.length < 2) return { reply: 'Need at least 2 parts for boolean subtract. Create a second part first, or say "subtract a box 20mm from it".', commands: [] };
     const { tool, target } = resolveBooleanPair(lower, features);
     return {
       reply: `Subtracted "${features[tool]?.name || 'tool'}" from "${features[target]?.name || 'target'}".`,
@@ -368,7 +378,16 @@ function handleSceneAction(lower, original) {
 
   // --- BOOLEAN: INTERSECT ---
   if (/\b(intersect|intersection|overlap)\b/.test(lower)) {
-    if (features.length < 2) return { reply: 'Need at least 2 parts for boolean intersect.', commands: [] };
+    // Check if user is specifying a new shape inline: "intersect with a square of 20mm"
+    const inlineShape = tryParseInlineShape(lower);
+    if (inlineShape) {
+      const targetIdx = features.length - 1;
+      return {
+        reply: `Creating ${generateDescription(inlineShape)}, then intersecting with "${features[targetIdx]?.name || 'Part'}".`,
+        commands: [inlineShape, { action: 'booleanIntersect', toolIndex: -1, targetIndex: targetIdx }]
+      };
+    }
+    if (features.length < 2) return { reply: 'Need at least 2 parts for boolean intersect. Create a second part first, or say "intersect with a box 20mm".', commands: [] };
     const { tool, target } = resolveBooleanPair(lower, features);
     return {
       reply: `Intersected "${features[tool]?.name || 'Part A'}" with "${features[target]?.name || 'Part B'}".`,
@@ -378,7 +397,15 @@ function handleSceneAction(lower, original) {
 
   // --- BOOLEAN: UNION / COMBINE / MERGE ---
   if (/\b(union|combine|merge|join|fuse)\b/.test(lower)) {
-    if (features.length < 2) return { reply: 'Need at least 2 parts for boolean union.', commands: [] };
+    const inlineShape = tryParseInlineShape(lower);
+    if (inlineShape) {
+      const targetIdx = features.length - 1;
+      return {
+        reply: `Creating ${generateDescription(inlineShape)}, then joining with "${features[targetIdx]?.name || 'Part'}".`,
+        commands: [inlineShape, { action: 'booleanUnion', toolIndex: -1, targetIndex: targetIdx }]
+      };
+    }
+    if (features.length < 2) return { reply: 'Need at least 2 parts for boolean union. Create a second part first.', commands: [] };
     const { tool, target } = resolveBooleanPair(lower, features);
     return {
       reply: `Joined "${features[tool]?.name || 'Part A'}" with "${features[target]?.name || 'Part B'}".`,
@@ -722,6 +749,27 @@ function findFeatureByKeyword(keyword, features) {
 }
 
 // ============================================================================
+// INLINE SHAPE PARSER (for "intersect with a box 20mm")
+// ============================================================================
+
+function tryParseInlineShape(text) {
+  // Strip the boolean keyword and prepositions to find shape description
+  const cleaned = text
+    .replace(/\b(intersect|subtract|cut|union|combine|merge|join|fuse|difference|minus|overlap)\b/gi, '')
+    .replace(/\b(it|this|that|the|from|with|and|a|an|of)\b/gi, '')
+    .trim();
+
+  if (!cleaned) return null;
+
+  const partType = detectPartType(cleaned);
+  if (!partType) return null;
+
+  const numbers = parseNumbers(cleaned);
+  const dims = parseDimensions(cleaned);
+  return parseByType(partType, cleaned, numbers, dims);
+}
+
+// ============================================================================
 // DIRECTION PARSING
 // ============================================================================
 
@@ -1061,10 +1109,26 @@ function parseByType(partType, text, numbers, dims) {
 
 function parseBoxCommand(text, numbers, dims) {
   let width, height, depth;
-  if (dims.length === 3) [width, height, depth] = dims;
+
+  // Check for named dimensions: "width 50", "height 30", "depth 20"
+  const wMatch = text.match(/(?:width|wide|w)\s*(?:of\s*)?(\d+(?:\.\d+)?)/i);
+  const hMatch = text.match(/(?:height|tall|high|h)\s*(?:of\s*)?(\d+(?:\.\d+)?)/i);
+  const dMatch = text.match(/(?:depth|deep|long|length|d)\s*(?:of\s*)?(\d+(?:\.\d+)?)/i);
+
+  if (wMatch || hMatch || dMatch) {
+    width = wMatch ? parseFloat(wMatch[1]) : null;
+    height = hMatch ? parseFloat(hMatch[1]) : null;
+    depth = dMatch ? parseFloat(dMatch[1]) : null;
+    // Fill missing dims with first available or default
+    const known = width || height || depth || 20;
+    width = width || known;
+    height = height || known;
+    depth = depth || Math.min(width, height);
+  } else if (dims.length === 3) [width, height, depth] = dims;
   else if (dims.length === 2) { width = dims[0]; height = dims[1]; depth = Math.min(dims[0], dims[1]); }
   else if (dims.length === 1) width = height = depth = dims[0];
   else if (numbers.length >= 3) { width = numbers[0]; height = numbers[1]; depth = numbers[2]; }
+  else if (numbers.length === 2) { width = numbers[0]; height = numbers[0]; depth = numbers[1]; }
   else if (numbers.length === 1) width = height = depth = numbers[0];
   else return null;
   return { type: 'box', width: r(width), height: r(height), depth: r(depth) };

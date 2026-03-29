@@ -13,7 +13,7 @@
 export function initTokenDashboard() {
   // Create panel HTML
   const panelHTML = `
-    <div id="tab-tokens" style="display: none; padding: 12px; overflow-y: auto;">
+    <div style="padding: 12px; overflow-y: auto;">
       <!-- Balance Card -->
       <div style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; margin-bottom: 12px;">
         <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 6px;">Balance</div>

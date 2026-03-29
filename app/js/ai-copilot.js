@@ -668,23 +668,29 @@ function parseNaturalLanguage(text) {
   const numbers = extractNumbers(text);
   let preview = '';
 
-  // Detect primary shape
-  const shapeType = detectShapeType(text);
-  const shapeParams = parseShapeParams(text, shapeType, numbers);
+  // Detect operations first — if text is purely an operation (add holes, fillet, etc.), skip shape creation
+  const ops = parseOperations(text, numbers);
 
-  if (shapeParams) {
-    commands.push({
-      method: `shape.${shapeType}`,
-      params: shapeParams,
-    });
-    preview += `Create ${shapeType}`;
+  // Only create a shape if text is NOT purely an operation command
+  const isOperationOnly = ops.length > 0 && text.match(/^(add|make|put|drill|bore|cut|fillet|chamfer|round|mirror|pattern)\b/i);
+
+  if (!isOperationOnly) {
+    // Detect primary shape
+    const shapeType = detectShapeType(text);
+    const shapeParams = parseShapeParams(text, shapeType, numbers);
+
+    if (shapeParams) {
+      commands.push({
+        method: `shape.${shapeType}`,
+        params: shapeParams,
+      });
+      preview += `Create ${shapeType}`;
+    }
   }
 
-  // Detect operations
-  const ops = parseOperations(text, numbers);
   commands.push(...ops);
   if (ops.length > 0) {
-    preview += ops.map((op) => ` → ${op.method.split('.')[1]}`).join('');
+    preview += (preview ? ' ' : '') + ops.map((op) => `${op.method.split('.')[1]}`).join(' + ');
   }
 
   // Detect material

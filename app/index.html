@@ -1387,13 +1387,13 @@
   <!-- Token Engine — Initialize early so window.cycleCAD.tokens is available -->
   <script src="./js/token-engine.js"></script>
   <!-- New Architecture Modules (ES modules need type="module") -->
-  <script type="module" src="./js/material-library.js?v=75"></script>
+  <script type="module" src="./js/material-library.js?v=76"></script>
   <script src="./js/dfm-analyzer.js"></script>
-  <script type="module" src="./js/cam-pipeline.js?v=75"></script>
+  <script type="module" src="./js/cam-pipeline.js?v=76"></script>
   <script src="./js/connected-fabs.js"></script>
-  <script type="module" src="./js/ai-copilot.js?v=75"></script>
-  <script type="module" src="./js/collaboration.js?v=75"></script>
-  <script type="module" src="./js/collaboration-ui.js?v=75"></script>
+  <script type="module" src="./js/ai-copilot.js?v=76"></script>
+  <script type="module" src="./js/collaboration.js?v=76"></script>
+  <script type="module" src="./js/collaboration-ui.js?v=76"></script>
   <!-- CadXStudio-killer modules (IIFE, no imports) -->
   <script src="./js/text-to-cad.js"></script>
   <script src="./js/cam-operations.js"></script>
@@ -1419,7 +1419,7 @@
           <span class="splash-logo-cycle">cycle</span><span class="splash-logo-cad">CAD</span>
         </div>
         <p class="splash-subtitle">Parametric 3D CAD Modeler for the Mechanical Designer</p>
-        <p style="display:inline-block; color:#0066cc; font-size:1rem; margin:12px 0 0 0; letter-spacing:2px; font-family:monospace; font-weight:700; background:rgba(0,102,204,0.08); border:1.5px solid rgba(0,102,204,0.25); border-radius:8px; padding:5px 20px;">v0.9.4</p>
+        <p style="display:inline-block; color:#0066cc; font-size:1rem; margin:12px 0 0 0; letter-spacing:2px; font-family:monospace; font-weight:700; background:rgba(0,102,204,0.08); border:1.5px solid rgba(0,102,204,0.25); border-radius:8px; padding:5px 20px;">v0.9.5</p>
       </div>
       <div class="splash-options">
         <button class="splash-button splash-button-primary" id="btn-empty-project" style="grid-column: 1 / -1;">
@@ -1763,25 +1763,27 @@
   <script type="module">
     import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
     const _v = '50';
-    import { initViewport, setView, addToScene, removeFromScene, getScene, getCamera, getControls, toggleGrid as vpToggleGrid, toggleWireframe as vpToggleWireframe, fitToObject, fitAll } from './js/viewport.js?v=75';
-    import { startSketch, endSketch, setTool, getEntities, clearSketch } from './js/sketch.js?v=75';
-    import { extrudeProfile, createPrimitive, rebuildFeature, createMaterial } from './js/operations.js?v=75';
-    import { initChat, parseCADPrompt, addMessage } from './js/ai-chat.js?v=75';
-    import { initTree, addFeature, selectFeature, onSelect, removeFeature } from './js/tree.js?v=75';
-    import { initParams, showParams, onParamChange } from './js/params.js?v=75';
-    import { exportSTL, exportOBJ, exportJSON } from './js/export.js?v=75';
-    import { initShortcuts } from './js/shortcuts.js?v=75';
-    import { createReverseEngineerPanel, importFile, analyzeGeometry, reconstructFeatureTree, createWalkthrough } from './js/reverse-engineer.js?v=75';
-    import { createInventorPanel, parseInventorFile } from './js/inventor-parser.js?v=75';
-    import { loadProject, showFolderPicker, parseIPJ } from './js/project-loader.js?v=75';
-    import { initProjectBrowser, showBrowser, hideBrowser, setProject, onFileSelect } from './js/project-browser.js?v=75';
-    import { generateGuide, renderGuide, exportGuideHTML } from './js/rebuild-guide.js?v=75';
-    import { solveConstraints, addConstraint, removeConstraint, autoDetectConstraints, isFullyConstrained, getAllConstraints, clearAllConstraints } from './js/constraint-solver.js?v=75';
-    import { createSweep, createLoft, createBend, createFlange, createTab, createSlot, unfoldSheetMetal, createSpring, createThread } from './js/advanced-ops.js?v=75';
-    import Assembly from './js/assembly.js?v=75';
-    import { exportSketchToDXF, exportProjectionToDXF, exportMultiViewDXF, export3DDXF, downloadDXF } from './js/dxf-export.js?v=75';
-    import { initAgentAPI } from './js/agent-api.js?v=75';
-    import { initTokenDashboard } from './js/token-dashboard.js?v=75';
+    import { initViewport, setView, addToScene, removeFromScene, getScene, getCamera, getControls, toggleGrid as vpToggleGrid, toggleWireframe as vpToggleWireframe, fitToObject } from './js/viewport.js?v=76';
+    // fitAll defined locally to avoid import failures from cached viewport.js
+    function fitAll(padding = 1.2) { const s = getScene(); if (s) fitToObject(s, padding); }
+    import { startSketch, endSketch, setTool, getEntities, clearSketch } from './js/sketch.js?v=76';
+    import { extrudeProfile, createPrimitive, rebuildFeature, createMaterial } from './js/operations.js?v=76';
+    import { initChat, parseCADPrompt, addMessage } from './js/ai-chat.js?v=76';
+    import { initTree, addFeature, selectFeature, onSelect, removeFeature } from './js/tree.js?v=76';
+    import { initParams, showParams, onParamChange } from './js/params.js?v=76';
+    import { exportSTL, exportOBJ, exportJSON } from './js/export.js?v=76';
+    import { initShortcuts } from './js/shortcuts.js?v=76';
+    import { createReverseEngineerPanel, importFile, analyzeGeometry, reconstructFeatureTree, createWalkthrough } from './js/reverse-engineer.js?v=76';
+    import { createInventorPanel, parseInventorFile } from './js/inventor-parser.js?v=76';
+    import { loadProject, showFolderPicker, parseIPJ } from './js/project-loader.js?v=76';
+    import { initProjectBrowser, showBrowser, hideBrowser, setProject, onFileSelect } from './js/project-browser.js?v=76';
+    import { generateGuide, renderGuide, exportGuideHTML } from './js/rebuild-guide.js?v=76';
+    import { solveConstraints, addConstraint, removeConstraint, autoDetectConstraints, isFullyConstrained, getAllConstraints, clearAllConstraints } from './js/constraint-solver.js?v=76';
+    import { createSweep, createLoft, createBend, createFlange, createTab, createSlot, unfoldSheetMetal, createSpring, createThread } from './js/advanced-ops.js?v=76';
+    import Assembly from './js/assembly.js?v=76';
+    import { exportSketchToDXF, exportProjectionToDXF, exportMultiViewDXF, export3DDXF, downloadDXF } from './js/dxf-export.js?v=76';
+    import { initAgentAPI } from './js/agent-api.js?v=76';
+    import { initTokenDashboard } from './js/token-dashboard.js?v=76';
 
     // ========== Application State ==========
     const APP = {
@@ -1995,7 +1997,7 @@
 
         // Initialize Agent API — the primary interface
         await tryStepAsync('agentAPI', async () => {
-        const agentImports = await import('./js/agent-api.js?v=75');
+        const agentImports = await import('./js/agent-api.js?v=76');
         const agentSession = initAgentAPI({
           viewport: {
             getCamera,
@@ -4936,6 +4938,6 @@
     </div>
   </div>
 
-  <span id="version-badge" style="position:fixed;bottom:42px;left:50%;transform:translateX(-50%);z-index:999;font-size:0.9rem;color:rgba(255,255,255,0.9);letter-spacing:0.1em;white-space:nowrap;padding:6px 16px;user-select:all;pointer-events:auto;font-family:monospace;font-weight:700;background:rgba(0,0,0,0.7);border:1px solid rgba(88,166,255,0.4);border-radius:6px;text-shadow:0 1px 3px rgba(0,0,0,0.5);" title="cycleCAD version">cycleCAD v0.9.4</span>
+  <span id="version-badge" style="position:fixed;bottom:42px;left:50%;transform:translateX(-50%);z-index:999;font-size:0.9rem;color:rgba(255,255,255,0.9);letter-spacing:0.1em;white-space:nowrap;padding:6px 16px;user-select:all;pointer-events:auto;font-family:monospace;font-weight:700;background:rgba(0,0,0,0.7);border:1px solid rgba(88,166,255,0.4);border-radius:6px;text-shadow:0 1px 3px rgba(0,0,0,0.5);" title="cycleCAD version">cycleCAD v0.9.5</span>
 </body>
 </html>

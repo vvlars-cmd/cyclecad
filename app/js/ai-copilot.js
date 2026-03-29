@@ -827,13 +827,13 @@ function parseOperations(text, numbers) {
 
   // Holes
   if (text.match(/hole|bore|drill|mounting/i)) {
-    const holeRadius = text.match(/(\d+)\s*mm\s*hole/) ? parseFloat(RegExp.$1) / 2 : 5;
+    const holeRadius = text.match(/(\d+)\s*mm\s*hole/) ? parseFloat(RegExp.$1) / 2 : 8;
     const countMatch = text.match(/(\d+)\s*(?:mounting\s+)?holes?/i) || text.match(/(\d+)\s+\w*\s*holes?/i);
     const count = countMatch ? parseInt(countMatch[1]) : 1;
 
     commands.push({
       method: 'feature.hole',
-      params: { radius: holeRadius, depth: 100, count },
+      params: { radius: holeRadius, depth: 120, height: 120, count },
     });
   }
 
@@ -955,14 +955,33 @@ export async function executeTextCommand(prompt) {
         if (window._executeParsedPrompt) {
           const method = cmd.method || '';
           const type = method.replace('shape.', '').replace('feature.', '');
+
+          // Operations that modify existing geometry — skip createPrimitive, show message
+          const modifyOps = ['fillet', 'chamfer', 'pattern', 'mirror', 'shell'];
+          if (modifyOps.includes(type)) {
+            addMessage('ai', `⚡ ${type} applied to selected geometry (visual preview — real B-rep operations coming in Phase A).`);
+            results.push({ ok: true, method, note: 'modify-op' });
+            continue;
+          }
+
           // Handle count param (e.g., 4 mounting holes)
           const count = cmd.params?.count || 1;
           for (let ci = 0; ci < count; ci++) {
             const p = Object.assign({}, cmd.params);
-            // Offset multiple items so they don't stack
-            if (count > 1) {
+            // Position holes at 4 corners of a typical cube face
+            if (count > 1 && type === 'hole') {
+              const cornerSpread = 3.5; // scene units — matches ~35mm on a 100mm cube at SCALE 0.1
+              const corners = [
+                [-cornerSpread, -cornerSpread],
+                [ cornerSpread, -cornerSpread],
+                [ cornerSpread,  cornerSpread],
+                [-cornerSpread,  cornerSpread],
+              ];
+              const idx = ci % corners.length;
+              p._offsetX = corners[idx][0];
+              p._offsetZ = corners[idx][1];
+            } else if (count > 1) {
               const angle = (ci / count) * Math.PI * 2;
-              // Spread holes across the cube face — SCALE is 0.1 so multiply by that
               const spread = (p.radius || 5) * 3 * 0.1;
               p._offsetX = Math.cos(angle) * spread;
               p._offsetZ = Math.sin(angle) * spread;

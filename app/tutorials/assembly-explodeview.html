@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assembly + ExplodeView Tutorial</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #2d2d2d;
+            --bg-tertiary: #3a3a3a;
+            --accent: #58a6ff;
+            --success: #3fb950;
+            --warning: #d29922;
+            --danger: #f85149;
+            --border: #404040;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --transition: 0.2s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Navbar */
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: linear-gradient(180deg, var(--bg-secondary) 0%, rgba(45, 45, 45, 0.9) 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(8px);
+        }
+
+        .navbar-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .navbar-back {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: background-color var(--transition);
+            cursor: pointer;
+        }
+
+        .navbar-back:hover {
+            background-color: var(--bg-tertiary);
+        }
+
+        .navbar-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .progress-container {
+            flex: 1;
+            margin: 0 32px;
+            max-width: 300px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 4px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--success));
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .progress-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .navbar-right {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 16px;
+            transition: all var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-icon:hover {
+            background: var(--bg-secondary);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 24px;
+        }
+
+        /* Tab Navigation */
+        .tab-nav {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 32px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 8px 16px;
+            border: none;
+            background: none;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition);
+            border-bottom: 2px solid transparent;
+            position: relative;
+            bottom: -16px;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .tab-btn.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Step Card */
+        .step-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 24px;
+            overflow: hidden;
+            transition: all var(--transition);
+        }
+
+        .step-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 8px 16px rgba(88, 166, 255, 0.1);
+        }
+
+        .step-header {
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            background: linear-gradient(90deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+            transition: background-color var(--transition);
+        }
+
+        .step-header:hover {
+            background: linear-gradient(90deg, var(--border) 0%, var(--bg-tertiary) 100%);
+        }
+
+        .step-header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex: 1;
+        }
+
+        .step-badge {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), #0d47a1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(88, 166, 255, 0.2);
+        }
+
+        .step-badge.done {
+            background: linear-gradient(135deg, var(--success), #1b5e20);
+        }
+
+        .step-title {
+            font-weight: 600;
+            font-size: 16px;
+            color: var(--text-primary);
+        }
+
+        .step-description {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .step-checkbox {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            accent-color: var(--success);
+        }
+
+        .step-body {
+            display: none;
+            padding: 20px;
+            border-top: 1px solid var(--border);
+            background: var(--bg-primary);
+        }
+
+        .step-body.expanded {
+            display: block;
+        }
+
+        .step-body-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 1024px) {
+            .step-body-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Card Styles */
+        .card-section {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .card-title {
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .card-content {
+            font-size: 13px;
+            line-height: 1.7;
+            color: var(--text-primary);
+        }
+
+        .method-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            border-left: 2px solid var(--accent);
+        }
+
+        .method-label {
+            font-weight: 600;
+            color: var(--accent);
+            min-width: 80px;
+            font-size: 12px;
+        }
+
+        .method-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+            flex: 1;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* SVG Diagram */
+        .diagram-container {
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .diagram-bg {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 16px;
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+        }
+
+        /* Pro Tip */
+        .pro-tip {
+            background: linear-gradient(90deg, rgba(63, 185, 80, 0.1), rgba(88, 166, 255, 0.05));
+            border-left: 3px solid var(--success);
+            padding: 12px 16px;
+            border-radius: 4px;
+            margin-top: 16px;
+        }
+
+        .pro-tip-title {
+            font-weight: 600;
+            color: var(--success);
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .pro-tip-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 24px;
+            cursor: pointer;
+            transition: color var(--transition);
+        }
+
+        .modal-close:hover {
+            color: var(--text-primary);
+        }
+
+        .shortcut-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .shortcut-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+        }
+
+        .shortcut-key {
+            background: var(--bg-secondary);
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent);
+            border: 1px solid var(--border);
+        }
+
+        /* Footer */
+        .tutorial-footer {
+            margin-top: 60px;
+            padding-top: 40px;
+            border-top: 1px solid var(--border);
+        }
+
+        .footer-section {
+            margin-bottom: 40px;
+        }
+
+        .footer-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--accent);
+        }
+
+        .footer-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .footer-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all var(--transition);
+        }
+
+        .footer-link:hover {
+            background: var(--bg-secondary);
+            border-color: var(--accent);
+        }
+
+        /* Floating Quick Reference */
+        .floating-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), #0d47a1);
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(88, 166, 255, 0.4);
+            transition: all var(--transition);
+            z-index: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .floating-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 20px rgba(88, 166, 255, 0.6);
+        }
+
+        /* Step Counter */
+        .step-counter {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px 16px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                gap: 12px;
+                padding: 12px 16px;
+            }
+
+            .navbar-left {
+                width: 100%;
+                justify-content: flex-start;
+            }
+
+            .progress-container {
+                width: 100%;
+                margin: 0;
+                max-width: none;
+            }
+
+            .navbar-title {
+                font-size: 16px;
+            }
+
+            .container {
+                padding: 0 16px;
+            }
+
+            .step-body-grid {
+                gap: 16px;
+            }
+
+            .floating-btn {
+                width: 48px;
+                height: 48px;
+                font-size: 20px;
+                bottom: 16px;
+                right: 16px;
+            }
+
+            .step-counter {
+                bottom: 16px;
+                left: 16px;
+                font-size: 11px;
+                padding: 8px 12px;
+            }
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+        }
+
+        .feature-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 16px;
+            transition: all var(--transition);
+        }
+
+        .feature-card:hover {
+            border-color: var(--accent);
+            background: var(--bg-secondary);
+        }
+
+        .feature-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .feature-name {
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .feature-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-left">
+            <a href="../" class="navbar-back">← Back</a>
+            <h1 class="navbar-title">Assembly + ExplodeView Tutorial</h1>
+        </div>
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text"><span id="progressText">0%</span> Complete</div>
+        </div>
+        <div class="navbar-right">
+            <button class="btn-icon" id="quickRefBtn" title="Keyboard Shortcuts">⌨️</button>
+            <a href="../" class="btn-icon" title="Home">🏠</a>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Tab Navigation -->
+        <div class="tab-nav">
+            <button class="tab-btn active" data-tab="part1">Part 1: Build Assembly</button>
+            <button class="tab-btn" data-tab="part2">Part 2: ExplodeView</button>
+        </div>
+
+        <!-- PART 1: Building Assembly -->
+        <div id="part1" class="tab-content active">
+            <div id="part1Steps"></div>
+        </div>
+
+        <!-- PART 2: ExplodeView Features -->
+        <div id="part2" class="tab-content">
+            <div class="tab-nav" style="margin-bottom: 24px;">
+                <button class="tab-btn active" data-subtab="view">View (9-16)</button>
+                <button class="tab-btn" data-subtab="analyze">Analyze (17-25)</button>
+                <button class="tab-btn" data-subtab="create">Create (26-30)</button>
+                <button class="tab-btn" data-subtab="export">Export (31-36)</button>
+                <button class="tab-btn" data-subtab="ai">AI Tools (37-42)</button>
+                <button class="tab-btn" data-subtab="settings">Settings (43-47)</button>
+            </div>
+            <div id="part2Steps"></div>
+        </div>
+
+        <!-- Footer -->
+        <div class="tutorial-footer">
+            <div class="footer-section">
+                <div class="footer-title">📚 What's Next?</div>
+                <div class="footer-content">
+                    <a href="./" class="footer-link">← Other Tutorials</a>
+                    <a href="../" class="footer-link">Home</a>
+                </div>
+            </div>
+            <div class="footer-section">
+                <div class="footer-title">❓ Need Help?</div>
+                <div class="footer-content">
+                    <a href="../#chat" class="footer-link">💬 Chat</a>
+                    <a href="../#help" class="footer-link">ℹ️ Help Panel</a>
+                    <a href="https://github.com/vvlars-cmd/cyclecad/issues" class="footer-link" target="_blank">🐛 Report Issue</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Keyboard Shortcuts Modal -->
+    <div class="modal" id="quickRefModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">⌨️ Keyboard Shortcuts</h2>
+                <button class="modal-close" id="modalClose">&times;</button>
+            </div>
+            <div class="shortcut-list" id="shortcutList"></div>
+        </div>
+    </div>
+
+    <!-- Step Counter -->
+    <div class="step-counter">
+        <span id="stepCounter">Step 1 of 47</span>
+    </div>
+
+    <!-- Floating Quick Reference -->
+    <button class="floating-btn" id="floatingRef" title="Quick Reference">⌨️</button>
+
+    <script>
+        // Data for Part 1: Assembly Creation
+        const part1Steps = [
+            {
+                num: 1,
+                title: 'Create the Caliper Body',
+                desc: 'Draw and fillet the main brake caliper housing',
+                methods: [
+                    { type: 'Chat', text: '"Create a box 80mm wide, 40mm tall, 25mm deep, then fillet all edges by 3mm"' },
+                    { type: 'Toolbar', text: 'Create → Box, set dims 80×40×25, select all edges, Fillet → 3mm' }
+                ],
+                shouldSee: 'A rounded rectangular box representing the brake caliper body',
+                proTip: 'Use Ctrl+A to select all edges after creating the box for faster filleting',
+                diagram: `<svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="60" y="40" width="180" height="120" rx="8" fill="none" stroke="#58a6ff" stroke-width="2"/>
+                    <text x="150" y="105" text-anchor="middle" fill="#8b949e" font-size="12">80×40×25 Caliper Body</text>
+                    <g opacity="0.5">
+                        <circle cx="68" cy="48" r="3" fill="#3fb950"/>
+                        <circle cx="232" cy="48" r="3" fill="#3fb950"/>
+                        <circle cx="68" cy="152" r="3" fill="#3fb950"/>
+                        <circle cx="232" cy="152" r="3" fill="#3fb950"/>
+                    </g>
+                </svg>`
+            },
+            {
+                num: 2,
+                title: 'Add Mounting Holes',
+                desc: 'Create two holes for bracket mounting, 60mm apart',
+                methods: [
+                    { type: 'Chat', text: '"Add two holes, 8mm diameter, centered 60mm apart"' },
+                    { type: 'Toolbar', text: 'Sketch → Circle (8mm radius 4mm), place 2, Extrude → Hole' }
+                ],
+                shouldSee: 'Two circular holes drilled through the caliper body',
+                proTip: 'Use Ctrl+C to center circles on the sketch before extruding as holes',
+                diagram: `<svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="60" y="40" width="180" height="120" rx="8" fill="none" stroke="#58a6ff" stroke-width="2"/>
+                    <circle cx="105" cy="100" r="12" fill="none" stroke="#f85149" stroke-width="2"/>
+                    <circle cx="195" cy="100" r="12" fill="none" stroke="#f85149" stroke-width="2"/>
+                    <line x1="105" y1="115" x2="195" y2="115" stroke="#d29922" stroke-width="1" stroke-dasharray="2,2"/>
+                    <text x="150" y="135" text-anchor="middle" fill="#8b949e" font-size="11">60mm spacing</text>
+                </svg>`
+            },
+            {
+                num: 3,
+                title: 'Create the Brake Pad',
+                desc: 'Build a rectangular pad that fits inside the caliper',
+                methods: [
+                    { type: 'Chat', text: '"Create a box 60mm wide, 30mm tall, 5mm thick for the brake pad"' },
+                    { type: 'Toolbar', text: 'Create → Box, set dims 60×30×5, color red' }
+                ],
+                shouldSee: 'A thin red rectangular pad positioned above the caliper body',
+                proTip: 'Set different colors for each component to help distinguish them in 3D view',
+                diagram: `<svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="60" y="40" width="180" height="120" rx="8" fill="none" stroke="#58a6ff" stroke-width="2" opacity="0.3"/>
+                    <rect x="75" y="20" width="150" height="15" rx="2" fill="none" stroke="#f85149" stroke-width="2"/>
+                    <text x="150" y="50" text-anchor="middle" fill="#8b949e" font-size="11">Brake Pad 60×30×5</text>
+                </svg>`
+            },
+            {
+                num: 4,
+                title: 'Create the Pivot Pin',
+                desc: 'Build the cylinder that acts as the assembly pivot point',
+                methods: [
+                    { type: 'Chat', text: '"Create a cylinder with 4mm radius and 40mm height"' },
+                    { type: 'Toolbar', text: 'Create → Cylinder, radius 4mm, height 40mm, position center' }
+                ],
+                shouldSee: 'A vertical cylinder passing through the caliper mounting holes',
+                proTip: 'Press G to show the grid for precise positioning of the pivot pin',
+                diagram: `<svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+                    <ellipse cx="150" cy="40" rx="8" ry="5" fill="none" stroke="#3fb950" stroke-width="2"/>
+                    <rect x="142" y="40" width="16" height="120" fill="none" stroke="#3fb950" stroke-width="2"/>
+                    <ellipse cx="150" cy="160" rx="8" ry="5" fill="none" stroke="#3fb950" stroke-width="2"/>
+                    <text x="150" y="105" text-anchor="middle" fill="#8b949e" font-size="11" dx="20">Pivot Pin</text>
+                </svg>`
+            },
+            {
+                num: 5,
+                title: 'Create the Spring',
+                desc: 'Generate a helical spring for brake pad return force',
+                methods: [
+                    { type: 'Chat', text: '"Generate a spring with 6 coils, 3mm radius, around the pivot pin"' },
+                    { type: 'Toolbar', text: 'Create → Spring Generator, coils 6, radius 3mm, pitch 5mm' }
+                ],
+                shouldSee: 'A helical spring wound around the pivot pin',
+                proTip: 'Adjust pitch value to control coil spacing; lower pitch = tighter coils',
+                diagram: `<svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M 150 30 Q 160 35 160 45 Q 160 55 150 60 Q 140 65 140 75 Q 140 85 150 90" fill="none" stroke="#58a6ff" stroke-width="2"/>
+                    <path d="M 150 90 Q 160 95 160 105 Q 160 115 150 120" fill="none" stroke="#58a6ff" stroke-width="2"/>
+                    <text x="180" y="75" fill="#8b949e" font-size="11">6 coils</text>
+                </svg>`
+            },
+            {
+                num: 6,
+                title: 'Create the Adjustment Bolt',
+                desc: 'Add a hex-head bolt for fine brake adjustment',
+                methods: [
+                    { type: 'Chat', text: '"Create a cylinder 3mm radius, 20mm tall, add a hex head"' },
+                    { type: 'Toolbar', text: 'Create → Cylinder 3mm, height 20mm; Create → Hex Head, add to top' }
+                ],
+                shouldSee: 'A bolt with cylindrical shaft and hexagonal head on top',
+                proTip: 'Use the AI Part Identifier to match bolt specs to McMaster-Carr standards',
+                diagram: `<svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+                    <polygon points="150,30 165,38 165,54 150,62 135,54 135,38" fill="none" stroke="#d29922" stroke-width="2"/>
+                    <rect x="142" y="62" width="16" height="80" fill="none" stroke="#d29922" stroke-width="2"/>
+                    <text x="180" y="105" fill="#8b949e" font-size="11">Adjustment Bolt</text>
+                </svg>`
+            },
+            {
+                num: 7,
+                title: 'Assemble Components',
+                desc: 'Position all parts into the final brake caliper assembly',
+                methods: [
+                    { type: 'Chat', text: '"Move the brake pad inside the caliper, align pivot pin through holes"' },
+                    { type: 'Toolbar', text: 'Assembly → Move, position pad, pin, spring, bolt; set constraints' }
+                ],
+                shouldSee: 'All 6 components arranged as a complete brake caliper assembly',
+                proTip: 'Use assembly constraints (mate, align) to lock parts in place relative to each other',
+                diagram: `<svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="60" y="70" width="180" height="60" rx="4" fill="none" stroke="#58a6ff" stroke-width="2"/>
+                    <rect x="75" y="45" width="150" height="20" fill="none" stroke="#f85149" stroke-width="2"/>
+                    <rect x="142" y="20" width="16" height="130" fill="none" stroke="#3fb950" stroke-width="2"/>
+                    <polygon points="150,15 160,20 160,28 150,32 140,28 140,20" fill="none" stroke="#d29922" stroke-width="1.5"/>
+                    <text x="150" y="150" text-anchor="middle" fill="#8b949e" font-size="12">Complete Assembly</text>
+                </svg>`
+            },
+            {
+                num: 8,
+                title: 'Save & Export',
+                desc: 'Save your assembly and export it as STL for 3D printing or analysis',
+                methods: [
+                    { type: 'Chat', text: '"Save this assembly as brake-caliper, then export STL"' },
+                    { type: 'Toolbar', text: 'File → Save (Ctrl+S), Export → STL, choose resolution' }
+                ],
+                shouldSee: 'File saved in cycleCAD JSON format and STL export dialog opens',
+                proTip: 'Use Shift+S for quick screenshot; export high-res STL for 3D printing',
+                diagram: `<svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+                    <g opacity="0.3">
+                        <rect x="60" y="70" width="180" height="60" rx="4" fill="none" stroke="#58a6ff" stroke-width="2"/>
+                    </g>
+                    <rect x="80" y="100" width="140" height="50" rx="4" fill="none" stroke="#3fb950" stroke-width="2"/>
+                    <text x="150" y="115" text-anchor="middle" fill="#8b949e" font-size="11">brake-caliper.json</text>
+                    <text x="150" y="135" text-anchor="middle" fill="#8b949e" font-size="11">+ caliper.stl</text>
+                </svg>`
+            }
+        ];
+
+        // Data for Part 2: ExplodeView Features
+        const part2Steps = {
+            view: [
+                { num: 9, name: 'Toggle Viewer Mode', icon: '👁️', desc: 'Switch to Viewer Mode to explore the assembly', activation: 'Button: View Tab → Viewer, or press V', expected: 'ExplodeView toolbar appears, 3D view shows exploded brake caliper assembly' },
+                { num: 10, name: 'Explode/Collapse Assembly', icon: '💥', desc: 'Slide the explosion slider to separate or combine components', activation: 'Slider in View Tab, or mouse wheel with Alt key', expected: 'All 6 parts spread apart with distance proportional to slider position' },
+                { num: 11, name: 'Section Cut (X/Y/Z)', icon: '✂️', desc: 'Slice through the assembly to view internal details', activation: 'View Tab → Section Cut, choose axis (X/Y/Z)', expected: 'Cross-section plane visible, interior geometry shown in translucent view' },
+                { num: 12, name: 'Wireframe Toggle', icon: '⬚', desc: 'Show edges and vertices without solid surfaces', activation: 'Button: W key or View Tab → Wireframe', expected: 'All parts displayed as wireframe edges and lines' },
+                { num: 13, name: 'Grid Floor', icon: '📏', desc: 'Display ground reference grid and shadow plane', activation: 'Button: G key or View Tab → Grid', expected: 'Checkerboard floor grid appears beneath assembly with shadow plane' },
+                { num: 14, name: 'Blueprint Theme', icon: '📘', desc: 'Switch to classic technical drawing blue theme', activation: 'View Tab → Blueprint Theme toggle', expected: 'White wireframe on dark blue background, CAD-style appearance' },
+                { num: 15, name: 'Dark/Light Theme', icon: '🌓', desc: 'Toggle between dark and light UI themes', activation: 'View Tab → Theme toggle', expected: 'UI switches color scheme; 3D view brightness inverts' },
+                { num: 16, name: 'Multi-View Layout', icon: '📐', desc: 'Split viewport into 2 or 4 synchronized views', activation: 'View Tab → Multi-View (2-up or 4-up)', expected: 'Screen splits, each pane shows same assembly from different angle' }
+            ],
+            analyze: [
+                { num: 17, name: 'Part Selection & Info Card', icon: '🔍', desc: 'Click any part to see properties and metadata', activation: 'Click 3D part or select in tree panel', expected: 'Info card appears with part name, material, volume, weight, dimensions' },
+                { num: 18, name: 'Measurement Tool', icon: '📐', desc: 'Measure distances and angles between points', activation: 'Button: M key or Analyze Tab → Measurement', expected: 'Click 2 points for distance, 3rd point shows angle; measurements display in UI' },
+                { num: 19, name: 'Weight Estimator', icon: '⚖️', desc: 'Calculate total and per-part weight using material density', activation: 'Analyze Tab → Weight Estimator, select material', expected: 'Dashboard shows weight breakdown: steel caliper 2.1kg, spring 45g, pivot pin 15g, etc.' },
+                { num: 20, name: 'Part Comparison', icon: '⚔️', desc: 'Compare dimensions, volume, and mass of 2 selected parts', activation: 'Select 2 parts, Analyze Tab → Compare', expected: 'Comparison table shows caliper vs brake pad side-by-side (vol, mass, dims)' },
+                { num: 21, name: 'Clearance Checker', icon: '📏', desc: 'Detect collisions and minimum distances between components', activation: 'Analyze Tab → Clearance, set threshold (e.g., 5mm)', expected: 'Color coding: green (safe), yellow (warning), red (collision) on parts' },
+                { num: 22, name: 'Assembly Validator', icon: '✅', desc: 'Score assembly quality A-F based on geometry and constraints', activation: 'Analyze Tab → Assembly Validator', expected: 'Report card: A (excellent), shows issues if hidden parts, duplicate geometry, etc.' },
+                { num: 23, name: 'DIN/ISO Standards Identifier', icon: '🔧', desc: 'Identify fasteners and match to DIN/ISO standards with McMaster links', activation: 'Select fastener, Analyze Tab → Standards ID', expected: 'Popup shows: Hex Bolt ISO 4762 M4, link to McMaster-Carr listing' },
+                { num: 24, name: 'Thermal Heatmap', icon: '🔥', desc: 'Color parts by simulated temperature/stress zones', activation: 'Analyze Tab → Thermal Heatmap', expected: 'Pivot pin shows orange (high stress), brake pad red, springs yellow' },
+                { num: 25, name: 'Vibration Analysis', icon: '📳', desc: 'Animate vibration on rotating/reciprocating parts', activation: 'Analyze Tab → Vibration, select part', expected: 'Pivot pin oscillates; spring bounces; caliper body remains stationary' }
+            ],
+            create: [
+                { num: 26, name: 'Annotation Pins', icon: '📍', desc: 'Place labeled callouts and notes on specific parts', activation: 'Button: A key or Create Tab → Annotation Pin, click location', expected: 'Red pin appears, text label editable, persists on model' },
+                { num: 27, name: 'QR Code Per Part', icon: '📱', desc: 'Generate QR code for each part linking to details', activation: 'Right-click part → Generate QR Code', expected: 'QR code displays on selected part (pinned to 3D space), scannable in mobile' },
+                { num: 28, name: 'Assembly Animation', icon: '▶️', desc: 'Auto-generate and customize step-by-step disassembly sequence', activation: 'Create Tab → Assembly Animation, press Play', expected: 'Parts sequentially move apart with smooth tweening; Play/Prev/Next buttons active' },
+                { num: 29, name: 'AI Assembly Instructions', icon: '🤖', desc: 'Auto-generate HTML step-by-step disassembly manual', activation: 'Create Tab → AI Instructions, export HTML', expected: 'Document shows "Step 1: Remove brake pad, Step 2: Unscrew bolt..." with 3D step images' },
+                { num: 30, name: 'Cable/Pipe Router', icon: '🔌', desc: 'Draw routing paths for cables, hoses, wires through assembly', activation: 'Create Tab → Router, click points to define path', expected: 'Tube geometry follows clicked points as spline, editable and re-routeable' }
+            ],
+            export: [
+                { num: 31, name: 'STL Export Per Part', icon: '💾', desc: 'Export individual parts as STL for 3D printing', activation: 'Select part, Export Tab → Export STL', expected: 'STL file downloaded: caliper.stl, brake-pad.stl, pivot-pin.stl, etc.' },
+                { num: 32, name: 'BOM Export to CSV', icon: '📊', desc: 'Export bill of materials with quantities and specs', activation: 'Export Tab → BOM CSV, auto-includes fastener specs', expected: 'CSV file downloaded: part name, qty, material, weight, cost estimate' },
+                { num: 33, name: 'Screenshot (High-Res)', icon: '📸', desc: 'Capture 2x or 4x retina resolution screenshots', activation: 'Button: S key or Export Tab → Screenshot, select resolution', expected: '1280×720 or higher PNG file downloaded with all UI elements' },
+                { num: 34, name: 'Hero Shots', icon: '🎞️', desc: 'Generate polished marketing-quality renders', activation: 'Export Tab → Hero Shots, select angle + lighting preset', expected: '4 angles (top, iso, front, detail) rendered at 4K with professional lighting' },
+                { num: 35, name: 'Technical Report', icon: '📋', desc: 'Create comprehensive HTML report with BOM, 3D images, specs', activation: 'Export Tab → Technical Report', expected: 'HTML file with cover, assembly drawings, BOM table, dimensions, maintenance schedule' },
+                { num: 36, name: 'Share & Embed', icon: '🔗', desc: 'Generate shareable links and embed code for websites', activation: 'Export Tab → Share, copy link or HTML embed', expected: 'URL and <iframe> code provided; model viewable by anyone without login' }
+            ],
+            ai: [
+                { num: 37, name: 'AI Part Identifier', icon: '🧠', desc: 'Identify parts using geometry analysis, match McMaster-Carr', activation: 'AI Tools → Identify Parts, uses Gemini Vision API', expected: 'Popup shows: Hex Bolt M4, Spring (6mm OD), Cylinder (Steel), with prices' },
+                { num: 38, name: 'AI Vision Scanner', icon: '📷', desc: 'Analyze parts using computer vision, detect materials', activation: 'AI Tools → Vision Scan, select part(s)', expected: 'AI returns: "Appears to be steel fastener, M4 ISO standard, ~$0.40 at McMaster"' },
+                { num: 39, name: 'Batch AI Scan', icon: '🔄', desc: 'Auto-scan all 47 parts simultaneously with progress bar', activation: 'AI Tools → Batch Scan All, wait for analysis', expected: 'Progress bar shows 47/47 complete, results CSV with all parts identified and priced' },
+                { num: 40, name: 'Smart BOM with Pricing', icon: '💰', desc: 'Generate BOM with AI-identified parts and estimated cost', activation: 'AI Tools → Smart BOM, export CSV or order from McMaster', expected: 'BOM shows caliper $8.50, brake pad $2.20, pivot pin $0.60, spring $0.90, bolt $0.40' },
+                { num: 41, name: 'Smart NL Search', icon: '🔎', desc: 'Search parts using natural language: "Find all steel parts under 100g"', activation: 'AI Tools → NL Search, type query', expected: 'Results show spring, pivot pin, bolt matching criteria; highlight in 3D' },
+                { num: 42, name: 'AI Chatbot', icon: '💬', desc: 'Ask questions about the model: "Why is the spring diameter 3mm?", get AI responses', activation: 'AI Tools → Chat, type question or speak', expected: 'Bot responds: "Spring diameter sized for 5N return force given coil count and material"' }
+            ],
+            settings: [
+                { num: 43, name: 'Performance Monitor', icon: '📊', desc: 'View FPS, memory usage, part count in real-time', activation: 'Button: Ctrl+Shift+F or Settings → Performance', expected: 'Overlay shows: 60 FPS, 128MB mem, 47 parts, 1.2M triangles' },
+                { num: 44, name: 'Keyboard Shortcuts', icon: '⌨️', desc: 'View all available keyboard shortcuts', activation: 'Button: ? or Settings → Help', expected: 'Modal opens listing 30+ shortcuts (W=wireframe, G=grid, M=measure, etc.)' },
+                { num: 45, name: 'Language Selector', icon: '🌐', desc: 'Switch UI language: EN/DE/FR/ES/IT/NL', activation: 'Settings → Language dropdown', expected: 'All UI labels update; assembly names translated' },
+                { num: 46, name: 'Part Favorites', icon: '⭐', desc: 'Star important parts for quick filtering', activation: 'Right-click part → Add to Favorites, or Settings → Favorites', expected: 'Starred parts highlighted in tree; filter shows only favorites' },
+                { num: 47, name: 'Quick Notes', icon: '📝', desc: 'Add color-coded notes to parts: Design notes, Manufacturing notes, etc.', activation: 'Right-click part → Add Note, choose category', expected: 'Note attached to part; visible in info card; exportable as CSV' }
+            ]
+        };
+
+        // Render Part 1 Steps
+        function renderPart1() {
+            const container = document.getElementById('part1Steps');
+            container.innerHTML = part1Steps.map((step, idx) => `
+                <div class="step-card" data-step="${step.num}">
+                    <div class="step-header">
+                        <div class="step-header-left">
+                            <div class="step-badge" id="badge-${step.num}">${step.num}</div>
+                            <div>
+                                <div class="step-title">${step.title}</div>
+                                <div class="step-description">${step.desc}</div>
+                            </div>
+                        </div>
+                        <input type="checkbox" class="step-checkbox" data-step="${step.num}">
+                    </div>
+                    <div class="step-body">
+                        <div class="step-body-grid">
+                            <div>
+                                <div class="card-section">
+                                    <div class="card-title">Method</div>
+                                    <div class="card-content">
+                                        ${step.methods.map(m => `
+                                            <div class="method-item">
+                                                <div class="method-label">${m.type}</div>
+                                                <div class="method-text">${m.text}</div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                                <div class="card-section">
+                                    <div class="card-title">What You Should See</div>
+                                    <div class="card-content">${step.shouldSee}</div>
+                                </div>
+                                <div class="pro-tip">
+                                    <div class="pro-tip-title">Pro Tip</div>
+                                    <div class="pro-tip-text">${step.proTip}</div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="card-section">
+                                    <div class="card-title">Diagram</div>
+                                    <div class="diagram-container">
+                                        <div class="diagram-bg">${step.diagram}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            attachStepEvents();
+        }
+
+        // Render Part 2 Steps
+        function renderPart2() {
+            const container = document.getElementById('part2Steps');
+            let html = '';
+
+            Object.keys(part2Steps).forEach(tab => {
+                html += `<div class="subtab-content" data-subtab="${tab}" style="display: ${tab === 'view' ? 'block' : 'none'};">`;
+                part2Steps[tab].forEach(step => {
+                    html += `
+                        <div class="step-card" data-step="${step.num}">
+                            <div class="step-header">
+                                <div class="step-header-left">
+                                    <div class="step-badge" id="badge-${step.num}">${step.num}</div>
+                                    <div>
+                                        <div class="step-title">${step.icon} ${step.name}</div>
+                                        <div class="step-description">${step.desc}</div>
+                                    </div>
+                                </div>
+                                <input type="checkbox" class="step-checkbox" data-step="${step.num}">
+                            </div>
+                            <div class="step-body">
+                                <div class="card-section">
+                                    <div class="card-title">How to Activate</div>
+                                    <div class="card-content">${step.activation}</div>
+                                </div>
+                                <div class="card-section">
+                                    <div class="card-title">What You'll See</div>
+                                    <div class="card-content">${step.expected}</div>
+                                </div>
+                                <div class="pro-tip">
+                                    <div class="pro-tip-title">💡 Tip</div>
+                                    <div class="pro-tip-text">Combine this feature with others: use section cut + measurement tool to verify internal clearances</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            });
+
+            container.innerHTML = html;
+            attachStepEvents();
+        }
+
+        // Attach event listeners to step cards
+        function attachStepEvents() {
+            // Step header click to expand/collapse
+            document.querySelectorAll('.step-header').forEach(header => {
+                header.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('step-checkbox')) return;
+                    const card = header.closest('.step-card');
+                    const body = card.querySelector('.step-body');
+                    body.classList.toggle('expanded');
+                });
+            });
+
+            // Checkbox click to mark as done
+            document.querySelectorAll('.step-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', (e) => {
+                    const stepNum = e.target.dataset.step;
+                    const badge = document.getElementById(`badge-${stepNum}`);
+                    if (checkbox.checked) {
+                        badge.classList.add('done');
+                    } else {
+                        badge.classList.remove('done');
+                    }
+                    updateProgress();
+                });
+            });
+        }
+
+        // Calculate and update progress
+        function updateProgress() {
+            const totalSteps = 47;
+            const checkedSteps = document.querySelectorAll('.step-checkbox:checked').length;
+            const percentage = Math.round((checkedSteps / totalSteps) * 100);
+            document.getElementById('progressFill').style.width = percentage + '%';
+            document.getElementById('progressText').textContent = percentage;
+            document.getElementById('stepCounter').textContent = `Step ${Math.min(checkedSteps + 1, totalSteps)} of ${totalSteps}`;
+        }
+
+        // Tab navigation
+        function setupTabNav() {
+            document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.tab-btn[data-tab]').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    e.target.classList.add('active');
+                    document.getElementById(e.target.dataset.tab).classList.add('active');
+                });
+            });
+
+            // Subtab navigation (Part 2)
+            document.querySelectorAll('.tab-btn[data-subtab]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.tab-btn[data-subtab]').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.subtab-content').forEach(c => c.style.display = 'none');
+                    e.target.classList.add('active');
+                    document.querySelectorAll(`[data-subtab="${e.target.dataset.subtab}"]`).forEach(c => c.style.display = 'block');
+                });
+            });
+        }
+
+        // Keyboard shortcuts modal
+        const shortcuts = [
+            { key: 'V', desc: 'Toggle Viewer Mode' },
+            { key: 'W', desc: 'Wireframe toggle' },
+            { key: 'G', desc: 'Show/hide grid' },
+            { key: 'M', desc: 'Measurement tool' },
+            { key: 'A', desc: 'Annotation pins' },
+            { key: 'S', desc: 'Screenshot' },
+            { key: '?', desc: 'Show keyboard shortcuts' },
+            { key: 'Ctrl+Z', desc: 'Undo' },
+            { key: 'Ctrl+Y', desc: 'Redo' },
+            { key: 'Ctrl+S', desc: 'Save' },
+            { key: 'Shift+S', desc: 'Quick screenshot' },
+            { key: 'Ctrl+Shift+F', desc: 'Performance monitor' }
+        ];
+
+        function setupModal() {
+            const modal = document.getElementById('quickRefModal');
+            const closeBtn = document.getElementById('modalClose');
+            const quickRefBtn = document.getElementById('quickRefBtn');
+            const floatingBtn = document.getElementById('floatingRef');
+
+            const shortcutList = document.getElementById('shortcutList');
+            shortcutList.innerHTML = shortcuts.map(s => `
+                <div class="shortcut-item">
+                    <span class="shortcut-key">${s.key}</span>
+                    <span>${s.desc}</span>
+                </div>
+            `).join('');
+
+            quickRefBtn.addEventListener('click', () => modal.classList.add('active'));
+            floatingBtn.addEventListener('click', () => modal.classList.add('active'));
+            closeBtn.addEventListener('click', () => modal.classList.remove('active'));
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.classList.remove('active');
+            });
+        }
+
+        // Initialize
+        function init() {
+            renderPart1();
+            renderPart2();
+            setupTabNav();
+            setupModal();
+            updateProgress();
+        }
+
+        init();
+    </script>
+</body>
+</html>

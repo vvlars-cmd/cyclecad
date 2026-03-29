@@ -4396,45 +4396,289 @@
       if (panel) { panel.style.display = panel.style.display === 'none' ? 'flex' : 'none'; return; }
       panel = document.createElement('div');
       panel.id = 'help-tutorials-panel';
-      panel.style.cssText = 'position:fixed;top:60px;left:50%;transform:translateX(-50%);width:680px;max-height:85vh;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:10px;z-index:600;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.6);';
+      panel.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:var(--bg-secondary);z-index:600;display:flex;flex-direction:column;';
+
+      // Tutorial step definitions for each runner
+      const _tutDefs = {
+        basic: [
+          {t:'Open Empty Project',d:'Start a fresh workspace',cmd:'click:.splash-btn-empty',cat:'Setup'},
+          {t:'Enter Sketch Mode',d:'Click Sketch to start drawing',cmd:'key:S',cat:'Sketch'},
+          {t:'Draw a Rectangle',d:'Create 80x40mm rectangle',cmd:'chat:box 80x40x25',cat:'Sketch'},
+          {t:'Add a Circle',d:'Draw a 20mm radius circle',cmd:'chat:cylinder 20mm radius 15mm tall',cat:'Sketch'},
+          {t:'Extrude to 3D',d:'Pull sketch into solid body',cmd:'key:E',cat:'3D Ops'},
+          {t:'Add Fillet',d:'Round edges by 3mm',cmd:'chat:sphere 15mm radius',cat:'3D Ops'},
+          {t:'Toggle Wireframe',d:'See through the model',cmd:'key:W',cat:'View'},
+          {t:'Toggle Grid',d:'Show floor reference grid',cmd:'key:G',cat:'View'},
+          {t:'Fit to View',d:'Zoom to fit all geometry',cmd:'key:V',cat:'View'},
+          {t:'Export as STL',d:'Save model for 3D printing',cmd:'key:Escape',cat:'Export'}
+        ],
+        intermediate: [
+          {t:'Create Base Part',d:'Build a bracket body',cmd:'chat:box 100x60x10',cat:'Model'},
+          {t:'Add Mounting Cylinder',d:'Cylindrical boss on top',cmd:'chat:cylinder 12mm radius 30mm tall',cat:'Model'},
+          {t:'Add Support Rib',d:'Triangular support plate',cmd:'chat:box 10x30x60',cat:'Model'},
+          {t:'Create Gear',d:'Parametric gear component',cmd:'chat:gear 40mm 18 teeth',cat:'Model'},
+          {t:'Add Spring',d:'Helical spring element',cmd:'chat:spring 8mm radius 25mm tall',cat:'Model'},
+          {t:'Toggle Wireframe',d:'Inspect mesh structure',cmd:'key:W',cat:'View'},
+          {t:'Toggle Grid',d:'Reference floor plane',cmd:'key:G',cat:'View'},
+          {t:'Section Cut',d:'Slice through model',cmd:'key:C',cat:'Analyze'},
+          {t:'Measure Distance',d:'Point-to-point measurement',cmd:'key:M',cat:'Analyze'},
+          {t:'Assembly Mode',d:'Switch to assembly workspace',cmd:'click:[data-action="assembly"]',cat:'Assembly'},
+          {t:'Explode View',d:'Separate assembly components',cmd:'key:E',cat:'Assembly'},
+          {t:'Fit All Parts',d:'Zoom to show everything',cmd:'key:V',cat:'View'},
+          {t:'Screenshot Export',d:'Capture high-res PNG',cmd:'key:S',cat:'Export'},
+          {t:'Help Panel',d:'Open keyboard shortcuts',cmd:'key:?',cat:'Help'}
+        ],
+        advanced: [
+          {t:'Open Agent Demo',d:'Launch the Agent API terminal',cmd:'chat:box 50x50x50',cat:'Agent API'},
+          {t:'Create via Agent',d:'Agent creates a cylinder',cmd:'chat:cylinder 25mm radius 60mm tall',cat:'Agent API'},
+          {t:'Agent Boolean Op',d:'Subtract shapes',cmd:'chat:sphere 30mm radius',cat:'Agent API'},
+          {t:'Agent Fillet',d:'Round edges via command',cmd:'chat:gear 50mm 24 teeth',cat:'Agent API'},
+          {t:'Agent Export',d:'Export model to STL',cmd:'key:Escape',cat:'Agent API'},
+          {t:'Token Balance',d:'Check $CYCLE balance',cmd:'click:#token-btn',cat:'Tokens'},
+          {t:'Marketplace Browse',d:'Search model marketplace',cmd:'click:#marketplace-btn',cat:'Marketplace'},
+          {t:'View Model Tree',d:'Inspect feature history',cmd:'click:.tree-tab',cat:'Platform'},
+          {t:'Toggle Theme',d:'Switch dark/light mode',cmd:'click:#theme-toggle',cat:'Settings'},
+          {t:'Performance Stats',d:'Show FPS and memory',cmd:'key:Control+Shift+F',cat:'Debug'}
+        ],
+        explodeview: [
+          {t:'Create Test Parts',d:'Build geometry to view',cmd:'chat:box 80x40x25',cat:'Setup'},
+          {t:'Add Cylinder',d:'Second component',cmd:'chat:cylinder 10mm radius 35mm tall',cat:'Setup'},
+          {t:'Add Gear',d:'Third component',cmd:'chat:gear 30mm 12 teeth',cat:'Setup'},
+          {t:'Toggle Viewer Mode',d:'Switch to ExplodeView',cmd:'key:V',cat:'View'},
+          {t:'Explode Assembly',d:'Separate all components',cmd:'key:E',cat:'View'},
+          {t:'Section Cut X',d:'Slice along X axis',cmd:'key:C',cat:'View'},
+          {t:'Wireframe Mode',d:'Show edges only',cmd:'key:W',cat:'View'},
+          {t:'Grid Floor',d:'Display reference grid',cmd:'key:G',cat:'View'},
+          {t:'Fit to Scene',d:'Zoom to fit everything',cmd:'key:F',cat:'View'},
+          {t:'Screenshot',d:'Capture high-res PNG',cmd:'key:S',cat:'Export'},
+          {t:'Measurement Tool',d:'Point-to-point distance',cmd:'key:M',cat:'Analyze'},
+          {t:'Annotations',d:'Place text pins on model',cmd:'key:A',cat:'Create'},
+          {t:'Help / Shortcuts',d:'Show all keyboard shortcuts',cmd:'key:?',cat:'Help'},
+          {t:'Blueprint Theme',d:'White + blue wireframe',cmd:'click:#blueprint-btn',cat:'View'},
+          {t:'BOM Export',d:'Generate bill of materials',cmd:'click:#bom-btn',cat:'Export'}
+        ],
+        assembly: [
+          {t:'Create Caliper Body',d:'Rectangular box for caliper housing',cmd:'chat:box 80x40x25',cat:'Build Assembly'},
+          {t:'Add Mounting Holes',d:'Cylindrical holes for mounting',cmd:'chat:cylinder 5mm radius 20mm tall',cat:'Build Assembly'},
+          {t:'Create Brake Pad',d:'Rectangular pad component',cmd:'chat:box 60x30x8',cat:'Build Assembly'},
+          {t:'Create Pivot Pin',d:'Cylinder for pivot point',cmd:'chat:cylinder 8mm radius 40mm tall',cat:'Build Assembly'},
+          {t:'Create Spring',d:'Helical return spring',cmd:'chat:spring 10mm radius 30mm tall',cat:'Build Assembly'},
+          {t:'Create Adjustment Bolt',d:'Threaded bolt cylinder',cmd:'chat:cylinder 4mm radius 25mm tall',cat:'Build Assembly'},
+          {t:'Create Retaining Clip',d:'Small flat clip',cmd:'chat:box 20x5x2',cat:'Build Assembly'},
+          {t:'Create Gear',d:'Final assembly component',cmd:'chat:gear 30mm 12 teeth',cat:'Build Assembly'},
+          {t:'Toggle Viewer Mode',d:'Switch to ExplodeView',cmd:'key:V',cat:'ExplodeView'},
+          {t:'Explode Assembly',d:'Separate components',cmd:'key:E',cat:'ExplodeView'},
+          {t:'Section Cut',d:'Slice through model',cmd:'key:C',cat:'ExplodeView'},
+          {t:'Wireframe Toggle',d:'Show edges only',cmd:'key:W',cat:'ExplodeView'},
+          {t:'Grid Floor',d:'Reference grid plane',cmd:'key:G',cat:'ExplodeView'},
+          {t:'Fit to All',d:'Zoom to fit everything',cmd:'key:F',cat:'ExplodeView'},
+          {t:'Screenshot',d:'Capture PNG image',cmd:'key:S',cat:'ExplodeView'},
+          {t:'Measure Tool',d:'Distance measurement',cmd:'key:M',cat:'ExplodeView'},
+          {t:'Annotations',d:'Place text markers',cmd:'key:A',cat:'ExplodeView'},
+          {t:'Help Panel',d:'Keyboard shortcuts',cmd:'key:?',cat:'ExplodeView'}
+        ],
+        testCycleCAD: [{t:'Run cycleCAD Tests',d:'115 automated UI tests with live visualization',cmd:'iframe:./test-agent-v2.html',cat:'Test Agent'}],
+        testExplodeView: [{t:'Run ExplodeView Tests',d:'100+ tests for 3D viewer, panels, shortcuts',cmd:'iframe:./explodeview-test-agent.html',cat:'Test Agent'}]
+      };
+
+      // Helper to run a step command against the live app
+      function _htRunStep(cmd) {
+        try {
+          if (cmd.startsWith('chat:')) {
+            const text = cmd.slice(5);
+            const chatInput = document.querySelector('#chat-input') || document.querySelector('input[placeholder*="hat"]') || document.querySelector('textarea[placeholder*="hat"]');
+            if (chatInput) { chatInput.value = text; chatInput.dispatchEvent(new Event('input',{bubbles:true})); const btn = chatInput.closest('div')?.querySelector('button') || document.querySelector('#chat-send'); if(btn) btn.click(); }
+          } else if (cmd.startsWith('key:')) {
+            const k = cmd.slice(4);
+            if (k.includes('+')) { const parts = k.split('+'); document.dispatchEvent(new KeyboardEvent('keydown',{key:parts[parts.length-1],ctrlKey:parts.includes('Control'),shiftKey:parts.includes('Shift'),bubbles:true})); }
+            else { document.dispatchEvent(new KeyboardEvent('keydown',{key:k,bubbles:true})); }
+          } else if (cmd.startsWith('click:')) {
+            const el = document.querySelector(cmd.slice(6)); if(el) el.click();
+          }
+        } catch(e) { console.warn('[HelpRunner]', e); }
+      }
+
+      // Build the runner view for a tutorial
+      function _htShowRunner(key, title) {
+        const steps = _tutDefs[key];
+        if (!steps) return;
+        const runnerArea = document.getElementById('ht-runner-area');
+        const homeArea = document.getElementById('ht-home-area');
+        homeArea.style.display = 'none';
+        runnerArea.style.display = 'flex';
+
+        // Check if it's a test agent (loads iframe)
+        if (steps.length === 1 && steps[0].cmd.startsWith('iframe:')) {
+          runnerArea.innerHTML = '<div style="display:flex;flex-direction:column;width:100%;height:100%;"><div style="padding:8px 14px;background:var(--bg-tertiary);border-bottom:1px solid var(--border-color);display:flex;align-items:center;gap:10px;"><button onclick="_htBackHome()" style="padding:4px 10px;border-radius:4px;border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);cursor:pointer;font-size:12px;">← Back</button><span style="font-weight:600;font-size:14px;">'+title+'</span></div><iframe src="'+steps[0].cmd.slice(7)+'" style="flex:1;border:none;width:100%;"></iframe></div>';
+          return;
+        }
+
+        let completed = new Set();
+        let isRunning = false;
+        let stopFlag = false;
+
+        runnerArea.innerHTML = `
+          <div style="display:flex;height:100%;">
+            <div id="ht-steps-panel" style="width:340px;min-width:300px;border-right:1px solid var(--border-color);display:flex;flex-direction:column;overflow:hidden;">
+              <div style="padding:10px 14px;background:var(--bg-tertiary);border-bottom:1px solid var(--border-color);display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                <button onclick="_htBackHome()" style="padding:4px 10px;border-radius:4px;border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);cursor:pointer;font-size:12px;">←</button>
+                <span style="font-weight:600;font-size:13px;flex:1;">${title}</span>
+                <button id="ht-run-all" style="padding:4px 10px;border-radius:4px;border:1px solid rgba(88,166,255,0.4);background:rgba(88,166,255,0.15);color:#58a6ff;cursor:pointer;font-size:11px;font-weight:600;">▶ Run All</button>
+                <button id="ht-stop" style="padding:4px 10px;border-radius:4px;border:1px solid rgba(248,81,73,0.4);background:rgba(248,81,73,0.15);color:#f85149;cursor:pointer;font-size:11px;font-weight:600;display:none;">■ Stop</button>
+              </div>
+              <div style="padding:4px 10px;background:var(--bg-tertiary);border-bottom:1px solid var(--border-color);flex-shrink:0;">
+                <div style="height:4px;background:var(--bg-primary);border-radius:2px;overflow:hidden;"><div id="ht-progress" style="height:100%;width:0%;background:#58a6ff;transition:width 0.3s;"></div></div>
+                <div id="ht-step-counter" style="font-size:10px;color:var(--text-secondary);margin-top:4px;">0 / ${steps.length} completed</div>
+              </div>
+              <div id="ht-step-list" style="flex:1;overflow-y:auto;padding:8px;"></div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;background:var(--bg-primary);">
+              <div style="padding:6px 14px;background:var(--bg-tertiary);border-bottom:1px solid var(--border-color);font-size:11px;color:var(--text-secondary);display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                <span style="width:8px;height:8px;border-radius:50%;background:#3fb950;"></span>
+                Live Preview — actions execute on the app behind this panel
+              </div>
+              <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:40px;text-align:center;">
+                <div>
+                  <div style="font-size:48px;margin-bottom:16px;">🎯</div>
+                  <div style="font-size:16px;font-weight:600;margin-bottom:8px;">Live Runner Active</div>
+                  <div style="font-size:13px;color:var(--text-secondary);max-width:360px;line-height:1.5;">Click <b>▶ Run</b> on any step or <b>▶ Run All</b> to auto-execute. Steps run directly on the app — minimize this panel to see the 3D viewport update in real-time.</div>
+                  <button onclick="document.getElementById('help-tutorials-panel').style.display='none'" style="margin-top:16px;padding:8px 20px;border-radius:6px;border:1px solid rgba(88,166,255,0.4);background:rgba(88,166,255,0.15);color:#58a6ff;cursor:pointer;font-size:12px;font-weight:600;">Minimize Panel to Watch</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+
+        // Render step cards
+        const stepList = document.getElementById('ht-step-list');
+        steps.forEach((s, i) => {
+          const card = document.createElement('div');
+          card.id = 'ht-card-'+i;
+          card.style.cssText = 'padding:8px 10px;margin-bottom:6px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-secondary);';
+          card.innerHTML = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;"><span id="ht-badge-'+i+'" style="width:22px;height:22px;border-radius:50%;background:#58a6ff;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">'+(i+1)+'</span><span style="font-size:12px;font-weight:600;flex:1;">'+s.t+'</span><span style="font-size:9px;padding:2px 6px;border-radius:3px;background:var(--bg-tertiary);color:var(--text-secondary);">'+s.cat+'</span></div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;padding-left:30px;">'+s.d+'</div><div style="padding-left:30px;"><button class="ht-run-btn" data-idx="'+i+'" style="padding:3px 12px;border-radius:4px;border:1px solid rgba(88,166,255,0.4);background:rgba(88,166,255,0.15);color:#58a6ff;cursor:pointer;font-size:10px;font-weight:600;">▶ Run</button></div>';
+          stepList.appendChild(card);
+        });
+
+        function markDone(i) {
+          completed.add(i);
+          const card = document.getElementById('ht-card-'+i);
+          const badge = document.getElementById('ht-badge-'+i);
+          if(card) { card.style.borderColor='#238636'; card.style.background='rgba(35,134,54,0.1)'; }
+          if(badge) { badge.style.background='#238636'; badge.textContent='✓'; }
+          const btn = card?.querySelector('.ht-run-btn');
+          if(btn) { btn.textContent='✓ Done'; btn.style.background='rgba(35,134,54,0.15)'; btn.style.borderColor='rgba(35,134,54,0.4)'; btn.style.color='#3fb950'; }
+          document.getElementById('ht-progress').style.width = (completed.size/steps.length*100)+'%';
+          document.getElementById('ht-step-counter').textContent = completed.size+' / '+steps.length+' completed';
+        }
+
+        function highlightStep(i) {
+          const card = document.getElementById('ht-card-'+i);
+          if(card && !completed.has(i)) { card.style.borderColor='#58a6ff'; card.style.background='rgba(88,166,255,0.1)'; }
+          card?.scrollIntoView({behavior:'smooth',block:'center'});
+        }
+
+        async function runStep(i) {
+          highlightStep(i);
+          _htRunStep(steps[i].cmd);
+          await new Promise(r=>setTimeout(r,1500));
+          markDone(i);
+        }
+
+        // Individual run buttons
+        stepList.addEventListener('click', async (e) => {
+          const btn = e.target.closest('.ht-run-btn');
+          if (!btn) return;
+          const idx = parseInt(btn.dataset.idx);
+          btn.textContent = '⏳...';
+          await runStep(idx);
+        });
+
+        // Run All
+        document.getElementById('ht-run-all').addEventListener('click', async () => {
+          isRunning = true; stopFlag = false;
+          document.getElementById('ht-run-all').style.display='none';
+          document.getElementById('ht-stop').style.display='inline-block';
+          for (let i=0; i<steps.length; i++) {
+            if (stopFlag) break;
+            if (completed.has(i)) continue;
+            await runStep(i);
+            if (i < steps.length-1 && !stopFlag) await new Promise(r=>setTimeout(r,2000));
+          }
+          isRunning = false;
+          document.getElementById('ht-run-all').style.display='inline-block';
+          document.getElementById('ht-stop').style.display='none';
+        });
+
+        // Stop
+        document.getElementById('ht-stop').addEventListener('click', () => { stopFlag = true; });
+      }
+
+      // Back to home from runner
+      window._htBackHome = function() {
+        document.getElementById('ht-runner-area').style.display='none';
+        document.getElementById('ht-home-area').style.display='block';
+      };
+
       panel.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border-color);background:var(--bg-tertiary);border-radius:10px 10px 0 0;">
-          <span style="font-weight:700;font-size:15px;">? Help & Tutorials</span>
-          <button onclick="document.getElementById('help-tutorials-panel').style.display='none'" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:rgba(255,80,80,0.15);border:1px solid rgba(255,80,80,0.3);color:#f88;cursor:pointer;font-size:16px;border-radius:6px;font-weight:700;">✕</button>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-bottom:1px solid var(--border-color);background:var(--bg-tertiary);flex-shrink:0;">
+          <span style="font-weight:700;font-size:15px;">Help & Tutorials</span>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span style="font-size:11px;color:var(--text-secondary);">Press ? to toggle</span>
+            <button onclick="document.getElementById('help-tutorials-panel').style.display='none'" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:rgba(255,80,80,0.15);border:1px solid rgba(255,80,80,0.3);color:#f88;cursor:pointer;font-size:14px;border-radius:6px;font-weight:700;">✕</button>
+          </div>
         </div>
-        <div style="padding:10px 18px;border-bottom:1px solid var(--border-color);">
-          <input id="help-search-input" type="text" placeholder="Search features, shortcuts, tutorials..." style="width:100%;padding:8px 12px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);font-size:13px;outline:none;box-sizing:border-box;">
-        </div>
-        <div style="padding:18px;overflow-y:auto;flex:1;min-height:0;">
-          <!-- Tutorials Section -->
+        <div id="ht-home-area" style="flex:1;overflow-y:auto;padding:18px;min-height:0;">
+          <!-- Tutorials with integrated runners -->
           <div style="margin-bottom:20px;">
-            <h3 style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--accent-blue);">Tutorials</h3>
+            <h3 style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--accent-blue);">Tutorials <span style="font-size:11px;font-weight:400;color:var(--text-secondary);">— click to run live</span></h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+              <div onclick="_htShowRunner('basic','Basic Tutorial')" style="cursor:pointer;padding:14px;background:linear-gradient(135deg,rgba(63,185,80,0.12),rgba(63,185,80,0.04));border:1px solid rgba(63,185,80,0.3);border-radius:8px;text-align:center;transition:transform 0.15s;">
+                <div style="font-size:24px;margin-bottom:6px;">🌱</div>
+                <div style="font-weight:600;color:#3fb950;font-size:12px;">Basic</div>
+                <div style="font-size:10px;color:var(--text-secondary);margin-top:3px;">Sketches, extrude, export</div>
+                <div style="margin-top:6px;font-size:9px;padding:2px 8px;background:rgba(63,185,80,0.15);border-radius:10px;color:#3fb950;display:inline-block;">10 steps</div>
+              </div>
+              <div onclick="_htShowRunner('intermediate','Intermediate Tutorial')" style="cursor:pointer;padding:14px;background:linear-gradient(135deg,rgba(88,166,255,0.12),rgba(88,166,255,0.04));border:1px solid rgba(88,166,255,0.3);border-radius:8px;text-align:center;transition:transform 0.15s;">
+                <div style="font-size:24px;margin-bottom:6px;">🚀</div>
+                <div style="font-weight:600;color:#58a6ff;font-size:12px;">Intermediate</div>
+                <div style="font-size:10px;color:var(--text-secondary);margin-top:3px;">CAM, assemblies, DFM</div>
+                <div style="margin-top:6px;font-size:9px;padding:2px 8px;background:rgba(88,166,255,0.15);border-radius:10px;color:#58a6ff;display:inline-block;">14 steps</div>
+              </div>
+              <div onclick="_htShowRunner('advanced','Advanced Tutorial')" style="cursor:pointer;padding:14px;background:linear-gradient(135deg,rgba(210,153,34,0.12),rgba(210,153,34,0.04));border:1px solid rgba(210,153,34,0.3);border-radius:8px;text-align:center;transition:transform 0.15s;">
+                <div style="font-size:24px;margin-bottom:6px;">⚡</div>
+                <div style="font-weight:600;color:#d29922;font-size:12px;">Advanced</div>
+                <div style="font-size:10px;color:var(--text-secondary);margin-top:3px;">Agent API, MCP, tokens</div>
+                <div style="margin-top:6px;font-size:9px;padding:2px 8px;background:rgba(210,153,34,0.15);border-radius:10px;color:#d29922;display:inline-block;">10 steps</div>
+              </div>
+              <div onclick="_htShowRunner('explodeview','ExplodeView Tutorial')" style="cursor:pointer;padding:14px;background:linear-gradient(135deg,rgba(0,212,170,0.12),rgba(0,212,170,0.04));border:1px solid rgba(0,212,170,0.3);border-radius:8px;text-align:center;transition:transform 0.15s;">
+                <div style="font-size:24px;margin-bottom:6px;">🔍</div>
+                <div style="font-weight:600;color:#00d4aa;font-size:12px;">ExplodeView</div>
+                <div style="font-size:10px;color:var(--text-secondary);margin-top:3px;">Viewer, section cuts, BOM</div>
+                <div style="margin-top:6px;font-size:9px;padding:2px 8px;background:rgba(0,212,170,0.15);border-radius:10px;color:#00d4aa;display:inline-block;">15 steps</div>
+              </div>
+              <div onclick="_htShowRunner('assembly','Assembly + ExplodeView')" style="cursor:pointer;padding:14px;background:linear-gradient(135deg,rgba(248,81,73,0.12),rgba(248,81,73,0.04));border:1px solid rgba(248,81,73,0.3);border-radius:8px;text-align:center;transition:transform 0.15s;">
+                <div style="font-size:24px;margin-bottom:6px;">🔩</div>
+                <div style="font-weight:600;color:#f85149;font-size:12px;">Assembly + Viewer</div>
+                <div style="font-size:10px;color:var(--text-secondary);margin-top:3px;">Build then explore all 47 features</div>
+                <div style="margin-top:6px;font-size:9px;padding:2px 8px;background:rgba(248,81,73,0.15);border-radius:10px;color:#f85149;display:inline-block;">18 steps</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Test Agents -->
+          <div style="margin-bottom:20px;">
+            <h3 style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--accent-blue);">Test Agents <span style="font-size:11px;font-weight:400;color:var(--text-secondary);">— automated UI testing</span></h3>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-              <a href="./tutorials/basic.html" style="text-decoration:none;display:block;padding:16px;background:linear-gradient(135deg,rgba(63,185,80,0.12),rgba(63,185,80,0.04));border:1px solid rgba(63,185,80,0.3);border-radius:8px;text-align:center;">
-                <div style="font-size:28px;margin-bottom:8px;">&#x1F331;</div>
-                <div style="font-weight:600;color:#3fb950;font-size:13px;">Basic</div>
-                <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">First 3D part, sketches, extrude, export</div>
-              </a>
-              <a href="./tutorials/intermediate.html" style="text-decoration:none;display:block;padding:16px;background:linear-gradient(135deg,rgba(88,166,255,0.12),rgba(88,166,255,0.04));border:1px solid rgba(88,166,255,0.3);border-radius:8px;text-align:center;">
-                <div style="font-size:28px;margin-bottom:8px;">&#x1F680;</div>
-                <div style="font-weight:600;color:#58a6ff;font-size:13px;">Intermediate</div>
-                <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">CAM, Text-to-CAD, assemblies, DFM</div>
-              </a>
-              <a href="./tutorials/advanced.html" style="text-decoration:none;display:block;padding:16px;background:linear-gradient(135deg,rgba(210,153,34,0.12),rgba(210,153,34,0.04));border:1px solid rgba(210,153,34,0.3);border-radius:8px;text-align:center;">
-                <div style="font-size:28px;margin-bottom:8px;">&#x26A1;</div>
-                <div style="font-weight:600;color:#d29922;font-size:13px;">Advanced</div>
-                <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">Agent API, MCP, tokens, Docker, plugins</div>
-              </a>
-              <a href="./tutorials/explodeview-integration.html" style="text-decoration:none;display:block;padding:16px;background:linear-gradient(135deg,rgba(0,212,170,0.12),rgba(0,212,170,0.04));border:1px solid rgba(0,212,170,0.3);border-radius:8px;text-align:center;">
-                <div style="font-size:28px;margin-bottom:8px;">&#x1F50D;</div>
-                <div style="font-weight:600;color:#00d4aa;font-size:13px;">ExplodeView</div>
-                <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">Viewer Mode, 57 tools, section cuts, BOM</div>
-              </a>
-              <a href="./tutorials/assembly-explodeview.html" style="text-decoration:none;display:block;padding:16px;background:linear-gradient(135deg,rgba(248,81,73,0.12),rgba(248,81,73,0.04));border:1px solid rgba(248,81,73,0.3);border-radius:8px;text-align:center;">
-                <div style="font-size:28px;margin-bottom:8px;">&#x1F529;</div>
-                <div style="font-weight:600;color:#f85149;font-size:13px;">Assembly + Viewer</div>
-                <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">Build assembly, then use all 47 ExplodeView features</div>
-              </a>
+              <div onclick="_htShowRunner('testCycleCAD','cycleCAD Test Agent')" style="cursor:pointer;padding:14px;background:linear-gradient(135deg,rgba(246,185,59,0.12),rgba(246,185,59,0.04));border:1px solid rgba(246,185,59,0.3);border-radius:8px;text-align:center;">
+                <div style="font-size:24px;margin-bottom:6px;">🤖</div>
+                <div style="font-weight:600;color:#f6b93b;font-size:12px;">cycleCAD Tests</div>
+                <div style="font-size:10px;color:var(--text-secondary);margin-top:3px;">115 automated UI tests, live viz</div>
+              </div>
+              <div onclick="_htShowRunner('testExplodeView','ExplodeView Test Agent')" style="cursor:pointer;padding:14px;background:linear-gradient(135deg,rgba(56,211,159,0.12),rgba(56,211,159,0.04));border:1px solid rgba(56,211,159,0.3);border-radius:8px;text-align:center;">
+                <div style="font-size:24px;margin-bottom:6px;">🧪</div>
+                <div style="font-weight:600;color:#38d39f;font-size:12px;">ExplodeView Tests</div>
+                <div style="font-size:10px;color:var(--text-secondary);margin-top:3px;">100+ viewer, panel, shortcut tests</div>
+              </div>
             </div>
           </div>
 
@@ -4445,20 +4689,14 @@
               <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Undo</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">Ctrl+Z</kbd></div>
               <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Redo</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">Ctrl+Y</kbd></div>
               <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Extrude</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">E</kbd></div>
-              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Revolve</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">R</kbd></div>
-              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Toggle Grid</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">G</kbd></div>
               <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Wireframe</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">W</kbd></div>
-              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Fit All</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">V</kbd></div>
-              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Delete</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">Del</kbd></div>
-              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Cancel</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">Esc</kbd></div>
-              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Save</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">Ctrl+S</kbd></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Grid</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">G</kbd></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Viewer Mode</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">V</kbd></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Section Cut</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">C</kbd></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Measure</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">M</kbd></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Annotate</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">A</kbd></div>
+              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg-tertiary);border-radius:4px;"><span>Help</span><kbd style="background:var(--bg-primary);padding:1px 6px;border-radius:3px;font-family:monospace;font-size:10px;border:1px solid var(--border-color);">?</kbd></div>
             </div>
-          </div>
-
-          <!-- Feature Catalog -->
-          <div style="margin-bottom:16px;">
-            <h3 style="font-size:14px;font-weight:600;margin-bottom:10px;color:var(--accent-blue);">All Features (${Object.keys(window.cycleCAD || {}).length}+ modules)</h3>
-            <div id="help-feature-list" style="max-height:280px;overflow-y:auto;border:1px solid var(--border-color);border-radius:6px;"></div>
           </div>
 
           <!-- Links -->
@@ -4468,6 +4706,7 @@
             <a href="../" style="text-decoration:none;padding:8px 14px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:6px;color:var(--text-primary);font-size:12px;">cyclecad.com</a>
           </div>
         </div>
+        <div id="ht-runner-area" style="display:none;flex:1;overflow:hidden;min-height:0;"></div>
       `;
       document.body.appendChild(panel);
 

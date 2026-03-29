@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basic Tutorial Runner - cycleCAD</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            color: #1a1a2e;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header */
+        header {
+            background-color: #ffffff;
+            border-bottom: 1px solid #d0d7de;
+            padding: 16px 20px;
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            max-width: 2000px;
+            margin: 0 auto;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0969da;
+        }
+
+        .progress-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .progress-bar-container {
+            flex: 1;
+            height: 8px;
+            background-color: #d0d7de;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #0969da, #54aeff);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .step-counter {
+            font-size: 12px;
+            color: #57606a;
+            white-space: nowrap;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        button {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: 1px solid #d0d7de;
+            background-color: #ffffff;
+            color: #1a1a2e;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #f0f2f5;
+            border-color: #0969da;
+        }
+
+        .btn-primary {
+            background-color: #0969da;
+            border-color: #0969da;
+            color: #fff;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background-color: #0860ca;
+            border-color: #0860ca;
+        }
+
+        .btn-danger {
+            background-color: #cf222e;
+            border-color: #cf222e;
+            color: #fff;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background-color: #a40e26;
+            border-color: #a40e26;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Main Container */
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            gap: 0;
+        }
+
+        /* Left Panel - Tutorial Steps */
+        .tutorial-panel {
+            width: 35%;
+            background-color: #ffffff;
+            border-right: 1px solid #d0d7de;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .steps-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .steps-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .steps-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .steps-container::-webkit-scrollbar-thumb {
+            background-color: #c1c8cf;
+            border-radius: 4px;
+        }
+
+        .steps-container::-webkit-scrollbar-thumb:hover {
+            background-color: #57606a;
+        }
+
+        /* Step Card */
+        .step-card {
+            background-color: #f6f8fa;
+            border: 1px solid #d0d7de;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .step-card:hover {
+            border-color: #0969da;
+            background-color: #eaf5ff;
+        }
+
+        .step-card.active {
+            background-color: #ddf4ff;
+            border-color: #0969da;
+            animation: pulse 1s infinite;
+        }
+
+        .step-card.active .step-badge {
+            background-color: #0969da;
+            color: #fff;
+        }
+
+        .step-card.completed {
+            border-color: #1a7f37;
+            background-color: #dafbe1;
+        }
+
+        .step-card.completed .step-badge {
+            background-color: #1a7f37;
+            color: #fff;
+        }
+
+        .step-card.completed::after {
+            content: " ✓";
+            color: #1a7f37;
+            font-weight: 700;
+            margin-left: 4px;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(9, 105, 218, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 0 10px rgba(9, 105, 218, 0);
+            }
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .step-badge {
+            background-color: #0969da;
+            color: #ffffff;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .step-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a1a2e;
+            flex: 1;
+        }
+
+        .step-status {
+            font-size: 11px;
+            color: #57606a;
+        }
+
+        .step-description {
+            font-size: 13px;
+            color: #57606a;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .step-details {
+            display: none;
+            background-color: #eaf5ff;
+            border-left: 2px solid #0969da;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: #1a1a2e;
+            line-height: 1.5;
+        }
+
+        .step-details.expanded {
+            display: block;
+        }
+
+        .step-code {
+            background-color: #f6f8fa;
+            border: 1px solid #d0d7de;
+            border-radius: 4px;
+            padding: 8px;
+            margin-top: 4px;
+            font-family: 'Monaco', monospace;
+            font-size: 11px;
+            color: #0969da;
+            overflow-x: auto;
+        }
+
+        .step-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .step-run-btn {
+            flex: 1;
+            padding: 8px 12px;
+            font-size: 12px;
+            background-color: #0969da;
+            border-color: #0969da;
+            color: #ffffff;
+            font-weight: 600;
+            border-radius: 4px;
+        }
+
+        .step-run-btn:hover:not(:disabled) {
+            background-color: #79c0ff;
+            border-color: #79c0ff;
+        }
+
+        .step-run-btn:disabled {
+            background-color: #d0d7de;
+            border-color: #d0d7de;
+            color: #57606a;
+        }
+
+        .step-details-toggle {
+            padding: 6px 10px;
+            font-size: 11px;
+            background-color: transparent;
+            border: 1px solid #d0d7de;
+        }
+
+        /* Right Panel - App Preview */
+        .app-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #ffffff;
+            overflow: hidden;
+        }
+
+        .app-header {
+            background-color: #f6f8fa;
+            border-bottom: 1px solid #d0d7de;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+
+        .app-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .app-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #1a7f37;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50%, 100% { opacity: 1; }
+            25%, 75% { opacity: 0.5; }
+        }
+
+        .app-url {
+            font-size: 12px;
+            color: #57606a;
+            font-family: 'Monaco', monospace;
+        }
+
+        .app-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        iframe {
+            flex: 1;
+            border: none;
+            background-color: #ffffff;
+        }
+
+        .message-box {
+            padding: 12px 16px;
+            border-radius: 6px;
+            border-left: 3px solid;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .message-box.warning {
+            background-color: #fff8c5;
+            border-left-color: #d29922;
+            color: #1a1a2e;
+        }
+
+        footer {
+            background-color: #f6f8fa;
+            border-top: 1px solid #d0d7de;
+            padding: 8px 16px;
+            font-size: 11px;
+            color: #57606a;
+            flex-shrink: 0;
+        }
+
+        /* Floating Shortcuts Panel */
+        .shortcuts-panel {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            width: 320px;
+            max-height: 500px;
+            background-color: #f6f8fa;
+            border: 1px solid #d0d7de;
+            border-radius: 8px;
+            display: none;
+            flex-direction: column;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            z-index: 200;
+        }
+
+        .shortcuts-panel.visible {
+            display: flex;
+        }
+
+        .shortcuts-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid #d0d7de;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .shortcuts-header h3 {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .shortcuts-close {
+            background: none;
+            border: none;
+            color: #57606a;
+            cursor: pointer;
+            padding: 0;
+            font-size: 16px;
+        }
+
+        .shortcuts-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 16px;
+        }
+
+        .shortcuts-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .shortcuts-content::-webkit-scrollbar-thumb {
+            background-color: #d0d7de;
+            border-radius: 3px;
+        }
+
+        .shortcut-item {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #d0d7de;
+        }
+
+        .shortcut-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .shortcut-key {
+            background-color: #ffffff;
+            border: 1px solid #d0d7de;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-family: 'Monaco', monospace;
+            font-weight: 600;
+            color: #0969da;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .shortcut-desc {
+            color: #57606a;
+        }
+
+        .shortcuts-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background-color: #0969da;
+            border: none;
+            color: #ffffff;
+            font-size: 20px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 150;
+            transition: all 0.2s ease;
+        }
+
+        .shortcuts-toggle:hover {
+            background-color: #0860ca;
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-content">
+            <div class="header-left">
+                <div class="header-title">Basic Tutorial Runner</div>
+            </div>
+            <div class="progress-section">
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+                <div class="step-counter" id="stepCounter">Step 0 of 4</div>
+            </div>
+            <div class="header-controls">
+                <button class="btn-primary" id="runAllBtn">▶ Run All</button>
+                <button class="btn-danger" id="stopBtn" disabled>⏹ Stop</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Left Panel - Tutorial Steps -->
+        <div class="tutorial-panel">
+            <div class="steps-container" id="stepsContainer"></div>
+            <footer>
+                <div id="footerText">Select a step to begin</div>
+            </footer>
+        </div>
+
+        <!-- Right Panel - App Preview -->
+        <div class="app-panel">
+            <div class="app-header">
+                <div class="app-header-left">
+                    <div class="app-indicator" id="appIndicator"></div>
+                    <div class="app-url">cyclecad.com/app/</div>
+                </div>
+                <div class="app-actions">
+                    <button id="openTabBtn">↗ Open in Tab</button>
+                    <button id="reloadAppBtn">⟳ Reload</button>
+                </div>
+            </div>
+            <iframe id="app-frame" src="../index.html"></iframe>
+            <div class="message-box warning" style="margin: 12px; display: none;" id="crossOriginMsg">
+                <strong>Note:</strong> If steps don't auto-execute, the app may need to be on the same origin. Open cycleCAD in a separate tab and follow along manually.
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Shortcuts Panel -->
+    <button class="shortcuts-toggle" id="shortcutsToggle" title="Keyboard Shortcuts (?)">?</button>
+    <div class="shortcuts-panel" id="shortcutsPanel">
+        <div class="shortcuts-header">
+            <h3>Basic Tutorial Steps</h3>
+            <button class="shortcuts-close" id="shortcutsClose">✕</button>
+        </div>
+        <div class="shortcuts-content" id="shortcutsContent"></div>
+    </div>
+
+    <script>
+        // Basic Tutorial Steps Data
+        const TUTORIAL_STEPS = [
+            {
+                number: 1,
+                title: "Create Your First Sketch",
+                description: "Start by creating a 2D sketch on the XY plane",
+                detail: "Draw a simple rectangle on the sketch plane. Click the Sketch tool, draw a rectangle with dimensions 80x40mm, then finish the sketch.",
+                action: "Click the Sketch button in the Create tab",
+                type: "button-click",
+                category: "Getting Started"
+            },
+            {
+                number: 2,
+                title: "Draw a Rectangle",
+                description: "In the sketch, draw a rectangle shape",
+                detail: "Use the rectangle tool to create a 80x40mm shape. Click two opposite corners to define the rectangle.",
+                action: "Press R for rectangle tool, click and drag",
+                type: "keyboard",
+                category: "Getting Started"
+            },
+            {
+                number: 3,
+                title: "Extrude the Sketch",
+                description: "Convert the 2D sketch into 3D geometry by extruding",
+                detail: "Exit the sketch and click the Extrude button. Set the height to 25mm. This creates a solid box from your rectangle.",
+                action: "Press E or click Extrude in Create tab, set height to 25mm",
+                type: "keyboard",
+                category: "Creating 3D"
+            },
+            {
+                number: 4,
+                title: "Export Your Model",
+                description: "Save your model in your preferred format",
+                detail: "Go to the Export tab and choose STL, OBJ, or glTF format. Click Export and save the file to your computer.",
+                action: "Click Export tab, select format, click Export button",
+                type: "button-click",
+                category: "Finishing"
+            }
+        ];
+
+        let currentStep = 0;
+        let isRunning = false;
+
+        // Initialize UI
+        function initializeUI() {
+            const stepsContainer = document.getElementById('stepsContainer');
+            stepsContainer.innerHTML = '';
+
+            TUTORIAL_STEPS.forEach((step, index) => {
+                const card = document.createElement('div');
+                card.className = 'step-card';
+                card.innerHTML = `
+                    <div class="step-header">
+                        <div class="step-badge">${step.number}</div>
+                        <div class="step-title">${step.title}</div>
+                    </div>
+                    <div class="step-description">${step.description}</div>
+                    <div class="step-details" id="details-${index}">
+                        <strong>Details:</strong> ${step.detail}<br><br>
+                        <strong>Action:</strong> ${step.action}
+                    </div>
+                    <div class="step-actions">
+                        <button class="step-run-btn" data-step="${index}">▶ Run</button>
+                        <button class="step-details-toggle" data-step="${index}">Details</button>
+                    </div>
+                `;
+
+                card.addEventListener('click', () => selectStep(index));
+                card.querySelector('.step-run-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    runStep(index);
+                });
+                card.querySelector('.step-details-toggle').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleDetails(index);
+                });
+
+                stepsContainer.appendChild(card);
+            });
+
+            setupShortcutsPanel();
+        }
+
+        function selectStep(index) {
+            document.querySelectorAll('.step-card').forEach((card, i) => {
+                card.classList.toggle('active', i === index);
+            });
+            currentStep = index;
+            updateProgressBar();
+        }
+
+        function toggleDetails(index) {
+            const detailsEl = document.getElementById(`details-${index}`);
+            detailsEl.classList.toggle('expanded');
+        }
+
+        function runStep(index) {
+            const step = TUTORIAL_STEPS[index];
+            selectStep(index);
+
+            // Show feedback
+            const card = document.querySelectorAll('.step-card')[index];
+            card.classList.add('completed');
+
+            // Try to send message to iframe
+            const iframe = document.getElementById('app-frame');
+            try {
+                iframe.contentWindow.postMessage({
+                    type: 'tutorial-step',
+                    step: step.number,
+                    action: step.action,
+                    actionType: step.type
+                }, '*');
+            } catch (e) {
+                console.log('Cross-origin restriction: manual execution needed');
+                showCrossOriginMessage();
+            }
+
+            updateFooter(`Step ${step.number}: ${step.title} executed`);
+        }
+
+        async function runAllSteps() {
+            isRunning = true;
+            document.getElementById('runAllBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+
+            for (let i = 0; i < TUTORIAL_STEPS.length && isRunning; i++) {
+                runStep(i);
+                await new Promise(resolve => setTimeout(resolve, 1500));
+            }
+
+            isRunning = false;
+            document.getElementById('runAllBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            updateFooter('All steps completed!');
+        }
+
+        function stopRunning() {
+            isRunning = false;
+            document.getElementById('runAllBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            updateFooter('Execution stopped');
+        }
+
+        function updateProgressBar() {
+            const completedCount = document.querySelectorAll('.step-card.completed').length;
+            const percentage = (completedCount / TUTORIAL_STEPS.length) * 100;
+            document.getElementById('progressBar').style.width = percentage + '%';
+            document.getElementById('stepCounter').textContent = `Step ${completedCount} of ${TUTORIAL_STEPS.length}`;
+        }
+
+        function updateFooter(text) {
+            document.getElementById('footerText').textContent = text;
+        }
+
+        function showCrossOriginMessage() {
+            const msg = document.getElementById('crossOriginMsg');
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; }, 5000);
+        }
+
+        function setupShortcutsPanel() {
+            const shortcuts = [
+                { key: 'R', desc: 'Rectangle tool (in sketch)' },
+                { key: 'E', desc: 'Extrude operation' },
+                { key: 'Esc', desc: 'Exit current tool' },
+                { key: '?', desc: 'Toggle this panel' }
+            ];
+
+            const content = document.getElementById('shortcutsContent');
+            content.innerHTML = shortcuts.map(s => `
+                <div class="shortcut-item">
+                    <span class="shortcut-desc">${s.desc}</span>
+                    <span class="shortcut-key">${s.key}</span>
+                </div>
+            `).join('');
+        }
+
+        // Event Listeners
+        document.getElementById('runAllBtn').addEventListener('click', runAllSteps);
+        document.getElementById('stopBtn').addEventListener('click', stopRunning);
+        document.getElementById('openTabBtn').addEventListener('click', () => {
+            window.open('../index.html', 'cyclecad-app');
+        });
+        document.getElementById('reloadAppBtn').addEventListener('click', () => {
+            document.getElementById('app-frame').src = document.getElementById('app-frame').src;
+        });
+        document.getElementById('shortcutsToggle').addEventListener('click', () => {
+            document.getElementById('shortcutsPanel').classList.toggle('visible');
+        });
+        document.getElementById('shortcutsClose').addEventListener('click', () => {
+            document.getElementById('shortcutsPanel').classList.remove('visible');
+        });
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            initializeUI();
+            selectStep(0);
+            updateFooter('Select a step to begin');
+        });
+
+        // Receive messages from iframe
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'app-ready') {
+                updateFooter('App loaded and ready');
+            }
+        });
+    </script>
+</body>
+</html>

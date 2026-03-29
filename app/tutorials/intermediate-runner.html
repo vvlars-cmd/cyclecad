@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intermediate Tutorial Runner - cycleCAD</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            color: #1a1a2e;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header */
+        header {
+            background-color: #ffffff;
+            border-bottom: 1px solid #d0d7de;
+            padding: 16px 20px;
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            max-width: 2000px;
+            margin: 0 auto;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0969da;
+        }
+
+        .progress-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .progress-bar-container {
+            flex: 1;
+            height: 8px;
+            background-color: #d0d7de;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #0969da, #54aeff);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .step-counter {
+            font-size: 12px;
+            color: #57606a;
+            white-space: nowrap;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        button {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: 1px solid #d0d7de;
+            background-color: #ffffff;
+            color: #1a1a2e;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #f0f2f5;
+            border-color: #0969da;
+        }
+
+        .btn-primary {
+            background-color: #0969da;
+            border-color: #0969da;
+            color: #fff;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background-color: #0860ca;
+            border-color: #0860ca;
+        }
+
+        .btn-danger {
+            background-color: #cf222e;
+            border-color: #cf222e;
+            color: #fff;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background-color: #a40e26;
+            border-color: #a40e26;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Main Container */
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            gap: 0;
+        }
+
+        /* Left Panel - Tutorial Steps */
+        .tutorial-panel {
+            width: 35%;
+            background-color: #ffffff;
+            border-right: 1px solid #d0d7de;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .steps-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .steps-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .steps-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .steps-container::-webkit-scrollbar-thumb {
+            background-color: #c1c8cf;
+            border-radius: 4px;
+        }
+
+        .steps-container::-webkit-scrollbar-thumb:hover {
+            background-color: #57606a;
+        }
+
+        /* Step Card */
+        .step-card {
+            background-color: #f6f8fa;
+            border: 1px solid #d0d7de;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .step-card:hover {
+            border-color: #0969da;
+            background-color: #eaf5ff;
+        }
+
+        .step-card.active {
+            background-color: #ddf4ff;
+            border-color: #0969da;
+            animation: pulse 1s infinite;
+        }
+
+        .step-card.active .step-badge {
+            background-color: #0969da;
+            color: #fff;
+        }
+
+        .step-card.completed {
+            border-color: #1a7f37;
+            background-color: #dafbe1;
+        }
+
+        .step-card.completed .step-badge {
+            background-color: #1a7f37;
+            color: #fff;
+        }
+
+        .step-card.completed::after {
+            content: " ✓";
+            color: #1a7f37;
+            font-weight: 700;
+            margin-left: 4px;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(9, 105, 218, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 0 10px rgba(9, 105, 218, 0);
+            }
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .step-badge {
+            background-color: #0969da;
+            color: #ffffff;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .step-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a1a2e;
+            flex: 1;
+        }
+
+        .step-status {
+            font-size: 11px;
+            color: #57606a;
+        }
+
+        .step-description {
+            font-size: 13px;
+            color: #57606a;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .step-details {
+            display: none;
+            background-color: #eaf5ff;
+            border-left: 2px solid #0969da;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: #1a1a2e;
+            line-height: 1.5;
+        }
+
+        .step-details.expanded {
+            display: block;
+        }
+
+        .step-code {
+            background-color: #f6f8fa;
+            border: 1px solid #d0d7de;
+            border-radius: 4px;
+            padding: 8px;
+            margin-top: 4px;
+            font-family: 'Monaco', monospace;
+            font-size: 11px;
+            color: #79c0ff;
+            overflow-x: auto;
+        }
+
+        .step-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .step-run-btn {
+            flex: 1;
+            padding: 8px 12px;
+            font-size: 12px;
+            background-color: #0969da;
+            border-color: #0969da;
+            color: #ffffff;
+            font-weight: 600;
+            border-radius: 4px;
+        }
+
+        .step-run-btn:hover:not(:disabled) {
+            background-color: #79c0ff;
+            border-color: #79c0ff;
+        }
+
+        .step-run-btn:disabled {
+            background-color: #d0d7de;
+            border-color: #d0d7de;
+            color: #57606a;
+        }
+
+        .step-details-toggle {
+            padding: 6px 10px;
+            font-size: 11px;
+            background-color: transparent;
+            border: 1px solid #d0d7de;
+        }
+
+        /* Right Panel - App Preview */
+        .app-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #ffffff;
+            overflow: hidden;
+        }
+
+        .app-header {
+            background-color: #f6f8fa;
+            border-bottom: 1px solid #d0d7de;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .app-header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .app-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #238636;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 49%, 100% { opacity: 1; }
+            50%, 99% { opacity: 0.5; }
+        }
+
+        .app-url {
+            font-size: 12px;
+            color: #57606a;
+        }
+
+        .app-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .app-actions button {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        #app-frame {
+            flex: 1;
+            border: none;
+            background-color: #fff;
+        }
+
+        /* Floating Shortcuts Panel */
+        .shortcuts-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 320px;
+            max-height: 500px;
+            background-color: #f6f8fa;
+            border: 1px solid #d0d7de;
+            border-radius: 8px;
+            display: none;
+            flex-direction: column;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            z-index: 200;
+        }
+
+        .shortcuts-panel.visible {
+            display: flex;
+        }
+
+        .shortcuts-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid #d0d7de;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .shortcuts-header h3 {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .shortcuts-close {
+            background: none;
+            border: none;
+            color: #57606a;
+            cursor: pointer;
+            padding: 0;
+            font-size: 16px;
+        }
+
+        .shortcuts-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 16px;
+        }
+
+        .shortcuts-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .shortcuts-content::-webkit-scrollbar-thumb {
+            background-color: #d0d7de;
+            border-radius: 3px;
+        }
+
+        .shortcut-item {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #d0d7de;
+        }
+
+        .shortcut-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .shortcut-key {
+            background-color: #ffffff;
+            border: 1px solid #d0d7de;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-family: 'Monaco', monospace;
+            font-weight: 600;
+            color: #0969da;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .shortcut-desc {
+            color: #57606a;
+        }
+
+        .shortcuts-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background-color: #0969da;
+            border: none;
+            color: #ffffff;
+            font-size: 20px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            z-index: 150;
+        }
+
+        .shortcuts-toggle:hover {
+            background-color: #79c0ff;
+            transform: scale(1.1);
+        }
+
+        .shortcuts-toggle.hidden {
+            display: none;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #f6f8fa;
+            border-top: 1px solid #d0d7de;
+            padding: 12px 20px;
+            flex-shrink: 0;
+            font-size: 12px;
+            color: #57606a;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(88, 166, 255, 0.3);
+            border-top-color: #0969da;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .tutorial-panel {
+                width: 100%;
+                height: 40%;
+                border-right: none;
+                border-bottom: 1px solid #d0d7de;
+            }
+
+            .app-panel {
+                height: 60%;
+            }
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: absolute;
+            background-color: #eaeef2;
+            color: #1a1a2e;
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #d0d7de;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .tooltip.visible {
+            opacity: 1;
+        }
+
+        /* Message Box */
+        .message-box {
+            background-color: #eaeef2;
+            border: 1px solid #d0d7de;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+            font-size: 12px;
+            color: #57606a;
+        }
+
+        .message-box.warning {
+            border-color: #d29922;
+            background-color: rgba(210, 153, 34, 0.1);
+            color: #d0883c;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-content">
+            <div class="header-left">
+                <div class="header-title">Intermediate Tutorial Runner</div>
+            </div>
+            <div class="progress-section">
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+                <div class="step-counter" id="stepCounter">Step 0 of 0</div>
+            </div>
+            <div class="header-controls">
+                <button class="btn-primary" id="runAllBtn">▶ Run All</button>
+                <button class="btn-danger" id="stopBtn" disabled>⏹ Stop</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Left Panel - Tutorial Steps -->
+        <div class="tutorial-panel">
+            <div class="steps-container" id="stepsContainer"></div>
+            <footer>
+                <div id="footerText">Select a step to begin</div>
+            </footer>
+        </div>
+
+        <!-- Right Panel - App Preview -->
+        <div class="app-panel">
+            <div class="app-header">
+                <div class="app-header-left">
+                    <div class="app-indicator" id="appIndicator"></div>
+                    <div class="app-url">cyclecad.com/app/</div>
+                </div>
+                <div class="app-actions">
+                    <button id="openTabBtn">↗ Open in Tab</button>
+                    <button id="reloadAppBtn">⟳ Reload</button>
+                </div>
+            </div>
+            <iframe id="app-frame" src="https://cyclecad.com/app/"></iframe>
+            <div class="message-box warning" style="margin: 12px; display: none;" id="crossOriginMsg">
+                <strong>Note:</strong> If steps don't auto-execute, the app may need to be on the same origin. Open cycleCAD in a separate tab and follow along manually.
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Shortcuts Panel -->
+    <button class="shortcuts-toggle" id="shortcutsToggle" title="Keyboard Shortcuts (?)">?</button>
+    <div class="shortcuts-panel" id="shortcutsPanel">
+        <div class="shortcuts-header">
+            <h3>Keyboard Shortcuts</h3>
+            <button class="shortcuts-close" id="shortcutsClose">✕</button>
+        </div>
+        <div class="shortcuts-content" id="shortcutsContent"></div>
+    </div>
+
+    <script>
+        // Intermediate Tutorial Steps Data
+        const TUTORIAL_STEPS = [
+            // Section 1: Advanced Sketches
+            {
+                number: 1,
+                title: "Apply Coincident Constraint",
+                description: "Fully constrain a sketch by making two points coincident",
+                detail: "Constraints define relationships between geometry. Coincident makes points overlap. Select 2 points and apply constraint.",
+                command: "sketch; line 0,0 to 100,0; apply coincident",
+                type: "chat",
+                category: "Advanced Sketches",
+                shortcut: "C"
+            },
+            {
+                number: 2,
+                title: "Add Horizontal Constraint",
+                description: "Make a line perfectly horizontal",
+                detail: "Use the horizontal constraint to align geometry to the X-axis. Select a line and apply constraint.",
+                command: "sketch; select line; apply horizontal",
+                type: "keyboard",
+                key: "H",
+                category: "Advanced Sketches"
+            },
+            {
+                number: 3,
+                title: "Add Distance Dimension",
+                description: "Dimension a distance between two points",
+                detail: "Apply a distance constraint to define exact spacing. Set value to 50mm.",
+                command: "sketch; apply distance 50",
+                type: "chat",
+                category: "Advanced Sketches"
+            },
+            {
+                number: 4,
+                title: "Add Angle Dimension",
+                description: "Dimension an angle between two lines",
+                detail: "Apply an angle constraint. Set value to 45 degrees.",
+                command: "sketch; apply angle 45",
+                type: "chat",
+                category: "Advanced Sketches"
+            },
+            {
+                number: 5,
+                title: "Apply Equal Constraint",
+                description: "Make two line segments equal length",
+                detail: "Equal constraint ensures two geometry elements are the same size. Select 2 lines.",
+                command: "sketch; select 2 lines; apply equal",
+                type: "keyboard",
+                key: "E",
+                category: "Advanced Sketches"
+            },
+
+            // Section 2: Parametric Operations
+            {
+                number: 6,
+                title: "Create Fillet",
+                description: "Fillet an edge with 5mm radius",
+                detail: "Use the fillet tool to round edges. Select edge and set radius to 5mm.",
+                command: "fillet; radius 5",
+                type: "chat",
+                category: "Parametric Operations"
+            },
+            {
+                number: 7,
+                title: "Create Chamfer",
+                description: "Chamfer an edge with 2mm distance",
+                detail: "Chamfer creates a beveled edge. Select edge and set distance to 2mm.",
+                command: "chamfer; distance 2",
+                type: "chat",
+                category: "Parametric Operations"
+            },
+            {
+                number: 8,
+                title: "Boolean Union",
+                description: "Combine two solids into one",
+                detail: "Union merges two bodies into a single solid. Select two parts.",
+                command: "boolean; operation union",
+                type: "keyboard",
+                key: "U",
+                category: "Parametric Operations"
+            },
+            {
+                number: 9,
+                title: "Boolean Cut",
+                description: "Subtract one solid from another",
+                detail: "Cut removes material. Select target body then select tool body.",
+                command: "boolean; operation cut",
+                type: "keyboard",
+                key: "Ctrl+K",
+                category: "Parametric Operations"
+            },
+            {
+                number: 10,
+                title: "Create Shell",
+                description: "Create a hollow part with uniform wall thickness",
+                detail: "Shell removes faces and creates walls. Remove bottom face, set thickness 2mm.",
+                command: "shell; faces [bottom]; thickness 2",
+                type: "chat",
+                category: "Parametric Operations"
+            },
+            {
+                number: 11,
+                title: "Rectangular Pattern",
+                description: "Array features in X and Y directions",
+                detail: "Create a 3x4 grid pattern. Set spacing 20mm, count 3 and 4.",
+                command: "pattern; type rectangular; rows 3; cols 4; spacing 20",
+                type: "chat",
+                category: "Parametric Operations"
+            },
+            {
+                number: 12,
+                title: "Circular Pattern",
+                description: "Array features around a center point",
+                detail: "Create radial pattern. Set count 8 around 360 degrees.",
+                command: "pattern; type circular; count 8; angle 360",
+                type: "chat",
+                category: "Parametric Operations"
+            },
+
+            // Section 3: Advanced Operations
+            {
+                number: 13,
+                title: "Sweep Along Path",
+                description: "Sweep a profile along a curve",
+                detail: "Sweep extrudes a 2D profile along a 3D path. Create a pipe by sweeping a circle.",
+                command: "sweep; profile circle; path curve; twist none",
+                type: "chat",
+                category: "Advanced Operations"
+            },
+            {
+                number: 14,
+                title: "Loft Between Profiles",
+                description: "Blend between two different cross-sections",
+                detail: "Loft creates smooth transitions. Create 2 sketches at different heights and loft.",
+                command: "loft; profile1 circle; profile2 square; smooth true",
+                type: "chat",
+                category: "Advanced Operations"
+            },
+            {
+                number: 15,
+                title: "Sheet Metal Bend",
+                description: "Bend sheet metal with 90° angle",
+                detail: "Create a bend tab with k-factor for material allowance. Set k=0.5.",
+                command: "bend; angle 90; radius 2; k-factor 0.5",
+                type: "chat",
+                category: "Advanced Operations"
+            },
+            {
+                number: 16,
+                title: "Unfold Sheet Metal",
+                description: "Generate flat pattern from folded sheet",
+                detail: "Unfold creates a 2D flat pattern for manufacturing. Auto-calculate bend allowance.",
+                command: "unfold; method k-factor; calculate true",
+                type: "chat",
+                category: "Advanced Operations"
+            },
+            {
+                number: 17,
+                title: "Generate Spring",
+                description: "Create a helical spring geometry",
+                detail: "Spring creates coil geometry. Set pitch 10mm, coils 10, radius 15mm.",
+                command: "spring; pitch 10; coils 10; radius 15",
+                type: "chat",
+                category: "Advanced Operations"
+            },
+            {
+                number: 18,
+                title: "Generate Thread",
+                description: "Create a screw thread",
+                detail: "Thread generates helical cutting geometry. M10 metric, pitch 1.5mm.",
+                command: "thread; type M10; pitch 1.5; handedness right",
+                type: "chat",
+                category: "Advanced Operations"
+            },
+
+            // Section 4: Assembly
+            {
+                number: 19,
+                title: "Switch to Assembly Mode",
+                description: "Enter the assembly workspace",
+                detail: "Assembly mode combines multiple parts. Click Assembly tab in toolbar.",
+                command: "view assembly",
+                type: "keyboard",
+                key: "A",
+                category: "Assembly"
+            },
+            {
+                number: 20,
+                title: "Insert Component",
+                description: "Add a component to the assembly",
+                detail: "Insert from file or create new. Use Insert Component button.",
+                command: "assembly; insert component",
+                type: "chat",
+                category: "Assembly"
+            },
+            {
+                number: 21,
+                title: "Apply Coincident Mate",
+                description: "Align faces or planes together",
+                detail: "Mate constraint makes elements align. Select 2 faces to coincide.",
+                command: "mate; type coincident",
+                type: "keyboard",
+                key: "M",
+                category: "Assembly"
+            },
+            {
+                number: 22,
+                title: "Apply Distance Mate",
+                description: "Set fixed distance between components",
+                detail: "Distance mate creates spacing. Select 2 faces, set distance 10mm.",
+                command: "mate; type distance; value 10",
+                type: "chat",
+                category: "Assembly"
+            },
+            {
+                number: 23,
+                title: "Create Exploded View",
+                description: "Separate components for visualization",
+                detail: "Explode moves parts apart. Drag component in 3D view while in explode mode.",
+                command: "assembly; explode",
+                type: "keyboard",
+                key: "Ctrl+E",
+                category: "Assembly"
+            },
+
+            // Section 5: Text-to-CAD
+            {
+                number: 24,
+                title: "Activate Text-to-CAD",
+                description: "Enable natural language input",
+                detail: "Text-to-CAD converts voice/text commands. Click AI Chat tab or press Ctrl+Shift+T.",
+                command: "mode text-to-cad",
+                type: "keyboard",
+                key: "Ctrl+Shift+T",
+                category: "Text-to-CAD"
+            },
+            {
+                number: 25,
+                title: "Create Shape with Voice",
+                description: "Build geometry by speaking",
+                detail: "Say 'create cylinder 50mm radius 80mm tall'. Mic button activates speech recognition.",
+                command: "create cylinder 50mm radius 80mm tall",
+                type: "chat",
+                category: "Text-to-CAD"
+            },
+            {
+                number: 26,
+                title: "Add Feature from Text",
+                description: "Apply operation using natural language",
+                detail: "Type 'fillet all edges with 5mm radius'. System auto-detects edges.",
+                command: "fillet all edges with 5mm radius",
+                type: "chat",
+                category: "Text-to-CAD"
+            },
+            {
+                number: 27,
+                title: "Generate from Design Brief",
+                description: "Create design from specifications",
+                detail: "Input: 'rectangular box 100x50x30mm with corner fillets 3mm'. Full design generated.",
+                command: "create from: rectangular box 100x50x30mm with corner fillets 3mm",
+                type: "chat",
+                category: "Text-to-CAD"
+            },
+
+            // Section 6: CAM Pipeline
+            {
+                number: 28,
+                title: "Switch to CAM Workspace",
+                description: "Enter CAM design environment",
+                detail: "CAM workspace shows toolpath and machining operations. Click CAM tab.",
+                command: "view cam",
+                type: "keyboard",
+                key: "Ctrl+M",
+                category: "CAM Pipeline"
+            },
+            {
+                number: 29,
+                title: "Create Facing Operation",
+                description: "Generate a surface finish pass",
+                detail: "Facing cuts the top surface. Set tool diameter 10mm, spindle 1000 RPM, feed 100mm/min.",
+                command: "cam; operation facing; tool 10mm; rpm 1000; feed 100",
+                type: "chat",
+                category: "CAM Pipeline"
+            },
+            {
+                number: 30,
+                title: "Create Pocket Operation",
+                description: "Machine a rectangular pocket",
+                detail: "Pocket removes material from cavity. Select face, set depth 20mm.",
+                command: "cam; operation pocket; depth 20",
+                type: "chat",
+                category: "CAM Pipeline"
+            },
+            {
+                number: 31,
+                title: "Create Drill Operation",
+                description: "Generate drilling toolpath",
+                detail: "Drill creates holes. Tool 5mm, speed 500 RPM, peck depth 10mm.",
+                command: "cam; operation drill; tool 5; rpm 500; peck 10",
+                type: "chat",
+                category: "CAM Pipeline"
+            },
+            {
+                number: 32,
+                title: "Generate Adaptive Toolpath",
+                description: "AI-optimized cutting strategy",
+                detail: "Adaptive maintains constant load. Sets optimal speeds and feeds automatically.",
+                command: "cam; operation adaptive; material aluminum",
+                type: "chat",
+                category: "CAM Pipeline"
+            },
+            {
+                number: 33,
+                title: "Export G-Code",
+                description: "Generate machine-ready G-code",
+                detail: "Export generates CNC program. Select format (Fanuc, Haas, Mazak).",
+                command: "cam; export gcode; format fanuc",
+                type: "chat",
+                category: "CAM Pipeline"
+            },
+            {
+                number: 34,
+                title: "Simulate Toolpath",
+                description: "Visualize cutting simulation",
+                detail: "Simulation shows tool movement and material removal. Play animation.",
+                command: "cam; simulate; play",
+                type: "keyboard",
+                key: "Ctrl+Shift+S",
+                category: "CAM Pipeline"
+            },
+
+            // Section 7: DFM Analysis
+            {
+                number: 35,
+                title: "Activate DFM Analysis",
+                description: "Check design for manufacturability",
+                detail: "DFM shows issues and improvements. Click DFM tab in right panel.",
+                command: "analyze dfm",
+                type: "keyboard",
+                key: "Ctrl+D",
+                category: "DFM Analysis"
+            },
+            {
+                number: 36,
+                title: "Check Wall Thickness",
+                description: "Verify minimum wall thickness",
+                detail: "DFM highlights thin walls (<1.5mm). Suggests thickness 2-3mm.",
+                command: "analyze; check wall-thickness; minimum 2",
+                type: "chat",
+                category: "DFM Analysis"
+            },
+            {
+                number: 37,
+                title: "Detect Draft Issues",
+                description: "Find walls without draft angle",
+                detail: "Draft 2-3° aids mold release. DFM highlights non-drafted faces.",
+                command: "analyze; check draft; min-angle 2",
+                type: "chat",
+                category: "DFM Analysis"
+            },
+            {
+                number: 38,
+                title: "Check Undercuts",
+                description: "Identify undercut features",
+                detail: "Undercuts complicate molding. DFM flags and suggests core inserts.",
+                command: "analyze; check undercuts",
+                type: "chat",
+                category: "DFM Analysis"
+            },
+            {
+                number: 39,
+                title: "Estimate Machining Time",
+                description: "Calculate CNC machine time",
+                detail: "DFM estimates time and cost for aluminum cutting. Material selection varies result.",
+                command: "analyze; estimate time; material aluminum",
+                type: "chat",
+                category: "DFM Analysis"
+            },
+            {
+                number: 40,
+                title: "Get Design Recommendations",
+                description: "Receive AI-powered DFM suggestions",
+                detail: "AI chatbot suggests geometry changes for better manufacturability.",
+                command: "chat; ask 'how can I improve manufacturability?'",
+                type: "chat",
+                category: "DFM Analysis"
+            },
+
+            // Section 8: Completion
+            {
+                number: 41,
+                title: "Export to STEP Format",
+                description: "Save design as STEP file",
+                detail: "STEP is the industry standard. Preserves all geometry and metadata.",
+                command: "export step",
+                type: "keyboard",
+                key: "Ctrl+E",
+                category: "Export"
+            },
+            {
+                number: 42,
+                title: "Import STEP Assembly",
+                description: "Load a STEP file into cycleCAD",
+                detail: "Import loads geometry and assembly structure. File → Import → Select STEP.",
+                command: "import step",
+                type: "keyboard",
+                key: "Ctrl+I",
+                category: "Import"
+            },
+            {
+                number: 43,
+                title: "Save Project",
+                description: "Save all work to project file",
+                detail: "Project saves CAD data, CAM toolpaths, and metadata. Ctrl+S.",
+                command: "save project",
+                type: "keyboard",
+                key: "Ctrl+S",
+                category: "Project"
+            },
+            {
+                number: 44,
+                title: "Share Design",
+                description: "Generate a shareable link",
+                detail: "Create a public link for collaboration. Others can view and comment.",
+                command: "share; access view",
+                type: "chat",
+                category: "Collaboration"
+            },
+            {
+                number: 45,
+                title: "View in ExplodeView",
+                description: "Open design in 3D viewer",
+                detail: "ExplodeView is the interactive 3D viewer. Shows assembly breakdown.",
+                command: "view explode",
+                type: "keyboard",
+                key: "V",
+                category: "Viewer"
+            }
+        ];
+
+        let currentStepIndex = 0;
+        let isRunning = false;
+
+        // Initialize steps on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            renderSteps();
+            updateProgress();
+            setupEventListeners();
+            loadKeyboardShortcuts();
+        });
+
+        function renderSteps() {
+            const container = document.getElementById('stepsContainer');
+            container.innerHTML = '';
+
+            TUTORIAL_STEPS.forEach((step, index) => {
+                const card = document.createElement('div');
+                card.className = 'step-card';
+                card.id = `step-${index}`;
+
+                card.innerHTML = `
+                    <div class="step-header">
+                        <div class="step-badge">${step.number}</div>
+                        <div class="step-title">${step.title}</div>
+                        <div class="step-status">${step.category}</div>
+                    </div>
+                    <div class="step-description">${step.description}</div>
+                    <div class="step-details" id="details-${index}">
+                        ${step.detail}
+                        ${step.command ? `<div class="step-code">Command: "${step.command}"</div>` : ''}
+                        ${step.key ? `<div class="step-code">Key: ${step.key}</div>` : ''}
+                    </div>
+                    <div class="step-actions">
+                        <button class="step-run-btn" onclick="runStep(${index})">▶ Run</button>
+                        <button class="step-details-toggle" onclick="toggleDetails(${index})">Details</button>
+                    </div>
+                `;
+
+                card.addEventListener('click', (e) => {
+                    if (!e.target.closest('button')) {
+                        currentStepIndex = index;
+                        updateActiveStep();
+                    }
+                });
+
+                container.appendChild(card);
+            });
+
+            document.getElementById('stepCounter').textContent = `Step 0 of ${TUTORIAL_STEPS.length}`;
+        }
+
+        function runStep(index) {
+            const step = TUTORIAL_STEPS[index];
+            currentStepIndex = index;
+            updateActiveStep();
+
+            // Execute based on step type
+            if (step.type === 'chat' && step.command) {
+                executeChatCommand(step.command);
+            } else if (step.type === 'keyboard' && step.key) {
+                executeKeyboardShortcut(step.key);
+            }
+
+            markStepComplete(index);
+        }
+
+        function executeChatCommand(command) {
+            const frame = document.getElementById('app-frame');
+            if (frame && frame.contentWindow) {
+                try {
+                    frame.contentWindow.postMessage({
+                        type: 'chat-command',
+                        command: command
+                    }, '*');
+                } catch (e) {
+                    console.log('Cross-origin execution - manual input required');
+                }
+            }
+        }
+
+        function executeKeyboardShortcut(key) {
+            const frame = document.getElementById('app-frame');
+            if (frame && frame.contentWindow) {
+                try {
+                    frame.contentWindow.postMessage({
+                        type: 'keyboard-shortcut',
+                        key: key
+                    }, '*');
+                } catch (e) {
+                    console.log('Cross-origin shortcut - manual input required');
+                }
+            }
+        }
+
+        function toggleDetails(index) {
+            const details = document.getElementById(`details-${index}`);
+            details.classList.toggle('expanded');
+        }
+
+        function updateActiveStep() {
+            document.querySelectorAll('.step-card.active').forEach(card => {
+                card.classList.remove('active');
+                const btn = card.querySelector('.step-run-btn');
+                if (btn) btn.disabled = false;
+            });
+
+            const activeCard = document.getElementById(`step-${currentStepIndex}`);
+            if (activeCard) {
+                activeCard.classList.add('active');
+                activeCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                document.getElementById('footerText').textContent = `Step ${currentStepIndex + 1}: ${TUTORIAL_STEPS[currentStepIndex].title}`;
+            }
+
+            updateProgress();
+        }
+
+        function markStepComplete(index) {
+            const card = document.getElementById(`step-${index}`);
+            if (card && !card.classList.contains('completed')) {
+                card.classList.add('completed');
+                updateProgress();
+            }
+        }
+
+        function updateProgress() {
+            const completedCount = document.querySelectorAll('.step-card.completed').length;
+            const totalSteps = TUTORIAL_STEPS.length;
+            const percentage = (completedCount / totalSteps) * 100;
+
+            document.getElementById('progressBar').style.width = percentage + '%';
+            document.getElementById('stepCounter').textContent = `Step ${currentStepIndex + 1} of ${totalSteps}`;
+        }
+
+        function setupEventListeners() {
+            document.getElementById('runAllBtn').addEventListener('click', runAllSteps);
+            document.getElementById('stopBtn').addEventListener('click', stopRunning);
+            document.getElementById('openTabBtn').addEventListener('click', () => {
+                window.open('https://cyclecad.com/app/', '_blank');
+            });
+            document.getElementById('reloadAppBtn').addEventListener('click', () => {
+                document.getElementById('app-frame').src = 'https://cyclecad.com/app/';
+            });
+
+            document.getElementById('shortcutsToggle').addEventListener('click', () => {
+                document.getElementById('shortcutsPanel').classList.toggle('visible');
+            });
+
+            document.getElementById('shortcutsClose').addEventListener('click', () => {
+                document.getElementById('shortcutsPanel').classList.remove('visible');
+            });
+        }
+
+        function loadKeyboardShortcuts() {
+            const shortcutsContent = document.getElementById('shortcutsContent');
+            const shortcuts = [
+                { key: 'C', desc: 'Coincident Constraint' },
+                { key: 'H', desc: 'Horizontal Constraint' },
+                { key: 'E', desc: 'Equal Constraint' },
+                { key: 'U', desc: 'Boolean Union' },
+                { key: 'Ctrl+K', desc: 'Boolean Cut' },
+                { key: 'A', desc: 'Assembly Mode' },
+                { key: 'M', desc: 'Apply Mate' },
+                { key: 'Ctrl+E', desc: 'Explode View' },
+                { key: 'Ctrl+Shift+T', desc: 'Text-to-CAD' },
+                { key: 'Ctrl+M', desc: 'CAM Workspace' },
+                { key: 'Ctrl+Shift+S', desc: 'Simulate Toolpath' },
+                { key: 'Ctrl+D', desc: 'DFM Analysis' },
+                { key: 'Ctrl+E', desc: 'Export' },
+                { key: 'Ctrl+I', desc: 'Import' },
+                { key: 'Ctrl+S', desc: 'Save Project' },
+                { key: 'V', desc: 'View (ExplodeView)' }
+            ];
+
+            shortcutsContent.innerHTML = shortcuts.map(sc => `
+                <div class="shortcut-item">
+                    <span class="shortcut-desc">${sc.desc}</span>
+                    <span class="shortcut-key">${sc.key}</span>
+                </div>
+            `).join('');
+        }
+
+        async function runAllSteps() {
+            isRunning = true;
+            document.getElementById('runAllBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+
+            for (let i = 0; i < TUTORIAL_STEPS.length && isRunning; i++) {
+                currentStepIndex = i;
+                updateActiveStep();
+
+                const step = TUTORIAL_STEPS[i];
+                if (step.type === 'chat' && step.command) {
+                    executeChatCommand(step.command);
+                } else if (step.type === 'keyboard' && step.key) {
+                    executeKeyboardShortcut(step.key);
+                }
+
+                markStepComplete(i);
+                await new Promise(resolve => setTimeout(resolve, 800));
+            }
+
+            stopRunning();
+        }
+
+        function stopRunning() {
+            isRunning = false;
+            document.getElementById('runAllBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+        }
+    </script>
+</body>
+</html>

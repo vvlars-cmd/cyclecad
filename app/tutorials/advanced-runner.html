@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>cycleCAD Advanced Tutorial Runner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            color: #1a1a2e;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header */
+        header {
+            background-color: #ffffff;
+            border-bottom: 1px solid #d0d7de;
+            padding: 16px 20px;
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            max-width: 2000px;
+            margin: 0 auto;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0969da;
+        }
+
+        .progress-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .progress-bar-container {
+            flex: 1;
+            height: 8px;
+            background-color: #d0d7de;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #0969da, #54aeff);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .step-counter {
+            font-size: 12px;
+            color: #57606a;
+            white-space: nowrap;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        button {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: 1px solid #d0d7de;
+            background-color: #ffffff;
+            color: #1a1a2e;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #f0f2f5;
+            border-color: #0969da;
+        }
+
+        .btn-primary {
+            background-color: #0969da;
+            border-color: #0969da;
+            color: #fff;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background-color: #0860ca;
+            border-color: #0860ca;
+        }
+
+        .btn-danger {
+            background-color: #cf222e;
+            border-color: #cf222e;
+            color: #fff;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background-color: #a40e26;
+            border-color: #a40e26;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Main Container */
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            gap: 0;
+        }
+
+        /* Left Panel - Tutorial Steps */
+        .tutorial-panel {
+            width: 35%;
+            background-color: #ffffff;
+            border-right: 1px solid #d0d7de;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .steps-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .steps-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .steps-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .steps-container::-webkit-scrollbar-thumb {
+            background-color: #c1c8cf;
+            border-radius: 4px;
+        }
+
+        .steps-container::-webkit-scrollbar-thumb:hover {
+            background-color: #57606a;
+        }
+
+        /* Step Card */
+        .step-card {
+            background-color: #f6f8fa;
+            border: 1px solid #d0d7de;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .step-card:hover {
+            border-color: #0969da;
+            background-color: #eaf5ff;
+        }
+
+        .step-card.active {
+            background-color: #ddf4ff;
+            border-color: #0969da;
+            animation: pulse 1s infinite;
+        }
+
+        .step-card.active .step-badge {
+            background-color: #0969da;
+            color: #fff;
+        }
+
+        .step-card.completed {
+            border-color: #1a7f37;
+            background-color: #dafbe1;
+        }
+
+        .step-card.completed .step-badge {
+            background-color: #1a7f37;
+            color: #fff;
+        }
+
+        .step-card.completed::after {
+            content: " ✓";
+            color: #1a7f37;
+            font-weight: 700;
+            margin-left: 4px;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(9, 105, 218, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 0 10px rgba(9, 105, 218, 0);
+            }
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .step-badge {
+            background-color: #0969da;
+            color: #ffffff;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .step-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a1a2e;
+            flex: 1;
+        }
+
+        .step-status {
+            font-size: 11px;
+            color: #57606a;
+        }
+
+        .step-description {
+            font-size: 13px;
+            color: #57606a;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .step-details {
+            display: none;
+            background-color: #eaf5ff;
+            border-left: 2px solid #0969da;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: #1a1a2e;
+            line-height: 1.5;
+        }
+
+        .step-details.expanded {
+            display: block;
+        }
+
+        .step-code {
+            background-color: #f6f8fa;
+            border: 1px solid #d0d7de;
+            border-radius: 4px;
+            padding: 8px;
+            margin-top: 4px;
+            font-family: 'Monaco', monospace;
+            font-size: 11px;
+            color: #79c0ff;
+            overflow-x: auto;
+        }
+
+        .step-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .step-run-btn {
+            flex: 1;
+            padding: 8px 12px;
+            font-size: 12px;
+            background-color: #0969da;
+            border-color: #0969da;
+            color: #ffffff;
+            font-weight: 600;
+            border-radius: 4px;
+        }
+
+        .step-run-btn:hover:not(:disabled) {
+            background-color: #79c0ff;
+            border-color: #79c0ff;
+        }
+
+        .step-run-btn:disabled {
+            background-color: #d0d7de;
+            border-color: #d0d7de;
+            color: #57606a;
+        }
+
+        .step-details-toggle {
+            padding: 6px 10px;
+            font-size: 11px;
+            background-color: transparent;
+            border: 1px solid #d0d7de;
+        }
+
+        /* Right Panel - App Preview */
+        .app-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #ffffff;
+            overflow: hidden;
+        }
+
+        .app-header {
+            background-color: #f6f8fa;
+            border-bottom: 1px solid #d0d7de;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .app-header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .app-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #238636;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 49%, 100% { opacity: 1; }
+            50%, 99% { opacity: 0.5; }
+        }
+
+        .app-url {
+            font-size: 12px;
+            color: #57606a;
+        }
+
+        .app-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .app-actions button {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        #app-frame {
+            flex: 1;
+            border: none;
+            background-color: #fff;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #f6f8fa;
+            border-top: 1px solid #d0d7de;
+            padding: 12px 20px;
+            flex-shrink: 0;
+            font-size: 12px;
+            color: #57606a;
+        }
+
+        /* Message Box */
+        .message-box {
+            background-color: #eaeef2;
+            border: 1px solid #d0d7de;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+            font-size: 12px;
+            color: #57606a;
+        }
+
+        .message-box.warning {
+            border-color: #d29922;
+            background-color: rgba(210, 153, 34, 0.1);
+            color: #d0883c;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .tutorial-panel {
+                width: 100%;
+                height: 40%;
+                border-right: none;
+                border-bottom: 1px solid #d0d7de;
+            }
+
+            .app-panel {
+                height: 60%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-content">
+            <div class="header-left">
+                <div class="header-title">Advanced Tutorial Runner</div>
+            </div>
+            <div class="progress-section">
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+                <div class="step-counter" id="stepCounter">Step 0 of 32</div>
+            </div>
+            <div class="header-controls">
+                <button class="btn-primary" id="runAllBtn">▶ Run All</button>
+                <button class="btn-danger" id="stopBtn" disabled>⏹ Stop</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Left Panel - Tutorial Steps -->
+        <div class="tutorial-panel">
+            <div class="steps-container" id="stepsContainer"></div>
+            <footer>
+                <div id="footerText">Select a step to begin</div>
+            </footer>
+        </div>
+
+        <!-- Right Panel - App Preview -->
+        <div class="app-panel">
+            <div class="app-header">
+                <div class="app-header-left">
+                    <div class="app-indicator" id="appIndicator"></div>
+                    <div class="app-url">cyclecad.com/app/</div>
+                </div>
+                <div class="app-actions">
+                    <button id="openTabBtn">↗ Open in Tab</button>
+                    <button id="reloadAppBtn">⟳ Reload</button>
+                </div>
+            </div>
+            <iframe id="app-frame" src="../index.html"></iframe>
+            <div class="message-box warning" style="margin: 12px; display: none;" id="crossOriginMsg">
+                <strong>Note:</strong> If steps don't auto-execute, the app may need to be on the same origin. Open cycleCAD in a separate tab and follow along manually.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Advanced Tutorial Steps Data
+        const TUTORIAL_STEPS = [
+            // Agent API (Steps 1-5)
+            {
+                number: 1,
+                title: "Agent API: Create Cylinder",
+                description: "Use the Agent API to programmatically create a cylinder shape",
+                detail: "The Agent API provides JSON-RPC style access to all cycleCAD geometry operations. This step demonstrates shape.cylinder with dynamic parameters.",
+                command: "window.cycleCAD.execute({ method: 'shape.cylinder', params: { radius: 25, height: 80, centered: true } })",
+                type: "api",
+                category: "Agent API"
+            },
+            {
+                number: 2,
+                title: "Agent API: Add Fillet",
+                description: "Apply a fillet operation via Agent API",
+                detail: "The feature.fillet command takes a radius parameter and applies edge rounding to the selected geometry.",
+                command: "window.cycleCAD.execute({ method: 'feature.fillet', params: { radius: 5, edges: [0, 1, 2] } })",
+                type: "api",
+                category: "Agent API"
+            },
+            {
+                number: 3,
+                title: "Agent API: Boolean Operations",
+                description: "Perform a boolean cut operation using the Agent API",
+                detail: "Use feature.boolean to combine geometries: union, cut, or intersect. This demonstrates a cut operation.",
+                command: "window.cycleCAD.execute({ method: 'feature.boolean', params: { operation: 'cut', target: 0, tool: 1 } })",
+                type: "api",
+                category: "Agent API"
+            },
+            {
+                number: 4,
+                title: "Agent API: Create Assembly",
+                description: "Create an assembly component using the Agent API",
+                detail: "The assembly.add command adds a named component to the current assembly with position and rotation.",
+                command: "window.cycleCAD.execute({ method: 'assembly.add', params: { name: 'Part_1', shapeId: 'shape_0', position: [0, 0, 0] } })",
+                type: "api",
+                category: "Agent API"
+            },
+            {
+                number: 5,
+                title: "Agent API: Query Geometry",
+                description: "Query geometry properties via the Agent API",
+                detail: "Use render.query to inspect selected geometry: dimensions, volume, surface area, and material properties.",
+                command: "window.cycleCAD.execute({ method: 'render.query', params: { shapeId: 'shape_0' } })",
+                type: "api",
+                category: "Agent API"
+            },
+
+            // MCP Server (Steps 6-8)
+            {
+                number: 6,
+                title: "MCP: Register Tool Schema",
+                description: "Set up MCP tool schema for external AI agents",
+                detail: "The MCP server exposes cycleCAD as a set of tools that Claude and other AI agents can discover and call.",
+                command: "Keyboard shortcut: Ctrl+M to toggle MCP panel",
+                key: "Ctrl+M",
+                type: "key",
+                category: "MCP Server"
+            },
+            {
+                number: 7,
+                title: "MCP: Test Claude Integration",
+                description: "Test MCP connection with Claude AI assistant",
+                detail: "Once MCP is registered, Claude can directly call cycleCAD commands to create and modify designs.",
+                command: "Click MCP panel, then 'Test Connection'",
+                type: "click",
+                category: "MCP Server"
+            },
+            {
+                number: 8,
+                title: "MCP: View Tool Definitions",
+                description: "Inspect the tool schema available to external agents",
+                detail: "View all 55 commands exposed via MCP with parameter schemas and descriptions.",
+                command: "In MCP panel, click 'Show Tools'",
+                type: "click",
+                category: "MCP Server"
+            },
+
+            // REST API (Steps 9-11)
+            {
+                number: 9,
+                title: "REST API: Create Shape via HTTP",
+                description: "Call REST API endpoint to create geometry",
+                detail: "POST /api/shape/cylinder with JSON body: { radius: 25, height: 80 }",
+                command: "curl -X POST http://localhost:8080/api/shape/cylinder -H 'Content-Type: application/json' -d '{\"radius\": 25, \"height\": 80}'",
+                type: "api",
+                category: "REST API"
+            },
+            {
+                number: 10,
+                title: "REST API: Export to GLB",
+                description: "Export the model via REST API",
+                detail: "GET /api/export/glb returns the current model as a binary GLB file.",
+                command: "window.fetch('http://localhost:8080/api/export/glb').then(r => r.blob())",
+                type: "api",
+                category: "REST API"
+            },
+            {
+                number: 11,
+                title: "REST API: WebSocket Real-time Updates",
+                description: "Connect to WebSocket for live model updates",
+                detail: "WebSocket endpoint /ws sends real-time geometry updates when other clients modify the model.",
+                command: "const ws = new WebSocket('ws://localhost:8080/ws'); ws.onmessage = (e) => console.log(e.data)",
+                type: "api",
+                category: "REST API"
+            },
+
+            // CLI Tool (Steps 12-14)
+            {
+                number: 12,
+                title: "CLI: Launch Interactive REPL",
+                description: "Start the cycleCAD CLI tool in interactive mode",
+                detail: "The CLI provides a command-line interface for CAD operations with tab completion and colored output.",
+                command: "npx cyclecad-cli --mode=repl",
+                type: "api",
+                category: "CLI Tool"
+            },
+            {
+                number: 13,
+                title: "CLI: Batch Scripting",
+                description: "Run a batch script file with multiple operations",
+                detail: "Create a .cad script file with multiple commands (one per line) and execute it.",
+                command: "npx cyclecad-cli --script=model.cad --output=model.glb",
+                type: "api",
+                category: "CLI Tool"
+            },
+            {
+                number: 14,
+                title: "CLI: Export Model",
+                description: "Export model to STL or GLB from the command line",
+                detail: "The CLI supports batch export of multiple formats with compression options.",
+                command: "npx cyclecad-cli --model=design.json --export=stl --output=part.stl",
+                type: "api",
+                category: "CLI Tool"
+            },
+
+            // Token Engine (Steps 15-17)
+            {
+                number: 15,
+                title: "Token Engine: Check Balance",
+                description: "View your current $CYCLE token balance",
+                detail: "The token dashboard shows spending, earnings, and usage history with per-operation costs.",
+                command: "Keyboard shortcut: Ctrl+Shift+T to open token dashboard",
+                key: "Ctrl+Shift+T",
+                type: "key",
+                category: "Token Engine"
+            },
+            {
+                number: 16,
+                title: "Token Engine: Buy Tokens",
+                description: "Purchase $CYCLE tokens via Stripe or crypto",
+                detail: "Tokens are billed per operation: 10 for shape creation, 5 for fillet/chamfer, 2 for render.",
+                command: "In token dashboard, click 'Buy Tokens' button",
+                type: "click",
+                category: "Token Engine"
+            },
+            {
+                number: 17,
+                title: "Token Engine: Earn Tokens",
+                description: "Earn tokens by publishing designs to the marketplace",
+                detail: "When others purchase or use your designs, you earn 70-90% of the tokens spent.",
+                command: "In marketplace panel, publish a model and share the link",
+                type: "click",
+                category: "Token Engine"
+            },
+
+            // Marketplace (Steps 18-20)
+            {
+                number: 18,
+                title: "Marketplace: Publish Design",
+                description: "Upload your model to the marketplace",
+                detail: "Set pricing tier, license, and preview image. Models can be FREE, PAID (€5-€500), or SUBSCRIPTION.",
+                command: "Keyboard shortcut: Ctrl+P to open marketplace panel",
+                key: "Ctrl+P",
+                type: "key",
+                category: "Marketplace"
+            },
+            {
+                number: 19,
+                title: "Marketplace: Search Models",
+                description: "Browse and purchase models from the community",
+                detail: "Full-text search across 1000+ designs with filtering by category, price, and rating.",
+                command: "Click marketplace 'Search' tab and filter by 'Mechanical'",
+                type: "click",
+                category: "Marketplace"
+            },
+            {
+                number: 20,
+                title: "Marketplace: View Creator Stats",
+                description: "Track sales and earnings from published designs",
+                detail: "See detailed analytics on downloads, ratings, revenue, and token earnings per model.",
+                command: "In marketplace, click 'My Designs' tab",
+                type: "click",
+                category: "Marketplace"
+            },
+
+            // Docker Deployment (Steps 21-23)
+            {
+                number: 21,
+                title: "Docker: Build Images",
+                description: "Build Docker images for cycleCAD services",
+                detail: "The Dockerfile sets up nginx for ExplodeView, Node.js for REST API, and Python for STEP converter.",
+                command: "docker-compose build",
+                type: "api",
+                category: "Docker"
+            },
+            {
+                number: 22,
+                title: "Docker: Start Services",
+                description: "Launch all three services with docker-compose",
+                detail: "Starts ExplodeView (:8080), REST API (:8787), and STEP converter (:9000) simultaneously.",
+                command: "docker-compose up -d",
+                type: "api",
+                category: "Docker"
+            },
+            {
+                number: 23,
+                title: "Docker: Scale MCP Servers",
+                description: "Run multiple MCP server instances for load balancing",
+                detail: "Docker allows horizontal scaling of the MCP server for multi-agent workloads.",
+                command: "docker-compose up -d --scale mcp-server=3",
+                type: "api",
+                category: "Docker"
+            },
+
+            // Multi-Agent Workflows (Steps 24-26)
+            {
+                number: 24,
+                title: "Multi-Agent: Design Review",
+                description: "Run parallel AI agents for design feedback",
+                detail: "Launch multiple Claude instances with different prompts to validate geometry, manufacturability, and cost.",
+                command: "window.cycleCAD.execute({ method: 'validate.designReview', params: { agents: ['claude', 'groq', 'local'] } })",
+                type: "api",
+                category: "Multi-Agent"
+            },
+            {
+                number: 25,
+                title: "Multi-Agent: Collaborative Editing",
+                description: "Enable real-time multi-agent geometry editing",
+                detail: "Agents coordinate via CRDT (Conflict-free Replicated Data Type) for conflict-free concurrent edits.",
+                command: "Keyboard shortcut: Ctrl+Shift+A to enable agent collab mode",
+                key: "Ctrl+Shift+A",
+                type: "key",
+                category: "Multi-Agent"
+            },
+            {
+                number: 26,
+                title: "Multi-Agent: Export Comparison",
+                description: "Export designs generated by different agent strategies",
+                detail: "Compare optimized designs (cost, weight, strength) side-by-side in the viewer.",
+                command: "In multi-agent panel, click 'Export All Variants'",
+                type: "click",
+                category: "Multi-Agent"
+            },
+
+            // Manufacturing Pipeline (Steps 27-29)
+            {
+                number: 27,
+                title: "Connected Fabs: Submit for Fabrication",
+                description: "Send model to connected manufacturing network",
+                detail: "The fab network handles 3D printing, CNC, sheet metal, and laser cutting across 500+ partner shops.",
+                command: "Keyboard shortcut: Ctrl+F to open fab network panel",
+                key: "Ctrl+F",
+                type: "key",
+                category: "Manufacturing"
+            },
+            {
+                number: 28,
+                title: "Connected Fabs: Get Quotes",
+                description: "Request and compare manufacturing quotes",
+                detail: "Fab network auto-estimates cost, lead time, and material availability across different processes.",
+                command: "In fab panel, select process (3D print/CNC/LaserCut) and click 'Get Quotes'",
+                type: "click",
+                category: "Manufacturing"
+            },
+            {
+                number: 29,
+                title: "Connected Fabs: Track Order",
+                description: "Monitor fabrication progress in real-time",
+                detail: "Live GPS tracking, status updates, and estimated delivery for each manufacturing order.",
+                command: "In fab panel, click 'Active Orders' to view tracking",
+                type: "click",
+                category: "Manufacturing"
+            },
+
+            // Advanced Features (Steps 30-32)
+            {
+                number: 30,
+                title: "Plugins: Create Custom Feature",
+                description: "Develop a custom feature plugin using JavaScript",
+                detail: "Plugins extend cycleCAD with domain-specific operations (gears, springs, threads, fasteners).",
+                command: "See /plugins/example-plugin.js for template",
+                type: "api",
+                category: "Advanced"
+            },
+            {
+                number: 31,
+                title: "Plugins: Register in Marketplace",
+                description: "Publish your plugin to the cycleCAD plugin marketplace",
+                detail: "Monetize plugins: charge per use, monthly subscription, or percentage of model sales.",
+                command: "In marketplace, switch to 'Plugins' tab and click 'Publish'",
+                type: "click",
+                category: "Advanced"
+            },
+            {
+                number: 32,
+                title: "Performance Tuning",
+                description: "Profile and optimize agent API performance",
+                detail: "Use Chrome DevTools to analyze render times, API call latency, and memory usage for large assemblies.",
+                command: "Press F12, then Ctrl+Shift+P, type 'performance' and record",
+                key: "F12",
+                type: "key",
+                category: "Advanced"
+            }
+        ];
+
+        let currentStepIndex = 0;
+        let completedSteps = new Set();
+        let isRunningAll = false;
+
+        function init() {
+            renderSteps();
+            setupEventListeners();
+            updateProgress();
+        }
+
+        function renderSteps() {
+            const container = document.getElementById('stepsContainer');
+            container.innerHTML = '';
+
+            TUTORIAL_STEPS.forEach((step, index) => {
+                const card = document.createElement('div');
+                card.className = 'step-card';
+                card.id = `step-${index}`;
+
+                const isCompleted = completedSteps.has(index);
+                if (isCompleted) {
+                    card.classList.add('completed');
+                }
+
+                card.innerHTML = `
+                    <div class="step-header">
+                        <div class="step-badge">${step.number}</div>
+                        <div class="step-title">${step.title}</div>
+                        <div class="step-status">${step.category}</div>
+                    </div>
+                    <div class="step-description">${step.description}</div>
+                    <div class="step-details" id="details-${index}">
+                        <div>${step.detail}</div>
+                        ${step.command ? `<div class="step-code">Cmd: "${step.command}"</div>` : ''}
+                        ${step.key ? `<div class="step-code">Key: ${step.key}</div>` : ''}
+                    </div>
+                    <div class="step-actions">
+                        <button class="step-run-btn" onclick="runStep(${index})">▶ Run</button>
+                        <button class="step-details-toggle" onclick="toggleDetails(${index})">Details</button>
+                    </div>
+                `;
+
+                card.addEventListener('click', () => {
+                    document.querySelectorAll('.step-card').forEach(c => c.classList.remove('active'));
+                    card.classList.add('active');
+                    currentStepIndex = index;
+                    updateFooter();
+                });
+
+                container.appendChild(card);
+            });
+        }
+
+        function toggleDetails(index) {
+            const details = document.getElementById(`details-${index}`);
+            details.classList.toggle('expanded');
+        }
+
+        async function runStep(index) {
+            const step = TUTORIAL_STEPS[index];
+            const card = document.getElementById(`step-${index}`);
+            const runBtn = card.querySelector('.step-run-btn');
+
+            runBtn.disabled = true;
+            runBtn.textContent = '⟳ Running...';
+
+            try {
+                const iframe = document.getElementById('app-frame');
+
+                if (step.type === 'api' && window.cycleCAD) {
+                    // Try to execute via Agent API
+                    eval(step.command);
+                } else if (step.type === 'key') {
+                    // Simulate keyboard shortcut hint
+                    console.log(`Press: ${step.key}`);
+                } else if (step.type === 'click') {
+                    // Log the action to perform manually
+                    console.log(`Click: ${step.detail}`);
+                }
+
+                // Mark as complete
+                completedSteps.add(index);
+                card.classList.add('completed');
+                updateProgress();
+
+                await new Promise(resolve => setTimeout(resolve, 500));
+            } catch (error) {
+                console.error(`Step ${step.number} error:`, error);
+            }
+
+            runBtn.disabled = false;
+            runBtn.textContent = '▶ Run';
+        }
+
+        async function runAll() {
+            const runAllBtn = document.getElementById('runAllBtn');
+            const stopBtn = document.getElementById('stopBtn');
+
+            runAllBtn.disabled = true;
+            stopBtn.disabled = false;
+            isRunningAll = true;
+
+            for (let i = 0; i < TUTORIAL_STEPS.length && isRunningAll; i++) {
+                currentStepIndex = i;
+                document.querySelectorAll('.step-card').forEach(c => c.classList.remove('active'));
+                document.getElementById(`step-${i}`).classList.add('active');
+                await runStep(i);
+                await new Promise(resolve => setTimeout(resolve, 800));
+            }
+
+            runAllBtn.disabled = false;
+            stopBtn.disabled = true;
+            isRunningAll = false;
+            updateProgress();
+        }
+
+        function stopRunAll() {
+            isRunningAll = false;
+            document.getElementById('runAllBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+        }
+
+        function updateProgress() {
+            const total = TUTORIAL_STEPS.length;
+            const completed = completedSteps.size;
+            const percent = (completed / total) * 100;
+
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('stepCounter').textContent = `Step ${completed} of ${total}`;
+        }
+
+        function updateFooter() {
+            const step = TUTORIAL_STEPS[currentStepIndex];
+            document.getElementById('footerText').textContent = `Step ${step.number}: ${step.title}`;
+        }
+
+        function setupEventListeners() {
+            document.getElementById('runAllBtn').addEventListener('click', runAll);
+            document.getElementById('stopBtn').addEventListener('click', stopRunAll);
+            document.getElementById('reloadAppBtn').addEventListener('click', () => {
+                document.getElementById('app-frame').src = '../index.html';
+            });
+            document.getElementById('openTabBtn').addEventListener('click', () => {
+                window.open('../index.html', '_blank');
+            });
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

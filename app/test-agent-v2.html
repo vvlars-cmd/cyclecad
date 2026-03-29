@@ -381,10 +381,10 @@
         const TESTS = {
             'Splash Screen': [
                 {
-                    name: 'Version badge shows v0.9.6',
+                    name: 'Version badge shows v0.9.9',
                     fn: async () => {
                         const badge = appWindow.document.querySelector('[data-version]') ||
-                                     appWindow.document.body.textContent.includes('0.9.6');
+                                     appWindow.document.body.textContent.includes('0.9.9');
                         return badge ? 'Version badge found' : 'No version badge';
                     }
                 },

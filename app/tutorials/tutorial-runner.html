@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>cycleCAD + ExplodeView Interactive Tutorial</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1117;
+            color: #e6edf3;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header */
+        header {
+            background-color: #1e1e1e;
+            border-bottom: 1px solid #30363d;
+            padding: 16px 20px;
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            max-width: 2000px;
+            margin: 0 auto;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #58a6ff;
+        }
+
+        .progress-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .progress-bar-container {
+            flex: 1;
+            height: 8px;
+            background-color: #30363d;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #58a6ff, #79c0ff);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .step-counter {
+            font-size: 12px;
+            color: #8b949e;
+            white-space: nowrap;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        button {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: 1px solid #30363d;
+            background-color: #0d1117;
+            color: #e6edf3;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #1e1e1e;
+            border-color: #58a6ff;
+        }
+
+        .btn-primary {
+            background-color: #1f6feb;
+            border-color: #1f6feb;
+            color: #fff;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background-color: #388bfd;
+            border-color: #388bfd;
+        }
+
+        .btn-danger {
+            background-color: #da3633;
+            border-color: #da3633;
+            color: #fff;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background-color: #f85149;
+            border-color: #f85149;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Main Container */
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            gap: 0;
+        }
+
+        /* Left Panel - Tutorial Steps */
+        .tutorial-panel {
+            width: 35%;
+            background-color: #1e1e1e;
+            border-right: 1px solid #30363d;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .steps-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .steps-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .steps-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .steps-container::-webkit-scrollbar-thumb {
+            background-color: #30363d;
+            border-radius: 4px;
+        }
+
+        .steps-container::-webkit-scrollbar-thumb:hover {
+            background-color: #424a52;
+        }
+
+        /* Step Card */
+        .step-card {
+            background-color: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .step-card:hover {
+            border-color: #58a6ff;
+            background-color: #161b22;
+        }
+
+        .step-card.active {
+            background-color: #1f6feb;
+            border-color: #1f6feb;
+            animation: pulse 1s infinite;
+        }
+
+        .step-card.active .step-badge {
+            background-color: #fff;
+            color: #1f6feb;
+        }
+
+        .step-card.completed {
+            border-color: #238636;
+            background-color: #0d3417;
+        }
+
+        .step-card.completed .step-badge {
+            background-color: #238636;
+            color: #fff;
+        }
+
+        .step-card.completed::after {
+            content: " ✓";
+            color: #238636;
+            font-weight: 700;
+            margin-left: 4px;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(88, 166, 255, 0.7);
+            }
+            50% {
+                box-shadow: 0 0 0 10px rgba(88, 166, 255, 0);
+            }
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .step-badge {
+            background-color: #58a6ff;
+            color: #0d1117;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .step-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e6edf3;
+            flex: 1;
+        }
+
+        .step-status {
+            font-size: 11px;
+            color: #8b949e;
+        }
+
+        .step-description {
+            font-size: 13px;
+            color: #8b949e;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .step-details {
+            display: none;
+            background-color: rgba(88, 166, 255, 0.1);
+            border-left: 2px solid #58a6ff;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: #e6edf3;
+            line-height: 1.5;
+        }
+
+        .step-details.expanded {
+            display: block;
+        }
+
+        .step-code {
+            background-color: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            padding: 8px;
+            margin-top: 4px;
+            font-family: 'Monaco', monospace;
+            font-size: 11px;
+            color: #79c0ff;
+            overflow-x: auto;
+        }
+
+        .step-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .step-run-btn {
+            flex: 1;
+            padding: 8px 12px;
+            font-size: 12px;
+            background-color: #58a6ff;
+            border-color: #58a6ff;
+            color: #0d1117;
+            font-weight: 600;
+            border-radius: 4px;
+        }
+
+        .step-run-btn:hover:not(:disabled) {
+            background-color: #79c0ff;
+            border-color: #79c0ff;
+        }
+
+        .step-run-btn:disabled {
+            background-color: #30363d;
+            border-color: #30363d;
+            color: #8b949e;
+        }
+
+        .step-details-toggle {
+            padding: 6px 10px;
+            font-size: 11px;
+            background-color: transparent;
+            border: 1px solid #30363d;
+        }
+
+        /* Right Panel - App Preview */
+        .app-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #0d1117;
+            overflow: hidden;
+        }
+
+        .app-header {
+            background-color: #1e1e1e;
+            border-bottom: 1px solid #30363d;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .app-header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .app-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #238636;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 49%, 100% { opacity: 1; }
+            50%, 99% { opacity: 0.5; }
+        }
+
+        .app-url {
+            font-size: 12px;
+            color: #8b949e;
+        }
+
+        .app-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .app-actions button {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        #app-frame {
+            flex: 1;
+            border: none;
+            background-color: #fff;
+        }
+
+        /* Floating Shortcuts Panel */
+        .shortcuts-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 320px;
+            max-height: 500px;
+            background-color: #1e1e1e;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            display: none;
+            flex-direction: column;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            z-index: 200;
+        }
+
+        .shortcuts-panel.visible {
+            display: flex;
+        }
+
+        .shortcuts-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid #30363d;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .shortcuts-header h3 {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .shortcuts-close {
+            background: none;
+            border: none;
+            color: #8b949e;
+            cursor: pointer;
+            padding: 0;
+            font-size: 16px;
+        }
+
+        .shortcuts-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 16px;
+        }
+
+        .shortcuts-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .shortcuts-content::-webkit-scrollbar-thumb {
+            background-color: #30363d;
+            border-radius: 3px;
+        }
+
+        .shortcut-item {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #30363d;
+        }
+
+        .shortcut-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .shortcut-key {
+            background-color: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-family: 'Monaco', monospace;
+            font-weight: 600;
+            color: #58a6ff;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .shortcut-desc {
+            color: #8b949e;
+        }
+
+        .shortcuts-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background-color: #58a6ff;
+            border: none;
+            color: #0d1117;
+            font-size: 20px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            z-index: 150;
+        }
+
+        .shortcuts-toggle:hover {
+            background-color: #79c0ff;
+            transform: scale(1.1);
+        }
+
+        .shortcuts-toggle.hidden {
+            display: none;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #1e1e1e;
+            border-top: 1px solid #30363d;
+            padding: 12px 20px;
+            flex-shrink: 0;
+            font-size: 12px;
+            color: #8b949e;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(88, 166, 255, 0.3);
+            border-top-color: #58a6ff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .tutorial-panel {
+                width: 100%;
+                height: 40%;
+                border-right: none;
+                border-bottom: 1px solid #30363d;
+            }
+
+            .app-panel {
+                height: 60%;
+            }
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: absolute;
+            background-color: #161b22;
+            color: #e6edf3;
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #30363d;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .tooltip.visible {
+            opacity: 1;
+        }
+
+        /* Message Box */
+        .message-box {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+            font-size: 12px;
+            color: #8b949e;
+        }
+
+        .message-box.warning {
+            border-color: #d29922;
+            background-color: rgba(210, 153, 34, 0.1);
+            color: #d0883c;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-content">
+            <div class="header-left">
+                <div class="header-title">cycleCAD + ExplodeView Tutorial</div>
+            </div>
+            <div class="progress-section">
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+                <div class="step-counter" id="stepCounter">Step 0 of 47</div>
+            </div>
+            <div class="header-controls">
+                <button class="btn-primary" id="runAllBtn">▶ Run All</button>
+                <button class="btn-danger" id="stopBtn" disabled>⏹ Stop</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Left Panel - Tutorial Steps -->
+        <div class="tutorial-panel">
+            <div class="steps-container" id="stepsContainer"></div>
+            <footer>
+                <div id="footerText">Select a step to begin</div>
+            </footer>
+        </div>
+
+        <!-- Right Panel - App Preview -->
+        <div class="app-panel">
+            <div class="app-header">
+                <div class="app-header-left">
+                    <div class="app-indicator" id="appIndicator"></div>
+                    <div class="app-url">cyclecad.com/app/</div>
+                </div>
+                <div class="app-actions">
+                    <button id="openTabBtn">↗ Open in Tab</button>
+                    <button id="reloadAppBtn">⟳ Reload</button>
+                </div>
+            </div>
+            <iframe id="app-frame" src="https://cyclecad.com/app/"></iframe>
+            <div class="message-box warning" style="margin: 12px; display: none;" id="crossOriginMsg">
+                <strong>Note:</strong> If steps don't auto-execute, the app may need to be on the same origin. Open cycleCAD in a separate tab and follow along manually.
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Shortcuts Panel -->
+    <button class="shortcuts-toggle" id="shortcutsToggle" title="Keyboard Shortcuts (?)">?</button>
+    <div class="shortcuts-panel" id="shortcutsPanel">
+        <div class="shortcuts-header">
+            <h3>Keyboard Shortcuts</h3>
+            <button class="shortcuts-close" id="shortcutsClose">✕</button>
+        </div>
+        <div class="shortcuts-content" id="shortcutsContent"></div>
+    </div>
+
+    <script>
+        // Tutorial Steps Data
+        const TUTORIAL_STEPS = [
+            // Part 1: Build Assembly (Steps 1-8)
+            {
+                number: 1,
+                title: "Create Caliper Body",
+                description: "Create a rectangular box for the caliper main body",
+                detail: "This will be the main structural component. We'll use a box shape with dimensions 80x40x25mm.",
+                command: "box 80x40x25",
+                type: "chat",
+                category: "Build Assembly"
+            },
+            {
+                number: 2,
+                title: "Add Mounting Holes",
+                description: "Create cylindrical holes for mounting",
+                detail: "Add cylindrical holes with 5mm radius and 20mm height for mounting the caliper.",
+                command: "cylinder 5mm radius 20mm tall",
+                type: "chat",
+                category: "Build Assembly"
+            },
+            {
+                number: 3,
+                title: "Create Brake Pad",
+                description: "Add the brake pad component",
+                detail: "Create a flat rectangular brake pad that will contact the rotor.",
+                command: "box 60x30x8",
+                type: "chat",
+                category: "Build Assembly"
+            },
+            {
+                number: 4,
+                title: "Create Pivot Pin",
+                description: "Add the central pivot pin",
+                detail: "This cylindrical pin acts as the pivot point for the caliper arms.",
+                command: "cylinder 8mm radius 40mm tall",
+                type: "chat",
+                category: "Build Assembly"
+            },
+            {
+                number: 5,
+                title: "Create Spring",
+                description: "Add the return spring mechanism",
+                detail: "A helical spring that returns the caliper to its neutral position.",
+                command: "spring 10mm radius 30mm tall",
+                type: "chat",
+                category: "Build Assembly"
+            },
+            {
+                number: 6,
+                title: "Create Adjustment Bolt",
+                description: "Add the adjustment mechanism",
+                detail: "A small bolt for fine-tuning the caliper clearance.",
+                command: "cylinder 4mm radius 25mm tall",
+                type: "chat",
+                category: "Build Assembly"
+            },
+            {
+                number: 7,
+                title: "Create Retaining Clip",
+                description: "Add the safety retaining clip",
+                detail: "A small clip that secures the spring in place.",
+                command: "box 20x5x2",
+                type: "chat",
+                category: "Build Assembly"
+            },
+            {
+                number: 8,
+                title: "Assemble Components",
+                description: "Combine all parts into final assembly",
+                detail: "Use the assembly workspace to position all components together.",
+                command: "gear 30mm 12 teeth",
+                type: "chat",
+                category: "Build Assembly"
+            },
+
+            // Part 2: ExplodeView Features (Steps 9-47)
+            {
+                number: 9,
+                title: "Toggle Viewer Mode",
+                description: "Switch to ExplodeView visualization",
+                detail: "Press 'V' to toggle between modeling and viewing modes.",
+                key: "v",
+                type: "key",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 10,
+                title: "Explode Assembly",
+                description: "Expand all assembly components",
+                detail: "Visualize how components fit together by exploding the assembly.",
+                key: "e",
+                type: "key",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 11,
+                title: "Section Cut",
+                description: "Create a cross-section view",
+                detail: "Press 'C' to slice through the model and see internal structure.",
+                key: "c",
+                type: "key",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 12,
+                title: "Wireframe Toggle",
+                description: "Switch to wireframe rendering",
+                detail: "Press 'W' to see the model as wireframe for better understanding of edges.",
+                key: "w",
+                type: "key",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 13,
+                title: "Grid Floor",
+                description: "Display reference grid",
+                detail: "Press 'G' to show/hide the ground plane grid for spatial reference.",
+                key: "g",
+                type: "key",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 14,
+                title: "Fit to All",
+                description: "Auto-zoom to fit entire assembly",
+                detail: "Press 'F' to zoom and pan the view to show all components.",
+                key: "f",
+                type: "key",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 15,
+                title: "Screenshot Export",
+                description: "Capture the current 3D view",
+                detail: "Press 'S' to save a high-resolution screenshot of the model.",
+                key: "s",
+                type: "key",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 16,
+                title: "Blueprint Theme",
+                description: "Apply blueprint color scheme",
+                detail: "Toggle the technical blueprint visual theme with white background and blue edges.",
+                selector: ".blueprint-btn",
+                type: "click",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 17,
+                title: "AI Part Identifier",
+                description: "Identify parts using AI vision",
+                detail: "Automatically classify parts and find equivalents on McMaster-Carr.",
+                selector: ".ai-identifier-btn",
+                type: "click",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 18,
+                title: "Maintenance Heatmap",
+                description: "Visualize maintenance priorities",
+                detail: "Color-code parts by maintenance urgency: red=urgent, yellow=soon, green=stable.",
+                selector: ".maintenance-btn",
+                type: "click",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 19,
+                title: "Weight Estimator",
+                description: "Calculate component weights",
+                detail: "Estimate mass of each part based on material properties and volume.",
+                selector: ".weight-btn",
+                type: "click",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 20,
+                title: "Part Comparison",
+                description: "Compare two parts side-by-side",
+                detail: "Select two parts to compare dimensions, weight, and volume.",
+                selector: ".comparison-btn",
+                type: "click",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 21,
+                title: "Clearance Checker",
+                description: "Detect interference between parts",
+                detail: "Identify parts that may be overlapping or too close together.",
+                selector: ".clearance-btn",
+                type: "click",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 22,
+                title: "Assembly Validator",
+                description: "Score assembly quality",
+                detail: "Automatic validation returns A-F rating based on structure and completeness.",
+                selector: ".validator-btn",
+                type: "click",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 23,
+                title: "Fastener Wizard",
+                description: "Identify and manage fasteners",
+                detail: "Detect bolts, screws, and nuts with torque specifications and supplier links.",
+                selector: ".fastener-btn",
+                type: "click",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 24,
+                title: "Vibration Analysis",
+                description: "Simulate vibration patterns",
+                detail: "Animate vibration on rotating components like motors and pumps.",
+                selector: ".vibration-btn",
+                type: "click",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 25,
+                title: "Thermal Heatmap",
+                description: "Visualize thermal distribution",
+                detail: "Color parts from blue (cold) to red (hot) based on thermal analysis.",
+                selector: ".thermal-btn",
+                type: "click",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 26,
+                title: "Annotations",
+                description: "Add notes and labels to the model",
+                detail: "Press 'A' to place annotation pins with custom text labels.",
+                key: "a",
+                type: "key",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 27,
+                title: "Measurement Tool",
+                description: "Measure distances and angles",
+                detail: "Press 'M' to activate the measurement tool for precise dimensions.",
+                key: "m",
+                type: "key",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 28,
+                title: "QR Code",
+                description: "Generate QR codes for parts",
+                detail: "Create QR codes that deep-link to specific parts for documentation.",
+                selector: ".qr-btn",
+                type: "click",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 29,
+                title: "Assembly Instructions",
+                description: "Generate step-by-step disassembly manual",
+                detail: "Auto-generate illustrated assembly/disassembly instructions from AI data.",
+                selector: ".instructions-btn",
+                type: "click",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 30,
+                title: "Animation Sequence",
+                description: "Create assembly animation",
+                detail: "Record and playback assembly/disassembly animations with export.",
+                selector: ".animation-btn",
+                type: "click",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 31,
+                title: "BOM Export",
+                description: "Export Bill of Materials",
+                detail: "Generate comprehensive CSV with part numbers, quantities, and costs.",
+                selector: ".bom-btn",
+                type: "click",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 32,
+                title: "Hero Shots",
+                description: "Capture professional renderings",
+                detail: "Generate high-quality marketing images with custom lighting and camera angles.",
+                selector: ".hero-btn",
+                type: "click",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 33,
+                title: "Share & Embed",
+                description: "Share model with others",
+                detail: "Generate shareable links and embeddable code for web integration.",
+                selector: ".share-btn",
+                type: "click",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 34,
+                title: "STL Export",
+                description: "Export part as STL file",
+                detail: "Save individual parts or entire assembly as 3D printable STL format.",
+                selector: ".export-stl-btn",
+                type: "click",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 35,
+                title: "Technical Report",
+                description: "Generate comprehensive analysis report",
+                detail: "Export full HTML report with BOM, assembly, maintenance, and timeline.",
+                selector: ".report-btn",
+                type: "click",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 36,
+                title: "Part Info Card",
+                description: "View detailed part information",
+                detail: "Click on any 3D part to open detailed info card with specs and exports.",
+                type: "manual",
+                category: "ExplodeView Features",
+                detail: "Click on any part in the 3D view to open its information card."
+            },
+            {
+                number: 37,
+                title: "AI Vision Identifier",
+                description: "Use AI vision to classify parts",
+                detail: "Render and analyze part geometry using Gemini Vision API for auto-identification.",
+                selector: ".ai-vision-btn",
+                type: "click",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 38,
+                title: "Batch AI Scan",
+                description: "Scan all parts with AI",
+                detail: "Automatically scan entire assembly and generate classified BOM with pricing.",
+                selector: ".batch-scan-btn",
+                type: "click",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 39,
+                title: "Smart Search",
+                description: "Natural language part search",
+                detail: "Search parts using human-friendly queries with automatic keyword expansion.",
+                selector: ".smart-search-btn",
+                type: "click",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 40,
+                title: "AI Chatbot",
+                description: "Chat with the model AI",
+                detail: "Ask questions about the model, assembly process, or get recommendations.",
+                selector: ".chatbot-btn",
+                type: "click",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 41,
+                title: "Service Mode",
+                description: "Activate field technician workflow",
+                detail: "Specialized interface for service engineers with checklist and reporting.",
+                selector: ".service-btn",
+                type: "click",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 42,
+                title: "Smart BOM",
+                description: "AI-enhanced Bill of Materials",
+                detail: "Generate BOM with AI-identified parts, pricing, and McMaster ordering.",
+                selector: ".smart-bom-btn",
+                type: "click",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 43,
+                title: "Dark/Light Theme",
+                description: "Toggle interface theme",
+                detail: "Switch between dark and light UI themes for your preference.",
+                selector: ".theme-toggle-btn",
+                type: "click",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 44,
+                title: "Multi-Language Support",
+                description: "Change interface language",
+                detail: "Select from EN/DE/FR/ES/IT/NL for internationalization.",
+                selector: ".language-selector",
+                type: "click",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 45,
+                title: "Keyboard Shortcuts Help",
+                description: "View all keyboard shortcuts",
+                detail: "Press '?' to open the comprehensive shortcuts reference panel.",
+                key: "?",
+                type: "key",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 46,
+                title: "Performance Monitor",
+                description: "Monitor FPS and memory usage",
+                detail: "Press Ctrl+Shift+F to display real-time performance metrics overlay.",
+                key: "ctrl+shift+f",
+                type: "key",
+                category: "ExplodeView Features"
+            },
+            {
+                number: 47,
+                title: "Help System",
+                description: "Access comprehensive help",
+                detail: "Click help button to view 63 documented features with search functionality.",
+                selector: ".help-btn",
+                type: "click",
+                category: "ExplodeView Features"
+            }
+        ];
+
+        // Keyboard Shortcuts Reference
+        const KEYBOARD_SHORTCUTS = [
+            { key: "V", desc: "Toggle Viewer Mode" },
+            { key: "E", desc: "Explode Assembly" },
+            { key: "C", desc: "Section Cut" },
+            { key: "W", desc: "Wireframe Toggle" },
+            { key: "G", desc: "Grid Floor" },
+            { key: "F", desc: "Fit to All" },
+            { key: "S", desc: "Screenshot Export" },
+            { key: "A", desc: "Annotations" },
+            { key: "M", desc: "Measurement Tool" },
+            { key: "?", desc: "Keyboard Shortcuts" },
+            { key: "Ctrl+Shift+F", desc: "Performance Monitor" },
+            { key: "T", desc: "Part Tree" },
+            { key: "R", desc: "Reset View" },
+            { key: "H", desc: "Help System" },
+            { key: "Del", desc: "Delete Part" },
+            { key: "Esc", desc: "Cancel Operation" }
+        ];
+
+        let currentStepIndex = 0;
+        let isRunning = false;
+        let completedSteps = new Set();
+
+        // Initialize
+        function init() {
+            renderSteps();
+            setupEventListeners();
+            populateShortcuts();
+            updateProgress();
+        }
+
+        // Render step cards
+        function renderSteps() {
+            const container = document.getElementById('stepsContainer');
+            container.innerHTML = '';
+
+            TUTORIAL_STEPS.forEach((step, index) => {
+                const card = document.createElement('div');
+                card.className = 'step-card';
+                card.id = `step-${index}`;
+
+                const isCompleted = completedSteps.has(index);
+                if (isCompleted) card.classList.add('completed');
+
+                card.innerHTML = `
+                    <div class="step-header">
+                        <div class="step-badge">${step.number}</div>
+                        <div class="step-title">${step.title}</div>
+                        <div class="step-status">${step.category}</div>
+                    </div>
+                    <div class="step-description">${step.description}</div>
+                    <div class="step-details" id="details-${index}">
+                        <div>${step.detail}</div>
+                        ${step.command ? `<div class="step-code">Command: "${step.command}"</div>` : ''}
+                        ${step.key ? `<div class="step-code">Key: ${step.key}</div>` : ''}
+                    </div>
+                    <div class="step-actions">
+                        <button class="step-run-btn" onclick="runStep(${index})">▶ Run</button>
+                        <button class="step-details-toggle" onclick="toggleDetails(${index})">Details</button>
+                    </div>
+                `;
+
+                card.addEventListener('click', (e) => {
+                    if (!e.target.closest('button')) {
+                        currentStepIndex = index;
+                        updateProgress();
+                    }
+                });
+
+                container.appendChild(card);
+            });
+        }
+
+        // Toggle step details
+        function toggleDetails(index) {
+            const details = document.getElementById(`details-${index}`);
+            details.classList.toggle('expanded');
+        }
+
+        // Run a single step
+        async function runStep(index) {
+            const step = TUTORIAL_STEPS[index];
+            const card = document.getElementById(`step-${index}`);
+
+            card.classList.add('active');
+            const runBtn = card.querySelector('.step-run-btn');
+            runBtn.disabled = true;
+            runBtn.innerHTML = `<span class="spinner"></span> Running...`;
+
+            try {
+                if (step.type === 'chat') {
+                    await runChatCommand(step.command);
+                } else if (step.type === 'key') {
+                    await runKeyCommand(step.key);
+                } else if (step.type === 'click') {
+                    await runClickCommand(step.selector);
+                } else if (step.type === 'manual') {
+                    // Manual steps just mark as done
+                }
+
+                await new Promise(resolve => setTimeout(resolve, 800));
+                card.classList.remove('active');
+                card.classList.add('completed');
+                completedSteps.add(index);
+
+                runBtn.disabled = false;
+                runBtn.innerHTML = '✓ Done';
+            } catch (error) {
+                console.error(`Step ${step.number} error:`, error);
+                card.classList.remove('active');
+                runBtn.disabled = false;
+                runBtn.innerHTML = '✕ Error';
+            }
+
+            updateProgress();
+        }
+
+        // Run chat command
+        async function runChatCommand(command) {
+            try {
+                const iframe = document.getElementById('app-frame');
+                const doc = iframe.contentDocument || iframe.contentWindow.document;
+
+                // Try multiple possible selectors for chat input
+                let input = doc.querySelector('#chat-input') ||
+                           doc.querySelector('input[placeholder*="chat"]') ||
+                           doc.querySelector('input[placeholder*="Chat"]') ||
+                           doc.querySelector('textarea[placeholder*="chat"]') ||
+                           doc.querySelector('textarea');
+
+                if (!input) {
+                    console.warn('Chat input not found');
+                    showCrossOriginWarning();
+                    return;
+                }
+
+                input.value = command;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+
+                // Find and click send button
+                const sendBtn = doc.querySelector('#chat-send') ||
+                               doc.querySelector('button:contains("Send")') ||
+                               input.closest('form')?.querySelector('button[type="submit"]') ||
+                               input.parentElement?.querySelector('button');
+
+                if (sendBtn) {
+                    sendBtn.click();
+                } else {
+                    input.dispatchEvent(new KeyboardEvent('keydown', {
+                        key: 'Enter',
+                        code: 'Enter',
+                        keyCode: 13,
+                        bubbles: true
+                    }));
+                }
+            } catch (error) {
+                console.warn('Chat command error (expected for cross-origin):', error);
+                showCrossOriginWarning();
+            }
+        }
+
+        // Run keyboard command
+        async function runKeyCommand(keyStr) {
+            try {
+                const iframe = document.getElementById('app-frame');
+                const iframeWindow = iframe.contentWindow;
+
+                const key = keyStr.toLowerCase();
+                const isCtrlShift = key.includes('ctrl+shift');
+                const ctrlKey = keyStr.toLowerCase().includes('ctrl');
+                const shiftKey = keyStr.toLowerCase().includes('shift');
+
+                // Extract actual key
+                let actualKey = key.replace('ctrl+', '').replace('shift+', '').trim();
+
+                const event = new KeyboardEvent('keydown', {
+                    key: actualKey,
+                    code: `Key${actualKey.toUpperCase()}`,
+                    keyCode: actualKey.charCodeAt(0),
+                    ctrlKey: ctrlKey,
+                    shiftKey: shiftKey,
+                    bubbles: true,
+                    cancelable: true
+                });
+
+                iframeWindow.dispatchEvent(event);
+            } catch (error) {
+                console.warn('Keyboard command error (expected for cross-origin):', error);
+                showCrossOriginWarning();
+            }
+        }
+
+        // Run click command
+        async function runClickCommand(selector) {
+            try {
+                const iframe = document.getElementById('app-frame');
+                const doc = iframe.contentDocument || iframe.contentWindow.document;
+                const element = doc.querySelector(selector);
+
+                if (element) {
+                    element.click();
+                    element.focus();
+                } else {
+                    console.warn(`Selector not found: ${selector}`);
+                    showCrossOriginWarning();
+                }
+            } catch (error) {
+                console.warn('Click command error (expected for cross-origin):', error);
+                showCrossOriginWarning();
+            }
+        }
+
+        // Run all steps sequentially
+        async function runAllSteps() {
+            isRunning = true;
+            document.getElementById('runAllBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+
+            for (let i = 0; i < TUTORIAL_STEPS.length && isRunning; i++) {
+                currentStepIndex = i;
+                updateProgress();
+                await runStep(i);
+                await new Promise(resolve => setTimeout(resolve, 3000));
+            }
+
+            isRunning = false;
+            document.getElementById('runAllBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+        }
+
+        // Stop running
+        function stopRunning() {
+            isRunning = false;
+            document.getElementById('runAllBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+
+            // Remove active state from all cards
+            document.querySelectorAll('.step-card.active').forEach(card => {
+                card.classList.remove('active');
+                const btn = card.querySelector('.step-run-btn');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '▶ Run';
+                }
+            });
+        }
+
+        // Update progress
+        function updateProgress() {
+            const total = TUTORIAL_STEPS.length;
+            const completed = completedSteps.size;
+            const percentage = (completed / total) * 100;
+
+            document.getElementById('progressBar').style.width = percentage + '%';
+            document.getElementById('stepCounter').textContent = `Step ${currentStepIndex + 1} of ${total}`;
+            document.getElementById('footerText').textContent =
+                `${completed} / ${total} completed • ${TUTORIAL_STEPS[currentStepIndex]?.title || 'Tutorial'}`;
+
+            // Scroll to current step
+            const card = document.getElementById(`step-${currentStepIndex}`);
+            if (card) {
+                card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        // Show cross-origin warning
+        let warningShown = false;
+        function showCrossOriginWarning() {
+            if (!warningShown) {
+                const msg = document.getElementById('crossOriginMsg');
+                if (msg) {
+                    msg.style.display = 'block';
+                    warningShown = true;
+                }
+            }
+        }
+
+        // Populate shortcuts panel
+        function populateShortcuts() {
+            const content = document.getElementById('shortcutsContent');
+            content.innerHTML = KEYBOARD_SHORTCUTS.map(s => `
+                <div class="shortcut-item">
+                    <span class="shortcut-desc">${s.desc}</span>
+                    <span class="shortcut-key">${s.key}</span>
+                </div>
+            `).join('');
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            document.getElementById('runAllBtn').addEventListener('click', runAllSteps);
+            document.getElementById('stopBtn').addEventListener('click', stopRunning);
+            document.getElementById('openTabBtn').addEventListener('click', () => {
+                window.open('https://cyclecad.com/app/', '_blank');
+            });
+            document.getElementById('reloadAppBtn').addEventListener('click', () => {
+                document.getElementById('app-frame').src = 'https://cyclecad.com/app/';
+            });
+
+            // Shortcuts panel
+            const shortcutsToggle = document.getElementById('shortcutsToggle');
+            const shortcutsPanel = document.getElementById('shortcutsPanel');
+            const shortcutsClose = document.getElementById('shortcutsClose');
+
+            shortcutsToggle.addEventListener('click', () => {
+                shortcutsPanel.classList.toggle('visible');
+                if (shortcutsPanel.classList.contains('visible')) {
+                    shortcutsToggle.classList.add('hidden');
+                }
+            });
+
+            shortcutsClose.addEventListener('click', () => {
+                shortcutsPanel.classList.remove('visible');
+                shortcutsToggle.classList.remove('hidden');
+            });
+
+            // Keyboard shortcuts for tutorial
+            document.addEventListener('keydown', (e) => {
+                if (e.key === '?') {
+                    e.preventDefault();
+                    shortcutsToggle.click();
+                }
+            });
+
+            // Reload app on iframe error
+            document.getElementById('app-frame').addEventListener('error', () => {
+                console.error('App frame error');
+            });
+        }
+
+        // Start
+        init();
+    </script>
+</body>
+</html>

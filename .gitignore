@@ -4,7 +4,6 @@ node_modules/
 .env
 example/
 
-# DUO project data — private, not for public repo
-app/duo-manifest.json
+# DUO project demo page
 app/duo-manifest-demo.html
 DUO-MANIFEST-README.md

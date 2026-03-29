@@ -1,24 +1,29 @@
 # cycleCAD Launch Post
 
-We just shipped cycleCAD — an open-source, browser-based 3D CAD modeler that runs on your phone.
+**We just shipped the first AI-first CAD modeler that runs in your browser.**
 
-The origin story: I was building the cycleWASH DUO (a robotic bike washing machine) and needed CAD software. Every option cost $500-$4000/year, required Windows/Mac + installation, and wouldn't let me design parts faster. 19 modules later, we have something better.
+cycleCAD is open-source, free, and agent-ready. No install. No subscriptions required. Just solid 3D parametric design with a twist: agents can design parts as easily as humans.
 
-**The revolutionary part?** cycleCAD is agent-first. Forget clicking buttons. You describe what you need — "build a cylinder 50mm diameter, add a hole, fillet the edges" — and agents (or you) execute it via text or voice commands. No GUI needed. It's CAD designed for AI to design manufacturing.
+**The story:** I was building cycleWASH (a robotic bike washing machine) and every CAD tool cost $500-$4000/year and required Windows. 19 modules, 18,800 lines of JavaScript, and a lot of coffee later — here we are.
 
-What's inside:
-✨ Browser-native (zero install)
-✨ Free & open-source
-✨ AI-powered design assistant (Gemini + Groq)
-✨ Parses Inventor files natively
-✨ Runs on desktop + mobile
-✨ Agent API (55 commands for AI integration)
+**What you get:**
+✨ Browser-native 3D CAD modeler (sketch → extrude → fillet → export)
+✨ Inventor file parsing (open your .ipt/.iam directly)
+✨ AI co-pilot (Gemini + Groq + local NLP fallback)
+✨ Agent API — 55 commands for autonomous design
+✨ MCP Server + CLI tool (integrate into any AI workflow)
+✨ Model marketplace (publish, earn, collaborate)
+✨ ExplodeView integration (40+ analysis tools: BOM, DIN specs, McMaster-Carr, QR codes, AR)
 
-We're merging ExplodeView (our 3D viewer with 40+ analysis tools) into cycleCAD to create a complete design + analysis + collaboration platform.
+**Free tier. Pro €49/mo. Enterprise €299/mo.**
 
-**Try it now:** https://cyclecad.com or `npm install cyclecad`
-**Star us on GitHub:** https://github.com/vvlars-cmd/cyclecad
+We're building the OS of manufacturing where agents design, humans review, and machines build.
 
-This is just the beginning. We're building the OS of manufacturing — where agents design parts, humans review, and machines build them.
+**Try it now:**
+→ https://cyclecad.com
+→ npm install cyclecad
+→ https://github.com/vvlars-cmd/cyclecad
 
-#OpenSource #CAD #Manufacturing #AI #Agents #3D #Design #FreeCAD #Engineering
+Star us. Contribute. Let's build the future of CAD together.
+
+#OpenSource #CAD #AI #Manufacturing #Agents #Engineering #3D #Design #BuildingInPublic #FreeCAD

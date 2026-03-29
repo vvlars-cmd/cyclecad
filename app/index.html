@@ -1419,7 +1419,7 @@
           <span class="splash-logo-cycle">cycle</span><span class="splash-logo-cad">CAD</span>
         </div>
         <p class="splash-subtitle">Parametric 3D CAD Modeler for the Mechanical Designer</p>
-        <p style="display:inline-block; color:#0066cc; font-size:1rem; margin:12px 0 0 0; letter-spacing:2px; font-family:monospace; font-weight:700; background:rgba(0,102,204,0.08); border:1.5px solid rgba(0,102,204,0.25); border-radius:8px; padding:5px 20px;">v1.0.0</p>
+        <p style="display:inline-block; color:#0066cc; font-size:1rem; margin:12px 0 0 0; letter-spacing:2px; font-family:monospace; font-weight:700; background:rgba(0,102,204,0.08); border:1.5px solid rgba(0,102,204,0.25); border-radius:8px; padding:5px 20px;">v1.0.1</p>
       </div>
       <div class="splash-options">
         <button class="splash-button splash-button-primary" id="btn-empty-project" style="grid-column: 1 / -1;">
@@ -4398,84 +4398,84 @@
       panel.id = 'help-tutorials-panel';
       panel.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:var(--bg-secondary);z-index:600;display:flex;flex-direction:column;';
 
-      // Tutorial step definitions for each runner
+      // Tutorial step definitions — each step has title, detailed instructions, command, and category
       const _tutDefs = {
         basic: [
-          {t:'Open Empty Project',d:'Start a fresh workspace',cmd:'click:.splash-btn-empty',cat:'Setup'},
-          {t:'Enter Sketch Mode',d:'Click Sketch to start drawing',cmd:'key:S',cat:'Sketch'},
-          {t:'Draw a Rectangle',d:'Create 80x40mm rectangle',cmd:'chat:box 80x40x25',cat:'Sketch'},
-          {t:'Add a Circle',d:'Draw a 20mm radius circle',cmd:'chat:cylinder 20mm radius 15mm tall',cat:'Sketch'},
-          {t:'Extrude to 3D',d:'Pull sketch into solid body',cmd:'key:E',cat:'3D Ops'},
-          {t:'Add Fillet',d:'Round edges by 3mm',cmd:'chat:sphere 15mm radius',cat:'3D Ops'},
-          {t:'Toggle Wireframe',d:'See through the model',cmd:'key:W',cat:'View'},
-          {t:'Toggle Grid',d:'Show floor reference grid',cmd:'key:G',cat:'View'},
-          {t:'Fit to View',d:'Zoom to fit all geometry',cmd:'key:V',cat:'View'},
-          {t:'Export as STL',d:'Save model for 3D printing',cmd:'key:Escape',cat:'Export'}
+          {t:'Create a Box',d:'We start by creating a rectangular box. The AI Chat understands natural language — type dimensions like "80x40x25" and it builds the 3D geometry instantly. Watch the viewport on the right as the box appears.',cmd:'chat:box 80x40x25',cat:'Create'},
+          {t:'Add a Cylinder',d:'Now we add a cylinder on top. In cycleCAD, you can stack multiple shapes to build complex parts. The cylinder will appear at the origin — you can move it later with the Move tool (keyboard shortcut: T).',cmd:'chat:cylinder 20mm radius 15mm tall',cat:'Create'},
+          {t:'Add a Sphere',d:'Spheres are useful for rounded caps, ball joints, or decorative elements. Notice how each shape gets added to the Model Tree on the left panel — you can click any item in the tree to select it.',cmd:'chat:sphere 15mm radius',cat:'Create'},
+          {t:'Toggle Wireframe View',d:'Press W to toggle wireframe mode. This shows the mesh edges of all geometry, letting you inspect the triangulation. Wireframe is great for checking mesh quality before 3D printing or CNC machining.',cmd:'key:W',cat:'View'},
+          {t:'Toggle Wireframe Off',d:'Press W again to return to solid shading. cycleCAD uses Three.js PBR (Physically Based Rendering) with metalness and roughness maps for realistic material appearance.',cmd:'key:W',cat:'View'},
+          {t:'Show Grid Floor',d:'The grid provides a reference plane at Y=0. It auto-sizes to your model and helps with spatial orientation. Useful when positioning parts or checking alignment.',cmd:'key:G',cat:'View'},
+          {t:'Fit Everything in View',d:'Press V to auto-zoom the camera so all geometry fits in the viewport. The camera smoothly animates to the optimal position. Use this whenever you lose track of your model.',cmd:'key:V',cat:'View'},
+          {t:'Create a Gear',d:'cycleCAD can generate parametric gears with accurate involute tooth profiles. Specify the pitch diameter and tooth count — the generator calculates module, pressure angle, and root/tip diameters automatically.',cmd:'chat:gear 30mm 12 teeth',cat:'Create'},
+          {t:'Add a Spring',d:'Helical springs are generated with precise coil geometry. Specify radius and height — the generator creates a helix path and sweeps a circular profile along it. Great for mechanical assemblies.',cmd:'chat:spring 8mm radius 25mm tall',cat:'Create'},
+          {t:'Reset View',d:'Press Escape to cancel any active operation and return to the default selection mode. This clears any active tool (measure, annotate, section cut) and deselects all parts.',cmd:'key:Escape',cat:'View'}
         ],
         intermediate: [
-          {t:'Create Base Part',d:'Build a bracket body',cmd:'chat:box 100x60x10',cat:'Model'},
-          {t:'Add Mounting Cylinder',d:'Cylindrical boss on top',cmd:'chat:cylinder 12mm radius 30mm tall',cat:'Model'},
-          {t:'Add Support Rib',d:'Triangular support plate',cmd:'chat:box 10x30x60',cat:'Model'},
-          {t:'Create Gear',d:'Parametric gear component',cmd:'chat:gear 40mm 18 teeth',cat:'Model'},
-          {t:'Add Spring',d:'Helical spring element',cmd:'chat:spring 8mm radius 25mm tall',cat:'Model'},
-          {t:'Toggle Wireframe',d:'Inspect mesh structure',cmd:'key:W',cat:'View'},
-          {t:'Toggle Grid',d:'Reference floor plane',cmd:'key:G',cat:'View'},
-          {t:'Section Cut',d:'Slice through model',cmd:'key:C',cat:'Analyze'},
-          {t:'Measure Distance',d:'Point-to-point measurement',cmd:'key:M',cat:'Analyze'},
-          {t:'Assembly Mode',d:'Switch to assembly workspace',cmd:'click:[data-action="assembly"]',cat:'Assembly'},
-          {t:'Explode View',d:'Separate assembly components',cmd:'key:E',cat:'Assembly'},
-          {t:'Fit All Parts',d:'Zoom to show everything',cmd:'key:V',cat:'View'},
-          {t:'Screenshot Export',d:'Capture high-res PNG',cmd:'key:S',cat:'Export'},
-          {t:'Help Panel',d:'Open keyboard shortcuts',cmd:'key:?',cat:'Help'}
+          {t:'Build a Bracket Base',d:'Start with a flat rectangular plate that will serve as the mounting bracket. 100mm wide, 60mm deep, 10mm thick. This is a common starting shape for machined brackets.',cmd:'chat:box 100x60x10',cat:'Model'},
+          {t:'Add a Mounting Boss',d:'A cylindrical boss rises from the bracket surface. In real manufacturing, this would be a turned feature or a cast boss. 12mm radius, 30mm tall — sized for an M10 bolt clearance hole.',cmd:'chat:cylinder 12mm radius 30mm tall',cat:'Model'},
+          {t:'Add a Stiffening Rib',d:'Ribs prevent flexing under load. This 10x30x60mm plate acts as a vertical stiffener. In injection molding, ribs should be 60% of wall thickness to avoid sink marks.',cmd:'chat:box 10x30x60',cat:'Model'},
+          {t:'Create a Parametric Gear',d:'40mm pitch diameter with 18 teeth gives a module of 2.22mm. The tooth profile follows involute geometry — the same math used in real gear design. Tooth count affects load distribution and noise.',cmd:'chat:gear 40mm 18 teeth',cat:'Model'},
+          {t:'Add a Return Spring',d:'This helical spring has 8mm coil radius and 25mm free height. In mechanism design, springs store energy and provide return force. Wire diameter and coil count determine spring rate.',cmd:'chat:spring 8mm radius 25mm tall',cat:'Model'},
+          {t:'Inspect with Wireframe',d:'Toggle wireframe to see mesh density. High-poly areas (gears, springs) have more triangles for smooth curves. Low-poly areas (boxes) are minimal. Mesh density affects file size and render performance.',cmd:'key:W',cat:'Analyze'},
+          {t:'Enable Grid Reference',d:'The grid shows the XZ ground plane. Parts sitting below the grid (negative Y) would be underground. Use this to verify your parts are correctly positioned for assembly.',cmd:'key:G',cat:'Analyze'},
+          {t:'Activate Section Cut',d:'Press C to enable the section cut tool. This creates a clipping plane that slices through your model, revealing internal geometry. Drag the slider to move the cut plane. Essential for inspecting internal features.',cmd:'key:C',cat:'Analyze'},
+          {t:'Measure Distances',d:'Press M to activate the measurement tool. Click two points in 3D space to measure the distance between them. Click a third point to also measure the angle. Measurements show in millimeters.',cmd:'key:M',cat:'Analyze'},
+          {t:'Assembly Mode',d:'Click the Assembly button to switch to the assembly workspace. This mode lets you add components, define mate constraints (coincident, concentric, fixed), and create exploded views.',cmd:'click:[data-action="assembly"]',cat:'Assembly'},
+          {t:'Explode the Assembly',d:'Press E to explode — all components spread outward from the center, showing how the assembly comes apart. This is the same technology that powers ExplodeView, our standalone 3D viewer.',cmd:'key:E',cat:'Assembly'},
+          {t:'Fit All to Viewport',d:'After exploding, parts may be outside the view. Press V to refit the camera to show everything. The fit algorithm calculates the bounding box of all visible geometry.',cmd:'key:V',cat:'View'},
+          {t:'Capture Screenshot',d:'Press S to capture a high-resolution PNG screenshot of the current viewport. The image is rendered at 2x resolution for retina displays. Great for documentation and presentations.',cmd:'key:S',cat:'Export'},
+          {t:'View All Shortcuts',d:'Press ? to open the Help panel showing all 25+ keyboard shortcuts organized by category. This is the panel you are in right now — but in normal use, it is a quick reference overlay.',cmd:'key:?',cat:'Help'}
         ],
         advanced: [
-          {t:'Open Agent Demo',d:'Launch the Agent API terminal',cmd:'chat:box 50x50x50',cat:'Agent API'},
-          {t:'Create via Agent',d:'Agent creates a cylinder',cmd:'chat:cylinder 25mm radius 60mm tall',cat:'Agent API'},
-          {t:'Agent Boolean Op',d:'Subtract shapes',cmd:'chat:sphere 30mm radius',cat:'Agent API'},
-          {t:'Agent Fillet',d:'Round edges via command',cmd:'chat:gear 50mm 24 teeth',cat:'Agent API'},
-          {t:'Agent Export',d:'Export model to STL',cmd:'key:Escape',cat:'Agent API'},
-          {t:'Token Balance',d:'Check $CYCLE balance',cmd:'click:#token-btn',cat:'Tokens'},
-          {t:'Marketplace Browse',d:'Search model marketplace',cmd:'click:#marketplace-btn',cat:'Marketplace'},
-          {t:'View Model Tree',d:'Inspect feature history',cmd:'click:.tree-tab',cat:'Platform'},
-          {t:'Toggle Theme',d:'Switch dark/light mode',cmd:'click:#theme-toggle',cat:'Settings'},
-          {t:'Performance Stats',d:'Show FPS and memory',cmd:'key:Control+Shift+F',cat:'Debug'}
+          {t:'Build a Machine Base',d:'Start with a 50mm cube. In the Agent API, this would be: window.cycleCAD.execute({method:"shape.box", params:{width:50,depth:50,height:50}}). The Chat AI maps natural language to the same geometry engine.',cmd:'chat:box 50x50x50',cat:'Agent API'},
+          {t:'Add a Shaft via Agent',d:'A 25mm radius, 60mm tall cylinder. The Agent API supports 55 commands across 10 namespaces: shape.*, feature.*, assembly.*, render.*, validate.*, token.*, export.*, import.*, scene.*, config.*.',cmd:'chat:cylinder 25mm radius 60mm tall',cat:'Agent API'},
+          {t:'Create a Bearing Housing',d:'This sphere represents a ball bearing housing. Real agents use compound commands — create sphere, then shell it (hollow out), then add mounting holes. The API supports chaining.',cmd:'chat:sphere 30mm radius',cat:'Agent API'},
+          {t:'Generate Drive Gear',d:'50mm, 24 teeth. The Agent API returns JSON with the mesh data, bounding box, and mass properties. AI agents can use this data for automated design review and optimization loops.',cmd:'chat:gear 50mm 24 teeth',cat:'Agent API'},
+          {t:'Clear Active Tools',d:'Escape resets the app state. In agent mode, this maps to scene.reset(). The API tracks undo history — every operation pushes a state snapshot that agents can roll back with scene.undo().',cmd:'key:Escape',cat:'Agent API'},
+          {t:'Token System',d:'The $CYCLE token engine tracks usage per operation. Creating a box costs 50 tokens, AI analysis costs 200 tokens. Free tier gets 10,000 tokens/month. Pro tier is unlimited at EUR 49/month.',cmd:'click:#token-btn',cat:'Tokens'},
+          {t:'Model Marketplace',d:'Browse and publish parametric models. Creators earn 70-90% royalties in $CYCLE tokens. 7 access tiers from Free to Enterprise. Every model has a live 3D preview and version history.',cmd:'click:#marketplace-btn',cat:'Marketplace'},
+          {t:'Feature Tree',d:'The Model Tree shows every operation in chronological order. Click to select, right-click to rename/suppress/delete. Suppressed features are greyed out but preserved — toggle them back anytime.',cmd:'click:.tree-tab',cat:'Platform'},
+          {t:'Theme Toggle',d:'Switch between dark (default) and light themes. The theme affects the entire UI including the 3D viewport background. Dark theme reduces eye strain; light theme is better for screenshots.',cmd:'click:#theme-toggle',cat:'Settings'},
+          {t:'Performance Monitor',d:'Ctrl+Shift+F shows real-time FPS, memory usage, triangle count, and draw calls. Useful for optimizing complex models. Target: 60 FPS with <100K triangles for smooth interaction.',cmd:'key:Control+Shift+F',cat:'Debug'}
         ],
         explodeview: [
-          {t:'Create Test Parts',d:'Build geometry to view',cmd:'chat:box 80x40x25',cat:'Setup'},
-          {t:'Add Cylinder',d:'Second component',cmd:'chat:cylinder 10mm radius 35mm tall',cat:'Setup'},
-          {t:'Add Gear',d:'Third component',cmd:'chat:gear 30mm 12 teeth',cat:'Setup'},
-          {t:'Toggle Viewer Mode',d:'Switch to ExplodeView',cmd:'key:V',cat:'View'},
-          {t:'Explode Assembly',d:'Separate all components',cmd:'key:E',cat:'View'},
-          {t:'Section Cut X',d:'Slice along X axis',cmd:'key:C',cat:'View'},
-          {t:'Wireframe Mode',d:'Show edges only',cmd:'key:W',cat:'View'},
-          {t:'Grid Floor',d:'Display reference grid',cmd:'key:G',cat:'View'},
-          {t:'Fit to Scene',d:'Zoom to fit everything',cmd:'key:F',cat:'View'},
-          {t:'Screenshot',d:'Capture high-res PNG',cmd:'key:S',cat:'Export'},
-          {t:'Measurement Tool',d:'Point-to-point distance',cmd:'key:M',cat:'Analyze'},
-          {t:'Annotations',d:'Place text pins on model',cmd:'key:A',cat:'Create'},
-          {t:'Help / Shortcuts',d:'Show all keyboard shortcuts',cmd:'key:?',cat:'Help'},
-          {t:'Blueprint Theme',d:'White + blue wireframe',cmd:'click:#blueprint-btn',cat:'View'},
-          {t:'BOM Export',d:'Generate bill of materials',cmd:'click:#bom-btn',cat:'Export'}
+          {t:'Create Box Component',d:'Build the first component — an 80x40x25mm rectangular body. In ExplodeView, each mesh in the scene becomes a selectable, hideable, exportable part with its own info card.',cmd:'chat:box 80x40x25',cat:'Setup'},
+          {t:'Add Cylinder Component',d:'Add a second component. When you switch to Viewer Mode, each distinct mesh becomes an independent part that can be selected, hidden, measured, and annotated individually.',cmd:'chat:cylinder 10mm radius 35mm tall',cat:'Setup'},
+          {t:'Add Gear Component',d:'Third component completes our test assembly. ExplodeView supports up to 400+ parts with real-time interaction. The cycleWASH bike washing machine model has 399 components across 6 sub-assemblies.',cmd:'chat:gear 30mm 12 teeth',cat:'Setup'},
+          {t:'Enter Viewer Mode',d:'Press V to switch from Modeler to Viewer mode. This activates ExplodeView — the same 3D viewer used on explodeview.com. All 40+ analysis tools become available in the toolbar.',cmd:'key:V',cat:'ExplodeView'},
+          {t:'Explode the Assembly',d:'Press E to explode. Parts fly outward from the center along their radial direction. Use the slider to control explosion distance. This helps visualize how components fit together.',cmd:'key:E',cat:'ExplodeView'},
+          {t:'Cross-Section Cut',d:'Press C to activate the section cut plane. Choose X, Y, or Z axis and drag the slider to move the cut position. The clipping plane uses per-material settings with double-sided rendering.',cmd:'key:C',cat:'ExplodeView'},
+          {t:'Wireframe Overlay',d:'Press W to show wireframe edges over the solid model. This reveals the mesh structure — useful for verifying CAD quality before manufacturing or detecting degenerate triangles.',cmd:'key:W',cat:'ExplodeView'},
+          {t:'Reference Grid',d:'Press G to toggle the ground plane grid. The grid auto-sizes based on model dimensions and includes a shadow plane for visual grounding. Grid spacing is in millimeters.',cmd:'key:G',cat:'ExplodeView'},
+          {t:'Fit to Scene',d:'Press F to auto-fit the camera to show all visible geometry. Uses a FOV-based calculation: distance = maxDim / (2 * tan(fov/2)) with smooth animated transition.',cmd:'key:F',cat:'ExplodeView'},
+          {t:'High-Res Screenshot',d:'Press S to capture a screenshot at 2x resolution. The renderer temporarily upscales, captures the canvas, then restores. Output is a PNG file ready for documentation.',cmd:'key:S',cat:'Export'},
+          {t:'Distance Measurement',d:'Press M to start measuring. Click two points for distance, click a third for angle. The tool uses raycasting against all visible meshes to find exact 3D intersection points.',cmd:'key:M',cat:'Analyze'},
+          {t:'Place Annotations',d:'Press A to enter annotation mode. Click any surface to place a pin with custom text. Pins track their 3D position and reproject to screen space in the render loop. Drag to reposition.',cmd:'key:A',cat:'Create'},
+          {t:'Keyboard Reference',d:'Press ? to see all shortcuts. ExplodeView has 25+ shortcuts: T=translate, E=explode, R=reset, W=wireframe, S=screenshot, G=grid, H=hide, M=measure, C=section, A=annotate, F=fit.',cmd:'key:?',cat:'Help'},
+          {t:'Blueprint Mode',d:'Blueprint theme switches to white background with blue wireframe overlay — mimicking traditional engineering drawings. Great for technical documentation and print-ready screenshots.',cmd:'click:#blueprint-btn',cat:'View'},
+          {t:'Export Bill of Materials',d:'The BOM export generates a CSV with all parts: index, name, dimensions, bounding box, file size, and assembly membership. Import into Excel or ERP systems for procurement.',cmd:'click:#bom-btn',cat:'Export'}
         ],
         assembly: [
-          {t:'Create Caliper Body',d:'Rectangular box for caliper housing',cmd:'chat:box 80x40x25',cat:'Build Assembly'},
-          {t:'Add Mounting Holes',d:'Cylindrical holes for mounting',cmd:'chat:cylinder 5mm radius 20mm tall',cat:'Build Assembly'},
-          {t:'Create Brake Pad',d:'Rectangular pad component',cmd:'chat:box 60x30x8',cat:'Build Assembly'},
-          {t:'Create Pivot Pin',d:'Cylinder for pivot point',cmd:'chat:cylinder 8mm radius 40mm tall',cat:'Build Assembly'},
-          {t:'Create Spring',d:'Helical return spring',cmd:'chat:spring 10mm radius 30mm tall',cat:'Build Assembly'},
-          {t:'Create Adjustment Bolt',d:'Threaded bolt cylinder',cmd:'chat:cylinder 4mm radius 25mm tall',cat:'Build Assembly'},
-          {t:'Create Retaining Clip',d:'Small flat clip',cmd:'chat:box 20x5x2',cat:'Build Assembly'},
-          {t:'Create Gear',d:'Final assembly component',cmd:'chat:gear 30mm 12 teeth',cat:'Build Assembly'},
-          {t:'Toggle Viewer Mode',d:'Switch to ExplodeView',cmd:'key:V',cat:'ExplodeView'},
-          {t:'Explode Assembly',d:'Separate components',cmd:'key:E',cat:'ExplodeView'},
-          {t:'Section Cut',d:'Slice through model',cmd:'key:C',cat:'ExplodeView'},
-          {t:'Wireframe Toggle',d:'Show edges only',cmd:'key:W',cat:'ExplodeView'},
-          {t:'Grid Floor',d:'Reference grid plane',cmd:'key:G',cat:'ExplodeView'},
-          {t:'Fit to All',d:'Zoom to fit everything',cmd:'key:F',cat:'ExplodeView'},
-          {t:'Screenshot',d:'Capture PNG image',cmd:'key:S',cat:'ExplodeView'},
-          {t:'Measure Tool',d:'Distance measurement',cmd:'key:M',cat:'ExplodeView'},
-          {t:'Annotations',d:'Place text markers',cmd:'key:A',cat:'ExplodeView'},
-          {t:'Help Panel',d:'Keyboard shortcuts',cmd:'key:?',cat:'ExplodeView'}
+          {t:'Create Caliper Body',d:'The caliper housing is the main structural part — an 80x40x25mm aluminum block. In real brake calipers, this is typically cast or CNC machined from 6061-T6 aluminum for strength and light weight.',cmd:'chat:box 80x40x25',cat:'Build'},
+          {t:'Add Mounting Holes',d:'Two M5 mounting holes (5mm radius, 20mm deep) attach the caliper to the fork. In manufacturing, these would be drilled and tapped. The through-holes allow bolt-on mounting with M5x20 socket heads.',cmd:'chat:cylinder 5mm radius 20mm tall',cat:'Build'},
+          {t:'Create Brake Pad',d:'The friction pad is 60x30x8mm — a flat rectangular component that presses against the rotor. Real brake pads use sintered metal or organic compounds bonded to a steel backing plate.',cmd:'chat:box 60x30x8',cat:'Build'},
+          {t:'Create Pivot Pin',d:'The pivot pin (8mm radius, 40mm long) is the axis around which the caliper arm swings. Made from hardened steel (HRC 58-62) for wear resistance. The pin is press-fit into the caliper body.',cmd:'chat:cylinder 8mm radius 40mm tall',cat:'Build'},
+          {t:'Create Return Spring',d:'The helical spring (10mm radius, 30mm height) returns the caliper arm to the open position when brake pressure is released. Spring rate is calculated from wire diameter, coil count, and material (music wire).',cmd:'chat:spring 10mm radius 30mm tall',cat:'Build'},
+          {t:'Create Adjustment Bolt',d:'The pad adjustment bolt (4mm radius, 25mm long) sets the resting gap between pad and rotor. Fine-pitch M8x1.0 thread allows precise adjustment in 1mm increments. Locknut prevents vibration loosening.',cmd:'chat:cylinder 4mm radius 25mm tall',cat:'Build'},
+          {t:'Create Retaining Clip',d:'The E-clip (20x5x2mm) locks the pivot pin in place. In production, this is a stamped spring steel clip (DIN 6799). The clip snaps into a groove machined in the pin.',cmd:'chat:box 20x5x2',cat:'Build'},
+          {t:'Create Drive Gear',d:'The final component — a 30mm gear with 12 teeth for the cable-actuated brake mechanism. The gear converts cable pull into caliper squeeze force. Module 2.5, pressure angle 20 degrees.',cmd:'chat:gear 30mm 12 teeth',cat:'Build'},
+          {t:'Switch to ExplodeView',d:'Now that all 8 components are built, switch to Viewer Mode (press V). The modeler hands off the entire scene to ExplodeView — every mesh becomes an interactive, selectable part.',cmd:'key:V',cat:'Inspect'},
+          {t:'Explode the Assembly',d:'Press E to see how all brake caliper parts separate. The explosion reveals the assembly order — body first, then pin, spring, pad, bolt, clip, and gear. Each part moves along its radial vector.',cmd:'key:E',cat:'Inspect'},
+          {t:'Section Through Center',d:'Press C to slice the assembly with a section plane. Move the slider to cut through the caliper body and reveal the internal spring cavity, bolt channel, and pin bore.',cmd:'key:C',cat:'Inspect'},
+          {t:'Wireframe Analysis',d:'Toggle wireframe (W) to inspect mesh quality. The gear teeth should have smooth involute curves. The spring coils should be uniform. Check for degenerate triangles or mesh artifacts.',cmd:'key:W',cat:'Inspect'},
+          {t:'Show Ground Plane',d:'Enable the grid (G) to see the assembly orientation relative to the ground. The caliper should sit upright — if parts are below the grid, they need repositioning.',cmd:'key:G',cat:'Inspect'},
+          {t:'Fit All Components',d:'After exploding, press F to refit the camera. The algorithm finds the bounding box of all 8 components (including their exploded positions) and frames them with 10% padding.',cmd:'key:F',cat:'Inspect'},
+          {t:'Capture Assembly Photo',d:'Take a screenshot (S) of the exploded view. This is the classic exploded-view diagram used in repair manuals, assembly instructions, and patent drawings.',cmd:'key:S',cat:'Document'},
+          {t:'Measure Bolt Length',d:'Use the measure tool (M) to verify the adjustment bolt length. Click the bolt top and bottom — the displayed distance should read approximately 50mm (25mm radius * 2).',cmd:'key:M',cat:'Document'},
+          {t:'Annotate Components',d:'Place annotation pins (A) on each component — label them: "1. Body", "2. Pad", "3. Pin", "4. Spring", etc. These annotations export with screenshots for documentation.',cmd:'key:A',cat:'Document'},
+          {t:'View All Shortcuts',d:'Press ? for the complete keyboard shortcut reference. You have now completed the full Assembly + ExplodeView tutorial — from CAD modeling to assembly inspection to documentation.',cmd:'key:?',cat:'Document'}
         ],
         testCycleCAD: [{t:'Run cycleCAD Tests',d:'115 automated UI tests with live visualization',cmd:'iframe:./test-agent-v2.html',cat:'Test Agent'}],
         testExplodeView: [{t:'Run ExplodeView Tests',d:'100+ tests for 3D viewer, panels, shortcuts',cmd:'iframe:./explodeview-test-agent.html',cat:'Test Agent'}]
@@ -4496,66 +4496,67 @@
             const el = document.querySelector(cmd.slice(6)); if(el) el.click();
           }
         } catch(e) { console.warn('[HelpRunner]', e); }
-      }
+      };
 
-      // Build the runner view for a tutorial
+      // Build the runner view — panel becomes left sidebar, 3D viewport visible on right
       window._htShowRunner = function(key, title) {
         const steps = _tutDefs[key];
         if (!steps) return;
+        const panel = document.getElementById('help-tutorials-panel');
         const runnerArea = document.getElementById('ht-runner-area');
         const homeArea = document.getElementById('ht-home-area');
         homeArea.style.display = 'none';
         runnerArea.style.display = 'flex';
 
-        // Check if it's a test agent (loads iframe)
+        // Check if it's a test agent (loads iframe) — stays full screen
         if (steps.length === 1 && steps[0].cmd.startsWith('iframe:')) {
           runnerArea.innerHTML = '<div style="display:flex;flex-direction:column;width:100%;height:100%;"><div style="padding:8px 14px;background:var(--bg-tertiary);border-bottom:1px solid var(--border-color);display:flex;align-items:center;gap:10px;"><button onclick="_htBackHome()" style="padding:4px 10px;border-radius:4px;border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);cursor:pointer;font-size:12px;">← Back</button><span style="font-weight:600;font-size:14px;">'+title+'</span></div><iframe src="'+steps[0].cmd.slice(7)+'" style="flex:1;border:none;width:100%;"></iframe></div>';
           return;
         }
 
+        // SPLIT MODE: panel becomes left sidebar, 3D viewport visible on the right
+        panel.style.width = '420px';
+        panel.style.borderRight = '2px solid var(--accent-blue)';
+        panel.style.boxShadow = '4px 0 20px rgba(0,0,0,0.3)';
+
         let completed = new Set();
         let isRunning = false;
         let stopFlag = false;
+        let activeStep = -1;
 
         runnerArea.innerHTML = `
-          <div style="display:flex;height:100%;">
-            <div id="ht-steps-panel" style="width:340px;min-width:300px;border-right:1px solid var(--border-color);display:flex;flex-direction:column;overflow:hidden;">
-              <div style="padding:10px 14px;background:var(--bg-tertiary);border-bottom:1px solid var(--border-color);display:flex;align-items:center;gap:8px;flex-shrink:0;">
-                <button onclick="_htBackHome()" style="padding:4px 10px;border-radius:4px;border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);cursor:pointer;font-size:12px;">←</button>
-                <span style="font-weight:600;font-size:13px;flex:1;">${title}</span>
-                <button id="ht-run-all" style="padding:4px 10px;border-radius:4px;border:1px solid rgba(88,166,255,0.4);background:rgba(88,166,255,0.15);color:#58a6ff;cursor:pointer;font-size:11px;font-weight:600;">▶ Run All</button>
-                <button id="ht-stop" style="padding:4px 10px;border-radius:4px;border:1px solid rgba(248,81,73,0.4);background:rgba(248,81,73,0.15);color:#f85149;cursor:pointer;font-size:11px;font-weight:600;display:none;">■ Stop</button>
-              </div>
-              <div style="padding:4px 10px;background:var(--bg-tertiary);border-bottom:1px solid var(--border-color);flex-shrink:0;">
-                <div style="height:4px;background:var(--bg-primary);border-radius:2px;overflow:hidden;"><div id="ht-progress" style="height:100%;width:0%;background:#58a6ff;transition:width 0.3s;"></div></div>
-                <div id="ht-step-counter" style="font-size:10px;color:var(--text-secondary);margin-top:4px;">0 / ${steps.length} completed</div>
-              </div>
-              <div id="ht-step-list" style="flex:1;overflow-y:auto;padding:8px;"></div>
+          <div style="display:flex;flex-direction:column;height:100%;">
+            <div style="padding:10px 14px;background:var(--bg-tertiary);border-bottom:1px solid var(--border-color);display:flex;align-items:center;gap:8px;flex-shrink:0;">
+              <button onclick="_htBackHome()" style="padding:4px 10px;border-radius:4px;border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);cursor:pointer;font-size:12px;">← Back</button>
+              <span style="font-weight:600;font-size:13px;flex:1;">${title}</span>
+              <button id="ht-run-all" style="padding:5px 14px;border-radius:4px;border:1px solid rgba(88,166,255,0.4);background:rgba(88,166,255,0.15);color:#58a6ff;cursor:pointer;font-size:11px;font-weight:600;">▶ Run All</button>
+              <button id="ht-stop" style="padding:5px 14px;border-radius:4px;border:1px solid rgba(248,81,73,0.4);background:rgba(248,81,73,0.15);color:#f85149;cursor:pointer;font-size:11px;font-weight:600;display:none;">Stop</button>
             </div>
-            <div style="flex:1;display:flex;flex-direction:column;background:var(--bg-primary);">
-              <div style="padding:6px 14px;background:var(--bg-tertiary);border-bottom:1px solid var(--border-color);font-size:11px;color:var(--text-secondary);display:flex;align-items:center;gap:8px;flex-shrink:0;">
-                <span style="width:8px;height:8px;border-radius:50%;background:#3fb950;"></span>
-                Live Preview — actions execute on the app behind this panel
-              </div>
-              <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:40px;text-align:center;">
-                <div>
-                  <div style="font-size:48px;margin-bottom:16px;">🎯</div>
-                  <div style="font-size:16px;font-weight:600;margin-bottom:8px;">Live Runner Active</div>
-                  <div style="font-size:13px;color:var(--text-secondary);max-width:360px;line-height:1.5;">Click <b>▶ Run</b> on any step or <b>▶ Run All</b> to auto-execute. Steps run directly on the app — minimize this panel to see the 3D viewport update in real-time.</div>
-                  <button onclick="document.getElementById('help-tutorials-panel').style.display='none'" style="margin-top:16px;padding:8px 20px;border-radius:6px;border:1px solid rgba(88,166,255,0.4);background:rgba(88,166,255,0.15);color:#58a6ff;cursor:pointer;font-size:12px;font-weight:600;">Minimize Panel to Watch</button>
-                </div>
-              </div>
+            <div style="padding:6px 14px;background:var(--bg-tertiary);border-bottom:1px solid var(--border-color);flex-shrink:0;">
+              <div style="height:5px;background:var(--bg-primary);border-radius:3px;overflow:hidden;"><div id="ht-progress" style="height:100%;width:0%;background:linear-gradient(90deg,#58a6ff,#3fb950);transition:width 0.4s;"></div></div>
+              <div id="ht-step-counter" style="font-size:10px;color:var(--text-secondary);margin-top:4px;">0 / ${steps.length} steps completed</div>
             </div>
+            <div id="ht-step-list" style="flex:1;overflow-y:auto;padding:10px;min-height:0;"></div>
           </div>
         `;
 
-        // Render step cards
+        // Render detailed step cards with instructions
         const stepList = document.getElementById('ht-step-list');
         steps.forEach((s, i) => {
           const card = document.createElement('div');
           card.id = 'ht-card-'+i;
-          card.style.cssText = 'padding:8px 10px;margin-bottom:6px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-secondary);';
-          card.innerHTML = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;"><span id="ht-badge-'+i+'" style="width:22px;height:22px;border-radius:50%;background:#58a6ff;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">'+(i+1)+'</span><span style="font-size:12px;font-weight:600;flex:1;">'+s.t+'</span><span style="font-size:9px;padding:2px 6px;border-radius:3px;background:var(--bg-tertiary);color:var(--text-secondary);">'+s.cat+'</span></div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;padding-left:30px;">'+s.d+'</div><div style="padding-left:30px;"><button class="ht-run-btn" data-idx="'+i+'" style="padding:3px 12px;border-radius:4px;border:1px solid rgba(88,166,255,0.4);background:rgba(88,166,255,0.15);color:#58a6ff;cursor:pointer;font-size:10px;font-weight:600;">▶ Run</button></div>';
+          card.className = 'ht-step-card';
+          card.style.cssText = 'padding:12px;margin-bottom:8px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);transition:all 0.3s;';
+          card.innerHTML = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">'
+            +'<span id="ht-badge-'+i+'" style="width:26px;height:26px;border-radius:50%;background:#58a6ff;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">'+(i+1)+'</span>'
+            +'<span style="font-size:13px;font-weight:600;flex:1;line-height:1.3;">'+s.t+'</span>'
+            +'<span style="font-size:9px;padding:2px 8px;border-radius:10px;background:var(--bg-tertiary);color:var(--text-secondary);white-space:nowrap;">'+s.cat+'</span>'
+            +'</div>'
+            +'<div style="font-size:12px;color:var(--text-secondary);line-height:1.6;padding:0 0 10px 36px;">'+s.d+'</div>'
+            +'<div style="padding-left:36px;display:flex;gap:8px;align-items:center;">'
+            +'<button class="ht-run-btn" data-idx="'+i+'" style="padding:5px 16px;border-radius:5px;border:1px solid rgba(88,166,255,0.4);background:rgba(88,166,255,0.15);color:#58a6ff;cursor:pointer;font-size:11px;font-weight:600;">▶ Run Step</button>'
+            +'<span class="ht-cmd-hint" style="font-size:10px;color:var(--text-secondary);font-family:monospace;opacity:0.6;">'+s.cmd.replace('chat:','AI: ').replace('key:','Key: ').replace('click:','Click: ')+'</span>'
+            +'</div>';
           stepList.appendChild(card);
         });
 
@@ -4563,33 +4564,42 @@
           completed.add(i);
           const card = document.getElementById('ht-card-'+i);
           const badge = document.getElementById('ht-badge-'+i);
-          if(card) { card.style.borderColor='#238636'; card.style.background='rgba(35,134,54,0.1)'; }
+          if(card) { card.style.borderColor='#238636'; card.style.background='rgba(35,134,54,0.08)'; }
           if(badge) { badge.style.background='#238636'; badge.textContent='✓'; }
           const btn = card?.querySelector('.ht-run-btn');
           if(btn) { btn.textContent='✓ Done'; btn.style.background='rgba(35,134,54,0.15)'; btn.style.borderColor='rgba(35,134,54,0.4)'; btn.style.color='#3fb950'; }
           document.getElementById('ht-progress').style.width = (completed.size/steps.length*100)+'%';
-          document.getElementById('ht-step-counter').textContent = completed.size+' / '+steps.length+' completed';
+          document.getElementById('ht-step-counter').textContent = completed.size+' / '+steps.length+' steps completed';
         }
 
         function highlightStep(i) {
+          // Remove previous highlight
+          document.querySelectorAll('.ht-step-card').forEach(c => {
+            if(!completed.has(parseInt(c.id.replace('ht-card-','')))) {
+              c.style.borderColor='var(--border-color)'; c.style.background='var(--bg-secondary)';
+            }
+          });
           const card = document.getElementById('ht-card-'+i);
-          if(card && !completed.has(i)) { card.style.borderColor='#58a6ff'; card.style.background='rgba(88,166,255,0.1)'; }
+          if(card && !completed.has(i)) { card.style.borderColor='#58a6ff'; card.style.background='rgba(88,166,255,0.08)'; card.style.boxShadow='0 0 12px rgba(88,166,255,0.15)'; }
           card?.scrollIntoView({behavior:'smooth',block:'center'});
+          activeStep = i;
         }
 
         async function runStep(i) {
           highlightStep(i);
-          _htRunStep(steps[i].cmd);
-          await new Promise(r=>setTimeout(r,1500));
+          await new Promise(r=>setTimeout(r,300));
+          window._htRunStep(steps[i].cmd);
+          await new Promise(r=>setTimeout(r,1800));
           markDone(i);
         }
 
         // Individual run buttons
         stepList.addEventListener('click', async (e) => {
           const btn = e.target.closest('.ht-run-btn');
-          if (!btn) return;
+          if (!btn || btn.textContent.includes('Done')) return;
           const idx = parseInt(btn.dataset.idx);
-          btn.textContent = '⏳...';
+          btn.textContent = '⏳ Running...';
+          btn.style.color = '#d29922';
           await runStep(idx);
         });
 
@@ -4601,6 +4611,8 @@
           for (let i=0; i<steps.length; i++) {
             if (stopFlag) break;
             if (completed.has(i)) continue;
+            const btn = document.querySelector('#ht-card-'+i+' .ht-run-btn');
+            if(btn) { btn.textContent='⏳ Running...'; btn.style.color='#d29922'; }
             await runStep(i);
             if (i < steps.length-1 && !stopFlag) await new Promise(r=>setTimeout(r,2000));
           }
@@ -4611,10 +4623,14 @@
 
         // Stop
         document.getElementById('ht-stop').addEventListener('click', () => { stopFlag = true; });
-      }
+      };
 
-      // Back to home from runner
+      // Back to home from runner — restore full-width panel
       window._htBackHome = function() {
+        const panel = document.getElementById('help-tutorials-panel');
+        panel.style.width = '100vw';
+        panel.style.borderRight = 'none';
+        panel.style.boxShadow = 'none';
         document.getElementById('ht-runner-area').style.display='none';
         document.getElementById('ht-home-area').style.display='block';
       };
@@ -5205,6 +5221,6 @@
     </div>
   </div>
 
-  <span id="version-badge" style="position:fixed;bottom:42px;left:50%;transform:translateX(-50%);z-index:999;font-size:0.9rem;color:rgba(255,255,255,0.9);letter-spacing:0.1em;white-space:nowrap;padding:6px 16px;user-select:all;pointer-events:auto;font-family:monospace;font-weight:700;background:rgba(0,0,0,0.7);border:1px solid rgba(88,166,255,0.4);border-radius:6px;text-shadow:0 1px 3px rgba(0,0,0,0.5);" title="cycleCAD version">cycleCAD v1.0.0</span>
+  <span id="version-badge" style="position:fixed;bottom:42px;left:50%;transform:translateX(-50%);z-index:999;font-size:0.9rem;color:rgba(255,255,255,0.9);letter-spacing:0.1em;white-space:nowrap;padding:6px 16px;user-select:all;pointer-events:auto;font-family:monospace;font-weight:700;background:rgba(0,0,0,0.7);border:1px solid rgba(88,166,255,0.4);border-radius:6px;text-shadow:0 1px 3px rgba(0,0,0,0.5);" title="cycleCAD version">cycleCAD v1.0.1</span>
 </body>
 </html>

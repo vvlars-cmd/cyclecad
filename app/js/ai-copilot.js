@@ -938,20 +938,29 @@ export async function executeTextCommand(prompt) {
       return { ok: false };
     }
 
-    // Execute via Agent API
-    if (window.cycleCAD && window.cycleCAD.execute) {
-      const results = [];
-      for (const cmd of commands) {
-        const result = await window.cycleCAD.execute(cmd);
-        results.push(result);
-      }
+    addMessage('ai', `Got it! ${preview}. Creating now...`);
 
-      addMessage('ai', `Got it! ${preview}. Creating now...`);
-      return { ok: true, results, commands };
-    } else {
-      addMessage('ai', 'Agent API not available. Try initializing Agent API first.');
-      return { ok: false };
+    // Execute: try direct geometry creation first (fastest path)
+    const results = [];
+    for (const cmd of commands) {
+      try {
+        // Convert Agent API format {method: 'shape.cylinder', params: {}} to executeParsedPrompt format {type: 'cylinder', params: {}}
+        if (window._executeParsedPrompt) {
+          const method = cmd.method || '';
+          const type = method.replace('shape.', '').replace('feature.', '');
+          window._executeParsedPrompt({ type, params: cmd.params || {} });
+          results.push({ ok: true, method });
+        } else if (window.cycleCAD && window.cycleCAD.execute) {
+          const result = await window.cycleCAD.execute(cmd);
+          results.push(result);
+        }
+      } catch (e) {
+        console.warn('[Copilot] Command failed:', cmd, e);
+        results.push({ ok: false, error: e.message });
+      }
     }
+
+    return { ok: true, results, commands };
   } catch (error) {
     console.error('[Copilot] Execute error:', error);
     addMessage('ai', `Error: ${error.message || 'Something went wrong'}`);

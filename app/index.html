@@ -1419,7 +1419,7 @@
           <span class="splash-logo-cycle">cycle</span><span class="splash-logo-cad">CAD</span>
         </div>
         <p class="splash-subtitle">Parametric 3D CAD Modeler for the Mechanical Designer</p>
-        <p style="display:inline-block; color:#0066cc; font-size:1rem; margin:12px 0 0 0; letter-spacing:2px; font-family:monospace; font-weight:700; background:rgba(0,102,204,0.08); border:1.5px solid rgba(0,102,204,0.25); border-radius:8px; padding:5px 20px;">v1.0.3</p>
+        <p style="display:inline-block; color:#0066cc; font-size:1rem; margin:12px 0 0 0; letter-spacing:2px; font-family:monospace; font-weight:700; background:rgba(0,102,204,0.08); border:1.5px solid rgba(0,102,204,0.25); border-radius:8px; padding:5px 20px;">v1.0.4</p>
       </div>
       <div class="splash-options">
         <button class="splash-button splash-button-primary" id="btn-empty-project" style="grid-column: 1 / -1;">
@@ -2884,6 +2884,9 @@
         updateStatus('Extrude failed: ' + err.message);
       }
     }
+
+    // Expose globally so Copilot + Agent API + tutorials can create geometry
+    window._executeParsedPrompt = function(prompt) { executeParsedPrompt(prompt); };
 
     function executeParsedPrompt(prompt) {
       try {
@@ -5240,6 +5243,6 @@
     </div>
   </div>
 
-  <span id="version-badge" style="position:fixed;bottom:42px;left:50%;transform:translateX(-50%);z-index:999;font-size:0.9rem;color:rgba(255,255,255,0.9);letter-spacing:0.1em;white-space:nowrap;padding:6px 16px;user-select:all;pointer-events:auto;font-family:monospace;font-weight:700;background:rgba(0,0,0,0.7);border:1px solid rgba(88,166,255,0.4);border-radius:6px;text-shadow:0 1px 3px rgba(0,0,0,0.5);" title="cycleCAD version">cycleCAD v1.0.3</span>
+  <span id="version-badge" style="position:fixed;bottom:42px;left:50%;transform:translateX(-50%);z-index:999;font-size:0.9rem;color:rgba(255,255,255,0.9);letter-spacing:0.1em;white-space:nowrap;padding:6px 16px;user-select:all;pointer-events:auto;font-family:monospace;font-weight:700;background:rgba(0,0,0,0.7);border:1px solid rgba(88,166,255,0.4);border-radius:6px;text-shadow:0 1px 3px rgba(0,0,0,0.5);" title="cycleCAD version">cycleCAD v1.0.4</span>
 </body>
 </html>

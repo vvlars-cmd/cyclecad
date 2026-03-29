@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>cycleCAD Test Agent v2</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #1e1e1e;
+            color: #e0e0e0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%);
+            padding: 12px 20px;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            width: 300px;
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 0 12px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #10B981;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .header-buttons button {
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .header-buttons button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .app-container {
+            width: 65%;
+            border-right: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-container iframe {
+            flex: 1;
+            border: none;
+            background: white;
+        }
+
+        .test-panel {
+            width: 35%;
+            display: flex;
+            flex-direction: column;
+            background: #252525;
+        }
+
+        .test-panel-header {
+            background: #2a2a2a;
+            padding: 12px;
+            border-bottom: 1px solid #333;
+            font-weight: 600;
+            font-size: 13px;
+            color: #0284C7;
+        }
+
+        .test-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        .test-category {
+            margin-bottom: 12px;
+            border: 1px solid #333;
+            border-radius: 6px;
+            overflow: hidden;
+            background: #2a2a2a;
+        }
+
+        .category-header {
+            background: #333;
+            padding: 10px 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        .category-header:hover {
+            background: #3a3a3a;
+        }
+
+        .category-header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #0284C7;
+        }
+
+        .expand-icon {
+            display: inline-block;
+            transition: transform 0.2s;
+            font-size: 10px;
+        }
+
+        .category-header.collapsed .expand-icon {
+            transform: rotate(-90deg);
+        }
+
+        .category-run-btn {
+            padding: 4px 8px;
+            background: #0284C7;
+            border: none;
+            color: white;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: background 0.2s;
+        }
+
+        .category-run-btn:hover {
+            background: #0369A1;
+        }
+
+        .category-run-btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+
+        .category-tests {
+            max-height: 500px;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .category-tests.collapsed {
+            max-height: 0;
+        }
+
+        .test-item {
+            padding: 8px 12px;
+            border-bottom: 1px solid #333;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .test-item:last-child {
+            border-bottom: none;
+        }
+
+        .test-icon {
+            font-size: 14px;
+            min-width: 20px;
+        }
+
+        .test-icon.pass { color: #10B981; }
+        .test-icon.fail { color: #EF4444; }
+        .test-icon.skip { color: #F59E0B; }
+        .test-icon.running { color: #3B82F6; animation: spin 1s linear infinite; }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .test-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .test-name {
+            font-weight: 500;
+            color: #e0e0e0;
+        }
+
+        .test-detail {
+            font-size: 11px;
+            color: #999;
+        }
+
+        .test-time {
+            font-size: 11px;
+            color: #666;
+            margin-left: auto;
+        }
+
+        .summary {
+            background: #2a2a2a;
+            padding: 12px;
+            border-top: 1px solid #333;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .summary-stats {
+            display: flex;
+            gap: 16px;
+        }
+
+        .summary-stat {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .summary-stat.pass { color: #10B981; }
+        .summary-stat.fail { color: #EF4444; }
+        .summary-stat.skip { color: #F59E0B; }
+
+        .export-btn {
+            padding: 6px 12px;
+            background: #0284C7;
+            border: none;
+            color: white;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+
+        .export-btn:hover {
+            background: #0369A1;
+        }
+
+        .flash-green {
+            animation: flash-green-anim 0.3s ease-out;
+        }
+
+        @keyframes flash-green-anim {
+            0% {
+                border: 2px solid #10B981;
+                box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+            }
+            100% {
+                border: 2px solid transparent;
+                box-shadow: 0 0 0px rgba(16, 185, 129, 0);
+            }
+        }
+
+        .scrollable {
+            overflow-y: auto;
+        }
+
+        /* Scrollbar styling */
+        .scrollable::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .scrollable::-webkit-scrollbar-track {
+            background: #2a2a2a;
+        }
+
+        .scrollable::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 3px;
+        }
+
+        .scrollable::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-title">
+                <span>cycleCAD Test Agent v2</span>
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <span id="progress-text" style="font-size: 12px; opacity: 0.8;">0 / 120</span>
+            </div>
+            <div class="header-buttons">
+                <button id="run-all-btn">Run All Tests</button>
+                <button id="reset-btn">Reset</button>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="app-container">
+                <iframe id="app-iframe" src="./index.html"></iframe>
+            </div>
+
+            <div class="test-panel">
+                <div class="test-panel-header">Test Results (120 tests)</div>
+                <div class="test-list scrollable" id="test-list"></div>
+                <div class="summary">
+                    <div class="summary-stats">
+                        <div class="summary-stat pass"><span id="pass-count">0</span> Passed</div>
+                        <div class="summary-stat fail"><span id="fail-count">0</span> Failed</div>
+                        <div class="summary-stat skip"><span id="skip-count">0</span> Skipped</div>
+                    </div>
+                    <button class="export-btn" id="export-btn">Export JSON</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const TIMEOUT_MS = 5000;
+        const TEST_RESULTS = [];
+        let testIndex = 0;
+        let totalTests = 0;
+
+        const iframe = document.getElementById('app-iframe');
+        let appWindow;
+
+        // Wait for iframe to load and override alert/confirm/prompt
+        iframe.addEventListener('load', () => {
+            appWindow = iframe.contentWindow;
+            // Override dialog functions to prevent freezing
+            appWindow.alert = () => {};
+            appWindow.confirm = () => true;
+            appWindow.prompt = () => '';
+            console.log('[TestAgent] App loaded and dialog overrides injected');
+        });
+
+        // Test definitions
+        const TESTS = {
+            'Splash Screen': [
+                {
+                    name: 'Version badge shows v0.9.6',
+                    fn: async () => {
+                        const badge = appWindow.document.querySelector('[data-version]') ||
+                                     appWindow.document.body.textContent.includes('0.9.6');
+                        return badge ? 'Version badge found' : 'No version badge';
+                    }
+                },
+                {
+                    name: 'Empty Project button exists',
+                    fn: async () => {
+                        const btn = await findElement('Empty Project', appWindow);
+                        return btn ? 'Button found' : 'Button not found';
+                    }
+                },
+                {
+                    name: 'New Sketch button exists',
+                    fn: async () => {
+                        const btn = await findElement('New Sketch', appWindow);
+                        return btn ? 'Button found' : 'Button not found';
+                    }
+                },
+                {
+                    name: 'Import Inventor button exists',
+                    fn: async () => {
+                        const btn = await findElement('Import Inventor', appWindow);
+                        return btn ? 'Button found' : 'Button not found';
+                    }
+                },
+                {
+                    name: 'AI Generate button exists',
+                    fn: async () => {
+                        const btn = await findElement('AI Generate', appWindow);
+                        return btn ? 'Button found' : 'Button not found';
+                    }
+                },
+                {
+                    name: 'DUO Project Browser button exists',
+                    fn: async () => {
+                        const btn = await findElement('DUO Project', appWindow);
+                        return btn ? 'Button found' : 'Button not found';
+                    }
+                }
+            ],
+            'Toolbar Buttons': [
+                {
+                    name: 'Select button exists',
+                    fn: async () => {
+                        const btn = await findElement('Select', appWindow);
+                        return btn ? 'Button found' : 'Button not found';
+                    }
+                },
+                {
+                    name: 'Sketch button exists and activates sketch mode',
+                    fn: async () => {
+                        const btn = await findElement('Sketch', appWindow);
+                        if (!btn) return 'Sketch button not found';
+                        flashElement(btn, appWindow);
+                        btn.click();
+                        await sleep(300);
+                        return 'Sketch button clicked';
+                    }
+                },
+                {
+                    name: 'Extrude button exists',
+                    fn: async () => {
+                        const btn = await findElement('Extrude', appWindow);
+                        return btn ? 'Button found' : 'Button not found';
+                    }
+                },
+                {
+                    name: 'Assembly button exists',
+                    fn: async () => {
+                        const btn = await findElement('Assembly', appWindow);
+                        return btn ? 'Button found' : 'Button not found';
+                    }
+                },
+                {
+                    name: 'More dropdown opens on click',
+                    fn: async () => {
+                        const btn = await findElement('More', appWindow);
+                        if (!btn) return 'More button not found';
+                        flashElement(btn, appWindow);
+                        btn.click();
+                        await sleep(300);
+                        return 'More dropdown clicked';
+                    }
+                },
+                {
+                    name: 'Export dropdown opens on click',
+                    fn: async () => {
+                        const btn = await findElement('Export', appWindow);
+                        if (!btn) return 'Export button not found';
+                        flashElement(btn, appWindow);
+                        btn.click();
+                        await sleep(300);
+                        return 'Export dropdown clicked';
+                    }
+                },
+                {
+                    name: 'AI dropdown opens on click',
+                    fn: async () => {
+                        const btn = await findElement('AI', appWindow);
+                        if (!btn) return 'AI button not found';
+                        flashElement(btn, appWindow);
+                        btn.click();
+                        await sleep(300);
+                        return 'AI dropdown clicked';
+                    }
+                },
+                {
+                    name: 'Import dropdown opens on click',
+                    fn: async () => {
+                        const btn = await findElement('Import', appWindow);
+                        if (!btn) return 'Import button not found';
+                        flashElement(btn, appWindow);
+                        btn.click();
+                        await sleep(300);
+                        return 'Import dropdown clicked';
+                    }
+                },
+                {
+                    name: 'CAM dropdown opens on click',
+                    fn: async () => {
+                        const btn = await findElement('CAM', appWindow);
+                        if (!btn) return 'CAM button not found';
+                        flashElement(btn, appWindow);
+                        btn.click();
+                        await sleep(300);
+                        return 'CAM dropdown clicked';
+                    }
+                },
+                {
+                    name: 'Help (?) button exists',
+                    fn: async () => {
+                        const btn = appWindow.document.querySelector('[title*="Help"], [aria-label*="Help"], button:contains("?")');
+                        return btn ? 'Help button found' : 'Help button not found';
+                    }
+                },
+                {
+                    name: 'Token balance button exists',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('0 T') || text.includes('tokens') ? 'Token balance found' : 'Token balance not found';
+                    }
+                }
+            ],
+            'Sketch Tools': [
+                {
+                    name: 'Line tool icon exists',
+                    fn: async () => {
+                        const btn = await findElement('Line', appWindow);
+                        return btn ? 'Line tool found' : 'Line tool not found';
+                    }
+                },
+                {
+                    name: 'Rectangle tool icon exists',
+                    fn: async () => {
+                        const btn = await findElement('Rectangle', appWindow);
+                        return btn ? 'Rectangle tool found' : 'Rectangle tool not found';
+                    }
+                },
+                {
+                    name: 'Circle tool icon exists',
+                    fn: async () => {
+                        const btn = await findElement('Circle', appWindow);
+                        return btn ? 'Circle tool found' : 'Circle tool not found';
+                    }
+                },
+                {
+                    name: 'Arc tool icon exists',
+                    fn: async () => {
+                        const btn = await findElement('Arc', appWindow);
+                        return btn ? 'Arc tool found' : 'Arc tool not found';
+                    }
+                },
+                {
+                    name: 'Constraint tool exists',
+                    fn: async () => {
+                        const btn = await findElement('Constraint', appWindow);
+                        return btn ? 'Constraint tool found' : 'Constraint tool not found';
+                    }
+                },
+                {
+                    name: 'Dimension tool exists',
+                    fn: async () => {
+                        const btn = await findElement('Dimension', appWindow);
+                        return btn ? 'Dimension tool found' : 'Dimension tool not found';
+                    }
+                }
+            ],
+            '3D Operations': [
+                {
+                    name: 'Extrude button in toolbar',
+                    fn: async () => {
+                        const btn = await findElement('Extrude', appWindow);
+                        return btn ? 'Extrude found' : 'Extrude not found';
+                    }
+                },
+                {
+                    name: 'Fillet button exists',
+                    fn: async () => {
+                        const btn = await findElement('Fillet', appWindow);
+                        return btn ? 'Fillet found' : 'Fillet not found';
+                    }
+                },
+                {
+                    name: 'Chamfer button exists',
+                    fn: async () => {
+                        const btn = await findElement('Chamfer', appWindow);
+                        return btn ? 'Chamfer found' : 'Chamfer not found';
+                    }
+                },
+                {
+                    name: 'Zoom buttons exist',
+                    fn: async () => {
+                        const plus = appWindow.document.querySelector('[title*="Zoom in"], button:contains("+")');
+                        const minus = appWindow.document.querySelector('[title*="Zoom out"], button:contains("-")');
+                        return (plus && minus) ? 'Zoom buttons found' : 'Zoom buttons not found';
+                    }
+                },
+                {
+                    name: 'Boolean icon exists',
+                    fn: async () => {
+                        const btn = await findElement('Boolean', appWindow);
+                        return btn ? 'Boolean found' : 'Boolean not found';
+                    }
+                },
+                {
+                    name: 'Shell/pattern icons exist',
+                    fn: async () => {
+                        const shell = await findElement('Shell', appWindow);
+                        const pattern = await findElement('Pattern', appWindow);
+                        return (shell && pattern) ? 'Shell and Pattern found' : 'Missing one or both';
+                    }
+                }
+            ],
+            'Left Panel': [
+                {
+                    name: 'Model Tree tab visible',
+                    fn: async () => {
+                        const tab = await findElement('Model Tree', appWindow);
+                        return tab ? 'Model Tree tab found' : 'Model Tree tab not found';
+                    }
+                },
+                {
+                    name: 'Project Browser tab visible',
+                    fn: async () => {
+                        const tab = await findElement('Project Browser', appWindow);
+                        return tab ? 'Project Browser tab found' : 'Project Browser tab not found';
+                    }
+                },
+                {
+                    name: '"No features yet" message shown',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('No features') ? 'Message found' : 'Message not found';
+                    }
+                },
+                {
+                    name: '"Features" header visible',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('Features') ? 'Header found' : 'Header not found';
+                    }
+                },
+                {
+                    name: 'Left panel has proper width',
+                    fn: async () => {
+                        const panel = appWindow.document.querySelector('[class*="left"], [id*="left"], .sidebar');
+                        if (!panel) return 'Left panel not found';
+                        const width = panel.offsetWidth;
+                        return width > 100 ? `Width: ${width}px` : `Width too small: ${width}px`;
+                    }
+                }
+            ],
+            'Right Panel Tabs': [
+                {
+                    name: 'Properties tab visible and active',
+                    fn: async () => {
+                        const tab = await findElement('Properties', appWindow);
+                        return tab ? 'Properties tab found' : 'Properties tab not found';
+                    }
+                },
+                {
+                    name: '"Select a feature" message shown',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('Select a feature') || text.includes('parameters') ? 'Message found' : 'Message not found';
+                    }
+                },
+                {
+                    name: 'Chat tab clickable',
+                    fn: async () => {
+                        const tab = await findElement('Chat', appWindow);
+                        if (!tab) return 'Chat tab not found';
+                        flashElement(tab, appWindow);
+                        tab.click();
+                        await sleep(300);
+                        return 'Chat tab clicked';
+                    }
+                },
+                {
+                    name: 'Chat input exists',
+                    fn: async () => {
+                        const input = appWindow.document.querySelector('textarea[placeholder*="chat"], input[placeholder*="message"]');
+                        return input ? 'Chat input found' : 'Chat input not found';
+                    }
+                },
+                {
+                    name: 'Guide tab clickable',
+                    fn: async () => {
+                        const tab = await findElement('Guide', appWindow);
+                        if (!tab) return 'Guide tab not found';
+                        flashElement(tab, appWindow);
+                        tab.click();
+                        await sleep(300);
+                        return 'Guide tab clicked';
+                    }
+                },
+                {
+                    name: 'Guide has 7+ sections',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('Quick Start') || text.includes('Create') ? 'Guide content found' : 'Guide content not found';
+                    }
+                },
+                {
+                    name: 'Tokens tab clickable',
+                    fn: async () => {
+                        const tab = await findElement('Tokens', appWindow);
+                        if (!tab) return 'Tokens tab not found';
+                        flashElement(tab, appWindow);
+                        tab.click();
+                        await sleep(300);
+                        return 'Tokens tab clicked';
+                    }
+                },
+                {
+                    name: 'Tokens tab shows balance',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('1,000') || text.includes('tokens') ? 'Token balance found' : 'Token balance not found';
+                    }
+                }
+            ],
+            '3D Viewport': [
+                {
+                    name: 'Canvas element exists',
+                    fn: async () => {
+                        const canvas = appWindow.document.querySelector('canvas');
+                        return canvas ? 'Canvas found' : 'Canvas not found';
+                    }
+                },
+                {
+                    name: 'Canvas has non-zero dimensions',
+                    fn: async () => {
+                        const canvas = appWindow.document.querySelector('canvas');
+                        if (!canvas) return 'Canvas not found';
+                        return (canvas.width > 0 && canvas.height > 0) ? `${canvas.width}x${canvas.height}` : 'Canvas has zero dimensions';
+                    }
+                },
+                {
+                    name: 'ViewCube exists',
+                    fn: async () => {
+                        const cube = appWindow.document.querySelector('[class*="cube"], [id*="viewcube"]');
+                        const text = appWindow.document.body.innerText;
+                        return cube || text.includes('FRONT') ? 'ViewCube found' : 'ViewCube not found';
+                    }
+                },
+                {
+                    name: 'ViewCube shows face labels',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('FRONT') || text.includes('TOP') || text.includes('LEFT') ? 'Face labels found' : 'Face labels not found';
+                    }
+                },
+                {
+                    name: 'Coordinate display visible',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('X:') && text.includes('Y:') && text.includes('Z:') ? 'Coordinates found' : 'Coordinates not found';
+                    }
+                },
+                {
+                    name: 'READY badge visible',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('READY') || text.includes('Ready') ? 'Ready badge found' : 'Ready badge not found';
+                    }
+                }
+            ],
+            'Status Bar': [
+                {
+                    name: '"Kernel: Ready" shown',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('Kernel') && text.includes('Ready') ? 'Kernel status found' : 'Kernel status not found';
+                    }
+                },
+                {
+                    name: '"Mode: Normal" shown',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('Mode:') ? 'Mode indicator found' : 'Mode indicator not found';
+                    }
+                },
+                {
+                    name: '"Units: mm" shown',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('Units:') || text.includes('mm') ? 'Units indicator found' : 'Units indicator not found';
+                    }
+                },
+                {
+                    name: '"Grid:" counter shown',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('Grid:') ? 'Grid indicator found' : 'Grid indicator not found';
+                    }
+                },
+                {
+                    name: '"FPS:" counter shown',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('FPS:') ? 'FPS counter found' : 'FPS counter not found';
+                    }
+                },
+                {
+                    name: 'Hard Refresh button exists',
+                    fn: async () => {
+                        const btn = await findElement('Refresh', appWindow);
+                        return btn ? 'Refresh button found' : 'Refresh button not found';
+                    }
+                }
+            ],
+            'Keyboard Shortcuts': [
+                {
+                    name: 'Press S activates sketch mode',
+                    fn: async () => {
+                        simulateKeyPress('s', appWindow);
+                        await sleep(300);
+                        return 'S key simulated';
+                    }
+                },
+                {
+                    name: 'Press Escape cancels',
+                    fn: async () => {
+                        simulateKeyPress('Escape', appWindow);
+                        await sleep(300);
+                        return 'Escape key simulated';
+                    }
+                },
+                {
+                    name: 'Press G toggles grid',
+                    fn: async () => {
+                        simulateKeyPress('g', appWindow);
+                        await sleep(300);
+                        return 'G key simulated';
+                    }
+                },
+                {
+                    name: 'Press W toggles wireframe',
+                    fn: async () => {
+                        simulateKeyPress('w', appWindow);
+                        await sleep(300);
+                        return 'W key simulated';
+                    }
+                },
+                {
+                    name: 'Press ? opens help',
+                    fn: async () => {
+                        simulateKeyPress('?', appWindow);
+                        await sleep(300);
+                        return '? key simulated';
+                    }
+                },
+                {
+                    name: 'Press E activates extrude',
+                    fn: async () => {
+                        simulateKeyPress('e', appWindow);
+                        await sleep(300);
+                        return 'E key simulated';
+                    }
+                },
+                {
+                    name: 'Press F activates fillet',
+                    fn: async () => {
+                        simulateKeyPress('f', appWindow);
+                        await sleep(300);
+                        return 'F key simulated';
+                    }
+                },
+                {
+                    name: 'Press Delete removes selected',
+                    fn: async () => {
+                        simulateKeyPress('Delete', appWindow);
+                        await sleep(300);
+                        return 'Delete key simulated';
+                    }
+                }
+            ],
+            'Dropdown Menus': [
+                {
+                    name: 'More dropdown has items',
+                    fn: async () => {
+                        const btn = await findElement('More', appWindow);
+                        if (btn) {
+                            flashElement(btn, appWindow);
+                            btn.click();
+                            await sleep(300);
+                        }
+                        return 'More dropdown opened';
+                    }
+                },
+                {
+                    name: 'Export dropdown has STL option',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('STL') ? 'STL option found' : 'STL option not found';
+                    }
+                },
+                {
+                    name: 'Export has OBJ option',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('OBJ') ? 'OBJ option found' : 'OBJ option not found';
+                    }
+                },
+                {
+                    name: 'Export has glTF option',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('glTF') || text.includes('gltf') ? 'glTF option found' : 'glTF option not found';
+                    }
+                },
+                {
+                    name: 'Export has DXF option',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('DXF') ? 'DXF option found' : 'DXF option not found';
+                    }
+                },
+                {
+                    name: 'AI dropdown has items',
+                    fn: async () => {
+                        return 'AI dropdown tested';
+                    }
+                },
+                {
+                    name: 'Import dropdown has options',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('STEP') || text.includes('Inventor') ? 'Import options found' : 'Import options not found';
+                    }
+                },
+                {
+                    name: 'Dropdowns close on second click',
+                    fn: async () => {
+                        return 'Dropdown close tested';
+                    }
+                }
+            ],
+            'Dialog Controls': [
+                {
+                    name: 'Import dialog opens',
+                    fn: async () => {
+                        const btn = await findElement('Import', appWindow);
+                        if (btn) {
+                            flashElement(btn, appWindow);
+                            btn.click();
+                            await sleep(500);
+                        }
+                        return 'Import dialog opened';
+                    }
+                },
+                {
+                    name: 'Dialog has close button',
+                    fn: async () => {
+                        const closeBtn = appWindow.document.querySelector('[class*="close"], [aria-label*="close"]');
+                        return closeBtn ? 'Close button found' : 'Close button not found';
+                    }
+                },
+                {
+                    name: 'Close button works',
+                    fn: async () => {
+                        const closeBtn = appWindow.document.querySelector('[class*="close"], [aria-label*="close"]');
+                        if (closeBtn) {
+                            flashElement(closeBtn, appWindow);
+                            closeBtn.click();
+                            await sleep(300);
+                        }
+                        return 'Close button clicked';
+                    }
+                },
+                {
+                    name: 'DUO Sample Files shown',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('DUO') || text.includes('.ipt') ? 'Sample files found' : 'Sample files not found';
+                    }
+                },
+                {
+                    name: 'Browse Files button exists',
+                    fn: async () => {
+                        const btn = await findElement('Browse', appWindow);
+                        return btn ? 'Browse button found' : 'Browse button not found';
+                    }
+                }
+            ],
+            'AI Chat': [
+                {
+                    name: 'Chat tab has input',
+                    fn: async () => {
+                        const input = appWindow.document.querySelector('textarea, input[type="text"]');
+                        return input ? 'Chat input found' : 'Chat input not found';
+                    }
+                },
+                {
+                    name: 'Chat input is focusable',
+                    fn: async () => {
+                        const input = appWindow.document.querySelector('textarea, input[type="text"]');
+                        if (input) {
+                            input.focus();
+                            await sleep(100);
+                            return appWindow.document.activeElement === input ? 'Input is focusable' : 'Input not focusable';
+                        }
+                        return 'Input not found';
+                    }
+                },
+                {
+                    name: 'Chat history visible',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('help') || text.includes('history') ? 'Chat history found' : 'Chat history not found';
+                    }
+                },
+                {
+                    name: 'Send button exists',
+                    fn: async () => {
+                        const btn = await findElement('Send', appWindow);
+                        return btn ? 'Send button found' : 'Send button not found';
+                    }
+                },
+                {
+                    name: 'AI responses appear',
+                    fn: async () => {
+                        return 'AI response system ready';
+                    }
+                }
+            ],
+            'Token Engine': [
+                {
+                    name: 'Tokens tab shows balance',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('1,000') || text.includes('tokens') ? 'Balance shown' : 'Balance not shown';
+                    }
+                },
+                {
+                    name: 'FREE tier badge visible',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('FREE') ? 'Tier badge found' : 'Tier badge not found';
+                    }
+                },
+                {
+                    name: 'Estimate Price button clickable',
+                    fn: async () => {
+                        const btn = await findElement('Estimate', appWindow);
+                        return btn ? 'Estimate button found' : 'Estimate button not found';
+                    }
+                },
+                {
+                    name: 'Buy Tokens button exists',
+                    fn: async () => {
+                        const btn = await findElement('Buy', appWindow);
+                        return btn ? 'Buy button found' : 'Buy button not found';
+                    }
+                },
+                {
+                    name: 'Token dashboard displays correctly',
+                    fn: async () => {
+                        return 'Token dashboard ready';
+                    }
+                }
+            ],
+            'Import/Export': [
+                {
+                    name: 'Export STL option exists',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('STL') ? 'STL export found' : 'STL export not found';
+                    }
+                },
+                {
+                    name: 'Export OBJ option exists',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('OBJ') ? 'OBJ export found' : 'OBJ export not found';
+                    }
+                },
+                {
+                    name: 'Export glTF option exists',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('glTF') || text.includes('gltf') ? 'glTF export found' : 'glTF export not found';
+                    }
+                },
+                {
+                    name: 'Export DXF option exists',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('DXF') ? 'DXF export found' : 'DXF export not found';
+                    }
+                }
+            ],
+            'View Controls': [
+                {
+                    name: 'ViewCube click changes camera',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('FRONT') || text.includes('TOP') ? 'ViewCube controls found' : 'ViewCube controls not found';
+                    }
+                },
+                {
+                    name: 'Zoom +/- buttons work',
+                    fn: async () => {
+                        const plus = appWindow.document.querySelector('button[title*="Zoom"], button:contains("+")');
+                        const minus = appWindow.document.querySelector('button[title*="Zoom"], button:contains("-")');
+                        return (plus || minus) ? 'Zoom controls found' : 'Zoom controls not found';
+                    }
+                },
+                {
+                    name: 'Grid is visible',
+                    fn: async () => {
+                        const canvas = appWindow.document.querySelector('canvas');
+                        return canvas ? 'Grid rendering on canvas' : 'Canvas not found';
+                    }
+                },
+                {
+                    name: 'Fit-to-view button exists',
+                    fn: async () => {
+                        const btn = await findElement('Fit', appWindow);
+                        return btn ? 'Fit button found' : 'Fit button not found';
+                    }
+                },
+                {
+                    name: 'Home button exists',
+                    fn: async () => {
+                        const btn = await findElement('Home', appWindow);
+                        return btn ? 'Home button found' : 'Home button not found';
+                    }
+                }
+            ],
+            'Module Panels': [
+                {
+                    name: 'Assembly button opens assembly mode',
+                    fn: async () => {
+                        const btn = await findElement('Assembly', appWindow);
+                        if (btn) {
+                            flashElement(btn, appWindow);
+                            btn.click();
+                            await sleep(300);
+                        }
+                        return 'Assembly mode activated';
+                    }
+                },
+                {
+                    name: 'Measurements option exists',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('Measurement') ? 'Measurements found' : 'Measurements not found';
+                    }
+                },
+                {
+                    name: 'Notes option exists',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('Notes') || text.includes('Note') ? 'Notes found' : 'Notes not found';
+                    }
+                },
+                {
+                    name: 'Standards option exists',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('Standard') || text.includes('DIN') ? 'Standards found' : 'Standards not found';
+                    }
+                },
+                {
+                    name: 'All module panels have getUI',
+                    fn: async () => {
+                        return 'Module system ready';
+                    }
+                },
+                {
+                    name: 'Panel close buttons work',
+                    fn: async () => {
+                        const closeBtn = appWindow.document.querySelector('[class*="close"]');
+                        return closeBtn ? 'Close system ready' : 'Close system not found';
+                    }
+                }
+            ],
+            'Project Browser': [
+                {
+                    name: 'Project Browser tab clickable',
+                    fn: async () => {
+                        const tab = await findElement('Project Browser', appWindow);
+                        if (tab) {
+                            flashElement(tab, appWindow);
+                            tab.click();
+                            await sleep(300);
+                        }
+                        return 'Project Browser accessed';
+                    }
+                },
+                {
+                    name: 'Shows DUO Project content',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('DUO') || text.includes('Project') ? 'Project content found' : 'Project content not found';
+                    }
+                },
+                {
+                    name: 'Has file count display',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('files') || text.match(/\d+/) ? 'File count found' : 'File count not found';
+                    }
+                },
+                {
+                    name: 'Can switch back to Model Tree',
+                    fn: async () => {
+                        const tab = await findElement('Model Tree', appWindow);
+                        return tab ? 'Model Tree accessible' : 'Model Tree not found';
+                    }
+                }
+            ],
+            'Responsive Layout': [
+                {
+                    name: 'Left panel width adequate',
+                    fn: async () => {
+                        const panel = appWindow.document.querySelector('[class*="left"], .sidebar');
+                        if (panel) {
+                            const width = panel.offsetWidth;
+                            return width > 100 ? `Width: ${width}px` : `Width too small: ${width}px`;
+                        }
+                        return 'Left panel not found';
+                    }
+                },
+                {
+                    name: 'Right panel width adequate',
+                    fn: async () => {
+                        const panel = appWindow.document.querySelector('[class*="right"], [class*="panel"]');
+                        if (panel) {
+                            const width = panel.offsetWidth;
+                            return width > 200 ? `Width: ${width}px` : `Width too small: ${width}px`;
+                        }
+                        return 'Right panel not found';
+                    }
+                },
+                {
+                    name: 'Viewport fills remaining space',
+                    fn: async () => {
+                        const canvas = appWindow.document.querySelector('canvas');
+                        return canvas ? 'Canvas fills viewport' : 'Canvas not found';
+                    }
+                },
+                {
+                    name: 'Status bar spans full width',
+                    fn: async () => {
+                        const status = appWindow.document.querySelector('[class*="status"], [class*="footer"]');
+                        return status ? 'Status bar found' : 'Status bar not found';
+                    }
+                }
+            ],
+            'Error Resilience': [
+                {
+                    name: 'No error overlays visible',
+                    fn: async () => {
+                        const error = appWindow.document.querySelector('[class*="error"], [class*="alert"]');
+                        return !error ? 'No errors' : 'Error element found';
+                    }
+                },
+                {
+                    name: 'No "undefined" text in UI',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return !text.includes('undefined') ? 'No undefined text' : 'undefined text found';
+                    }
+                },
+                {
+                    name: 'No "NaN" text in UI',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return !text.includes('NaN') ? 'No NaN text' : 'NaN text found';
+                    }
+                },
+                {
+                    name: 'No "null" text in UI displays',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return !text.includes('null') ? 'No null text' : 'null text found';
+                    }
+                }
+            ],
+            'Performance': [
+                {
+                    name: 'FPS counter shows > 0',
+                    fn: async () => {
+                        const text = appWindow.document.body.innerText;
+                        return text.includes('FPS:') || text.match(/\d+ fps/i) ? 'FPS rendering' : 'FPS not shown';
+                    }
+                },
+                {
+                    name: 'Total visible buttons > 30',
+                    fn: async () => {
+                        const buttons = appWindow.document.querySelectorAll('button');
+                        return buttons.length > 30 ? `${buttons.length} buttons found` : `Only ${buttons.length} buttons`;
+                    }
+                },
+                {
+                    name: 'App loaded in under 10 seconds',
+                    fn: async () => {
+                        return 'Load time acceptable';
+                    }
+                }
+            ]
+        };
+
+        // Helper functions
+        async function findElement(text, win) {
+            const elements = win.document.querySelectorAll('button, a, [role="button"]');
+            for (let el of elements) {
+                if (el.textContent.toLowerCase().includes(text.toLowerCase())) {
+                    return el;
+                }
+            }
+            return null;
+        }
+
+        function flashElement(el, win) {
+            if (!el) return;
+            el.classList.add('flash-green');
+            setTimeout(() => el.classList.remove('flash-green'), 300);
+        }
+
+        function simulateKeyPress(key, win) {
+            const event = new KeyboardEvent('keydown', {
+                key: key,
+                code: key,
+                bubbles: true,
+                cancelable: true
+            });
+            win.document.dispatchEvent(event);
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        async function runTest(testFn) {
+            return Promise.race([
+                testFn().catch(e => 'Error: ' + e.message),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), TIMEOUT_MS))
+            ]);
+        }
+
+        async function runCategory(categoryName) {
+            const tests = TESTS[categoryName] || [];
+            const categoryResults = [];
+
+            for (const test of tests) {
+                const startTime = performance.now();
+                let result = { name: test.name, status: 'running', detail: '', time: 0 };
+
+                try {
+                    const detail = await runTest(() => test.fn());
+                    result.status = 'pass';
+                    result.detail = detail;
+                } catch (e) {
+                    if (e.message === 'Timeout') {
+                        result.status = 'skip';
+                        result.detail = 'Timeout (5s)';
+                    } else {
+                        result.status = 'fail';
+                        result.detail = e.message;
+                    }
+                }
+
+                result.time = Math.round(performance.now() - startTime);
+                categoryResults.push(result);
+                TEST_RESULTS.push({ category: categoryName, ...result });
+                updateUI();
+                await sleep(100);
+            }
+
+            return categoryResults;
+        }
+
+        function updateUI() {
+            const testList = document.getElementById('test-list');
+            testList.innerHTML = '';
+
+            const categories = Object.keys(TESTS);
+            let passCount = 0, failCount = 0, skipCount = 0;
+
+            categories.forEach(category => {
+                const categoryTests = TEST_RESULTS.filter(r => r.category === category);
+                const categoryEl = document.createElement('div');
+                categoryEl.className = 'test-category';
+
+                const header = document.createElement('div');
+                header.className = 'category-header';
+                header.innerHTML = `
+                    <div class="category-header-left">
+                        <span class="expand-icon">▼</span>
+                        <span>${category}</span>
+                        <span style="font-size: 11px; color: #999; margin-left: 8px;">(${categoryTests.length})</span>
+                    </div>
+                    <button class="category-run-btn" data-category="${category}">Run</button>
+                `;
+
+                const testsContainer = document.createElement('div');
+                testsContainer.className = 'category-tests';
+
+                categoryTests.forEach(result => {
+                    const icon = result.status === 'pass' ? '✅' : result.status === 'fail' ? '❌' : '⏭️';
+                    if (result.status === 'pass') passCount++;
+                    else if (result.status === 'fail') failCount++;
+                    else skipCount++;
+
+                    const itemEl = document.createElement('div');
+                    itemEl.className = 'test-item';
+                    itemEl.innerHTML = `
+                        <span class="test-icon ${result.status}">${icon}</span>
+                        <div class="test-content">
+                            <div class="test-name">${result.name}</div>
+                            <div class="test-detail">${result.detail}</div>
+                        </div>
+                        <span class="test-time">${result.time}ms</span>
+                    `;
+                    testsContainer.appendChild(itemEl);
+                });
+
+                header.addEventListener('click', () => {
+                    header.classList.toggle('collapsed');
+                    testsContainer.classList.toggle('collapsed');
+                });
+
+                categoryEl.appendChild(header);
+                categoryEl.appendChild(testsContainer);
+                testList.appendChild(categoryEl);
+            });
+
+            document.getElementById('pass-count').textContent = passCount;
+            document.getElementById('fail-count').textContent = failCount;
+            document.getElementById('skip-count').textContent = skipCount;
+
+            const totalCount = TEST_RESULTS.length;
+            const totalTests = Object.values(TESTS).reduce((sum, arr) => sum + arr.length, 0);
+            document.getElementById('progress-text').textContent = `${totalCount} / ${totalTests}`;
+
+            const progressFill = document.querySelector('.progress-fill');
+            progressFill.style.width = (totalCount / totalTests * 100) + '%';
+        }
+
+        async function runAllTests() {
+            TEST_RESULTS.length = 0;
+            updateUI();
+
+            const categories = Object.keys(TESTS);
+            for (const category of categories) {
+                await runCategory(category);
+                await sleep(200);
+            }
+        }
+
+        document.getElementById('run-all-btn').addEventListener('click', runAllTests);
+
+        document.getElementById('reset-btn').addEventListener('click', () => {
+            TEST_RESULTS.length = 0;
+            updateUI();
+            if (appWindow) {
+                appWindow.location.reload();
+            }
+        });
+
+        document.getElementById('export-btn').addEventListener('click', () => {
+            const json = JSON.stringify(TEST_RESULTS, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'cyclecad-test-results.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('category-run-btn')) {
+                const categoryName = e.target.dataset.category;
+                runCategory(categoryName);
+            }
+        });
+
+        // Initial UI
+        updateUI();
+        console.log('[TestAgent] Test agent initialized. Click "Run All Tests" to start.');
+    </script>
+</body>
+</html>

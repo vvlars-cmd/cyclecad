@@ -1419,7 +1419,7 @@
           <span class="splash-logo-cycle">cycle</span><span class="splash-logo-cad">CAD</span>
         </div>
         <p class="splash-subtitle">Parametric 3D CAD Modeler for the Mechanical Designer</p>
-        <p style="display:inline-block; color:#0066cc; font-size:1rem; margin:12px 0 0 0; letter-spacing:2px; font-family:monospace; font-weight:700; background:rgba(0,102,204,0.08); border:1.5px solid rgba(0,102,204,0.25); border-radius:8px; padding:5px 20px;">v1.0.1</p>
+        <p style="display:inline-block; color:#0066cc; font-size:1rem; margin:12px 0 0 0; letter-spacing:2px; font-family:monospace; font-weight:700; background:rgba(0,102,204,0.08); border:1.5px solid rgba(0,102,204,0.25); border-radius:8px; padding:5px 20px;">v1.0.3</p>
       </div>
       <div class="splash-options">
         <button class="splash-button splash-button-primary" id="btn-empty-project" style="grid-column: 1 / -1;">
@@ -4008,7 +4008,13 @@
     });
 
     // ========== New Module Toolbar Buttons ==========
-    function toggleModulePanel(moduleKey, panelId) {
+    // Map of ES modules that need dynamic import to initialize
+    const _moduleImportMap = {
+      copilot:   { path: './js/ai-copilot.js',     initFn: 'initCopilot' },
+      materials: { path: './js/material-library.js', initFn: 'initMaterialLibrary' },
+    };
+
+    async function toggleModulePanel(moduleKey, panelId) {
       let panel = document.getElementById(panelId);
       if (panel) {
         panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
@@ -4017,7 +4023,7 @@
       // Create floating panel
       panel = document.createElement('div');
       panel.id = panelId;
-      panel.style.cssText = 'position:fixed;top:60px;right:320px;width:400px;max-height:80vh;overflow-y:auto;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:8px;z-index:500;display:flex;flex-direction:column;box-shadow:var(--shadow-lg);';
+      panel.style.cssText = 'position:fixed;top:60px;right:320px;width:420px;max-height:80vh;overflow-y:auto;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:8px;z-index:500;display:flex;flex-direction:column;box-shadow:var(--shadow-lg);';
 
       const header = document.createElement('div');
       header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border-color);background:var(--bg-tertiary);border-radius:8px 8px 0 0;cursor:move;';
@@ -4049,12 +4055,24 @@
       const body = document.createElement('div');
       body.style.cssText = 'padding:14px;flex:1;min-height:0;overflow-y:auto;font-size:12px;';
 
-      const mod = window.cycleCAD?.[moduleKey];
+      // Try dynamic import for ES modules that export init functions
+      let mod = window.cycleCAD?.[moduleKey];
+      if (!mod && _moduleImportMap[moduleKey]) {
+        try {
+          const m = await import(_moduleImportMap[moduleKey].path);
+          if (m[_moduleImportMap[moduleKey].initFn]) {
+            m[_moduleImportMap[moduleKey].initFn](body);
+            panel.appendChild(body);
+            document.body.appendChild(panel);
+            return;
+          }
+        } catch(e) { console.warn('[Module Import]', moduleKey, e); }
+        mod = window.cycleCAD?.[moduleKey]; // re-check after import
+      }
+
       if (mod?.init) {
-        // Use init() which sets innerHTML AND attaches event listeners
         mod.init(body);
       } else if (mod?.getUI) {
-        // Strip position:fixed and z-index from module HTML — our wrapper handles positioning
         let html = mod.getUI();
         html = html.replace(/position:\s*fixed;?/gi, 'position:relative;')
                     .replace(/z-index:\s*\d+;?/gi, '')
@@ -4063,18 +4081,13 @@
                     .replace(/height:\s*calc\([^)]+\);?/gi, 'height:auto;')
                     .replace(/width:\s*400px;?/gi, 'width:100%;');
         body.innerHTML = html;
-        // Wire up tab switching for modules that use .tab-btn
         body.querySelectorAll('.tab-btn').forEach(btn => {
           btn.addEventListener('click', () => {
             const tab = btn.dataset.tab;
             body.querySelectorAll('.tab-btn').forEach(b => {
-              b.style.color = '#888';
-              b.style.borderBottom = 'none';
-              b.classList.remove('active');
+              b.style.color = '#888'; b.style.borderBottom = 'none'; b.classList.remove('active');
             });
-            btn.style.color = '#58a6ff';
-            btn.style.borderBottom = '2px solid #58a6ff';
-            btn.classList.add('active');
+            btn.style.color = '#58a6ff'; btn.style.borderBottom = '2px solid #58a6ff'; btn.classList.add('active');
             body.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
             const target = body.querySelector(`.tab-content.${tab}`);
             if (target) target.style.display = 'block';
@@ -4083,6 +4096,12 @@
       } else if (mod?.getStatus) {
         const status = mod.getStatus();
         body.innerHTML = `<div style="color:var(--text-secondary);line-height:1.8;">${JSON.stringify(status, null, 2).replace(/\n/g, '<br>')}</div>`;
+      } else if (mod?.analyze || mod?.generate || mod?.search || mod?.execute) {
+        // Module has methods but no UI — build a quick command panel
+        const methods = Object.keys(mod).filter(k => typeof mod[k] === 'function');
+        body.innerHTML = `<div style="margin-bottom:12px;"><input id="_mod_input_${moduleKey}" placeholder="Enter command or query..." style="width:100%;padding:8px 10px;border:1px solid var(--border-color);border-radius:5px;background:var(--bg-primary);color:var(--text-primary);font-size:12px;box-sizing:border-box;"></div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">${methods.slice(0,8).map(m => `<button onclick="(async()=>{const r=await window.cycleCAD.${moduleKey}.${m}(document.getElementById('_mod_input_${moduleKey}').value);document.getElementById('_mod_out_${moduleKey}').textContent=JSON.stringify(r,null,2)})()" style="padding:4px 10px;border-radius:4px;border:1px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-primary);cursor:pointer;font-size:11px;">${m}()</button>`).join('')}</div>
+        <pre id="_mod_out_${moduleKey}" style="background:var(--bg-primary);border:1px solid var(--border-color);border-radius:5px;padding:10px;font-size:11px;color:var(--text-secondary);white-space:pre-wrap;max-height:300px;overflow-y:auto;margin:0;">Ready. Click a function above.</pre>`;
       } else {
         body.innerHTML = `<div style="color:var(--accent-green);padding:12px;text-align:center;"><p style="font-weight:600;margin-bottom:8px;">Module Loaded</p><p style="color:var(--text-secondary);">Access via console:<br><code style="background:var(--bg-tertiary);padding:2px 6px;border-radius:3px;">window.cycleCAD.${moduleKey}</code></p></div>`;
       }
@@ -5221,6 +5240,6 @@
     </div>
   </div>
 
-  <span id="version-badge" style="position:fixed;bottom:42px;left:50%;transform:translateX(-50%);z-index:999;font-size:0.9rem;color:rgba(255,255,255,0.9);letter-spacing:0.1em;white-space:nowrap;padding:6px 16px;user-select:all;pointer-events:auto;font-family:monospace;font-weight:700;background:rgba(0,0,0,0.7);border:1px solid rgba(88,166,255,0.4);border-radius:6px;text-shadow:0 1px 3px rgba(0,0,0,0.5);" title="cycleCAD version">cycleCAD v1.0.1</span>
+  <span id="version-badge" style="position:fixed;bottom:42px;left:50%;transform:translateX(-50%);z-index:999;font-size:0.9rem;color:rgba(255,255,255,0.9);letter-spacing:0.1em;white-space:nowrap;padding:6px 16px;user-select:all;pointer-events:auto;font-family:monospace;font-weight:700;background:rgba(0,0,0,0.7);border:1px solid rgba(88,166,255,0.4);border-radius:6px;text-shadow:0 1px 3px rgba(0,0,0,0.5);" title="cycleCAD version">cycleCAD v1.0.3</span>
 </body>
 </html>

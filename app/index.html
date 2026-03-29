@@ -2904,6 +2904,11 @@
         const pParams = prompt.params || prompt;
         const result = createPrimitive(pType, pParams);
         const mesh = result.mesh || result;
+        // Apply position offset for multi-item placement (e.g., 4 holes around a part)
+        if (pParams._offsetX || pParams._offsetZ) {
+          mesh.position.x += (pParams._offsetX || 0) * 0.1;
+          mesh.position.z += (pParams._offsetZ || 0) * 0.1;
+        }
         addToScene(mesh);
         if (result.wireframe) addToScene(result.wireframe);
 
@@ -3554,7 +3559,7 @@
       init();
     }
 
-    window.cycleCAD = Object.assign(window.cycleCAD || {}, { version: '1.0.0', APP, init });
+    window.cycleCAD = Object.assign(window.cycleCAD || {}, { version: '1.0.6', APP, init });
 
     // Expose dialog functions globally so inline onclick="" handlers work
     window.openDialog = openDialog;
@@ -5267,6 +5272,6 @@
     </div>
   </div>
 
-  <span id="version-badge" style="position:fixed;bottom:42px;left:50%;transform:translateX(-50%);z-index:999;font-size:0.9rem;color:rgba(255,255,255,0.9);letter-spacing:0.1em;white-space:nowrap;padding:6px 16px;user-select:all;pointer-events:auto;font-family:monospace;font-weight:700;background:rgba(0,0,0,0.7);border:1px solid rgba(88,166,255,0.4);border-radius:6px;text-shadow:0 1px 3px rgba(0,0,0,0.5);" title="cycleCAD version">cycleCAD v1.0.5</span>
+  <span id="version-badge" style="position:fixed;bottom:42px;left:50%;transform:translateX(-50%);z-index:999;font-size:0.9rem;color:rgba(255,255,255,0.9);letter-spacing:0.1em;white-space:nowrap;padding:6px 16px;user-select:all;pointer-events:auto;font-family:monospace;font-weight:700;background:rgba(0,0,0,0.7);border:1px solid rgba(88,166,255,0.4);border-radius:6px;text-shadow:0 1px 3px rgba(0,0,0,0.5);" title="cycleCAD version">cycleCAD v1.0.6</span>
 </body>
 </html>

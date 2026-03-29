@@ -349,12 +349,16 @@ export function createPrimitive(type, params = {}, options = {}) {
   const { material = 'steel' } = options;
   let geometry;
 
+  // Scale factor: dimensions in mm, viewport units are ~10x smaller for good camera framing
+  // Camera starts at (150,100,150) so a 100mm cube should be ~10 units to look right
+  const SCALE = 0.1;
+
   switch (type) {
     case 'box':
       geometry = new THREE.BoxGeometry(
-        params.width || 1,
-        params.height || 1,
-        params.depth || 1,
+        (params.width || 10) * SCALE,
+        (params.height || 10) * SCALE,
+        (params.depth || 10) * SCALE,
         params.widthSegments || 1,
         params.heightSegments || 1,
         params.depthSegments || 1
@@ -363,9 +367,9 @@ export function createPrimitive(type, params = {}, options = {}) {
 
     case 'cylinder':
       geometry = new THREE.CylinderGeometry(
-        params.radius || 1,
-        params.radius || 1,
-        params.height || 2,
+        (params.radius || 10) * SCALE,
+        (params.radius || 10) * SCALE,
+        (params.height || 20) * SCALE,
         params.segments || 32,
         1,
         params.openEnded || false
@@ -374,7 +378,7 @@ export function createPrimitive(type, params = {}, options = {}) {
 
     case 'sphere':
       geometry = new THREE.SphereGeometry(
-        params.radius || 1,
+        (params.radius || 10) * SCALE,
         params.segments || 32,
         params.segments || 32
       );
@@ -382,26 +386,40 @@ export function createPrimitive(type, params = {}, options = {}) {
 
     case 'cone':
       geometry = new THREE.ConeGeometry(
-        params.bottomRadius || 1,
-        params.height || 2,
+        (params.bottomRadius || 10) * SCALE,
+        (params.height || 20) * SCALE,
         params.segments || 32
       );
       break;
 
     case 'torus':
       geometry = new THREE.TorusGeometry(
-        params.radius || 1,
-        params.tube || 0.4,
+        (params.radius || 10) * SCALE,
+        (params.tube || 4) * SCALE,
         params.radialSegments || 16,
         params.tubeSegments || 100
       );
       break;
 
+    case 'hole': {
+      // Create a dark cylinder for hole preview (visual subtract indicator)
+      const holeRadius = (params.radius || 5) * SCALE;
+      const holeDepth = (params.depth || params.height || 20) * SCALE;
+      geometry = new THREE.CylinderGeometry(holeRadius, holeRadius, holeDepth, 16, 1, false);
+      // Override material to dark red so holes are clearly visible
+      const holeMat = new THREE.MeshStandardMaterial({ color: 0x882222, metalness: 0.3, roughness: 0.7, transparent: true, opacity: 0.85 });
+      const holeMesh = new THREE.Mesh(geometry, holeMat);
+      holeMesh.castShadow = true;
+      holeMesh.receiveShadow = true;
+      const holeWire = createWireframeEdges(holeMesh);
+      return { mesh: holeMesh, wireframe: holeWire, params: { type, params, options } };
+    }
+
     case 'bracket': {
       // L-shaped bracket from width, height, thickness
-      const bw = params.width || 80;
-      const bh = params.height || 40;
-      const bt = params.thickness || 5;
+      const bw = (params.width || 80) * SCALE;
+      const bh = (params.height || 40) * SCALE;
+      const bt = (params.thickness || 5) * SCALE;
       const shape = new THREE.Shape();
       shape.moveTo(0, 0);
       shape.lineTo(bw, 0);
@@ -417,9 +435,9 @@ export function createPrimitive(type, params = {}, options = {}) {
 
     case 'flange': {
       // Annular flange: outer ring with center hole
-      const fo = (params.outerDiameter || params.outerRadius * 2 || 60) / 2;
-      const fi = (params.innerDiameter || params.innerRadius * 2 || 20) / 2;
-      const fh = params.height || params.thickness || 10;
+      const fo = ((params.outerDiameter || params.outerRadius * 2 || 60) / 2) * SCALE;
+      const fi = ((params.innerDiameter || params.innerRadius * 2 || 20) / 2) * SCALE;
+      const fh = (params.height || params.thickness || 10) * SCALE;
       const outerShape = new THREE.Shape();
       outerShape.absarc(0, 0, fo, 0, Math.PI * 2, false);
       const holePath = new THREE.Path();
@@ -431,9 +449,9 @@ export function createPrimitive(type, params = {}, options = {}) {
     }
 
     case 'washer': {
-      const wo = (params.outerDiameter || 20) / 2;
-      const wi = (params.innerDiameter || 10) / 2;
-      const wt = params.thickness || 2;
+      const wo = ((params.outerDiameter || 20) / 2) * SCALE;
+      const wi = ((params.innerDiameter || 10) / 2) * SCALE;
+      const wt = (params.thickness || 2) * SCALE;
       const wShape = new THREE.Shape();
       wShape.absarc(0, 0, wo, 0, Math.PI * 2, false);
       const wHole = new THREE.Path();
@@ -445,9 +463,9 @@ export function createPrimitive(type, params = {}, options = {}) {
     }
 
     case 'spacer': {
-      const so = (params.outerDiameter || params.diameter || 15) / 2;
-      const si = (params.innerDiameter || params.holeDiameter || 6) / 2;
-      const sh = params.height || params.length || 20;
+      const so = (((params.outerDiameter || params.diameter || 15) / 2) * SCALE);
+      const si = (((params.innerDiameter || params.holeDiameter || 6) / 2) * SCALE);
+      const sh = (params.height || params.length || 20) * SCALE;
       const sShape = new THREE.Shape();
       sShape.absarc(0, 0, so, 0, Math.PI * 2, false);
       const sHole = new THREE.Path();
@@ -460,9 +478,9 @@ export function createPrimitive(type, params = {}, options = {}) {
 
     case 'gear': {
       // Simple spur gear approximation
-      const gr = params.radius || params.diameter / 2 || 30;
+      const gr = ((params.radius || params.diameter / 2 || 30) * SCALE);
       const gt = params.teeth || 20;
-      const gd = params.depth || params.thickness || 10;
+      const gd = (params.depth || params.thickness || 10) * SCALE;
       const toothH = gr * 0.15;
       const gShape = new THREE.Shape();
       for (let i = 0; i < gt; i++) {
@@ -482,9 +500,9 @@ export function createPrimitive(type, params = {}, options = {}) {
     }
 
     case 'plate': {
-      const pw = params.width || 100;
-      const ph = params.height || params.depth || 50;
-      const pt = params.thickness || 5;
+      const pw = (params.width || 100) * SCALE;
+      const ph = (params.height || params.depth || 50) * SCALE;
+      const pt = (params.thickness || 5) * SCALE;
       geometry = new THREE.BoxGeometry(pw, pt, ph);
       break;
     }
@@ -493,8 +511,8 @@ export function createPrimitive(type, params = {}, options = {}) {
       // Fallback: treat unknown as a box with available dimensions
       console.warn(`Unknown primitive type "${type}" — creating box fallback`);
       geometry = new THREE.BoxGeometry(
-        params.width || params.diameter || 50,
-        params.height || params.thickness || 50,
+        (params.width || params.diameter || 50) * SCALE,
+        (params.height || params.thickness || 50) * SCALE,
         params.depth || params.thickness || 50
       );
   }

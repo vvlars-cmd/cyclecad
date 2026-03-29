@@ -948,7 +948,19 @@ export async function executeTextCommand(prompt) {
         if (window._executeParsedPrompt) {
           const method = cmd.method || '';
           const type = method.replace('shape.', '').replace('feature.', '');
-          window._executeParsedPrompt({ type, params: cmd.params || {} });
+          // Handle count param (e.g., 4 mounting holes)
+          const count = cmd.params?.count || 1;
+          for (let ci = 0; ci < count; ci++) {
+            const p = Object.assign({}, cmd.params);
+            // Offset multiple items so they don't stack
+            if (count > 1) {
+              const angle = (ci / count) * Math.PI * 2;
+              const spread = (p.radius || 5) * 4;
+              p._offsetX = Math.cos(angle) * spread;
+              p._offsetZ = Math.sin(angle) * spread;
+            }
+            window._executeParsedPrompt({ type, params: p });
+          }
           results.push({ ok: true, method });
         } else if (window.cycleCAD && window.cycleCAD.execute) {
           const result = await window.cycleCAD.execute(cmd);

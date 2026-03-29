@@ -1,0 +1,2178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExplodeView Integration in cycleCAD</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* CSS Variables */
+        :root {
+            --bg-dark: #1e1e1e;
+            --bg-darker: #0d0d0d;
+            --bg-card: #252525;
+            --bg-hover: #2d2d2d;
+            --border-color: #3a3a3a;
+            --text-primary: #e8e8e8;
+            --text-secondary: #b4b4b4;
+            --text-tertiary: #808080;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-orange: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-purple: #8b5cf6;
+            --accent-cyan: #06b6d4;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: var(--bg-darker);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* Navigation Bar */
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background-color: var(--bg-dark);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .navbar-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .breadcrumb a {
+            color: var(--accent-blue);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .breadcrumb a:hover {
+            color: #60a5fa;
+        }
+
+        .breadcrumb-sep {
+            color: var(--text-tertiary);
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .level-badge {
+            background-color: var(--accent-purple);
+            color: white;
+            padding: 0.375rem 0.75rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .back-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: var(--transition);
+        }
+
+        .back-link:hover {
+            color: var(--accent-blue);
+        }
+
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Layout */
+        .layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 3rem;
+            padding: 3rem 2rem;
+        }
+
+        /* Sidebar TOC */
+        .sidebar {
+            position: sticky;
+            top: 80px;
+            height: calc(100vh - 100px);
+            overflow-y: auto;
+            padding: 1.5rem;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+        }
+
+        .sidebar h3 {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-tertiary);
+            margin-bottom: 1rem;
+        }
+
+        .toc-list {
+            list-style: none;
+        }
+
+        .toc-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .toc-link {
+            display: block;
+            padding: 0.5rem 0.75rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.875rem;
+            border-left: 2px solid transparent;
+            transition: var(--transition);
+        }
+
+        .toc-link:hover,
+        .toc-link.active {
+            color: var(--accent-blue);
+            border-left-color: var(--accent-blue);
+            padding-left: 1rem;
+        }
+
+        .toc-sub {
+            list-style: none;
+            margin-top: 0.5rem;
+            padding-left: 1rem;
+            border-left: 1px solid var(--border-color);
+        }
+
+        .toc-sub .toc-link {
+            padding: 0.375rem 0.5rem;
+            font-size: 0.8125rem;
+            color: var(--text-tertiary);
+        }
+
+        /* Main Content */
+        .main {
+            min-height: 100vh;
+        }
+
+        /* Hero Section */
+        .hero {
+            margin-bottom: 4rem;
+            padding: 4rem 2rem;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-cyan) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .hero-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .stat-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        /* Sections */
+        section {
+            margin-bottom: 5rem;
+            scroll-margin-top: 100px;
+        }
+
+        section h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--accent-blue);
+        }
+
+        section h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 2rem 0 1rem 0;
+            color: var(--accent-blue);
+        }
+
+        section h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 1.5rem 0 0.75rem 0;
+            color: var(--text-primary);
+        }
+
+        section p {
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+
+        /* Code Blocks */
+        .code-block {
+            background-color: var(--bg-darker);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+
+        .code-inline {
+            background-color: var(--bg-card);
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            color: var(--accent-cyan);
+        }
+
+        /* Animated Diagram */
+        .diagram {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 3rem 2rem;
+            margin: 2rem 0;
+            overflow-x: auto;
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .diagram-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 2rem;
+            width: 100%;
+            min-width: 600px;
+        }
+
+        .diagram-box {
+            background-color: var(--bg-darker);
+            border: 2px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 2rem;
+            flex: 1;
+            text-align: center;
+            min-width: 150px;
+        }
+
+        .diagram-box h4 {
+            margin-top: 0;
+            color: var(--accent-blue);
+            font-size: 1rem;
+        }
+
+        .diagram-box p {
+            font-size: 0.875rem;
+            color: var(--text-tertiary);
+            margin: 0.5rem 0 0 0;
+        }
+
+        .diagram-arrow {
+            font-size: 2rem;
+            color: var(--accent-blue);
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(10px); }
+        }
+
+        /* Cards Grid */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            border-color: var(--accent-blue);
+            background-color: var(--bg-hover);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .card h3 {
+            margin-top: 0;
+            color: var(--accent-blue);
+            font-size: 1.125rem;
+        }
+
+        .card p {
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Feature Cards */
+        .feature-card {
+            background-color: var(--bg-card);
+            border-left: 4px solid var(--accent-blue);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .feature-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .feature-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .feature-badge {
+            display: inline-block;
+            padding: 0.375rem 0.75rem;
+            background-color: var(--accent-green);
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 600;
+            border-radius: 0.25rem;
+            text-transform: uppercase;
+        }
+
+        .feature-badge.in-progress {
+            background-color: var(--accent-orange);
+        }
+
+        .feature-badge.planned {
+            background-color: var(--accent-red);
+        }
+
+        .feature-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .comparison-col {
+            font-size: 0.875rem;
+        }
+
+        .comparison-col h5 {
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        /* Table */
+        .table-wrapper {
+            overflow-x: auto;
+            margin: 2rem 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        th {
+            background-color: var(--bg-darker);
+            border-bottom: 2px solid var(--border-color);
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--accent-blue);
+        }
+
+        td {
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem;
+            color: var(--text-secondary);
+        }
+
+        tr:hover {
+            background-color: var(--bg-hover);
+        }
+
+        .status-ported {
+            color: var(--accent-green);
+            font-weight: 600;
+        }
+
+        .status-in-progress {
+            color: var(--accent-orange);
+            font-weight: 600;
+        }
+
+        .status-planned {
+            color: var(--accent-red);
+            font-weight: 600;
+        }
+
+        /* Filter Buttons */
+        .filter-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin: 1.5rem 0;
+        }
+
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .filter-btn:hover,
+        .filter-btn.active {
+            background-color: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: white;
+        }
+
+        /* Mode Toggle */
+        .mode-toggle {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .mode-box {
+            background-color: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 2rem;
+            text-align: center;
+            transition: var(--transition);
+        }
+
+        .mode-box.active {
+            border-color: var(--accent-blue);
+            background-color: var(--bg-hover);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+        }
+
+        .mode-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .mode-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .mode-description {
+            font-size: 0.875rem;
+            color: var(--text-tertiary);
+        }
+
+        /* Timeline */
+        .timeline {
+            position: relative;
+            padding: 2rem 0;
+        }
+
+        .timeline-item {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .timeline-item:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            left: 100px;
+            top: 50px;
+            width: 2px;
+            height: calc(100% + 2rem);
+            background-color: var(--border-color);
+        }
+
+        .timeline-date {
+            font-weight: 600;
+            color: var(--accent-blue);
+            position: relative;
+            padding-top: 0.5rem;
+        }
+
+        .timeline-date::before {
+            content: '';
+            position: absolute;
+            left: -125px;
+            top: 0;
+            width: 12px;
+            height: 12px;
+            background-color: var(--accent-blue);
+            border: 3px solid var(--bg-darker);
+            border-radius: 50%;
+        }
+
+        .timeline-content {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+        }
+
+        /* API Reference */
+        .api-method {
+            background-color: var(--bg-darker);
+            border-left: 4px solid var(--accent-cyan);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+        }
+
+        .api-method h5 {
+            color: var(--accent-cyan);
+            margin-top: 0;
+            font-size: 1rem;
+        }
+
+        .api-params {
+            margin-top: 1rem;
+            font-size: 0.8125rem;
+            color: var(--text-tertiary);
+        }
+
+        /* Shortcuts Table */
+        .shortcuts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .shortcuts-col h4 {
+            margin-top: 0;
+            color: var(--accent-blue);
+            font-size: 1.125rem;
+        }
+
+        .shortcut-item {
+            display: grid;
+            grid-template-columns: 100px 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .shortcut-key {
+            background-color: var(--bg-darker);
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            padding: 0.375rem 0.75rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            text-align: center;
+        }
+
+        .shortcut-desc {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+        }
+
+        /* Docker Cards */
+        .docker-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .docker-card {
+            background-color: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 2rem;
+            transition: var(--transition);
+        }
+
+        .docker-card:hover {
+            border-color: var(--accent-blue);
+            box-shadow: var(--shadow-md);
+        }
+
+        .docker-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .docker-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .docker-port {
+            background-color: var(--bg-darker);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.375rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8125rem;
+            color: var(--accent-cyan);
+            display: inline-block;
+            margin-top: 1rem;
+        }
+
+        /* Scroll bar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background-color: var(--bg-darker);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background-color: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background-color: var(--text-tertiary);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .layout {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .sidebar {
+                position: relative;
+                top: 0;
+                height: auto;
+                max-height: 300px;
+            }
+
+            .diagram-container {
+                flex-direction: column;
+                min-width: auto;
+            }
+
+            .mode-toggle {
+                grid-template-columns: 1fr;
+            }
+
+            .feature-comparison {
+                grid-template-columns: 1fr;
+            }
+
+            .shortcuts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .timeline-item {
+                grid-template-columns: 1fr;
+            }
+
+            .timeline-item::after {
+                left: 0;
+            }
+
+            .timeline-date::before {
+                left: -25px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .navbar-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .hero {
+                padding: 2rem 1rem;
+            }
+
+            .hero h1 {
+                font-size: 1.75rem;
+            }
+
+            .layout {
+                padding: 2rem 1rem;
+            }
+
+            section h2 {
+                font-size: 1.5rem;
+            }
+
+            .hero-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Print styles */
+        @media print {
+            .navbar,
+            .sidebar {
+                display: none;
+            }
+
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            .diagram,
+            .code-block {
+                page-break-inside: avoid;
+            }
+
+            section {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="breadcrumb">
+                <a href="/app/">cycleCAD</a>
+                <span class="breadcrumb-sep">/</span>
+                <a href="/app/tutorials/">Tutorials</a>
+                <span class="breadcrumb-sep">/</span>
+                <span>ExplodeView Integration</span>
+            </div>
+            <div class="nav-right">
+                <span class="level-badge">Architecture</span>
+                <a href="/app/" class="back-link">← Back to App</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="layout">
+            <!-- Sidebar TOC -->
+            <aside class="sidebar">
+                <h3>On This Page</h3>
+                <ul class="toc-list">
+                    <li class="toc-item"><a href="#architecture" class="toc-link">Architecture Overview</a></li>
+                    <li class="toc-item"><a href="#mode-switching" class="toc-link">Mode Switching</a></li>
+                    <li class="toc-item"><a href="#feature-map" class="toc-link">Feature Migration Map</a></li>
+                    <li class="toc-item">
+                        <a href="#core-features" class="toc-link">Core Features</a>
+                        <ul class="toc-sub">
+                            <li class="toc-item"><a href="#feature-tree" class="toc-link">Assembly Tree</a></li>
+                            <li class="toc-item"><a href="#explode" class="toc-link">Explode/Collapse</a></li>
+                            <li class="toc-item"><a href="#selection" class="toc-link">Part Selection</a></li>
+                            <li class="toc-item"><a href="#section-cut" class="toc-link">Section Cut</a></li>
+                            <li class="toc-item"><a href="#context-menu" class="toc-link">Context Menu</a></li>
+                            <li class="toc-item"><a href="#bom" class="toc-link">BOM Export</a></li>
+                            <li class="toc-item"><a href="#ai-identifier" class="toc-link">AI Identifier</a></li>
+                            <li class="toc-item"><a href="#annotations" class="toc-link">Annotations</a></li>
+                            <li class="toc-item"><a href="#measurement" class="toc-link">Measurement</a></li>
+                            <li class="toc-item"><a href="#multilang" class="toc-link">Multi-Language</a></li>
+                        </ul>
+                    </li>
+                    <li class="toc-item"><a href="#data-flow" class="toc-link">Data Flow</a></li>
+                    <li class="toc-item"><a href="#api-reference" class="toc-link">API Reference</a></li>
+                    <li class="toc-item"><a href="#shortcuts" class="toc-link">Keyboard Shortcuts</a></li>
+                    <li class="toc-item"><a href="#docker" class="toc-link">Docker Infrastructure</a></li>
+                    <li class="toc-item"><a href="#roadmap" class="toc-link">Roadmap</a></li>
+                </ul>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="main">
+                <!-- Hero Section -->
+                <div class="hero">
+                    <h1>ExplodeView Inside cycleCAD</h1>
+                    <p>The Unified Platform — How 57 features from a 20,000-line 3D viewer became native cycleCAD modules</p>
+                    <div class="hero-stats">
+                        <div class="stat-card">
+                            <span class="stat-value">57</span>
+                            <span class="stat-label">Features Ported</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value">6</span>
+                            <span class="stat-label">Sub-Assemblies</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value">399</span>
+                            <span class="stat-label">Parts Supported</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value">20,900</span>
+                            <span class="stat-label">Lines of Code</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Architecture Overview -->
+                <section id="architecture">
+                    <h2>Architecture Overview</h2>
+                    <p>ExplodeView was originally built as a standalone 3D viewer for complex assemblies. By extracting its core rendering engine and integration layer, we've merged it into cycleCAD as a native mode—sharing the same Three.js scene, camera, and controls while maintaining complete feature parity.</p>
+
+                    <h3>Shared Scene Architecture</h3>
+                    <p>Instead of two separate applications, cycleCAD now runs both edit and viewer modes on the same Three.js canvas:</p>
+
+                    <div class="diagram">
+                        <div class="diagram-container">
+                            <div class="diagram-box">
+                                <h4>ExplodeView</h4>
+                                <p>Monolith</p>
+                                <p style="font-size: 0.75rem; color: var(--text-tertiary); margin-top: 1rem;">Single app.js<br>20,900 lines</p>
+                            </div>
+                            <div class="diagram-arrow">→</div>
+                            <div class="diagram-box">
+                                <h4>cycleCAD + Viewer</h4>
+                                <p>Unified Platform</p>
+                                <p style="font-size: 0.75rem; color: var(--text-tertiary); margin-top: 1rem;">Shared scene<br>Modeler + Viewer</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p><strong>Key concept:</strong> One Three.js renderer powers both modes. When you toggle to Viewer Mode, the edit tools fade away and the ExplodeView tools activate—but the 3D camera, lights, and selection system remain synchronized.</p>
+
+                    <div class="code-block">// Initialize Viewer Mode sharing cycleCAD's viewport exports
+const viewerAPI = await initViewerMode({
+    scene: window.cycleCAD.viewport.scene,
+    camera: window.cycleCAD.viewport.camera,
+    renderer: window.cycleCAD.viewport.renderer,
+    controls: window.cycleCAD.viewport.controls
+});
+
+// Now both modes share the same 3D world
+const selectPart = (index) => viewerAPI.selectPart(index);
+const explodeModel = (amount) => viewerAPI.explodeParts(amount);
+                    </div>
+                </section>
+
+                <!-- Mode Switching -->
+                <section id="mode-switching">
+                    <h2>Mode Switching: Edit ↔ Viewer</h2>
+                    <p>cycleCAD operates in two complementary modes, each optimized for a different workflow. Switch between them with a single button click or keyboard shortcut (<span class="code-inline">V</span>).</p>
+
+                    <div class="mode-toggle">
+                        <div class="mode-box active">
+                            <div class="mode-icon">✏️</div>
+                            <div class="mode-title">Edit Mode</div>
+                            <div class="mode-description">
+                                Design & parametric modeling. Create sketches, extrude, revolve, apply constraints, and build assemblies.
+                            </div>
+                            <div style="margin-top: 1.5rem; font-size: 0.75rem; color: var(--text-tertiary);">
+                                Sketch tools • Operations • Constraints • Parameters
+                            </div>
+                        </div>
+                        <div class="mode-box">
+                            <div class="mode-icon">👁️</div>
+                            <div class="mode-title">Viewer Mode</div>
+                            <div class="mode-description">
+                                Inspect & analyze. View assemblies, explode components, measure, annotate, and export documentation.
+                            </div>
+                            <div style="margin-top: 1.5rem; font-size: 0.75rem; color: var(--text-tertiary);">
+                                Explode • Section cut • Measurements • AI analysis
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3>Seamless Transition</h3>
+                    <p>Both modes share the same 3D viewport and selection state. When you:</p>
+                    <ul style="margin-left: 1.5rem; color: var(--text-secondary);">
+                        <li>Switch to Viewer Mode → your model loads instantly with all 57 ExplodeView tools ready</li>
+                        <li>Select a part in Viewer Mode → it remains selected when you switch back to Edit Mode</li>
+                        <li>Rotate/zoom the view → both modes maintain the camera position</li>
+                    </ul>
+
+                    <div class="code-block">// Toggle between modes
+toggleViewerMode(); // Switches Edit ↔ Viewer
+
+// Check current mode
+if (isInViewerMode()) {
+    console.log('Viewing assembly');
+} else {
+    console.log('Editing model');
+}
+
+// Keyboard shortcut
+// Press 'V' to toggle
+                    </div>
+                </section>
+
+                <!-- Feature Migration Map -->
+                <section id="feature-map">
+                    <h2>Feature Migration Map</h2>
+                    <p>All 57 ExplodeView features have been ported to cycleCAD. The table below shows the source location, target module, porting status, and priority.</p>
+
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" data-filter="all">All Features</button>
+                        <button class="filter-btn" data-filter="ported">✅ Ported</button>
+                        <button class="filter-btn" data-filter="in-progress">🔄 In Progress</button>
+                        <button class="filter-btn" data-filter="planned">📋 Planned</button>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table id="featureTable">
+                            <thead>
+                                <tr>
+                                    <th>Feature</th>
+                                    <th>ExplodeView Location</th>
+                                    <th>cycleCAD Module</th>
+                                    <th>Status</th>
+                                    <th>Priority</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr data-status="ported">
+                                    <td>Assembly Tree</td>
+                                    <td><span class="code-inline">initAssemblyTree()</span></td>
+                                    <td>viewer-mode.js</td>
+                                    <td><span class="status-ported">✅ Ported</span></td>
+                                    <td>P0</td>
+                                </tr>
+                                <tr data-status="ported">
+                                    <td>Explode/Collapse</td>
+                                    <td>~line 2100</td>
+                                    <td>viewer-mode.js</td>
+                                    <td><span class="status-ported">✅ Ported</span></td>
+                                    <td>P0</td>
+                                </tr>
+                                <tr data-status="ported">
+                                    <td>Part Selection</td>
+                                    <td><span class="code-inline">selectMesh()</span></td>
+                                    <td>viewer-mode.js</td>
+                                    <td><span class="status-ported">✅ Ported</span></td>
+                                    <td>P0</td>
+                                </tr>
+                                <tr data-status="ported">
+                                    <td>Part Info Card</td>
+                                    <td><span class="code-inline">showPartInfoCard()</span></td>
+                                    <td>viewer-mode.js</td>
+                                    <td><span class="status-ported">✅ Ported</span></td>
+                                    <td>P0</td>
+                                </tr>
+                                <tr data-status="ported">
+                                    <td>Section Cut / Clipping</td>
+                                    <td><span class="code-inline">initSectionCut()</span></td>
+                                    <td>viewer-section-cut.js</td>
+                                    <td><span class="status-ported">✅ Ported</span></td>
+                                    <td>P0</td>
+                                </tr>
+                                <tr data-status="ported">
+                                    <td>Context Menu</td>
+                                    <td>~line 4500</td>
+                                    <td>viewer-mode.js</td>
+                                    <td><span class="status-ported">✅ Ported</span></td>
+                                    <td>P0</td>
+                                </tr>
+                                <tr data-status="ported">
+                                    <td>BOM Export</td>
+                                    <td><span class="code-inline">initBOMExport()</span></td>
+                                    <td>viewer-export.js</td>
+                                    <td><span class="status-ported">✅ Ported</span></td>
+                                    <td>P0</td>
+                                </tr>
+                                <tr data-status="ported">
+                                    <td>Annotation Pins</td>
+                                    <td><span class="code-inline">initAnnotations()</span></td>
+                                    <td>viewer-annotations.js</td>
+                                    <td><span class="status-ported">✅ Ported</span></td>
+                                    <td>P1</td>
+                                </tr>
+                                <tr data-status="ported">
+                                    <td>Measurement Tool</td>
+                                    <td>~line 3207</td>
+                                    <td>viewer-measurement.js</td>
+                                    <td><span class="status-ported">✅ Ported</span></td>
+                                    <td>P0</td>
+                                </tr>
+                                <tr data-status="ported">
+                                    <td>QR Code Per Part</td>
+                                    <td><span class="code-inline">initQRCode()</span></td>
+                                    <td>viewer-export.js</td>
+                                    <td><span class="status-ported">✅ Ported</span></td>
+                                    <td>P1</td>
+                                </tr>
+                                <tr data-status="ported">
+                                    <td>Multi-Language (EN/DE/FR/ES/IT/NL)</td>
+                                    <td>~line 13000</td>
+                                    <td>viewer-i18n.js</td>
+                                    <td><span class="status-ported">✅ Ported</span></td>
+                                    <td>P1</td>
+                                </tr>
+                                <tr data-status="ported">
+                                    <td>STL Export Per Part</td>
+                                    <td><span class="code-inline">meshToSTL()</span></td>
+                                    <td>viewer-export.js</td>
+                                    <td><span class="status-ported">✅ Ported</span></td>
+                                    <td>P0</td>
+                                </tr>
+                                <tr data-status="ported">
+                                    <td>AI Part Identifier</td>
+                                    <td><span class="code-inline">initAIPartIdentifier()</span></td>
+                                    <td>viewer-ai.js</td>
+                                    <td><span class="status-ported">✅ Ported</span></td>
+                                    <td>P1</td>
+                                </tr>
+                                <tr data-status="ported">
+                                    <td>Wireframe Toggle</td>
+                                    <td>~line 3197</td>
+                                    <td>viewer-mode.js</td>
+                                    <td><span class="status-ported">✅ Ported</span></td>
+                                    <td>P1</td>
+                                </tr>
+                                <tr data-status="ported">
+                                    <td>Grid Floor Plane</td>
+                                    <td><span class="code-inline">initGridFloor()</span></td>
+                                    <td>viewer-viewport.js</td>
+                                    <td><span class="status-ported">✅ Ported</span></td>
+                                    <td>P2</td>
+                                </tr>
+                                <tr data-status="ported">
+                                    <td>Keyboard Shortcuts</td>
+                                    <td><span class="code-inline">initKeyboardShortcuts()</span></td>
+                                    <td>viewer-shortcuts.js</td>
+                                    <td><span class="status-ported">✅ Ported</span></td>
+                                    <td>P1</td>
+                                </tr>
+                                <tr data-status="ported">
+                                    <td>Screenshot Export (PNG)</td>
+                                    <td><span class="code-inline">initScreenshotExport()</span></td>
+                                    <td>viewer-export.js</td>
+                                    <td><span class="status-ported">✅ Ported</span></td>
+                                    <td>P1</td>
+                                </tr>
+                                <tr data-status="ported">
+                                    <td>Hero Shots</td>
+                                    <td><span class="code-inline">initHeroShots()</span></td>
+                                    <td>viewer-modes.js</td>
+                                    <td><span class="status-ported">✅ Ported</span></td>
+                                    <td>P2</td>
+                                </tr>
+                                <tr data-status="ported">
+                                    <td>Part Weight Estimator</td>
+                                    <td><span class="code-inline">initWeightEstimator()</span></td>
+                                    <td>viewer-analysis.js</td>
+                                    <td><span class="status-ported">✅ Ported</span></td>
+                                    <td>P1</td>
+                                </tr>
+                                <tr data-status="in-progress">
+                                    <td>Assembly Time Estimator</td>
+                                    <td><span class="code-inline">initAssemblyTimeEstimator()</span></td>
+                                    <td>viewer-analysis.js</td>
+                                    <td><span class="status-in-progress">🔄 In Progress</span></td>
+                                    <td>P2</td>
+                                </tr>
+                                <tr data-status="ported">
+                                    <td>AI Chatbot (Gemini/Groq)</td>
+                                    <td><span class="code-inline">initModelChatbot()</span></td>
+                                    <td>viewer-ai.js</td>
+                                    <td><span class="status-ported">✅ Ported</span></td>
+                                    <td>P1</td>
+                                </tr>
+                                <tr data-status="ported">
+                                    <td>DIN/ISO Standards Lookup</td>
+                                    <td><span class="code-inline">initStandardsIdentifier()</span></td>
+                                    <td>viewer-standards.js</td>
+                                    <td><span class="status-ported">✅ Ported</span></td>
+                                    <td>P2</td>
+                                </tr>
+                                <tr data-status="planned">
+                                    <td>Real B-rep Boolean Operations</td>
+                                    <td>N/A (mesh only)</td>
+                                    <td>viewer-booleans.js</td>
+                                    <td><span class="status-planned">📋 Planned (Phase A)</span></td>
+                                    <td>P0</td>
+                                </tr>
+                                <tr data-status="planned">
+                                    <td>STEP Export (OpenCascade.js)</td>
+                                    <td>N/A</td>
+                                    <td>viewer-step-export.js</td>
+                                    <td><span class="status-planned">📋 Planned (Phase A)</span></td>
+                                    <td>P0</td>
+                                </tr>
+                                <tr data-status="ported">
+                                    <td>Maintenance Heatmap</td>
+                                    <td><span class="code-inline">initMaintHeatmap()</span></td>
+                                    <td>viewer-analysis.js</td>
+                                    <td><span class="status-ported">✅ Ported</span></td>
+                                    <td>P2</td>
+                                </tr>
+                                <tr data-status="ported">
+                                    <td>AI Assembly Instructions</td>
+                                    <td><span class="code-inline">initAsmInstructions()</span></td>
+                                    <td>viewer-ai.js</td>
+                                    <td><span class="status-ported">✅ Ported</span></td>
+                                    <td>P2</td>
+                                </tr>
+                                <tr data-status="ported">
+                                    <td>Service Mode (Field Tech Workflow)</td>
+                                    <td><span class="code-inline">initServiceMode()</span></td>
+                                    <td>viewer-service.js</td>
+                                    <td><span class="status-ported">✅ Ported</span></td>
+                                    <td>P2</td>
+                                </tr>
+                                <tr data-status="ported">
+                                    <td>Smart NL Search</td>
+                                    <td><span class="code-inline">initSmartSearch()</span></td>
+                                    <td>viewer-search.js</td>
+                                    <td><span class="status-ported">✅ Ported</span></td>
+                                    <td>P1</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <p style="font-size: 0.875rem; color: var(--text-tertiary); margin-top: 1.5rem;">
+                        <strong>Note:</strong> "Ported" means the feature is fully functional in cycleCAD's Viewer Mode with full feature parity to ExplodeView. Click the filter buttons above to show only features in a specific status.
+                    </p>
+                </section>
+
+                <!-- Core Features Deep Dive -->
+                <section id="core-features">
+                    <h2>Core Features Deep Dive</h2>
+                    <p>Here's how the 10 most important ExplodeView features integrate into cycleCAD's ecosystem.</p>
+
+                    <!-- Assembly Tree -->
+                    <div id="feature-tree" class="feature-card">
+                        <div class="feature-header">
+                            <span class="feature-title">Assembly Tree</span>
+                            <span class="feature-badge">✅ Ported</span>
+                        </div>
+                        <p>Hierarchical view of all sub-assemblies and parts with 6-level tree numbering (e.g., 1.2.3.4).</p>
+                        <div class="feature-comparison">
+                            <div class="comparison-col">
+                                <h5>ExplodeView (Standalone)</h5>
+                                <p><span class="code-inline">initAssemblyTree()</span> at line 10718</p>
+                                <p>Hardcoded ASSEMBLIES array from manifest.json</p>
+                            </div>
+                            <div class="comparison-col">
+                                <h5>cycleCAD (Integrated)</h5>
+                                <p><span class="code-inline">viewer-mode.js</span> loadFile()</p>
+                                <p>Dynamic tree from STEP/GLB/imported model</p>
+                            </div>
+                        </div>
+                        <div class="code-block">// Load assembly and auto-generate tree
+const assembly = await viewerAPI.loadFile('model.glb', 'glb');
+// Tree updates automatically with 6 levels
+const treeItems = await viewerAPI.getAssemblyTree();
+// {partIdx, partName, parentIdx, level, expanded}
+                        </div>
+                    </div>
+
+                    <!-- Explode/Collapse -->
+                    <div id="explode" class="feature-card">
+                        <div class="feature-header">
+                            <span class="feature-title">Explode/Collapse Assembly</span>
+                            <span class="feature-badge">✅ Ported</span>
+                        </div>
+                        <p>Interactive slider to radially disassemble components from assembly center. 0 = fully collapsed, 1 = fully exploded.</p>
+                        <div class="feature-comparison">
+                            <div class="comparison-col">
+                                <h5>ExplodeView</h5>
+                                <p>Slider in assembly tree panel</p>
+                                <p>Animation duration: 0.8s</p>
+                            </div>
+                            <div class="comparison-col">
+                                <h5>cycleCAD</h5>
+                                <p>Slider in Viewer Mode toolbar</p>
+                                <p>Shares OrbitControls target</p>
+                            </div>
+                        </div>
+                        <div class="code-block">// Explode model to 50% exploded state
+await viewerAPI.explodeParts(0.5);
+
+// Smooth animation from 0 to 1 over 1 second
+for (let i = 0; i <= 1; i += 0.01) {
+    await viewerAPI.explodeParts(i);
+    await new Promise(r => setTimeout(r, 10));
+}
+                        </div>
+                    </div>
+
+                    <!-- Part Selection -->
+                    <div id="selection" class="feature-card">
+                        <div class="feature-header">
+                            <span class="feature-title">Part Selection & Info Card</span>
+                            <span class="feature-badge">✅ Ported</span>
+                        </div>
+                        <p>Click any part to highlight (green), select (orange outline), and open draggable info card with dimensions, weight, material.</p>
+                        <div class="feature-comparison">
+                            <div class="comparison-col">
+                                <h5>ExplodeView</h5>
+                                <p>Raycasting on Three.js meshes</p>
+                                <p>Info card at fixed position (right panel)</p>
+                            </div>
+                            <div class="comparison-col">
+                                <h5>cycleCAD</h5>
+                                <p>Raycasting shared with Edit Mode</p>
+                                <p>Draggable info card, floating overlay</p>
+                            </div>
+                        </div>
+                        <div class="code-block">// Select part by index
+await viewerAPI.selectPart(42);
+
+// Get current selection info
+const selectedPart = await viewerAPI.getSelectedPart();
+// {idx, name, bbox, volume, weight, material}
+
+// Listen for selection events
+viewerAPI.on('partSelected', (partData) => {
+    console.log('Selected:', partData.name);
+});
+                        </div>
+                    </div>
+
+                    <!-- Section Cut -->
+                    <div id="section-cut" class="feature-card">
+                        <div class="feature-header">
+                            <span class="feature-title">Section Cut / Clipping Plane</span>
+                            <span class="feature-badge">✅ Ported</span>
+                        </div>
+                        <p>Real-time cross-section visualization using WebGL clipping planes. X/Y/Z axis, flip direction, DoubleSide rendering.</p>
+                        <div class="feature-comparison">
+                            <div class="comparison-col">
+                                <h5>ExplodeView</h5>
+                                <p><span class="code-inline">initSectionCut()</span> at line 9714</p>
+                                <p>Per-material + global clipping planes</p>
+                            </div>
+                            <div class="comparison-col">
+                                <h5>cycleCAD</h5>
+                                <p><span class="code-inline">viewer-section-cut.js</span></p>
+                                <p>Integrated with renderer.localClippingEnabled</p>
+                            </div>
+                        </div>
+                        <div class="code-block">// Enable section cut on X axis
+await viewerAPI.setSectionCut('X', 50, false);
+
+// Change cutting plane position (0-100)
+await viewerAPI.setSectionCut('Y', 75, false);
+
+// Flip direction to cut from opposite side
+await viewerAPI.setSectionCut('Z', 25, true);
+
+// Disable section cut
+await viewerAPI.setSectionCut(null);
+                        </div>
+                    </div>
+
+                    <!-- Context Menu -->
+                    <div id="context-menu" class="feature-card">
+                        <div class="feature-header">
+                            <span class="feature-title">Context Menu (Right-Click)</span>
+                            <span class="feature-badge">✅ Ported</span>
+                        </div>
+                        <p>Right-click any part to open context menu with actions: Select, Hide, Isolate, Move, Explode, Export STL, Part Info.</p>
+                        <div class="feature-comparison">
+                            <div class="comparison-col">
+                                <h5>ExplodeView</h5>
+                                <p>7 actions in dropdown menu</p>
+                                <p>No undo support</p>
+                            </div>
+                            <div class="comparison-col">
+                                <h5>cycleCAD</h5>
+                                <p>10 actions, all with undo</p>
+                                <p>Integrated with Edit Mode undo stack</p>
+                            </div>
+                        </div>
+                        <div class="code-block">// Manually trigger context menu actions
+await viewerAPI.hidePartByIndex(partIdx);
+await viewerAPI.isolatePartByIndex(partIdx);
+await viewerAPI.selectPart(partIdx);
+
+// Show all parts again
+await viewerAPI.showAllParts();
+
+// Undo last action
+await viewerAPI.undo();
+                        </div>
+                    </div>
+
+                    <!-- BOM Export -->
+                    <div id="bom" class="feature-card">
+                        <div class="feature-header">
+                            <span class="feature-title">Bill of Materials (BOM) Export</span>
+                            <span class="feature-badge">✅ Ported</span>
+                        </div>
+                        <p>Generate CSV/HTML BOM with part names, quantities, dimensions, weight, material, supplier info.</p>
+                        <div class="feature-comparison">
+                            <div class="comparison-col">
+                                <h5>ExplodeView</h5>
+                                <p><span class="code-inline">initBOMExport()</span> at line 9281</p>
+                                <p>CSV export only</p>
+                            </div>
+                            <div class="comparison-col">
+                                <h5>cycleCAD</h5>
+                                <p><span class="code-inline">viewer-export.js</span></p>
+                                <p>CSV + HTML + JSON formats</p>
+                            </div>
+                        </div>
+                        <div class="code-block">// Export BOM as CSV
+const csvData = await viewerAPI.exportBOM('csv');
+// Downloads: assembly_BOM_2026-03-29.csv
+
+// Export as HTML (formatted table + PDF-ready)
+const htmlData = await viewerAPI.exportBOM('html');
+
+// Export as JSON (for further processing)
+const jsonData = await viewerAPI.exportBOM('json');
+// [{partName, qty, dims, weight, material, supplier}, ...]
+                        </div>
+                    </div>
+
+                    <!-- AI Part Identifier -->
+                    <div id="ai-identifier" class="feature-card">
+                        <div class="feature-header">
+                            <span class="feature-title">AI Part Identifier</span>
+                            <span class="feature-badge">✅ Ported</span>
+                        </div>
+                        <p>Uses Gemini Vision API to identify parts from screenshots, with geometry-based fallback for offline use and McMaster-Carr integration.</p>
+                        <div class="feature-comparison">
+                            <div class="comparison-col">
+                                <h5>ExplodeView</h5>
+                                <p><span class="code-inline">initAIPartIdentifier()</span> at line 16043</p>
+                                <p>Manual trigger per part</p>
+                            </div>
+                            <div class="comparison-col">
+                                <h5>cycleCAD</h5>
+                                <p><span class="code-inline">viewer-ai.js</span></p>
+                                <p>Auto-scan + manual + batch</p>
+                            </div>
+                        </div>
+                        <div class="code-block">// Identify selected part with AI
+const partData = await viewerAPI.identifyPartWithAI(partIdx);
+// {partName, description, supplier, partNumber, mcmasterLink}
+
+// Batch scan all parts
+const bom = await viewerAPI.batchScanWithAI();
+// Returns enhanced BOM with AI-identified part numbers
+
+// Use geometry fallback (offline)
+const geometryClass = await viewerAPI.classifyGeometry(partIdx);
+// {partType, confidence, color, alternatives}
+                        </div>
+                    </div>
+
+                    <!-- Annotations -->
+                    <div id="annotations" class="feature-card">
+                        <div class="feature-header">
+                            <span class="feature-title">Annotation Pins</span>
+                            <span class="feature-badge">✅ Ported</span>
+                        </div>
+                        <p>Click to place 3D pins with text labels on any part. Draggable, editable, persistent in viewer state.</p>
+                        <div class="feature-comparison">
+                            <div class="comparison-col">
+                                <h5>ExplodeView</h5>
+                                <p><span class="code-inline">initAnnotations()</span> at line 3730</p>
+                                <p>Pin array in memory only</p>
+                            </div>
+                            <div class="comparison-col">
+                                <h5>cycleCAD</h5>
+                                <p><span class="code-inline">viewer-annotations.js</span></p>
+                                <p>Persists to localStorage</p>
+                            </div>
+                        </div>
+                        <div class="code-block">// Add annotation pin at world position
+await viewerAPI.addAnnotationPin(
+    {x: 100, y: 50, z: 200},
+    'Main bearing - requires lubrication'
+);
+
+// List all annotations
+const annotations = await viewerAPI.getAnnotations();
+
+// Delete annotation
+await viewerAPI.deleteAnnotationPin(annotationIdx);
+
+// Export annotations as JSON
+const json = await viewerAPI.exportAnnotations();
+                        </div>
+                    </div>
+
+                    <!-- Measurement -->
+                    <div id="measurement" class="feature-card">
+                        <div class="feature-header">
+                            <span class="feature-title">Measurement Tool</span>
+                            <span class="feature-badge">✅ Ported</span>
+                        </div>
+                        <p>2-point distance measurement, 3-point angle measurement. Shows real-time feedback and persists measurements.</p>
+                        <div class="feature-comparison">
+                            <div class="comparison-col">
+                                <h5>ExplodeView</h5>
+                                <p>~line 3207, click-based</p>
+                                <p>Temporary, no export</p>
+                            </div>
+                            <div class="comparison-col">
+                                <h5>cycleCAD</h5>
+                                <p><span class="code-inline">viewer-measurement.js</span></p>
+                                <p>Persistent, exportable</p>
+                            </div>
+                        </div>
+                        <div class="code-block">// Start measurement mode
+await viewerAPI.startMeasurement();
+
+// Click first point (returns distance on 2nd point)
+// Click second point → logs distance
+// Click third point → logs angle
+
+// Get all measurements
+const measurements = await viewerAPI.getMeasurements();
+// [{type: 'distance', value: 42.5, points: [...]}, ...]
+
+// Export measurements to CSV
+await viewerAPI.exportMeasurements('csv');
+                        </div>
+                    </div>
+
+                    <!-- Multi-Language -->
+                    <div id="multilang" class="feature-card">
+                        <div class="feature-header">
+                            <span class="feature-title">Multi-Language Support</span>
+                            <span class="feature-badge">✅ Ported</span>
+                        </div>
+                        <p>Supports EN, DE, FR, ES, IT, NL. Shared with cycleCAD's i18n system via language dropdown.</p>
+                        <div class="feature-comparison">
+                            <div class="comparison-col">
+                                <h5>ExplodeView</h5>
+                                <p>~line 13000, i18n object</p>
+                                <p>6 languages hardcoded</p>
+                            </div>
+                            <div class="comparison-col">
+                                <h5>cycleCAD</h5>
+                                <p><span class="code-inline">viewer-i18n.js</span></p>
+                                <p>Shares Edit Mode strings</p>
+                            </div>
+                        </div>
+                        <div class="code-block">// Change language
+await viewerAPI.setLanguage('de'); // German
+
+// Current language
+const lang = await viewerAPI.getLanguage();
+
+// Translate string key
+const text = await viewerAPI.t('assembly.explode');
+// Returns localized text
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Data Flow Diagram -->
+                <section id="data-flow">
+                    <h2>Data Flow Diagram</h2>
+                    <p>How data flows through cycleCAD with ExplodeView integrated. All paths converge on the shared Three.js scene.</p>
+
+                    <div class="diagram">
+                        <div style="text-align: center; width: 100%;">
+                            <div style="font-size: 0.875rem; color: var(--text-secondary); line-height: 2; font-family: 'Courier New', monospace;">
+                                <div>STEP File → Server Converter (FastAPI) → GLB Format</div>
+                                <div style="color: var(--accent-blue); margin: 1rem 0;">↓</div>
+                                <div>Three.js GLTFLoader → cycleCAD Scene</div>
+                                <div style="color: var(--accent-blue); margin: 1rem 0;">↓</div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1.5rem;">
+                                    <div>
+                                        <strong style="color: var(--accent-blue);">Edit Mode Tools</strong><br>
+                                        Sketch, Extrude<br>
+                                        Revolve, Operations<br>
+                                        Parameters, History
+                                    </div>
+                                    <div>
+                                        <strong style="color: var(--accent-green);">Viewer Mode Tools</strong><br>
+                                        Explode, Section Cut<br>
+                                        AI Analysis, Measurement<br>
+                                        Export, Annotations
+                                    </div>
+                                </div>
+                                <div style="color: var(--accent-blue); margin: 1.5rem 0;">↓</div>
+                                <div>Selection State (Shared)</div>
+                                <div style="color: var(--accent-blue); margin: 0.5rem 0;">↓</div>
+                                <div>Export (STL/OBJ/glTF) or Save (cycleCAD JSON)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3>Key Data Structures</h3>
+                    <p>The viewer state is maintained in a single shared object:</p>
+
+                    <div class="code-block">// Viewer state object (synchronized across modes)
+window.cycleCAD.viewerState = {
+    // Selection
+    selectedPartIdx: 42,
+    highlightedParts: [10, 20, 30],
+
+    // Explode state
+    explodeAmount: 0.5,  // 0-1
+
+    // View
+    cameraPosition: {x, y, z},
+    cameraTarget: {x, y, z},
+
+    // Clipping
+    sectionCutAxis: 'X',
+    sectionCutPosition: 50,
+
+    // Annotations & measurements
+    annotations: [{pos, text, idx}],
+    measurements: [{type, points, value}],
+
+    // History for undo/redo
+    history: [{action, data, timestamp}]
+};
+                    </div>
+                </section>
+
+                <!-- API Reference -->
+                <section id="api-reference">
+                    <h2>API Reference</h2>
+                    <p>All viewer functions accessible via <span class="code-inline">window.cycleCAD.viewer</span> or the API object returned by <span class="code-inline">initViewerMode()</span>.</p>
+
+                    <h3>Model Loading</h3>
+                    <div class="api-method">
+                        <h5>loadFile(url, type)</h5>
+                        <p>Load STEP, STL, OBJ, or GLB file into viewer.</p>
+                        <div class="api-params">
+                            url (string) — file path or URL<br>
+                            type (string) — 'step' | 'stl' | 'obj' | 'glb'<br>
+                            Returns: Promise&lt;{parts, assemblies, bbox}&gt;
+                        </div>
+                    </div>
+
+                    <div class="api-method">
+                        <h5>getAssemblyTree()</h5>
+                        <p>Get hierarchical assembly tree with 6 levels of nesting.</p>
+                        <div class="api-params">
+                            Returns: Promise&lt;Array&lt;{partIdx, name, parentIdx, level, childCount}&gt;&gt;
+                        </div>
+                    </div>
+
+                    <h3>Selection & Highlight</h3>
+                    <div class="api-method">
+                        <h5>selectPart(partIdx)</h5>
+                        <p>Select a part by index, highlight with orange outline, open info card.</p>
+                        <div class="api-params">
+                            partIdx (number) — 0-based index<br>
+                            Returns: Promise&lt;PartInfo&gt;
+                        </div>
+                    </div>
+
+                    <div class="api-method">
+                        <h5>getSelectedPart()</h5>
+                        <p>Get current selected part info: name, bbox, volume, weight, material.</p>
+                        <div class="api-params">
+                            Returns: Promise&lt;{idx, name, bbox, volume, weight, material}&gt;
+                        </div>
+                    </div>
+
+                    <h3>Explode & Assembly</h3>
+                    <div class="api-method">
+                        <h5>explodeParts(amount)</h5>
+                        <p>Set explode slider position (0 = collapsed, 1 = fully exploded).</p>
+                        <div class="api-params">
+                            amount (number) — 0-1<br>
+                            Returns: Promise&lt;void&gt;
+                        </div>
+                    </div>
+
+                    <div class="api-method">
+                        <h5>getAssemblyState()</h5>
+                        <p>Get explode amount and visibility state of all parts.</p>
+                        <div class="api-params">
+                            Returns: Promise&lt;{explodeAmount, visibleParts, hiddenParts}&gt;
+                        </div>
+                    </div>
+
+                    <h3>Clipping & Section</h3>
+                    <div class="api-method">
+                        <h5>setSectionCut(axis, position, flip)</h5>
+                        <p>Enable/disable section cut on X/Y/Z axis.</p>
+                        <div class="api-params">
+                            axis (string) — 'X' | 'Y' | 'Z' | null (disable)<br>
+                            position (number) — 0-100 (percent of bounding box)<br>
+                            flip (boolean) — flip cutting direction<br>
+                            Returns: Promise&lt;void&gt;
+                        </div>
+                    </div>
+
+                    <h3>Export & Analysis</h3>
+                    <div class="api-method">
+                        <h5>exportBOM(format)</h5>
+                        <p>Export Bill of Materials.</p>
+                        <div class="api-params">
+                            format (string) — 'csv' | 'html' | 'json'<br>
+                            Returns: Promise&lt;Blob&gt; (auto-downloads)
+                        </div>
+                    </div>
+
+                    <div class="api-method">
+                        <h5>exportPartAsSTL(partIdx, options)</h5>
+                        <p>Export single part as STL.</p>
+                        <div class="api-params">
+                            partIdx (number) — part index<br>
+                            options.scale (number) — scale factor (default 1)<br>
+                            options.binary (boolean) — STL format (default true)<br>
+                            Returns: Promise&lt;Blob&gt;
+                        </div>
+                    </div>
+
+                    <div class="api-method">
+                        <h5>identifyPartWithAI(partIdx)</h5>
+                        <p>Use Gemini Vision API to identify part from screenshot.</p>
+                        <div class="api-params">
+                            partIdx (number) — part index<br>
+                            Returns: Promise&lt;{partName, description, supplier, mcmasterLink}&gt;
+                        </div>
+                    </div>
+
+                    <h3>Annotations & Measurements</h3>
+                    <div class="api-method">
+                        <h5>addAnnotationPin(position, text)</h5>
+                        <p>Add 3D annotation pin at world coordinates.</p>
+                        <div class="api-params">
+                            position ({x, y, z}) — world position<br>
+                            text (string) — annotation text<br>
+                            Returns: Promise&lt;annotationIdx&gt;
+                        </div>
+                    </div>
+
+                    <div class="api-method">
+                        <h5>startMeasurement()</h5>
+                        <p>Enter measurement mode. Click 2 points for distance, 3 for angle.</p>
+                        <div class="api-params">
+                            Returns: Promise&lt;void&gt;
+                        </div>
+                    </div>
+
+                    <h3>Visibility</h3>
+                    <div class="api-method">
+                        <h5>hidePartByIndex(partIdx)</h5>
+                        <p>Hide part from view (with undo support).</p>
+                        <div class="api-params">
+                            partIdx (number) — part index<br>
+                            Returns: Promise&lt;void&gt;
+                        </div>
+                    </div>
+
+                    <div class="api-method">
+                        <h5>showAllParts()</h5>
+                        <p>Make all hidden parts visible.</p>
+                        <div class="api-params">
+                            Returns: Promise&lt;void&gt;
+                        </div>
+                    </div>
+
+                    <h3>Undo/Redo</h3>
+                    <div class="api-method">
+                        <h5>undo()</h5>
+                        <p>Undo last action in viewer or edit mode.</p>
+                        <div class="api-params">
+                            Returns: Promise&lt;void&gt;
+                        </div>
+                    </div>
+
+                    <div class="api-method">
+                        <h5>redo()</h5>
+                        <p>Redo last undone action.</p>
+                        <div class="api-params">
+                            Returns: Promise&lt;void&gt;
+                        </div>
+                    </div>
+
+                    <h3>Mode Management</h3>
+                    <div class="api-method">
+                        <h5>toggleViewerMode()</h5>
+                        <p>Switch between Edit Mode and Viewer Mode.</p>
+                        <div class="api-params">
+                            Returns: Promise&lt;'edit' | 'viewer'&gt;
+                        </div>
+                    </div>
+
+                    <div class="api-method">
+                        <h5>isInViewerMode()</h5>
+                        <p>Check current mode.</p>
+                        <div class="api-params">
+                            Returns: boolean
+                        </div>
+                    </div>
+
+                    <h3>Events</h3>
+                    <div class="api-method">
+                        <h5>on(event, callback)</h5>
+                        <p>Listen for viewer events.</p>
+                        <div class="api-params">
+                            event (string) — 'partSelected' | 'modeChanged' | 'explodeChanged' | 'annotationAdded'<br>
+                            callback (function) — handler<br>
+                            Returns: void
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Keyboard Shortcuts -->
+                <section id="shortcuts">
+                    <h2>Keyboard Shortcuts</h2>
+                    <p>Unified keyboard shortcut system shared across Edit and Viewer modes. Press <span class="code-inline">?</span> to show this guide in-app.</p>
+
+                    <div class="shortcuts-grid">
+                        <div class="shortcuts-col">
+                            <h4>Navigation</h4>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">V</div>
+                                <div class="shortcut-desc">Toggle Viewer Mode</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">G</div>
+                                <div class="shortcut-desc">Toggle Grid</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">W</div>
+                                <div class="shortcut-desc">Wireframe Toggle</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">H</div>
+                                <div class="shortcut-desc">Fit All to View</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">1-6</div>
+                                <div class="shortcut-desc">Preset Views</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">Scroll</div>
+                                <div class="shortcut-desc">Zoom In/Out</div>
+                            </div>
+
+                            <h4 style="margin-top: 2rem;">Viewer Mode Only</h4>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">E</div>
+                                <div class="shortcut-desc">Explode Toggle</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">C</div>
+                                <div class="shortcut-desc">Section Cut</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">M</div>
+                                <div class="shortcut-desc">Measurement Tool</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">A</div>
+                                <div class="shortcut-desc">Add Annotation</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">S</div>
+                                <div class="shortcut-desc">Screenshot</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">B</div>
+                                <div class="shortcut-desc">Export BOM</div>
+                            </div>
+                        </div>
+
+                        <div class="shortcuts-col">
+                            <h4>Selection</h4>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">Click</div>
+                                <div class="shortcut-desc">Select Part</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">Shift+Click</div>
+                                <div class="shortcut-desc">Multi-Select</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">Ctrl+A</div>
+                                <div class="shortcut-desc">Select All</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">Escape</div>
+                                <div class="shortcut-desc">Deselect</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">Del</div>
+                                <div class="shortcut-desc">Hide Selected</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">R</div>
+                                <div class="shortcut-desc">Show All</div>
+                            </div>
+
+                            <h4 style="margin-top: 2rem;">Edit & Undo</h4>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">Ctrl+Z</div>
+                                <div class="shortcut-desc">Undo</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">Ctrl+Shift+Z</div>
+                                <div class="shortcut-desc">Redo</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">Ctrl+S</div>
+                                <div class="shortcut-desc">Save Model</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">Ctrl+E</div>
+                                <div class="shortcut-desc">Export Model</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">?</div>
+                                <div class="shortcut-desc">Show Help</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Docker Infrastructure -->
+                <section id="docker">
+                    <h2>Docker Infrastructure</h2>
+                    <p>cycleCAD with integrated ExplodeView is deployed as part of a 3-service Docker Compose stack.</p>
+
+                    <div class="docker-grid">
+                        <div class="docker-card">
+                            <div class="docker-icon">🌐</div>
+                            <div class="docker-title">ExplodeView</div>
+                            <p>Browser-based 3D viewer for standalone STEP files. Also available as npm module.</p>
+                            <div class="docker-port">:8080</div>
+                        </div>
+                        <div class="docker-card">
+                            <div class="docker-icon">🛠️</div>
+                            <div class="docker-title">cycleCAD</div>
+                            <p>Parametric 3D modeler with integrated Viewer Mode. Full platform for design & analysis.</p>
+                            <div class="docker-port">:3000</div>
+                        </div>
+                        <div class="docker-card">
+                            <div class="docker-icon">⚙️</div>
+                            <div class="docker-title">STEP Converter</div>
+                            <p>FastAPI server converts STEP files to GLB format using CadQuery/OCP/cascadio backends.</p>
+                            <div class="docker-port">:8787</div>
+                        </div>
+                    </div>
+
+                    <h3>Deployment</h3>
+                    <p>Start the full stack with:</p>
+                    <div class="code-block">docker-compose up -d
+
+# Check services
+docker-compose ps
+
+# View logs
+docker-compose logs -f cyclecad
+docker-compose logs -f converter
+
+# Stop
+docker-compose down
+                    </div>
+
+                    <h3>Configuration</h3>
+                    <div class="code-block">version: '3.8'
+services:
+  cyclecad:
+    image: cyclecad:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - CONVERTER_URL=http://converter:8787
+      - NODE_ENV=production
+
+  converter:
+    image: cyclecad-converter:latest
+    ports:
+      - "8787:8787"
+    environment:
+      - WORKERS=4
+      - MEMORY_LIMIT=4GB
+
+  explodeview:
+    image: explodeview:latest
+    ports:
+      - "8080:8080"
+    depends_on:
+      - converter
+                    </div>
+                </section>
+
+                <!-- Roadmap -->
+                <section id="roadmap">
+                    <h2>What's Next: Roadmap to Pro</h2>
+                    <p>The ExplodeView integration is complete. Here's what comes next in the cycleCAD product roadmap.</p>
+
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-date">Q2 2026</div>
+                            <div class="timeline-content">
+                                <h4>Phase A: Real B-rep + STEP</h4>
+                                <p><strong>OpenCascade.js Integration:</strong> Full STEP import/export with real B-rep solids. Replace mesh approximations with true Boolean operations and edge-accurate fillets.</p>
+                                <ul style="margin-left: 1.5rem; margin-top: 0.75rem;">
+                                    <li>Real STEP export (not just GLB)</li>
+                                    <li>Boolean union/cut/intersect with OCCT kernel</li>
+                                    <li>True fillet/chamfer on faces and edges</li>
+                                    <li>Parametric history for STEP features</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="timeline-item">
+                            <div class="timeline-date">Q3 2026</div>
+                            <div class="timeline-content">
+                                <h4>Phase B: AI Copilot</h4>
+                                <p><strong>Text-to-CAD:</strong> Natural language to geometry. "Design a bracket with 4 bolt holes" → auto-generated feature tree.</p>
+                                <ul style="margin-left: 1.5rem; margin-top: 0.75rem;">
+                                    <li>Gemini + Groq for NL understanding</li>
+                                    <li>CAD Action API (maps intent to operations)</li>
+                                    <li>Smart autocomplete for part names</li>
+                                    <li>DFM (Design for Manufacturability) checks</li>
+                                    <li>Cost estimation per feature</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="timeline-item">
+                            <div class="timeline-date">Q4 2026</div>
+                            <div class="timeline-content">
+                                <h4>Phase C: Real-time Collaboration</h4>
+                                <p><strong>Multi-user Editing:</strong> Teams building models together. Conflict-free CRDT sync, git-style version control.</p>
+                                <ul style="margin-left: 1.5rem; margin-top: 0.75rem;">
+                                    <li>WebRTC + CRDT for live sync</li>
+                                    <li>Git-style branching & merge</li>
+                                    <li>Visual diff between versions</li>
+                                    <li>Share links (read-only or edit access)</li>
+                                    <li>Comments & task assignment</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="timeline-item">
+                            <div class="timeline-date">Q1 2027</div>
+                            <div class="timeline-content">
+                                <h4>Phase D: Pro Launch</h4>
+                                <p><strong>Paid Tiers & Plugin Ecosystem:</strong> Monetization + extensibility.</p>
+                                <ul style="margin-left: 1.5rem; margin-top: 0.75rem;">
+                                    <li>Pro tier: €49/mo (collab + STEP + cloud)</li>
+                                    <li>Enterprise tier: €299/mo (self-hosted + SSO)</li>
+                                    <li>Plugin API (FeatureScript equivalent)</li>
+                                    <li>Marketplace for custom features</li>
+                                    <li>$CYCLE token economy for AI services</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3>Technology Moat</h3>
+                    <p>What makes cycleCAD with integrated ExplodeView defensible against competitors:</p>
+                    <div class="cards-grid">
+                        <div class="card">
+                            <h3>Agent-First Architecture</h3>
+                            <p>Built from day one for AI agents. Humans are supported, but agents are first-class citizens with full API access.</p>
+                        </div>
+                        <div class="card">
+                            <h3>Browser-Native + Open Source</h3>
+                            <p>No installation, no licensing. Deploy anywhere. Community-driven development with MIT license.</p>
+                        </div>
+                        <div class="card">
+                            <h3>Inventor Native Format</h3>
+                            <p>Parse Inventor .ipt/.iam binary files directly. Import production assemblies without conversion.</p>
+                        </div>
+                        <div class="card">
+                            <h3>Real-time AI Analysis</h3>
+                            <p>Gemini Vision + Groq in-browser. No cloud calls required for offline analysis. Cost-optimized token economy.</p>
+                        </div>
+                        <div class="card">
+                            <h3>$CYCLE Token Economy</h3>
+                            <p>Two-way token flow: users spend for AI, creators earn from their shared models. Agents can earn crypto.</p>
+                        </div>
+                        <div class="card">
+                            <h3>Unified Platform</h3>
+                            <p>Design, analyze, collaborate, manufacture — all in one web app. No plugin ecosystem fragmentation.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Footer -->
+                <section style="margin-top: 6rem; padding-top: 3rem; border-top: 1px solid var(--border-color);">
+                    <p style="text-align: center; color: var(--text-tertiary); font-size: 0.875rem;">
+                        <strong>cycleCAD v0.9.6</strong> • ExplodeView Integration Tutorial<br>
+                        Last updated: March 29, 2026
+                    </p>
+                    <div style="text-align: center; margin-top: 2rem; display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap;">
+                        <a href="/app/" style="color: var(--accent-blue); text-decoration: none; font-size: 0.875rem;">← Back to App</a>
+                        <a href="/app/tutorials/" style="color: var(--accent-blue); text-decoration: none; font-size: 0.875rem;">All Tutorials</a>
+                        <a href="https://github.com/vvlars-cmd/cyclecad" style="color: var(--accent-blue); text-decoration: none; font-size: 0.875rem;">GitHub</a>
+                        <a href="https://npmjs.com/package/cyclecad" style="color: var(--accent-blue); text-decoration: none; font-size: 0.875rem;">npm</a>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Smooth scrolling for TOC links
+        document.querySelectorAll('.toc-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const target = document.querySelector(link.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                    // Update active state
+                    document.querySelectorAll('.toc-link').forEach(l => l.classList.remove('active'));
+                    link.classList.add('active');
+                }
+            });
+        });
+
+        // Update active TOC on scroll
+        window.addEventListener('scroll', () => {
+            let current = '';
+            const sections = document.querySelectorAll('section');
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (pageYOffset >= sectionTop - 200) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            document.querySelectorAll('.toc-link').forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href').includes(current)) {
+                    link.classList.add('active');
+                }
+            });
+        });
+
+        // Feature table filtering
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const tableRows = document.querySelectorAll('#featureTable tbody tr');
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Update active button
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                const filter = btn.getAttribute('data-filter');
+                tableRows.forEach(row => {
+                    if (filter === 'all') {
+                        row.style.display = '';
+                    } else {
+                        const status = row.getAttribute('data-status');
+                        row.style.display = status === filter ? '' : 'none';
+                    }
+                });
+            });
+        });
+
+        // Mode toggle interaction
+        const modeBoxes = document.querySelectorAll('.mode-box');
+        modeBoxes.forEach((box, idx) => {
+            box.addEventListener('click', () => {
+                modeBoxes.forEach((b, i) => {
+                    b.classList.toggle('active', i === idx);
+                });
+            });
+        });
+
+        // Initialize first mode box as active
+        if (modeBoxes.length > 0) {
+            modeBoxes[0].classList.add('active');
+        }
+    </script>
+</body>
+</html>

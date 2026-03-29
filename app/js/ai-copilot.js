@@ -820,13 +820,14 @@ function parseOperations(text, numbers) {
   const commands = [];
 
   // Holes
-  if (text.match(/hole|bore|drill/i)) {
+  if (text.match(/hole|bore|drill|mounting/i)) {
     const holeRadius = text.match(/(\d+)\s*mm\s*hole/) ? parseFloat(RegExp.$1) / 2 : 5;
-    const count = text.match(/(\d+)\s*holes?/) ? parseInt(RegExp.$1) : 1;
+    const countMatch = text.match(/(\d+)\s*(?:mounting\s+)?holes?/i) || text.match(/(\d+)\s+\w*\s*holes?/i);
+    const count = countMatch ? parseInt(countMatch[1]) : 1;
 
     commands.push({
       method: 'feature.hole',
-      params: { radius: holeRadius, count },
+      params: { radius: holeRadius, depth: 100, count },
     });
   }
 
@@ -955,7 +956,8 @@ export async function executeTextCommand(prompt) {
             // Offset multiple items so they don't stack
             if (count > 1) {
               const angle = (ci / count) * Math.PI * 2;
-              const spread = (p.radius || 5) * 4;
+              // Spread holes across the cube face — SCALE is 0.1 so multiply by that
+              const spread = (p.radius || 5) * 3 * 0.1;
               p._offsetX = Math.cos(angle) * spread;
               p._offsetZ = Math.sin(angle) * spread;
             }

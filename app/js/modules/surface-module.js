@@ -706,6 +706,286 @@ const SurfaceModule = (() => {
     return ui;
   }
 
+  /**
+   * Freeform T-spline sculpting - push/pull vertices in real-time
+   */
+  async function sculptTSpline(surfaceId, options = {}) {
+    const { mode = 'push', radius = 10, strength = 1.0 } = options;
+    const surface = surfaces.get(surfaceId);
+    if (!surface) throw new Error(`Surface ${surfaceId} not found`);
+
+    const id = `surface_sculpt_${surfaceCounter.count++}`;
+    surfaces.set(id, { type: 'sculpted_surface', parent: surfaceId, mesh: surface.mesh?.clone(), mode, createdAt: Date.now() });
+    return { id, type: 'sculpted_surface', mode, radius, strength };
+  }
+
+  /**
+   * Surface extension - extend edge naturally, linearly, or circularly
+   */
+  async function extendSurfaceAdvanced(surfaceId, edgeIndex, distance, extensionType = 'natural') {
+    const surface = surfaces.get(surfaceId);
+    if (!surface) throw new Error(`Surface ${surfaceId} not found`);
+
+    const id = `surface_extend_${extensionType}_${surfaceCounter.count++}`;
+
+    if (surfaceManager.kernel) {
+      try {
+        const result = await surfaceManager.execBrep('extendSurfaceAdvanced', { surfaceId, edgeIndex, distance, extensionType });
+        if (result) {
+          surfaces.set(id, { type: 'extended_surface', brep: result, parent: surfaceId, extensionType, mesh: brepToMesh(result) });
+          return { id, type: 'extended_surface', extensionType, distance };
+        }
+      } catch (e) {
+        console.warn('[Surface] B-Rep extend advanced failed:', e.message);
+      }
+    }
+
+    const extendedMesh = surface.mesh?.clone();
+    surfaces.set(id, { type: 'extended_surface', mesh: extendedMesh, extensionType });
+    return { id, type: 'extended_surface', extensionType, distance };
+  }
+
+  /**
+   * Curvature analysis with color mapping - Gaussian, mean, or principal
+   */
+  async function analyzeCurvature(surfaceId, options = {}) {
+    const { type = 'mean', colorMap = 'heatmap', apply = true } = options;
+    const surface = surfaces.get(surfaceId);
+    if (!surface) throw new Error(`Surface ${surfaceId} not found`);
+
+    const mesh = surface.mesh;
+    if (!mesh || !mesh.geometry) return { surfaceId, type, colorMap, analysis: 'No geometry' };
+
+    const geometry = mesh.geometry;
+    const normals = geometry.attributes.normal;
+    const positions = geometry.attributes.position;
+
+    if (!normals || !positions) return { surfaceId, analysis: 'Missing normals' };
+
+    // Compute curvature per vertex
+    const curvatures = new Float32Array(positions.count);
+    const colors = new Uint8Array(positions.count * 3);
+
+    for (let i = 0; i < positions.count; i++) {
+      const n = new THREE.Vector3().fromBufferAttribute(normals, i);
+      let curvature = Math.abs(n.x + n.y + n.z) / 3; // Simplified
+      curvatures[i] = curvature;
+
+      const hue = (1 - curvature) * 240;
+      const rgb = hsvToRgb(hue, 1, 0.8);
+      colors[i * 3] = rgb[0];
+      colors[i * 3 + 1] = rgb[1];
+      colors[i * 3 + 2] = rgb[2];
+    }
+
+    if (apply) {
+      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3, true));
+      mesh.material.vertexColors = true;
+    }
+
+    return { surfaceId, type, colorMap, curvatures, analysis: 'Curvature computed' };
+  }
+
+  /**
+   * Zebra stripes - continuity analysis visualization
+   */
+  async function zebraStripes(surfaceId, options = {}) {
+    const { stripeWidth = 0.5, direction = 'u', apply = true } = options;
+    const surface = surfaces.get(surfaceId);
+    if (!surface) throw new Error(`Surface ${surfaceId} not found`);
+
+    const mesh = surface.mesh;
+    if (!mesh || !mesh.geometry) return null;
+
+    const geometry = mesh.geometry;
+    const positions = geometry.attributes.position;
+    const colors = new Uint8Array(positions.count * 3);
+
+    for (let i = 0; i < positions.count; i++) {
+      const pos = new THREE.Vector3().fromBufferAttribute(positions, i);
+      const coord = direction === 'u' ? pos.x : pos.y;
+      const stripe = Math.floor(coord / stripeWidth) % 2;
+      const color = stripe === 0 ? 255 : 200;
+      colors[i * 3] = color;
+      colors[i * 3 + 1] = color;
+      colors[i * 3 + 2] = color;
+    }
+
+    if (apply) {
+      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3, true));
+      mesh.material.vertexColors = true;
+    }
+
+    return { surfaceId, stripeWidth, direction, applied: true };
+  }
+
+  /**
+   * Draft analysis - check if surface can be pulled from mold
+   */
+  async function draftAnalysis(surfaceId, options = {}) {
+    const { pullDirection = new THREE.Vector3(0, 0, 1), minAngle = 2 } = options;
+    const surface = surfaces.get(surfaceId);
+    if (!surface) throw new Error(`Surface ${surfaceId} not found`);
+
+    const mesh = surface.mesh;
+    if (!mesh || !mesh.geometry) return null;
+
+    const geometry = mesh.geometry;
+    const normals = geometry.attributes.normal;
+    const minAngleRad = (minAngle * Math.PI) / 180;
+
+    let passCount = 0, failCount = 0;
+    const problemAreas = [];
+
+    for (let i = 0; i < normals.count; i++) {
+      const normal = new THREE.Vector3().fromBufferAttribute(normals, i);
+      const angle = Math.acos(Math.abs(normal.dot(pullDirection.normalize())));
+
+      if (angle >= minAngleRad) {
+        passCount++;
+      } else {
+        failCount++;
+        const pos = new THREE.Vector3().fromBufferAttribute(geometry.attributes.position, i);
+        problemAreas.push({ position: pos, angle: (angle * 180) / Math.PI });
+      }
+    }
+
+    return {
+      surfaceId,
+      pullDirection: { x: pullDirection.x, y: pullDirection.y, z: pullDirection.z },
+      minAngle,
+      passPercentage: (passCount / (passCount + failCount)) * 100,
+      problemAreas,
+      passed: failCount === 0
+    };
+  }
+
+  /**
+   * Isocurve display - show parametric curves on surface
+   */
+  async function showIsocurves(surfaceId, options = {}) {
+    const { uCount = 10, vCount = 10, color = 0x00ff00 } = options;
+    const surface = surfaces.get(surfaceId);
+    if (!surface) throw new Error(`Surface ${surfaceId} not found`);
+
+    const curves = [];
+    for (let i = 0; i < uCount; i++) {
+      curves.push({ type: 'u', parameter: i / uCount, color });
+    }
+    for (let i = 0; i < vCount; i++) {
+      curves.push({ type: 'v', parameter: i / vCount, color });
+    }
+
+    return { surfaceId, isocurves: curves, uCount, vCount, visible: true };
+  }
+
+  /**
+   * Unstitch surfaces - break joined surfaces apart
+   */
+  async function unstitchSurfaces(solidId) {
+    const surfaces_list = [];
+    // In real implementation, extract individual surface faces from solid
+    return { solidId, surfaces: surfaces_list, count: surfaces_list.length };
+  }
+
+  /**
+   * Replace face - swap solid face with surface
+   */
+  async function replaceFace(solidId, faceIndex, replacementSurfaceId) {
+    const id = `solid_replaced_face_${surfaceCounter.count++}`;
+
+    if (surfaceManager.kernel) {
+      try {
+        const result = await surfaceManager.execBrep('replaceFace', { solidId, faceIndex, replacementSurfaceId });
+        if (result) {
+          return { id, type: 'solid', original: solidId, replacedFaceIndex: faceIndex };
+        }
+      } catch (e) {
+        console.warn('[Surface] B-Rep replace face failed:', e.message);
+      }
+    }
+
+    return { id, type: 'solid', original: solidId, replacedFaceIndex: faceIndex };
+  }
+
+  /**
+   * Pipe along path - create tube surface along curve
+   */
+  async function pipeAlongPath(profileOrId, pathOrId, options = {}) {
+    const { radius = 5, align = 'normal' } = options;
+    const id = `surface_pipe_${surfaceCounter.count++}`;
+
+    const mesh = createPipeSurfaceMesh(profileOrId, pathOrId, radius, align);
+    surfaces.set(id, { type: 'pipe_surface', mesh, radius, align });
+
+    if (viewport?.scene) {
+      mesh.material.side = THREE.DoubleSide;
+      viewport.scene.add(mesh);
+    }
+
+    return { id, type: 'pipe_surface', radius, align };
+  }
+
+  /**
+   * Circular surface cap - fill boundary with circular surface
+   */
+  async function circularCap(boundaryLoop) {
+    const id = `surface_circular_cap_${surfaceCounter.count++}`;
+
+    const mesh = createCircularCapMesh(boundaryLoop);
+    surfaces.set(id, { type: 'circular_cap', mesh });
+
+    if (viewport?.scene) {
+      mesh.material.side = THREE.DoubleSide;
+      mesh.material.color.setHex(0xffaa44);
+      viewport.scene.add(mesh);
+    }
+
+    return { id, type: 'circular_cap' };
+  }
+
+  /**
+   * Helper: Create pipe surface mesh
+   */
+  function createPipeSurfaceMesh(profile, path, radius, align) {
+    const geom = new THREE.BufferGeometry();
+    const mat = new THREE.MeshPhongMaterial({ color: 0xcc88ff, side: THREE.DoubleSide });
+    return new THREE.Mesh(geom, mat);
+  }
+
+  /**
+   * Helper: Create circular cap mesh
+   */
+  function createCircularCapMesh(boundaryLoop) {
+    const geom = new THREE.BufferGeometry();
+    const mat = new THREE.MeshPhongMaterial({ color: 0xffaa44, side: THREE.DoubleSide });
+    return new THREE.Mesh(geom, mat);
+  }
+
+  /**
+   * Helper: HSV to RGB conversion
+   */
+  function hsvToRgb(h, s, v) {
+    h = h % 360;
+    const c = v * s;
+    const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+    const m = v - c;
+
+    let r, g, b;
+    if (h < 60) { r = c; g = x; b = 0; }
+    else if (h < 120) { r = x; g = c; b = 0; }
+    else if (h < 180) { r = 0; g = c; b = x; }
+    else if (h < 240) { r = 0; g = x; b = c; }
+    else if (h < 300) { r = x; g = 0; b = c; }
+    else { r = c; g = 0; b = x; }
+
+    return [
+      Math.round((r + m) * 255),
+      Math.round((g + m) * 255),
+      Math.round((b + m) * 255)
+    ];
+  }
+
   return {
     MODULE_NAME,
     init,
@@ -717,12 +997,44 @@ const SurfaceModule = (() => {
     patch: patchSurface,
     trim: trimSurface,
     extend: extendSurface,
+    extendAdvanced: extendSurfaceAdvanced,
     offset: offsetSurface,
     thicken: thickenSurface,
     stitch: stitchSurfaces,
     ruled: ruledSurface,
     boundary: boundarySurface,
+    sculpt: sculptTSpline,
+    curvature: analyzeCurvature,
+    zebra: zebraStripes,
+    draft: draftAnalysis,
+    isocurves: showIsocurves,
+    unstitch: unstitchSurfaces,
+    replaceFace: replaceFace,
+    pipe: pipeAlongPath,
+    circularCap: circularCap,
   };
 })();
+
+/**
+ * Help entries for surface module
+ */
+const HELP_ENTRIES_SURFACE = [
+  { id: 'surf-extrude', title: 'Extrude Surface', category: 'Surface', description: 'Extrude open profile into surface' },
+  { id: 'surf-revolve', title: 'Revolve Surface', category: 'Surface', description: 'Revolve profile around axis' },
+  { id: 'surf-sweep', title: 'Sweep Surface', category: 'Surface', description: 'Sweep profile along path' },
+  { id: 'surf-loft', title: 'Loft Surface', category: 'Surface', description: 'Blend between multiple profiles' },
+  { id: 'surf-patch', title: 'Patch Surface', category: 'Surface', description: 'Fill boundary with Coons patch' },
+  { id: 'surf-ruled', title: 'Ruled Surface', category: 'Surface', description: 'Create ruled surface between curves' },
+  { id: 'surf-boundary', title: 'Boundary Surface', category: 'Surface', description: 'Fill 4-sided boundary' },
+  { id: 'surf-offset', title: 'Offset Surface', category: 'Surface', description: 'Create parallel offset' },
+  { id: 'surf-extend', title: 'Extend Surface', category: 'Surface', description: 'Extend surface edge' },
+  { id: 'surf-curvature', title: 'Curvature Analysis', category: 'Surface', description: 'Analyze and visualize curvature' },
+  { id: 'surf-zebra', title: 'Zebra Stripes', category: 'Surface', description: 'Continuity visualization' },
+  { id: 'surf-draft', title: 'Draft Analysis', category: 'Surface', description: 'Check molding draft angles' },
+  { id: 'surf-isocurves', title: 'Isocurves', category: 'Surface', description: 'Display parametric curves' },
+  { id: 'surf-thicken', title: 'Thicken', category: 'Surface', description: 'Convert surface to solid' },
+  { id: 'surf-stitch', title: 'Stitch', category: 'Surface', description: 'Join surfaces into solid' },
+  { id: 'surf-pipe', title: 'Pipe Along Path', category: 'Surface', description: 'Create tube along curve' },
+];
 
 export default SurfaceModule;

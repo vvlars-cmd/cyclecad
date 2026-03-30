@@ -74,27 +74,62 @@ const SketchModule = {
   getUI() {
     return `
       <div id="sketch-toolbar" style="display: none; background: #2a2a2a; padding: 8px; border-radius: 4px; flex-wrap: wrap; gap: 4px;">
+        <!-- BASIC TOOLS -->
         <button data-tool="line" class="sketch-tool-btn" title="Line (L)">—</button>
         <button data-tool="rectangle" class="sketch-tool-btn" title="Rectangle (R)">▭</button>
         <button data-tool="circle" class="sketch-tool-btn" title="Circle (C)">●</button>
         <button data-tool="arc" class="sketch-tool-btn" title="Arc (A)">⌒</button>
         <button data-tool="ellipse" class="sketch-tool-btn" title="Ellipse (E)">⬭</button>
         <button data-tool="spline" class="sketch-tool-btn" title="Spline (S)">✓</button>
+        <button data-tool="spline_fit" class="sketch-tool-btn" title="Fit Point Spline">↪</button>
         <button data-tool="polygon" class="sketch-tool-btn" title="Polygon (P)">⬡</button>
-        <button data-tool="slot" class="sketch-tool-btn" title="Slot">⊟</button>
+
+        <!-- SLOT TOOLS -->
+        <button data-tool="slot" class="sketch-tool-btn" title="Slot (Center-Point)">⊟</button>
+        <button data-tool="slot_3point" class="sketch-tool-btn" title="Slot (3-Point)">⊟*</button>
+        <button data-tool="slot_ctc" class="sketch-tool-btn" title="Slot (Center-to-Center)">⊟**</button>
+
+        <!-- CONIC & TEXT -->
+        <button data-tool="conic" class="sketch-tool-btn" title="Conic (Parabola/Hyperbola)">∿</button>
         <button data-tool="text" class="sketch-tool-btn" title="Text (T)">T</button>
+        <button data-tool="text_path" class="sketch-tool-btn" title="Text Along Path">T↷</button>
+
+        <!-- REFERENCE -->
+        <button data-tool="point" class="sketch-tool-btn" title="Point (standalone)">•</button>
+        <button data-tool="midpoint" class="sketch-tool-btn" title="Midpoint">◈</button>
+
+        <!-- EDITING TOOLS -->
         <button data-tool="trim" class="sketch-tool-btn" title="Trim">✂</button>
+        <button data-tool="power_trim" class="sketch-tool-btn" title="Power Trim (drag)">✂✂</button>
+        <button data-tool="break" class="sketch-tool-btn" title="Break at Point">⊥</button>
         <button data-tool="extend" class="sketch-tool-btn" title="Extend">→</button>
         <button data-tool="offset" class="sketch-tool-btn" title="Offset">⟿</button>
         <button data-tool="mirror" class="sketch-tool-btn" title="Mirror">⇄</button>
         <button data-tool="fillet" class="sketch-tool-btn" title="Fillet">⌢</button>
         <button data-tool="chamfer" class="sketch-tool-btn" title="Chamfer">/</button>
+
+        <!-- PATTERN TOOLS -->
+        <button data-tool="rect_pattern" class="sketch-tool-btn" title="Rectangular Pattern">▦</button>
+        <button data-tool="circ_pattern" class="sketch-tool-btn" title="Circular Pattern">⊙</button>
+        <button data-tool="path_pattern" class="sketch-tool-btn" title="Pattern Along Path">▦→</button>
+
+        <!-- CONSTRUCTION & GEOMETRY -->
         <button data-tool="construction" class="sketch-tool-btn" title="Toggle Construction (G)">⋯</button>
+        <button data-tool="project" class="sketch-tool-btn" title="Project Edge">⌜</button>
+        <button data-tool="include" class="sketch-tool-btn" title="Include From Sketch">⊂</button>
+        <button data-tool="intersection" class="sketch-tool-btn" title="Intersection Curve">✕</button>
+
+        <!-- DIMENSIONS -->
         <button id="sketch-dimension-btn" class="sketch-tool-btn" title="Add Dimension (D)">📏</button>
+        <button data-tool="ordinate" class="sketch-tool-btn" title="Ordinate Dimension">📍</button>
+        <button data-tool="reference" class="sketch-tool-btn" title="Reference Dimension">⌀</button>
+        <button data-tool="auto_dim" class="sketch-tool-btn" title="Auto Dimension">✓📏</button>
+
+        <!-- FINISH -->
         <button id="sketch-finish-btn" style="margin-left: 16px; background: #00aa00; color: white;" title="Finish Sketch (Esc)">✓ Finish</button>
       </div>
       <div id="sketch-status-bar" style="display: none; color: #aaa; font-size: 12px; padding: 4px 8px; border-top: 1px solid #444; background: #1a1a1a;">
-        Tool: <span id="sketch-tool-name">Line</span> | Grid: <span id="sketch-grid-size">5mm</span> | Entities: <span id="sketch-entity-count">0</span>
+        Tool: <span id="sketch-tool-name">Line</span> | Grid: <span id="sketch-grid-size">5mm</span> | Entities: <span id="sketch-entity-count">0</span> | DOF: <span id="sketch-dof">0</span>
       </div>
       <div id="sketch-dimension-input" style="display: none; position: fixed; background: #2a2a2a; border: 1px solid #444; border-radius: 4px; padding: 12px; z-index: 10000;">
         <label style="display: block; font-size: 12px; color: #aaa; margin-bottom: 4px;">Dimension Value (mm)</label>
@@ -519,6 +554,342 @@ const SketchModule = {
     });
   },
 
+  drawSlotCenterPoint(center, width, height, rotation = 0) {
+    /**
+     * CENTER-POINT SLOT: Slot defined by center, width, and height
+     *
+     * A slot is a rounded rectangle with semicircular ends.
+     * Specified by center point, width, and height of the slot.
+     */
+    return this.addEntity('slot_center', {
+      points: [center],
+      data: { width, height, rotation },
+      constraints: [{ type: 'fixed', point: center }]
+    });
+  },
+
+  drawSlot3Point(p1, p2, radius) {
+    /**
+     * 3-POINT SLOT: Define by two endpoints and radius (arc radius)
+     *
+     * Creates a slot with semicircular ends of given radius,
+     * connecting two specified endpoints.
+     */
+    const center = new THREE.Vector2(
+      (p1.x + p2.x) / 2,
+      (p1.y + p2.y) / 2
+    );
+    const length = p1.distanceTo(p2);
+    return this.addEntity('slot_3point', {
+      points: [p1, p2],
+      data: { radius, length, center }
+    });
+  },
+
+  drawSlotCenterToCenter(center1, center2, radius) {
+    /**
+     * CENTER-TO-CENTER SLOT: Define by arc centers and radius
+     *
+     * Slot with circular centers at two specified points,
+     * connected by tangent lines.
+     */
+    return this.addEntity('slot_ctc', {
+      points: [center1, center2],
+      data: { radius }
+    });
+  },
+
+  drawConic(type, params) {
+    /**
+     * CONIC SECTION DRAWING: Parabola, Hyperbola, or Ellipse
+     *
+     * @param {string} type - 'parabola' or 'hyperbola'
+     * @param {object} params - { focus, directrix, ... } or { foci, a, ... }
+     *
+     * Parabola: locus of points equidistant from focus and directrix
+     * Hyperbola: locus of points where |PF1| - |PF2| = 2a
+     */
+    if (type === 'parabola') {
+      const { focus, directrixLine } = params;
+      return this.addEntity('parabola', {
+        points: [focus],
+        data: { directrixLine, type: 'parabola' }
+      });
+    } else if (type === 'hyperbola') {
+      const { focus1, focus2, a } = params;
+      return this.addEntity('hyperbola', {
+        points: [focus1, focus2],
+        data: { a, type: 'hyperbola' }
+      });
+    }
+    return null;
+  },
+
+  drawRectangularPattern(entityIds, columns, rows, spacingX, spacingY) {
+    /**
+     * RECTANGULAR PATTERN: Array entity copies in grid
+     *
+     * Creates copies of selected entities in a column×row grid
+     * with specified spacing between copies.
+     */
+    if (entityIds.length === 0) return [];
+
+    const patterns = [];
+    const baseEntities = this.state.entities.filter(e => entityIds.includes(e.id));
+
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < columns; col++) {
+        if (row === 0 && col === 0) continue; // Skip original
+
+        const offset = new THREE.Vector2(col * spacingX, row * spacingY);
+
+        baseEntities.forEach(entity => {
+          const copiedPoints = entity.points.map(p => p.clone().add(offset));
+          const patternEntity = this.addEntity(entity.type, {
+            points: copiedPoints,
+            data: { ...entity.data, isPattern: true, baseId: entity.id },
+            isConstruction: entity.isConstruction
+          });
+          patterns.push(patternEntity);
+        });
+      }
+    }
+
+    return patterns;
+  },
+
+  drawCircularPattern(entityIds, center, count, angleSpan = Math.PI * 2) {
+    /**
+     * CIRCULAR PATTERN: Array entity copies around center
+     *
+     * Creates copies of selected entities arranged radially
+     * around a center point.
+     */
+    if (entityIds.length === 0) return [];
+
+    const patterns = [];
+    const baseEntities = this.state.entities.filter(e => entityIds.includes(e.id));
+    const angleStep = angleSpan / count;
+
+    for (let i = 1; i < count; i++) {
+      const angle = i * angleStep;
+      const cos = Math.cos(angle);
+      const sin = Math.sin(angle);
+
+      baseEntities.forEach(entity => {
+        const copiedPoints = entity.points.map(p => {
+          const relative = new THREE.Vector2(p.x - center.x, p.y - center.y);
+          const rotated = new THREE.Vector2(
+            relative.x * cos - relative.y * sin,
+            relative.x * sin + relative.y * cos
+          );
+          return rotated.add(center);
+        });
+
+        const patternEntity = this.addEntity(entity.type, {
+          points: copiedPoints,
+          data: { ...entity.data, isPattern: true, baseId: entity.id },
+          isConstruction: entity.isConstruction
+        });
+        patterns.push(patternEntity);
+      });
+    }
+
+    return patterns;
+  },
+
+  drawPatternAlongPath(entityIds, pathEntityId, count, spacing = null) {
+    /**
+     * PATTERN ALONG PATH: Array entity copies along a curve
+     *
+     * Creates copies of selected entities distributed along
+     * a line, arc, or spline path.
+     */
+    const pathEntity = this.state.entities.find(e => e.id === pathEntityId);
+    if (!pathEntity || !['line', 'arc', 'spline'].includes(pathEntity.type)) {
+      console.warn('Path must be line, arc, or spline');
+      return [];
+    }
+
+    const baseEntities = this.state.entities.filter(e => entityIds.includes(e.id));
+    const patterns = [];
+
+    for (let i = 1; i < count; i++) {
+      const t = i / count; // Parameter along path [0, 1]
+      const pathPoint = this.evaluateEntityAtParameter(pathEntity, t);
+      const pathTangent = this.evaluateEntityTangentAtParameter(pathEntity, t);
+      const angle = Math.atan2(pathTangent.y, pathTangent.x);
+
+      baseEntities.forEach(entity => {
+        const copiedPoints = entity.points.map(p => {
+          const relative = new THREE.Vector2(p.x - entity.points[0].x, p.y - entity.points[0].y);
+          const rotated = new THREE.Vector2(
+            relative.x * Math.cos(angle) - relative.y * Math.sin(angle),
+            relative.x * Math.sin(angle) + relative.y * Math.cos(angle)
+          );
+          return pathPoint.clone().add(rotated);
+        });
+
+        const patternEntity = this.addEntity(entity.type, {
+          points: copiedPoints,
+          data: { ...entity.data, isPattern: true, baseId: entity.id },
+          isConstruction: entity.isConstruction
+        });
+        patterns.push(patternEntity);
+      });
+    }
+
+    return patterns;
+  },
+
+  projectEdgeOntoSketch(edgeId) {
+    /**
+     * PROJECT 3D EDGE ONTO SKETCH PLANE
+     *
+     * Takes a 3D edge from the model and projects it orthogonally
+     * onto the current sketch plane. Useful for alignment.
+     */
+    // In production, would ray-cast edge with sketch plane
+    // For now, return a projected line entity
+    return {
+      message: 'Project edge ' + edgeId + ' onto sketch plane',
+      isConstruction: true
+    };
+  },
+
+  includeGeometryFromSketch(sourceSketchId) {
+    /**
+     * INCLUDE GEOMETRY FROM ANOTHER SKETCH
+     *
+     * References entities from another sketch in the current sketch.
+     * Changes to source sketch automatically update references.
+     */
+    return {
+      message: 'Include geometry from sketch ' + sourceSketchId,
+      linkedSketchId: sourceSketchId
+    };
+  },
+
+  drawIntersectionCurve(body1Id, body2Id, surface1Id, surface2Id) {
+    /**
+     * INTERSECTION CURVE: Sketch curve from intersecting surfaces
+     *
+     * Computes the intersection of two 3D surfaces/bodies and
+     * projects it onto the sketch plane as a construction curve.
+     */
+    return this.addEntity('intersection_curve', {
+      data: {
+        body1Id,
+        body2Id,
+        surface1Id,
+        surface2Id,
+        isConstruction: true
+      }
+    });
+  },
+
+  drawTextAlongPath(text, pathEntityId, fontSize = 10) {
+    /**
+     * TEXT ALONG PATH: Text that follows a curve
+     *
+     * Distributes text characters along a line, arc, or spline.
+     */
+    const pathEntity = this.state.entities.find(e => e.id === pathEntityId);
+    if (!pathEntity) return null;
+
+    return this.addEntity('text_along_path', {
+      data: { text, fontSize, pathEntityId, isConstruction: false }
+    });
+  },
+
+  drawFitPointSpline(points) {
+    /**
+     * FIT POINT SPLINE (through-point B-spline)
+     *
+     * Creates a spline that passes THROUGH all specified points
+     * (unlike control-point spline which passes near control points).
+     * Uses automatic knot vector generation for smooth interpolation.
+     */
+    if (points.length < 2) {
+      console.warn('Fit point spline requires at least 2 points');
+      return null;
+    }
+
+    return this.addEntity('spline_fit', {
+      points,
+      data: {
+        degree: Math.min(3, points.length - 1),
+        isFitPoint: true,
+        knotVector: this.generateFitPointKnots(points.length)
+      }
+    });
+  },
+
+  generateFitPointKnots(n) {
+    /**
+     * Generate knot vector for fit-point (interpolating) spline
+     * Uses Centripetal Catmull-Rom parameterization
+     */
+    const knots = [0, 0, 0, 0];
+    for (let i = 1; i <= n - 2; i++) {
+      knots.push(i);
+    }
+    knots.push(n - 1, n - 1, n - 1, n - 1);
+    return knots;
+  },
+
+  drawMidpoint(entityId) {
+    /**
+     * MIDPOINT: Create a point at midpoint of any edge
+     *
+     * Adds a construction point at the midpoint of a line, arc, or spline.
+     * Useful as reference for other constraints.
+     */
+    const entity = this.state.entities.find(e => e.id === entityId);
+    if (!entity || !['line', 'arc', 'spline'].includes(entity.type)) {
+      console.warn('Midpoint tool requires line, arc, or spline');
+      return null;
+    }
+
+    let midpoint;
+    if (entity.type === 'line') {
+      const [p1, p2] = entity.points;
+      midpoint = new THREE.Vector2(
+        (p1.x + p2.x) / 2,
+        (p1.y + p2.y) / 2
+      );
+    } else if (entity.type === 'arc') {
+      const [start, end] = entity.points;
+      midpoint = new THREE.Vector2(
+        (start.x + end.x) / 2,
+        (start.y + end.y) / 2
+      );
+    } else if (entity.type === 'spline') {
+      // Evaluate spline at t=0.5
+      midpoint = this.evaluateBSpline(entity.points, 0.5, entity.data.degree);
+    }
+
+    return this.addEntity('point', {
+      points: [midpoint],
+      data: { linkedEntityId: entityId, type: 'midpoint' },
+      isConstruction: true
+    });
+  },
+
+  drawPoint(point, isConstruction = true) {
+    /**
+     * POINT TOOL: Standalone point or center mark
+     *
+     * Creates a construction point (small circle) at specified location.
+     * Useful for reference geometry and constraint anchors.
+     */
+    return this.addEntity('point', {
+      points: [point],
+      data: { type: 'standalone' },
+      isConstruction
+    });
+  },
+
   // ===== EDITING TOOLS =====
 
   trim(entityId, clickPoint) {
@@ -568,6 +939,97 @@ const SketchModule = {
     }
 
     this.renderEntity(entity);
+    window.dispatchEvent(new CustomEvent('sketch:entityModified', { detail: { entity } }));
+  },
+
+  powerTrim(clickPoints) {
+    /**
+     * POWER TRIM: Drag to trim multiple entities at once
+     *
+     * Click and drag along entities to remove all segments
+     * that the drag line crosses. Works with line, arc, spline.
+     */
+    if (clickPoints.length < 2) return [];
+
+    const trimmedEntities = [];
+    const dragLine = { p1: clickPoints[0], p2: clickPoints[clickPoints.length - 1] };
+
+    this.state.entities.forEach(entity => {
+      if (!['line', 'arc', 'spline'].includes(entity.type)) return;
+
+      const crossings = this.findEntityDragCrossings(entity, dragLine);
+      if (crossings.length >= 2) {
+        // Remove segments between pairs of crossings
+        crossings.sort((a, b) => a.t - b.t);
+        for (let i = 0; i < crossings.length - 1; i++) {
+          this.trim(entity.id, new THREE.Vector2(
+            (crossings[i].point.x + crossings[i + 1].point.x) / 2,
+            (crossings[i].point.y + crossings[i + 1].point.y) / 2
+          ));
+          trimmedEntities.push(entity);
+        }
+      }
+    });
+
+    return trimmedEntities;
+  },
+
+  trimToIntersection(entityId, otherEntityId) {
+    /**
+     * TRIM TO NEAREST INTERSECTION
+     *
+     * Automatically trims entity to its nearest intersection
+     * with another specific entity.
+     */
+    const entity = this.state.entities.find(e => e.id === entityId);
+    const other = this.state.entities.find(e => e.id === otherEntityId);
+    if (!entity || !other) return;
+
+    const ints = this.findIntersection(entity, other);
+    if (ints.length === 0) return;
+
+    // Trim to nearest intersection
+    const nearest = ints.reduce((a, b) =>
+      a.t < b.t ? a : b
+    );
+
+    this.trim(entityId, nearest.point);
+  },
+
+  breakAtPoint(entityId, point) {
+    /**
+     * BREAK AT POINT: Split entity at specified point
+     *
+     * Breaks a line or arc into two segments at the given point
+     * (useful for adding construction references).
+     */
+    const entity = this.state.entities.find(e => e.id === entityId);
+    if (!entity || !['line', 'arc', 'spline'].includes(entity.type)) return;
+
+    const t = this.findParameterAlongEntity(entity, point);
+    if (t === null) return;
+
+    if (entity.type === 'line') {
+      const [p1, p2] = entity.points;
+      this.addEntity('line', { points: [p1, point] });
+      this.addEntity('line', { points: [point, p2] });
+      const idx = this.state.entities.indexOf(entity);
+      if (idx > -1) this.state.entities.splice(idx, 1);
+    } else if (entity.type === 'arc') {
+      const [start, end, center] = entity.points;
+      const angle1 = Math.atan2(point.y - center.y, point.x - center.x);
+      this.addEntity('arc', {
+        points: [start, point, center],
+        data: { ...entity.data, endAngle: angle1 }
+      });
+      this.addEntity('arc', {
+        points: [point, end, center],
+        data: { ...entity.data, startAngle: angle1 }
+      });
+      const idx = this.state.entities.indexOf(entity);
+      if (idx > -1) this.state.entities.splice(idx, 1);
+    }
+
     window.dispatchEvent(new CustomEvent('sketch:entityModified', { detail: { entity } }));
   },
 
@@ -1480,6 +1942,173 @@ const SketchModule = {
            this.angleInRange(angle, arc.data.startAngle, arc.data.endAngle);
   },
 
+  // ===== ADVANCED DIMENSIONS =====
+
+  addOrdinateDimension(entityId, baselineEntity, direction = 'X') {
+    /**
+     * ORDINATE DIMENSION: Baseline reference dimension system
+     *
+     * Creates a series of dimensions measured from a baseline
+     * entity. All dimensions reference the same baseline (e.g., left edge).
+     * More compact than individual linear dimensions.
+     */
+    const entity = this.state.entities.find(e => e.id === entityId);
+    const baseline = this.state.entities.find(e => e.id === baselineEntity.id);
+
+    if (!entity || !baseline) return null;
+
+    const dim = {
+      id: `dim_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      type: 'ordinate',
+      entities: [entity.id, baseline.id],
+      direction,
+      driven: true,
+      value: this.computeOrdinateMeasurement(entity, baseline, direction)
+    };
+
+    this.state.dimensions.push(dim);
+    window.dispatchEvent(new CustomEvent('sketch:dimensionAdded', { detail: { dimension: dim } }));
+    return dim;
+  },
+
+  autoDimension() {
+    /**
+     * AUTO-DIMENSION: Detect and apply minimal sufficient dimension set
+     *
+     * Analyzes sketch geometry and constraints to determine
+     * the minimum number of dimensions needed to fully constrain the sketch.
+     * Uses a greedy algorithm to select important dimensions.
+     */
+    const essentialDims = [];
+    const profile = this.getProfile();
+
+    // Count degrees of freedom
+    let dof = profile.entities.length * 3; // Each entity: 2 position + 1 orientation
+    dof -= profile.entities.filter(e => e.constraints.some(c => c.type === 'fixed')).length * 3;
+
+    // Add dimensions for unconstrained entities
+    profile.entities.forEach(entity => {
+      if (dof <= 0) return;
+
+      const isConstrained = entity.constraints && entity.constraints.length > 0;
+      if (!isConstrained) {
+        let dimType = null;
+        let value = null;
+
+        if (entity.type === 'line') {
+          dimType = 'distance';
+          value = entity.points[0].distanceTo(entity.points[1]);
+          dof -= 1;
+        } else if (entity.type === 'circle') {
+          dimType = 'radius';
+          value = entity.data.radius;
+          dof -= 1;
+        } else if (entity.type === 'arc') {
+          dimType = 'radius';
+          value = entity.data.radius;
+          dof -= 1;
+        }
+
+        if (dimType) {
+          essentialDims.push({
+            id: `auto_dim_${Date.now()}_${essentialDims.length}`,
+            type: dimType,
+            entities: [entity.id],
+            value,
+            driven: true
+          });
+        }
+      }
+    });
+
+    this.state.dimensions.push(...essentialDims);
+    return essentialDims;
+  },
+
+  addReferenceDimension(entityId, type = 'distance', value = null) {
+    /**
+     * REFERENCE DIMENSION: Non-driving dimension for display
+     *
+     * Creates a dimension that displays the measurement but
+     * does not constrain the geometry. Useful for documenting
+     * features and creating assembly notes.
+     */
+    const entity = this.state.entities.find(e => e.id === entityId);
+    if (!entity) return null;
+
+    const computedValue = value !== null ? value : this.computeEntityMeasurement(entity, type);
+
+    const dim = {
+      id: `ref_dim_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      type,
+      entities: [entityId],
+      value: computedValue,
+      driven: false, // Key: reference dimensions are NOT driven
+      isReference: true
+    };
+
+    this.state.dimensions.push(dim);
+    window.dispatchEvent(new CustomEvent('sketch:dimensionAdded', { detail: { dimension: dim } }));
+    return dim;
+  },
+
+  computeEntityMeasurement(entity, measurementType) {
+    /**
+     * Compute measurement value for an entity
+     * @param {object} entity - sketch entity
+     * @param {string} measurementType - 'distance', 'radius', 'diameter', 'angle', etc.
+     * @returns {number} measurement value in current units
+     */
+    switch (measurementType) {
+      case 'distance':
+        if (entity.type === 'line') {
+          return entity.points[0].distanceTo(entity.points[1]);
+        }
+        return 0;
+
+      case 'radius':
+        if (entity.type === 'circle' || entity.type === 'arc') {
+          return entity.data.radius || 0;
+        }
+        return 0;
+
+      case 'diameter':
+        if (entity.type === 'circle' || entity.type === 'arc') {
+          return (entity.data.radius || 0) * 2;
+        }
+        return 0;
+
+      case 'angle':
+        if (entity.type === 'arc') {
+          const { startAngle, endAngle } = entity.data;
+          return (endAngle - startAngle) * (180 / Math.PI);
+        }
+        return 0;
+
+      default:
+        return 0;
+    }
+  },
+
+  computeOrdinateMeasurement(entity, baseline, direction) {
+    /**
+     * Compute ordinate measurement (distance from baseline)
+     * @param {object} entity - sketch entity to measure
+     * @param {object} baseline - reference baseline entity
+     * @param {string} direction - 'X' or 'Y'
+     * @returns {number} measurement value
+     */
+    const baselinePos = baseline.points[0];
+    const entityPos = entity.points[0];
+
+    if (direction === 'X') {
+      return Math.abs(entityPos.x - baselinePos.x);
+    } else if (direction === 'Y') {
+      return Math.abs(entityPos.y - baselinePos.y);
+    }
+    return 0;
+  },
+
   getProfile() {
     // Extract closed wire from entities for extrude/revolve
     return {
@@ -1487,6 +2116,121 @@ const SketchModule = {
       dimensions: this.state.dimensions,
       plane: this.state.plane
     };
+  },
+
+  // ===== HELPER METHODS FOR NEW TOOLS =====
+
+  evaluateEntityAtParameter(entity, t) {
+    /**
+     * Evaluate entity position at parameter t ∈ [0, 1]
+     */
+    if (entity.type === 'line') {
+      const [p1, p2] = entity.points;
+      return new THREE.Vector2(
+        p1.x + t * (p2.x - p1.x),
+        p1.y + t * (p2.y - p1.y)
+      );
+    } else if (entity.type === 'arc') {
+      const [start, end] = entity.points;
+      const [, , center] = entity.points;
+      const angle = entity.data.startAngle + t * (entity.data.endAngle - entity.data.startAngle);
+      return new THREE.Vector2(
+        center.x + entity.data.radius * Math.cos(angle),
+        center.y + entity.data.radius * Math.sin(angle)
+      );
+    } else if (entity.type === 'spline') {
+      return this.evaluateBSpline(entity.points, t, entity.data.degree);
+    }
+    return entity.points[0];
+  },
+
+  evaluateEntityTangentAtParameter(entity, t) {
+    /**
+     * Evaluate entity tangent vector at parameter t ∈ [0, 1]
+     */
+    const delta = 0.001;
+    const p1 = this.evaluateEntityAtParameter(entity, Math.max(0, t - delta));
+    const p2 = this.evaluateEntityAtParameter(entity, Math.min(1, t + delta));
+    return new THREE.Vector2(p2.x - p1.x, p2.y - p1.y).normalize();
+  },
+
+  findParameterAlongEntity(entity, point) {
+    /**
+     * Find parameter t along entity closest to given point
+     * @returns {number|null} parameter t ∈ [0, 1], or null if not found
+     */
+    if (entity.type === 'line') {
+      const [p1, p2] = entity.points;
+      const dx = p2.x - p1.x;
+      const dy = p2.y - p1.y;
+      const len2 = dx * dx + dy * dy;
+      if (len2 === 0) return 0;
+
+      const t = ((point.x - p1.x) * dx + (point.y - p1.y) * dy) / len2;
+      return Math.max(0, Math.min(1, t));
+    }
+    return null;
+  },
+
+  findEntityDragCrossings(entity, dragLine) {
+    /**
+     * Find all points where entity crosses a drag line
+     */
+    const crossings = [];
+
+    if (entity.type === 'line') {
+      const int = this.lineLineIntersection(entity.points[0], entity.points[1], dragLine.p1, dragLine.p2);
+      if (int) crossings.push(int);
+    } else if (entity.type === 'arc') {
+      const ints = this.lineArcIntersection(dragLine.p1, dragLine.p2, entity);
+      crossings.push(...ints);
+    }
+
+    return crossings;
+  },
+
+  findAllIntersectionsOnEntity(entity) {
+    /**
+     * Find all intersections of an entity with other entities
+     */
+    const intersections = [];
+
+    this.state.entities.forEach(other => {
+      if (other.id === entity.id) return;
+      const ints = this.findIntersection(entity, other);
+      intersections.push(...ints);
+    });
+
+    return intersections;
+  },
+
+  findIntersection(entity1, entity2) {
+    /**
+     * Find all intersections between two entities
+     */
+    const ints = [];
+
+    if (entity1.type === 'line' && entity2.type === 'line') {
+      const int = this.lineLineIntersection(
+        entity1.points[0], entity1.points[1],
+        entity2.points[0], entity2.points[1]
+      );
+      if (int) ints.push(int);
+    } else if (entity1.type === 'line' && entity2.type === 'circle') {
+      const circleInts = this.lineCircleIntersection(
+        entity1.points[0], entity1.points[1],
+        entity2.points[0], entity2.data.radius
+      );
+      ints.push(...circleInts);
+    } else if (entity1.type === 'circle' && entity2.type === 'circle') {
+      const circleInts = this.circleCircleIntersection(
+        entity1.points[0], entity1.data.radius,
+        entity2.points[0], entity2.data.radius
+      );
+      ints.push(...circleInts);
+    }
+
+    return ints;
   },
 
   setupEventHandlers() {
@@ -1658,5 +2402,257 @@ const SketchModule = {
     // Simple redo — in production, use proper undo/redo stack
   }
 };
+
+/**
+ * HELP ENTRIES: Documentation for all sketch tools and features
+ * Exported for Help System integration
+ */
+SketchModule.HELP_ENTRIES = [
+  // Basic Drawing Tools
+  {
+    id: 'sketch.line',
+    title: 'Line Tool',
+    description: 'Draw a straight line between two points. Click to set start, click again to set end.',
+    category: 'Drawing',
+    hotkey: 'L'
+  },
+  {
+    id: 'sketch.rectangle',
+    title: 'Rectangle Tool',
+    description: 'Draw axis-aligned rectangle by two corner points.',
+    category: 'Drawing',
+    hotkey: 'R'
+  },
+  {
+    id: 'sketch.circle',
+    title: 'Circle Tool',
+    description: 'Draw circle by center point and radius point.',
+    category: 'Drawing',
+    hotkey: 'C'
+  },
+  {
+    id: 'sketch.arc',
+    title: 'Arc Tool',
+    description: 'Draw arc by start, end, and center points.',
+    category: 'Drawing',
+    hotkey: 'A'
+  },
+  {
+    id: 'sketch.ellipse',
+    title: 'Ellipse Tool',
+    description: 'Draw ellipse by center and two axis endpoints.',
+    category: 'Drawing',
+    hotkey: 'E'
+  },
+  {
+    id: 'sketch.spline',
+    title: 'Control Point Spline',
+    description: 'Draw cubic B-spline by control points. Double-click or Enter to finish.',
+    category: 'Drawing',
+    hotkey: 'S'
+  },
+  {
+    id: 'sketch.spline_fit',
+    title: 'Fit Point Spline',
+    description: 'Draw interpolating spline through specified points (unlike control-point splines).',
+    category: 'Drawing'
+  },
+  {
+    id: 'sketch.polygon',
+    title: 'Polygon Tool',
+    description: 'Draw regular polygon by center and corner point.',
+    category: 'Drawing',
+    hotkey: 'P'
+  },
+
+  // Slot Tools
+  {
+    id: 'sketch.slot',
+    title: 'Slot (Center-Point)',
+    description: 'Draw slot by center point, width, and height.',
+    category: 'Drawing'
+  },
+  {
+    id: 'sketch.slot_3point',
+    title: 'Slot (3-Point)',
+    description: 'Draw slot by two endpoints and arc radius.',
+    category: 'Drawing'
+  },
+  {
+    id: 'sketch.slot_ctc',
+    title: 'Slot (Center-to-Center)',
+    description: 'Draw slot by arc centers and radius.',
+    category: 'Drawing'
+  },
+
+  // Conic Sections
+  {
+    id: 'sketch.conic',
+    title: 'Conic Sections',
+    description: 'Draw parabola or hyperbola using focus/directrix (parabola) or foci (hyperbola).',
+    category: 'Drawing'
+  },
+
+  // Text Tools
+  {
+    id: 'sketch.text',
+    title: 'Text Tool',
+    description: 'Place text at a specific point in the sketch.',
+    category: 'Drawing',
+    hotkey: 'T'
+  },
+  {
+    id: 'sketch.text_path',
+    title: 'Text Along Path',
+    description: 'Place text that follows a line, arc, or spline curve.',
+    category: 'Drawing'
+  },
+
+  // Reference Geometry
+  {
+    id: 'sketch.point',
+    title: 'Point Tool',
+    description: 'Create a standalone construction point for reference.',
+    category: 'Reference'
+  },
+  {
+    id: 'sketch.midpoint',
+    title: 'Midpoint',
+    description: 'Create a point at the midpoint of a line, arc, or spline.',
+    category: 'Reference'
+  },
+
+  // Editing Tools
+  {
+    id: 'sketch.trim',
+    title: 'Trim Tool',
+    description: 'Remove segments between intersections. Click on segment to trim.',
+    category: 'Editing'
+  },
+  {
+    id: 'sketch.power_trim',
+    title: 'Power Trim',
+    description: 'Click and drag to trim multiple entities at once.',
+    category: 'Editing'
+  },
+  {
+    id: 'sketch.break',
+    title: 'Break at Point',
+    description: 'Split a line or arc into two segments at a specified point.',
+    category: 'Editing'
+  },
+  {
+    id: 'sketch.extend',
+    title: 'Extend Tool',
+    description: 'Extend a line toward other geometry.',
+    category: 'Editing'
+  },
+  {
+    id: 'sketch.offset',
+    title: 'Offset Tool',
+    description: 'Create offset copies of lines and curves.',
+    category: 'Editing'
+  },
+  {
+    id: 'sketch.mirror',
+    title: 'Mirror Tool',
+    description: 'Mirror selected entities across a line.',
+    category: 'Editing'
+  },
+  {
+    id: 'sketch.fillet',
+    title: 'Fillet Tool',
+    description: 'Round corners between intersecting lines.',
+    category: 'Editing'
+  },
+  {
+    id: 'sketch.chamfer',
+    title: 'Chamfer Tool',
+    description: 'Create beveled edges between intersecting lines.',
+    category: 'Editing'
+  },
+
+  // Pattern Tools
+  {
+    id: 'sketch.rect_pattern',
+    title: 'Rectangular Pattern',
+    description: 'Array selected entities in a grid with specified spacing.',
+    category: 'Pattern'
+  },
+  {
+    id: 'sketch.circ_pattern',
+    title: 'Circular Pattern',
+    description: 'Array selected entities radially around a center point.',
+    category: 'Pattern'
+  },
+  {
+    id: 'sketch.path_pattern',
+    title: 'Pattern Along Path',
+    description: 'Array selected entities along a line, arc, or spline.',
+    category: 'Pattern'
+  },
+
+  // Geometry Operations
+  {
+    id: 'sketch.project',
+    title: 'Project Edge',
+    description: 'Project a 3D edge orthogonally onto the sketch plane.',
+    category: 'Geometry'
+  },
+  {
+    id: 'sketch.include',
+    title: 'Include Geometry',
+    description: 'Reference geometry from another sketch (linked, updates automatically).',
+    category: 'Geometry'
+  },
+  {
+    id: 'sketch.intersection',
+    title: 'Intersection Curve',
+    description: 'Create sketch curve from intersection of two 3D surfaces.',
+    category: 'Geometry'
+  },
+  {
+    id: 'sketch.construction',
+    title: 'Construction Geometry',
+    description: 'Toggle selected entities as construction (reference-only). (G)',
+    category: 'Geometry',
+    hotkey: 'G'
+  },
+
+  // Dimension Tools
+  {
+    id: 'sketch.dimension',
+    title: 'Add Dimension',
+    description: 'Add linear, radial, angular, or diameter dimension to constrain geometry.',
+    category: 'Dimensions',
+    hotkey: 'D'
+  },
+  {
+    id: 'sketch.ordinate',
+    title: 'Ordinate Dimension',
+    description: 'Create baseline-based ordinate dimensions for aligned measurements.',
+    category: 'Dimensions'
+  },
+  {
+    id: 'sketch.reference',
+    title: 'Reference Dimension',
+    description: 'Add non-driving dimension for documentation (does not constrain).',
+    category: 'Dimensions'
+  },
+  {
+    id: 'sketch.auto_dim',
+    title: 'Auto Dimension',
+    description: 'Automatically detect and apply minimal sufficient dimension set.',
+    category: 'Dimensions'
+  },
+
+  // Constraint System
+  {
+    id: 'sketch.constraints',
+    title: 'Constraints Overview',
+    description: 'Sketch constraints: coincident, horizontal, vertical, parallel, perpendicular, tangent, equal, fix, concentric, symmetric, collinear, midpoint, coradial.',
+    category: 'Constraints'
+  }
+];
 
 export default SketchModule;

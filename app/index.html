@@ -1387,14 +1387,18 @@
   <!-- Token Engine — Initialize early so window.cycleCAD.tokens is available -->
   <script src="./js/token-engine.js"></script>
   <!-- New Architecture Modules (ES modules need type="module") -->
-  <script type="module" src="./js/material-library.js?v=120"></script>
+  <script type="module" src="./js/material-library.js?v=130"></script>
   <script src="./js/dfm-analyzer.js"></script>
-  <script type="module" src="./js/cam-pipeline.js?v=120"></script>
+  <script type="module" src="./js/cam-pipeline.js?v=130"></script>
   <script src="./js/connected-fabs.js"></script>
-  <script type="module" src="./js/brep-engine.js?v=120"></script>
-  <script type="module" src="./js/ai-copilot.js?v=120"></script>
-  <script type="module" src="./js/collaboration.js?v=120"></script>
-  <script type="module" src="./js/collaboration-ui.js?v=120"></script>
+  <script type="module" src="./js/brep-engine.js?v=130"></script>
+  <script type="module" src="./js/ai-copilot.js?v=130"></script>
+  <script type="module" src="./js/text-to-brep.js?v=130"></script>
+  <script type="module" src="./js/step-viewer.js?v=130"></script>
+  <script type="module" src="./js/parts-library.js?v=130"></script>
+  <script type="module" src="./js/multiplayer.js?v=130"></script>
+  <script type="module" src="./js/collaboration.js?v=130"></script>
+  <script type="module" src="./js/collaboration-ui.js?v=130"></script>
   <!-- CadXStudio-killer modules (IIFE, no imports) -->
   <script src="./js/text-to-cad.js"></script>
   <script src="./js/cam-operations.js"></script>
@@ -1420,7 +1424,7 @@
           <span class="splash-logo-cycle">cycle</span><span class="splash-logo-cad">CAD</span>
         </div>
         <p class="splash-subtitle">Parametric 3D CAD Modeler for the Mechanical Designer</p>
-        <p style="display:inline-block; color:#0066cc; font-size:1rem; margin:12px 0 0 0; letter-spacing:2px; font-family:monospace; font-weight:700; background:rgba(0,102,204,0.08); border:1.5px solid rgba(0,102,204,0.25); border-radius:8px; padding:5px 20px;">v1.2.0</p>
+        <p style="display:inline-block; color:#0066cc; font-size:1rem; margin:12px 0 0 0; letter-spacing:2px; font-family:monospace; font-weight:700; background:rgba(0,102,204,0.08); border:1.5px solid rgba(0,102,204,0.25); border-radius:8px; padding:5px 20px;">v1.3.0</p>
       </div>
       <div class="splash-options">
         <button class="splash-button splash-button-primary" id="btn-empty-project" style="grid-column: 1 / -1;">
@@ -1782,27 +1786,27 @@
   <script type="module">
     import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
     const _v = '50';
-    import { initViewport, setView, addToScene, removeFromScene, getScene, getCamera, getControls, toggleGrid as vpToggleGrid, toggleWireframe as vpToggleWireframe, fitToObject } from './js/viewport.js?v=120';
+    import { initViewport, setView, addToScene, removeFromScene, getScene, getCamera, getControls, toggleGrid as vpToggleGrid, toggleWireframe as vpToggleWireframe, fitToObject } from './js/viewport.js?v=130';
     // fitAll defined locally to avoid import failures from cached viewport.js
     function fitAll(padding = 1.2) { const s = getScene(); if (s) fitToObject(s, padding); }
-    import { startSketch, endSketch, setTool, getEntities, clearSketch } from './js/sketch.js?v=120';
-    import { extrudeProfile, createPrimitive, rebuildFeature, createMaterial } from './js/operations.js?v=120';
-    import { initChat, parseCADPrompt, addMessage } from './js/ai-chat.js?v=120';
-    import { initTree, addFeature, selectFeature, onSelect, removeFeature } from './js/tree.js?v=120';
-    import { initParams, showParams, onParamChange } from './js/params.js?v=120';
-    import { exportSTL, exportOBJ, exportJSON } from './js/export.js?v=120';
-    import { initShortcuts } from './js/shortcuts.js?v=120';
-    import { createReverseEngineerPanel, importFile, analyzeGeometry, reconstructFeatureTree, createWalkthrough } from './js/reverse-engineer.js?v=120';
-    import { createInventorPanel, parseInventorFile } from './js/inventor-parser.js?v=120';
-    import { loadProject, showFolderPicker, parseIPJ } from './js/project-loader.js?v=120';
-    import { initProjectBrowser, showBrowser, hideBrowser, setProject, onFileSelect } from './js/project-browser.js?v=120';
-    import { generateGuide, renderGuide, exportGuideHTML } from './js/rebuild-guide.js?v=120';
-    import { solveConstraints, addConstraint, removeConstraint, autoDetectConstraints, isFullyConstrained, getAllConstraints, clearAllConstraints } from './js/constraint-solver.js?v=120';
-    import { createSweep, createLoft, createBend, createFlange, createTab, createSlot, unfoldSheetMetal, createSpring, createThread } from './js/advanced-ops.js?v=120';
-    import Assembly from './js/assembly.js?v=120';
-    import { exportSketchToDXF, exportProjectionToDXF, exportMultiViewDXF, export3DDXF, downloadDXF } from './js/dxf-export.js?v=120';
-    import { initAgentAPI } from './js/agent-api.js?v=120';
-    import { initTokenDashboard } from './js/token-dashboard.js?v=120';
+    import { startSketch, endSketch, setTool, getEntities, clearSketch } from './js/sketch.js?v=130';
+    import { extrudeProfile, createPrimitive, rebuildFeature, createMaterial } from './js/operations.js?v=130';
+    import { initChat, parseCADPrompt, addMessage } from './js/ai-chat.js?v=130';
+    import { initTree, addFeature, selectFeature, onSelect, removeFeature } from './js/tree.js?v=130';
+    import { initParams, showParams, onParamChange } from './js/params.js?v=130';
+    import { exportSTL, exportOBJ, exportJSON } from './js/export.js?v=130';
+    import { initShortcuts } from './js/shortcuts.js?v=130';
+    import { createReverseEngineerPanel, importFile, analyzeGeometry, reconstructFeatureTree, createWalkthrough } from './js/reverse-engineer.js?v=130';
+    import { createInventorPanel, parseInventorFile } from './js/inventor-parser.js?v=130';
+    import { loadProject, showFolderPicker, parseIPJ } from './js/project-loader.js?v=130';
+    import { initProjectBrowser, showBrowser, hideBrowser, setProject, onFileSelect } from './js/project-browser.js?v=130';
+    import { generateGuide, renderGuide, exportGuideHTML } from './js/rebuild-guide.js?v=130';
+    import { solveConstraints, addConstraint, removeConstraint, autoDetectConstraints, isFullyConstrained, getAllConstraints, clearAllConstraints } from './js/constraint-solver.js?v=130';
+    import { createSweep, createLoft, createBend, createFlange, createTab, createSlot, unfoldSheetMetal, createSpring, createThread } from './js/advanced-ops.js?v=130';
+    import Assembly from './js/assembly.js?v=130';
+    import { exportSketchToDXF, exportProjectionToDXF, exportMultiViewDXF, export3DDXF, downloadDXF } from './js/dxf-export.js?v=130';
+    import { initAgentAPI } from './js/agent-api.js?v=130';
+    import { initTokenDashboard } from './js/token-dashboard.js?v=130';
 
     // ========== Application State ==========
     const APP = {
@@ -2016,7 +2020,7 @@
 
         // Initialize Agent API — the primary interface
         await tryStepAsync('agentAPI', async () => {
-        const agentImports = await import('./js/agent-api.js?v=120');
+        const agentImports = await import('./js/agent-api.js?v=130');
         const agentSession = initAgentAPI({
           viewport: {
             getCamera,
@@ -4531,6 +4535,30 @@
           {t:'Annotate Components',d:'Place annotation pins (A) on each component — label them: "1. Body", "2. Pad", "3. Pin", "4. Spring", etc. These annotations export with screenshots for documentation.',cmd:'key:A',cat:'Document'},
           {t:'View All Shortcuts',d:'Press ? for the complete keyboard shortcut reference. You have now completed the full Assembly + ExplodeView tutorial — from CAD modeling to assembly inspection to documentation.',cmd:'key:?',cat:'Document'}
         ],
+        brepKernel: [
+          {t:'Load B-Rep Kernel',d:'The OpenCascade.js WASM kernel (~50MB) loads on demand. This gives cycleCAD real solid modeling — boolean operations, fillet, chamfer on actual B-rep edges. First load takes a few seconds, then it is cached.',cmd:'chat:create 100mm cube',cat:'B-Rep'},
+          {t:'Real Boolean Cut (Holes)',d:'Unlike mesh preview holes, B-rep holes actually cut through the solid using BRepAlgoAPI_Cut. The resulting shape has proper topology — faces, edges, and vertices that downstream tools can work with.',cmd:'chat:add 4 mounting holes of 8mm',cat:'B-Rep'},
+          {t:'Real Edge Fillet',d:'BRepFilletAPI_MakeFillet iterates all edges using TopExp_Explorer and applies a constant-radius fillet. The result is a smooth, manufacturable edge — not a mesh approximation.',cmd:'chat:add fillets of 3mm',cat:'B-Rep'},
+          {t:'Real Edge Chamfer',d:'BRepFilletAPI_MakeChamfer works like fillet but creates flat bevels. Chamfers are common in machined parts to remove sharp edges, ease assembly, and reduce stress concentrations.',cmd:'chat:add chamfer of 2mm',cat:'B-Rep'},
+        ],
+        textToCAD: [
+          {t:'Simple Part from Text',d:'Type a description in plain English. The Text-to-CAD engine (Gemini Flash API + offline fallback) parses your intent and generates a sequence of B-rep commands that build real solid geometry.',cmd:'chat:create a motor mount plate 150x100x10mm',cat:'Text-to-CAD'},
+          {t:'Add Features with Text',d:'Operations like holes, fillets, and chamfers are understood contextually. "with 4 M8 bolt holes at the corners" creates 4 boolean cut operations positioned at the plate corners.',cmd:'chat:add 4 bolt holes at corners',cat:'Text-to-CAD'},
+          {t:'Use Templates',d:'Say "bearing housing" or "L-bracket" to use predefined parametric templates. 10+ templates available: bearing housing, motor mount, L/T/U bracket, spur gear, pipe flange, shaft collar, and more.',cmd:'chat:create bearing housing',cat:'Text-to-CAD'},
+          {t:'Complex Descriptions',d:'The engine handles multi-feature descriptions: dimensions, hole patterns, fillets, materials, and templates can all be combined in a single sentence.',cmd:'chat:200x150x20 plate with 4 corner holes and 5mm fillets',cat:'Text-to-CAD'},
+        ],
+        partsLib: [
+          {t:'Browse Parts Library',d:'35+ parametric mechanical parts organized by category: Bearings, Fasteners, Structural, Electronics, and Pipe. Each part accepts parameters (bore, length, thickness) and generates real B-rep geometry.',cmd:'click:#parts-lib-btn',cat:'Parts'},
+          {t:'Search for Parts',d:'Fuzzy search across names, descriptions, and tags. Type "bearing" to find 6205, 6206, housing, and thrust bearing. Type "M8" to find M8 bolt, nut, and washer.',cmd:'chat:search parts bearing',cat:'Parts'},
+          {t:'Insert a Bolt',d:'Select M8 bolt from the library, adjust length parameter, and click Insert. The bolt is generated as real B-rep geometry (hex head + shank) and added to the scene.',cmd:'chat:insert bolt-m8 length 30',cat:'Parts'},
+          {t:'Insert a Bearing',d:'Standard deep groove ball bearing 6205 (bore=25mm, OD=52mm, width=15mm). Generated as concentric cylinders with proper proportions from DIN 625-1.',cmd:'chat:insert bearing-6205',cat:'Parts'},
+        ],
+        multiplayer: [
+          {t:'Create a Room',d:'Click Share → Create Room to generate a 6-character room code. Share this code with collaborators. Uses BroadcastChannel API for same-browser tabs (no server needed), WebRTC for cross-browser.',cmd:'click:#share-btn',cat:'Collab'},
+          {t:'See Other Cursors',d:'When a collaborator joins, their 3D cursor appears as a colored sphere with a name label. Cursor positions update at 30fps for smooth tracking.',cmd:'chat:move cursor to center',cat:'Collab'},
+          {t:'Sync Operations',d:'Any geometry operation (create, cut, fillet) automatically broadcasts to all connected peers. Everyone sees the same model state in real-time.',cmd:'chat:create 50mm sphere',cat:'Collab'},
+          {t:'In-viewport Chat',d:'Press C to open the chat panel. Send text messages to collaborators without leaving the 3D workspace. Messages appear as floating bubbles.',cmd:'key:C',cat:'Collab'},
+        ],
         testCycleCAD: [{t:'Run cycleCAD Tests',d:'115 automated UI tests with live visualization',cmd:'iframe:./test-agent-v2.html',cat:'Test Agent'}],
         testExplodeView: [{t:'Run ExplodeView Tests',d:'100+ tests for 3D viewer, panels, shortcuts',cmd:'iframe:./explodeview-test-agent.html',cat:'Test Agent'}]
       };
@@ -4732,6 +4760,30 @@
                 <div style="font-size:10px;color:var(--text-secondary);margin-top:3px;">Build then explore all 47 features</div>
                 <div style="margin-top:6px;font-size:9px;padding:2px 8px;background:rgba(248,81,73,0.15);border-radius:10px;color:#f85149;display:inline-block;">18 steps</div>
               </div>
+              <div onclick="_htShowRunner('brepKernel','B-Rep Kernel Tutorial')" style="cursor:pointer;padding:14px;background:linear-gradient(135deg,rgba(168,85,247,0.12),rgba(168,85,247,0.04));border:1px solid rgba(168,85,247,0.3);border-radius:8px;text-align:center;transition:transform 0.15s;">
+                <div style="font-size:24px;margin-bottom:6px;">⚙️</div>
+                <div style="font-weight:600;color:#a855f7;font-size:12px;">B-Rep Kernel</div>
+                <div style="font-size:10px;color:var(--text-secondary);margin-top:3px;">Real booleans, fillets, chamfers</div>
+                <div style="margin-top:6px;font-size:9px;padding:2px 8px;background:rgba(168,85,247,0.15);border-radius:10px;color:#a855f7;display:inline-block;">4 steps</div>
+              </div>
+              <div onclick="_htShowRunner('textToCAD','Text-to-CAD Tutorial')" style="cursor:pointer;padding:14px;background:linear-gradient(135deg,rgba(236,72,153,0.12),rgba(236,72,153,0.04));border:1px solid rgba(236,72,153,0.3);border-radius:8px;text-align:center;transition:transform 0.15s;">
+                <div style="font-size:24px;margin-bottom:6px;">🤖</div>
+                <div style="font-weight:600;color:#ec4899;font-size:12px;">Text-to-CAD</div>
+                <div style="font-size:10px;color:var(--text-secondary);margin-top:3px;">English → real 3D solids</div>
+                <div style="margin-top:6px;font-size:9px;padding:2px 8px;background:rgba(236,72,153,0.15);border-radius:10px;color:#ec4899;display:inline-block;">4 steps</div>
+              </div>
+              <div onclick="_htShowRunner('partsLib','Parts Library Tutorial')" style="cursor:pointer;padding:14px;background:linear-gradient(135deg,rgba(34,197,94,0.12),rgba(34,197,94,0.04));border:1px solid rgba(34,197,94,0.3);border-radius:8px;text-align:center;transition:transform 0.15s;">
+                <div style="font-size:24px;margin-bottom:6px;">📦</div>
+                <div style="font-weight:600;color:#22c55e;font-size:12px;">Parts Library</div>
+                <div style="font-size:10px;color:var(--text-secondary);margin-top:3px;">35+ DIN/ISO parts, search, insert</div>
+                <div style="margin-top:6px;font-size:9px;padding:2px 8px;background:rgba(34,197,94,0.15);border-radius:10px;color:#22c55e;display:inline-block;">4 steps</div>
+              </div>
+              <div onclick="_htShowRunner('multiplayer','Multiplayer Tutorial')" style="cursor:pointer;padding:14px;background:linear-gradient(135deg,rgba(59,130,246,0.12),rgba(59,130,246,0.04));border:1px solid rgba(59,130,246,0.3);border-radius:8px;text-align:center;transition:transform 0.15s;">
+                <div style="font-size:24px;margin-bottom:6px;">👥</div>
+                <div style="font-weight:600;color:#3b82f6;font-size:12px;">Multiplayer</div>
+                <div style="font-size:10px;color:var(--text-secondary);margin-top:3px;">Real-time collab, cursors, chat</div>
+                <div style="margin-top:6px;font-size:9px;padding:2px 8px;background:rgba(59,130,246,0.15);border-radius:10px;color:#3b82f6;display:inline-block;">4 steps</div>
+              </div>
             </div>
           </div>
 
@@ -4786,11 +4838,14 @@
         { cat: 'Operations', items: ['Extrude', 'Revolve', 'Fillet', 'Chamfer', 'Boolean (union/cut/intersect)', 'Shell', 'Rectangular Pattern', 'Circular Pattern'] },
         { cat: 'Advanced Ops', items: ['Sweep (twist + scale)', 'Loft', 'Sheet Metal (bend/flange/tab/slot/unfold)', 'Spring Generator', 'Thread Generator'] },
         { cat: 'Sketch+', items: ['Spline', 'Polygon', 'Text', 'Ellipse', 'Slot', 'Trim/Extend/Split', 'Offset/Mirror/Scale'] },
-        { cat: 'AI Tools', items: ['Text-to-CAD (6-step pipeline)', 'AI Copilot', 'AI Chatbot (Gemini + Groq)', 'DFM Analyzer', 'Batch AI Scan'] },
+        { cat: 'AI Tools', items: ['Text-to-CAD with B-rep (Gemini → OpenCascade.js)', 'AI Copilot (real geometry)', 'AI Chatbot (Gemini + Groq)', 'DFM Analyzer', 'Batch AI Scan', '10 Predefined Part Templates'] },
         { cat: 'CAM', items: ['CAM Operations (8 types)', 'G-Code Generator', 'Machine Profiles (15+)', 'Tool Library (30+ tools)', 'Stock Manager', 'Connected Fabs'] },
         { cat: 'Analysis', items: ['Section View', 'Material Library', 'Weight Estimator', 'Part Comparison', 'Clearance Checker'] },
-        { cat: 'Import/Export', items: ['STL (ASCII + binary)', 'OBJ', 'glTF 2.0', 'DXF (2D + 3D)', 'cycleCAD JSON', 'Inventor .ipt/.iam', 'STEP (via server)'] },
-        { cat: 'Platform', items: ['Agent API (55 commands)', 'MCP Server', 'REST API', 'CLI Tool', '$CYCLE Token Engine', 'Model Marketplace V2 (GrabCAD-style)', 'Collaboration', 'CAD2VR (WebXR)'] },
+        { cat: 'Import/Export', items: ['STEP Drag-and-Drop Import (occt-import-js)', 'Exploded View Slider', 'BOM CSV Export', 'Embed Code Generator', 'STL (ASCII + binary)', 'OBJ', 'glTF 2.0', 'DXF (2D + 3D)', 'cycleCAD JSON', 'Inventor .ipt/.iam'] },
+        { cat: 'B-Rep Kernel', items: ['OpenCascade.js WASM (real solids)', 'Boolean Cut (real holes)', 'Boolean Fuse (union)', 'Fillet All Edges', 'Chamfer All Edges', 'Shape Tessellation → Three.js'] },
+        { cat: 'Parts Library', items: ['35+ Parametric Parts (DIN/ISO)', 'Bearings (6205, 6206, housing, thrust)', 'Fasteners (M6-M12 bolts, nuts, washers)', 'Structural (L/U/T brackets, gussets, motor mount)', 'Electronics (NEMA17/23 mount, DIN rail, PCB standoff)', 'Pipe (flange, tube clamp, 90° elbow)', 'Fuzzy Search', 'Custom Part Import/Export'] },
+        { cat: 'Multiplayer', items: ['Real-time Collaboration (BroadcastChannel + WebRTC)', 'Room Codes (create/join)', '3D Cursor Tracking', 'Operation Sync', 'In-viewport Chat', 'Presence Awareness'] },
+        { cat: 'Platform', items: ['Agent API (55 commands)', 'MCP Server', 'REST API', 'CLI Tool', '$CYCLE Token Engine', 'Model Marketplace', 'GitHub CAD Diff Action', 'CAD2VR (WebXR)'] },
         { cat: 'Simulation', items: ['Generative Design (Topology Optimization)', 'SIMP Solver (Web Worker)', '15 Materials Library', 'Loads & Constraints', 'Marching Cubes Mesh Generation', 'Manufacturing Constraints'] },
         { cat: 'Reference', items: ['GD&T Training (14 symbols, 50 quiz questions)', 'MISUMI Component Catalog (80+ parts)', 'McMaster-Carr Integration', 'FCF Builder', 'Tolerance Calculator'] },
         { cat: 'Utilities', items: ['Keyboard Shortcuts (25+)', 'Dark Theme', 'Performance Monitor', 'Grid Floor', 'Wireframe Toggle'] }
@@ -5275,6 +5330,6 @@
     </div>
   </div>
 
-  <span id="version-badge" style="position:fixed;bottom:42px;left:50%;transform:translateX(-50%);z-index:999;font-size:0.9rem;color:rgba(255,255,255,0.9);letter-spacing:0.1em;white-space:nowrap;padding:6px 16px;user-select:all;pointer-events:auto;font-family:monospace;font-weight:700;background:rgba(0,0,0,0.7);border:1px solid rgba(88,166,255,0.4);border-radius:6px;text-shadow:0 1px 3px rgba(0,0,0,0.5);" title="cycleCAD version">cycleCAD v1.2.0</span>
+  <span id="version-badge" style="position:fixed;bottom:42px;left:50%;transform:translateX(-50%);z-index:999;font-size:0.9rem;color:rgba(255,255,255,0.9);letter-spacing:0.1em;white-space:nowrap;padding:6px 16px;user-select:all;pointer-events:auto;font-family:monospace;font-weight:700;background:rgba(0,0,0,0.7);border:1px solid rgba(88,166,255,0.4);border-radius:6px;text-shadow:0 1px 3px rgba(0,0,0,0.5);" title="cycleCAD version">cycleCAD v1.3.0</span>
 </body>
 </html>

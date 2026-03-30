@@ -1787,7 +1787,7 @@
   <!-- Module Loader -->
   <script type="module">
     import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
-    const _v = '50';
+    const _v = '51';
     import { initViewport, setView, addToScene, removeFromScene, getScene, getCamera, getControls, toggleGrid as vpToggleGrid, toggleWireframe as vpToggleWireframe, fitToObject } from './js/viewport.js?v=131';
     // fitAll defined locally to avoid import failures from cached viewport.js
     function fitAll(padding = 1.2) { const s = getScene(); if (s) fitToObject(s, padding); }
@@ -1809,6 +1809,110 @@
     import { exportSketchToDXF, exportProjectionToDXF, exportMultiViewDXF, export3DDXF, downloadDXF } from './js/dxf-export.js?v=131';
     import { initAgentAPI } from './js/agent-api.js?v=131';
     import { initTokenDashboard } from './js/token-dashboard.js?v=131';
+
+    // ═══════════════════════════════════════════════════════
+    // LEGO MICROKERNEL BOOTSTRAP
+    // ═══════════════════════════════════════════════════════
+    // The kernel is the tiny heart of cycleCAD, managing modules, state,
+    // events, and inter-module communication. This bootstrap section:
+    //   1. Imports the kernel
+    //   2. Imports all LEGO module definitions
+    //   3. Registers modules with the kernel
+    //   4. Activates core modules immediately
+    //   5. Leaves heavy modules in standby (auto-load on first use)
+    //   6. Bridges kernel state to legacy global variables
+    //   7. Exposes kernel for console debugging
+
+    let kernel = null;
+    let kernelBootstrapError = null;
+
+    try {
+      const kernelModule = await import('./js/kernel.js?v=51');
+      kernel = kernelModule.default || new kernelModule.Kernel();
+
+      // Import all LEGO module definitions
+      const ViewportMod = await import('./js/modules/viewport-module.js?v=51');
+      const SketchMod = await import('./js/modules/sketch-module.js?v=51');
+      const OpsMod = await import('./js/modules/operations-module.js?v=51');
+      const DrawingMod = await import('./js/modules/drawing-module.js?v=51');
+      const AssemblyMod = await import('./js/modules/assembly-module.js?v=51');
+      const SimulationMod = await import('./js/modules/simulation-module.js?v=51');
+      const StepMod = await import('./js/modules/step-module.js?v=51');
+      const BRepMod = await import('./js/modules/brep-module.js?v=51');
+
+      // Register all modules with the kernel
+      const modules = [
+        ViewportMod.default || ViewportMod,
+        SketchMod.default || SketchMod,
+        OpsMod.default || OpsMod,
+        DrawingMod.default || DrawingMod,
+        AssemblyMod.default || AssemblyMod,
+        SimulationMod.default || SimulationMod,
+        StepMod.default || StepMod,
+        BRepMod.default || BRepMod
+      ];
+
+      modules.forEach(mod => {
+        if (mod && mod.id) {
+          kernel.register(mod);
+          console.log(`[Kernel] Registered module: ${mod.id}`);
+        }
+      });
+
+      // Activate core modules immediately (they should load quickly)
+      // Heavy modules (simulation, step-io, brep-kernel) stay in standby
+      try {
+        await kernel.activate('viewport');
+        console.log('[Kernel] Activated: viewport');
+      } catch(e) {
+        console.warn('[Kernel] Failed to activate viewport:', e.message);
+      }
+
+      try {
+        await kernel.activate('sketch');
+        console.log('[Kernel] Activated: sketch');
+      } catch(e) {
+        console.warn('[Kernel] Failed to activate sketch:', e.message);
+      }
+
+      try {
+        await kernel.activate('operations');
+        console.log('[Kernel] Activated: operations');
+      } catch(e) {
+        console.warn('[Kernel] Failed to activate operations:', e.message);
+      }
+
+      try {
+        await kernel.activate('drawing');
+        console.log('[Kernel] Activated: drawing');
+      } catch(e) {
+        console.warn('[Kernel] Failed to activate drawing:', e.message);
+      }
+
+      // Bridge kernel state to legacy globals (for backward compatibility)
+      if (kernel.state) {
+        kernel.state.watch('scene', (scene) => {
+          if (scene) window._scene = scene;
+        });
+        kernel.state.watch('camera', (cam) => {
+          if (cam) window._camera = cam;
+        });
+        kernel.state.watch('renderer', (r) => {
+          if (r) window._renderer = r;
+        });
+      }
+
+      // Expose kernel globally for debugging and advanced use
+      window.kernel = kernel;
+      console.log('[Kernel Bootstrap] Ready. Type window.kernel.status() to check module states.');
+      console.log('[Kernel Bootstrap] Heavy modules (simulation, step-io, brep-kernel) will auto-load on first command.');
+
+    } catch(err) {
+      console.error('[Kernel Bootstrap] Failed to initialize LEGO microkernel:', err);
+      kernelBootstrapError = err;
+      // App continues to run with legacy monolith code
+      // Kernel is optional — if it fails, the app still works
+    }
 
     // ========== Application State ==========
     const APP = {
@@ -5332,6 +5436,6 @@
     </div>
   </div>
 
-  <span id="version-badge" style="position:fixed;bottom:42px;left:50%;transform:translateX(-50%);z-index:999;font-size:0.9rem;color:rgba(255,255,255,0.9);letter-spacing:0.1em;white-space:nowrap;padding:6px 16px;user-select:all;pointer-events:auto;font-family:monospace;font-weight:700;background:rgba(0,0,0,0.7);border:1px solid rgba(88,166,255,0.4);border-radius:6px;text-shadow:0 1px 3px rgba(0,0,0,0.5);" title="cycleCAD version">cycleCAD v1.3.1</span>
+  <span id="version-badge" style="position:fixed;bottom:42px;left:50%;transform:translateX(-50%);z-index:999;font-size:0.9rem;color:rgba(255,255,255,0.9);letter-spacing:0.1em;white-space:nowrap;padding:6px 16px;user-select:all;pointer-events:auto;font-family:monospace;font-weight:700;background:rgba(0,0,0,0.7);border:1px solid rgba(88,166,255,0.4);border-radius:6px;text-shadow:0 1px 3px rgba(0,0,0,0.5);" title="cycleCAD version">cycleCAD v1.3.2</span>
 </body>
 </html>

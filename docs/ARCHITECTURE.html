@@ -1,1429 +1,859 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>cycleCAD System Architecture</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-            background: #0d1117;
-            color: #c9d1d9;
-            line-height: 1.6;
-            overflow-x: hidden;
-        }
-
-        /* Floating TOC */
-        nav.toc {
-            position: fixed;
-            left: 20px;
-            top: 100px;
-            width: 280px;
-            background: rgba(13, 17, 23, 0.95);
-            border: 1px solid #30363d;
-            border-radius: 8px;
-            padding: 20px;
-            max-height: 80vh;
-            overflow-y: auto;
-            z-index: 1000;
-            backdrop-filter: blur(8px);
-        }
-
-        nav.toc h3 {
-            font-size: 0.9rem;
-            color: #58a6ff;
-            margin-bottom: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        nav.toc a {
-            display: block;
-            font-size: 0.85rem;
-            color: #c9d1d9;
-            text-decoration: none;
-            padding: 6px 0 6px 12px;
-            border-left: 2px solid transparent;
-            margin: 4px 0;
-            transition: all 0.2s;
-        }
-
-        nav.toc a:hover {
-            border-left-color: #58a6ff;
-            color: #58a6ff;
-            padding-left: 16px;
-        }
-
-        nav.toc a.active {
-            border-left-color: #79c0ff;
-            color: #79c0ff;
-            font-weight: 600;
-        }
-
-        /* Header */
-        header {
-            text-align: center;
-            padding: 60px 40px;
-            background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
-            border-bottom: 1px solid #30363d;
-            margin-bottom: 40px;
-        }
-
-        header h1 {
-            font-size: 3.5rem;
-            margin-bottom: 12px;
-            background: linear-gradient(120deg, #58a6ff, #79c0ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        header p {
-            font-size: 1.1rem;
-            color: #8b949e;
-            margin-bottom: 6px;
-        }
-
-        /* Main content */
-        main {
-            max-width: 1000px;
-            margin-left: 340px;
-            padding: 40px;
-        }
-
-        section {
-            margin-bottom: 60px;
-            scroll-margin-top: 80px;
-        }
-
-        h2 {
-            font-size: 2rem;
-            color: #79c0ff;
-            margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 2px solid #30363d;
-        }
-
-        h3 {
-            font-size: 1.3rem;
-            color: #58a6ff;
-            margin-top: 24px;
-            margin-bottom: 12px;
-        }
-
-        p {
-            color: #c9d1d9;
-            margin-bottom: 12px;
-        }
-
-        /* Architecture diagram */
-        .arch-diagram {
-            background: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 8px;
-            padding: 24px;
-            margin: 20px 0;
-            overflow-x: auto;
-        }
-
-        .layer {
-            display: flex;
-            align-items: stretch;
-            margin-bottom: 16px;
-            gap: 12px;
-        }
-
-        .layer-label {
-            min-width: 120px;
-            padding: 12px;
-            background: #0d1117;
-            border-left: 4px solid #58a6ff;
-            font-weight: 600;
-            font-size: 0.9rem;
-            color: #58a6ff;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .layer-content {
-            flex: 1;
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        .layer-item {
-            background: #0d1117;
-            border: 1px solid #30363d;
-            padding: 10px 14px;
-            border-radius: 4px;
-            font-size: 0.9rem;
-            white-space: nowrap;
-        }
-
-        .layer-item.highlight {
-            background: #1f6feb;
-            border-color: #58a6ff;
-            color: #fff;
-            font-weight: 600;
-        }
-
-        /* Module grid */
-        .module-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 16px;
-            margin: 20px 0;
-        }
-
-        .module-card {
-            background: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 8px;
-            padding: 16px;
-            transition: all 0.3s;
-        }
-
-        .module-card:hover {
-            border-color: #58a6ff;
-            box-shadow: 0 0 20px rgba(88, 166, 255, 0.1);
-            transform: translateY(-2px);
-        }
-
-        .module-card h4 {
-            color: #79c0ff;
-            font-size: 0.95rem;
-            margin-bottom: 6px;
-        }
-
-        .module-card .lines {
-            color: #8b949e;
-            font-size: 0.8rem;
-            margin-bottom: 8px;
-        }
-
-        .module-card .category {
-            display: inline-block;
-            font-size: 0.75rem;
-            padding: 3px 8px;
-            border-radius: 3px;
-            margin-bottom: 8px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-        }
-
-        .category.engine { background: #1f6feb; color: #fff; }
-        .category.ai { background: #2d924c; color: #fff; }
-        .category.data { background: #8957e5; color: #fff; }
-        .category.io { background: #d29922; color: #fff; }
-        .category.platform { background: #e85aad; color: #fff; }
-        .category.ui { background: #1f6feb; color: #fff; }
-
-        .module-card p {
-            font-size: 0.9rem;
-            color: #8b949e;
-        }
-
-        /* Data flow diagram */
-        .flow-diagram {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin: 20px 0;
-            flex-wrap: wrap;
-            background: #161b22;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #30363d;
-        }
-
-        .flow-step {
-            background: #0d1117;
-            border: 2px solid #30363d;
-            padding: 12px 16px;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            min-width: 120px;
-            text-align: center;
-            color: #c9d1d9;
-        }
-
-        .flow-step.key {
-            border-color: #58a6ff;
-            background: #0d1117;
-            color: #79c0ff;
-            font-weight: 600;
-        }
-
-        .flow-arrow {
-            color: #58a6ff;
-            font-weight: bold;
-            font-size: 1.2rem;
-        }
-
-        /* Stats cards */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin: 20px 0;
-        }
-
-        .stat-card {
-            background: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 8px;
-            padding: 16px;
-            text-align: center;
-        }
-
-        .stat-card .value {
-            font-size: 2rem;
-            color: #79c0ff;
-            font-weight: 700;
-            margin-bottom: 6px;
-        }
-
-        .stat-card .label {
-            font-size: 0.9rem;
-            color: #8b949e;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        /* Tables */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-            background: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        th {
-            background: #0d1117;
-            color: #79c0ff;
-            padding: 12px;
-            text-align: left;
-            font-weight: 600;
-            border-bottom: 2px solid #30363d;
-        }
-
-        td {
-            padding: 12px;
-            border-bottom: 1px solid #30363d;
-        }
-
-        tr:last-child td {
-            border-bottom: none;
-        }
-
-        tr:hover {
-            background: #0d1117;
-        }
-
-        /* Code block */
-        pre {
-            background: #0d1117;
-            border: 1px solid #30363d;
-            border-radius: 6px;
-            padding: 16px;
-            overflow-x: auto;
-            margin: 16px 0;
-            color: #79c0ff;
-            font-size: 0.85rem;
-            line-height: 1.5;
-        }
-
-        code {
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-        }
-
-        /* Badges */
-        .badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 3px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            margin-right: 6px;
-            margin-bottom: 6px;
-        }
-
-        .badge.feature { background: #2d924c; color: #fff; }
-        .badge.tech { background: #1f6feb; color: #fff; }
-        .badge.status { background: #d29922; color: #fff; }
-
-        /* Roadmap timeline */
-        .roadmap {
-            display: flex;
-            gap: 20px;
-            margin: 20px 0;
-            flex-wrap: wrap;
-        }
-
-        .roadmap-phase {
-            flex: 1;
-            min-width: 200px;
-            background: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 8px;
-            padding: 16px;
-        }
-
-        .roadmap-phase h4 {
-            color: #79c0ff;
-            margin-bottom: 12px;
-            font-size: 1rem;
-        }
-
-        .roadmap-phase ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .roadmap-phase li {
-            color: #8b949e;
-            padding: 4px 0;
-            font-size: 0.9rem;
-        }
-
-        .roadmap-phase li:before {
-            content: "→ ";
-            color: #58a6ff;
-            margin-right: 6px;
-        }
-
-        /* Responsive */
-        @media (max-width: 1400px) {
-            nav.toc {
-                position: relative;
-                left: 0;
-                top: 0;
-                width: 100%;
-                margin-bottom: 20px;
-                max-height: none;
-            }
-
-            main {
-                margin-left: 0;
-            }
-        }
-
-        @media (max-width: 768px) {
-            header h1 {
-                font-size: 2rem;
-            }
-
-            main {
-                padding: 20px;
-            }
-
-            nav.toc {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 12px;
-            }
-
-            nav.toc a {
-                flex: 1;
-                min-width: 150px;
-                padding: 8px;
-                margin: 0;
-                border-left: none;
-                border-bottom: 2px solid transparent;
-                text-align: center;
-            }
-
-            nav.toc a:hover,
-            nav.toc a.active {
-                border-left: none;
-                border-bottom-color: #58a6ff;
-            }
-        }
-
-        /* Smooth scroll */
-        html {
-            scroll-behavior: smooth;
-        }
-
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 10px;
-            height: 10px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #0d1117;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #30363d;
-            border-radius: 5px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #58a6ff;
-        }
-
-        .footer {
-            text-align: center;
-            padding: 40px;
-            color: #8b949e;
-            border-top: 1px solid #30363d;
-            margin-top: 60px;
-        }
-
-        .footer a {
-            color: #58a6ff;
-            text-decoration: none;
-        }
-
-        .footer a:hover {
-            color: #79c0ff;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>cycleCAD v2.0 — LEGO Microkernel Architecture</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1a1f35 100%);
+      color: #e2e8f0;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 60px;
+      animation: slideDown 0.8s ease-out;
+    }
+
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+      background: linear-gradient(120deg, #06b6d4, #3b82f6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -1px;
+    }
+
+    .subtitle {
+      font-size: 1.1em;
+      color: #94a3b8;
+      margin-bottom: 30px;
+    }
+
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 20px;
+      margin-top: 30px;
+      padding: 20px;
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 1.8em;
+      font-weight: bold;
+      color: #06b6d4;
+    }
+
+    .stat-label {
+      font-size: 0.85em;
+      color: #94a3b8;
+      margin-top: 5px;
+    }
+
+    .diagram-container {
+      display: grid;
+      grid-template-columns: 1fr 350px;
+      gap: 30px;
+      margin-bottom: 40px;
+    }
+
+    .layers {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .layer {
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 12px;
+      padding: 20px;
+      background: rgba(30, 41, 59, 0.4);
+      backdrop-filter: blur(10px);
+    }
+
+    .layer-title {
+      font-size: 0.9em;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .layer-title::before {
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 14px;
+      background: currentColor;
+      border-radius: 2px;
+    }
+
+    .modules-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .module-block {
+      padding: 16px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 2px solid rgba(148, 163, 184, 0.3);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .module-block::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+      transition: left 0.5s;
+    }
+
+    .module-block:hover::before {
+      left: 100%;
+    }
+
+    .module-block:hover {
+      border-color: currentColor;
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+      transform: translateY(-4px);
+    }
+
+    .module-block.core { --color: #06b6d4; }
+    .module-block.engine { --color: #3b82f6; }
+    .module-block.tool { --color: #22c55e; }
+    .module-block.data { --color: #f59e0b; }
+    .module-block.service { --color: #a855f7; }
+
+    .module-status {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: currentColor;
+      border-radius: 50%;
+      margin-left: 8px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .module-status.loaded {
+      --color: #22c55e;
+    }
+
+    .module-status.standby {
+      --color: #f59e0b;
+      animation: none;
+    }
+
+    .module-status.unloaded {
+      --color: #ef4444;
+      animation: none;
+    }
+
+    .module-name {
+      font-weight: 600;
+      font-size: 0.95em;
+      margin-bottom: 8px;
+      color: var(--color);
+    }
+
+    .module-stats {
+      font-size: 0.75em;
+      color: #94a3b8;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .module-icon {
+      font-size: 1.8em;
+      margin-bottom: 8px;
+    }
+
+    .detail-panel {
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 12px;
+      padding: 24px;
+      background: rgba(30, 41, 59, 0.6);
+      backdrop-filter: blur(10px);
+      max-height: 80vh;
+      overflow-y: auto;
+      position: sticky;
+      top: 20px;
+    }
+
+    .detail-panel.empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #64748b;
+      font-style: italic;
+    }
+
+    .detail-header {
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+    }
+
+    .detail-title {
+      font-size: 1.4em;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--color);
+    }
+
+    .detail-meta {
+      font-size: 0.85em;
+      color: #94a3b8;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .detail-meta-item {
+      background: rgba(6, 182, 212, 0.1);
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    .detail-section {
+      margin-bottom: 20px;
+    }
+
+    .detail-section-title {
+      font-size: 0.9em;
+      font-weight: 600;
+      color: #cbd5e1;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+
+    .detail-description {
+      font-size: 0.9em;
+      line-height: 1.6;
+      color: #cbd5e1;
+    }
+
+    .commands-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      font-size: 0.85em;
+    }
+
+    .command-item {
+      padding: 8px;
+      background: rgba(59, 130, 246, 0.1);
+      border-left: 3px solid #3b82f6;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      color: #93c5fd;
+    }
+
+    .dependencies-list {
+      font-size: 0.85em;
+      color: #cbd5e1;
+    }
+
+    .dependency {
+      display: flex;
+      align-items: center;
+      padding: 6px 0;
+      gap: 8px;
+    }
+
+    .dependency::before {
+      content: '→';
+      color: #06b6d4;
+      font-weight: bold;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 40px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+      padding-bottom: 16px;
+    }
+
+    .tab-btn {
+      padding: 10px 16px;
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 0.95em;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .tab-btn:hover {
+      color: #e2e8f0;
+    }
+
+    .tab-btn.active {
+      color: #06b6d4;
+    }
+
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -16px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: #06b6d4;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .dependency-graph {
+      background: rgba(30, 41, 59, 0.4);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 12px;
+      padding: 20px;
+      min-height: 400px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .graph-legend {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85em;
+    }
+
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .graph-container {
+      min-height: 500px;
+      border: 1px dashed rgba(148, 163, 184, 0.2);
+      border-radius: 8px;
+      padding: 20px;
+      position: relative;
+      font-size: 0.85em;
+      line-height: 1.8;
+    }
+
+    .graph-node {
+      display: inline-block;
+      padding: 8px 12px;
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      margin-right: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .graph-node:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
+    }
+
+    .graph-node.core { border-color: #06b6d4; color: #06b6d4; }
+    .graph-node.engine { border-color: #3b82f6; color: #3b82f6; }
+    .graph-node.tool { border-color: #22c55e; color: #22c55e; }
+    .graph-node.data { border-color: #f59e0b; color: #f59e0b; }
+    .graph-node.service { border-color: #a855f7; color: #a855f7; }
+
+    .data-flow {
+      margin: 30px 0;
+      padding: 20px;
+      background: rgba(6, 182, 212, 0.05);
+      border-left: 4px solid #06b6d4;
+      border-radius: 8px;
+      font-size: 0.9em;
+      font-family: 'Courier New', monospace;
+      color: #93c5fd;
+      line-height: 1.8;
+      overflow-x: auto;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .tab-content.active {
+      animation: fadeIn 0.3s ease;
+    }
+
+    @media (max-width: 1200px) {
+      .diagram-container {
+        grid-template-columns: 1fr;
+      }
+
+      .detail-panel {
+        position: relative;
+        top: 0;
+        max-height: none;
+      }
+    }
+
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 1.8em;
+      }
+
+      .stats-bar {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .modules-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
 </head>
 <body>
+  <div class="container">
     <header>
-        <h1>cycleCAD</h1>
-        <p>System Architecture</p>
-        <p style="color: #58a6ff; font-size: 0.95rem; margin-top: 12px;">Browser-Based Parametric 3D CAD Modeler with AI-Powered Tools</p>
+      <h1>cycleCAD v2.0 — LEGO Microkernel Architecture</h1>
+      <p class="subtitle">Click any module to see its API, dependencies, and memory footprint</p>
+      <div class="stats-bar">
+        <div class="stat">
+          <div class="stat-value">10</div>
+          <div class="stat-label">Core Modules</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">55+</div>
+          <div class="stat-label">Commands</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">7,349</div>
+          <div class="stat-label">Lines of Code</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">30+</div>
+          <div class="stat-label">Events</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">512 MB</div>
+          <div class="stat-label">Memory Budget</div>
+        </div>
+      </div>
     </header>
 
-    <nav class="toc">
-        <h3>Contents</h3>
-        <a href="#overview">System Overview</a>
-        <a href="#architecture">Architecture Layers</a>
-        <a href="#modules">Module Map</a>
-        <a href="#decisions">Technical Decisions</a>
-        <a href="#brep">B-Rep Kernel</a>
-        <a href="#ai">AI Pipeline</a>
-        <a href="#features">Killer Features</a>
-        <a href="#dataflow">Data Flow</a>
-        <a href="#performance">Performance</a>
-        <a href="#deployment">Deployment</a>
-        <a href="#roadmap">Roadmap</a>
-    </nav>
+    <div class="diagram-container">
+      <div class="layers" id="layers"></div>
+      <div class="detail-panel empty" id="detailPanel">
+        <p>Click a module to view details</p>
+      </div>
+    </div>
 
-    <main>
-        <!-- System Overview -->
-        <section id="overview">
-            <h2>1. System Overview</h2>
-            <p>cycleCAD is a <strong>free, open-source, browser-native parametric 3D CAD modeler</strong> designed for the AI-first era. No installation, no login, no subscription — just open your browser and start designing.</p>
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="overview">Overview</button>
+      <button class="tab-btn" data-tab="dependencies">Dependencies</button>
+      <button class="tab-btn" data-tab="dataflow">Data Flow</button>
+    </div>
 
-            <h3>Core Facts</h3>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="value">19.3k</div>
-                    <div class="label">Lines of Code</div>
-                </div>
-                <div class="stat-card">
-                    <div class="value">50+</div>
-                    <div class="label">JS Modules</div>
-                </div>
-                <div class="stat-card">
-                    <div class="value">0</div>
-                    <div class="label">Dependencies</div>
-                </div>
-                <div class="stat-card">
-                    <div class="value">MIT</div>
-                    <div class="label">License</div>
-                </div>
-            </div>
+    <div id="overview" class="tab-content active">
+      <div style="margin-bottom: 40px;">
+        <p style="color: #cbd5e1; line-height: 1.8; margin-bottom: 20px;">
+          cycleCAD uses a LEGO microkernel architecture where the tiny core manages module loading, lifecycle, and inter-module communication. Each module is independently versioned and can be hot-swapped at runtime. The kernel enforces strict API contracts — modules are black boxes that expose only their command/event interfaces.
+        </p>
+        <p style="color: #cbd5e1; line-height: 1.8;">
+          This design enables:
+        </p>
+        <ul style="color: #cbd5e1; margin: 15px 0 0 20px; line-height: 1.8;">
+          <li><strong>Fast load times:</strong> Only core modules load initially. Others lazy-load on demand.</li>
+          <li><strong>Independent scaling:</strong> Modules can be optimized or rewritten without touching the kernel.</li>
+          <li><strong>Zero coupling:</strong> Modules communicate only through the event bus. No direct imports.</li>
+          <li><strong>Rich extensibility:</strong> New modules integrate instantly via the kernel API.</li>
+          <li><strong>Offline fallbacks:</strong> Each module has a lightweight offline variant.</li>
+        </ul>
+      </div>
+    </div>
 
-            <h3>Key Stats</h3>
-            <table>
-                <tr>
-                    <th>Aspect</th>
-                    <th>Details</th>
-                </tr>
-                <tr>
-                    <td><strong>npm Package</strong></td>
-                    <td><code>cyclecad</code> — v0.8.6, 1500+ weekly downloads</td>
-                </tr>
-                <tr>
-                    <td><strong>GitHub</strong></td>
-                    <td><code>vvlars-cmd/cyclecad</code> — MIT license, public contributions welcome</td>
-                </tr>
-                <tr>
-                    <td><strong>Domain</strong></td>
-                    <td>cyclecad.com — GitHub Pages + custom domain</td>
-                </tr>
-                <tr>
-                    <td><strong>3D Engine</strong></td>
-                    <td>Three.js r170 (ES modules via CDN, no build step)</td>
-                </tr>
-                <tr>
-                    <td><strong>B-Rep Kernel</strong></td>
-                    <td>OpenCascade.js (50MB WASM, lazy-loaded)</td>
-                </tr>
-                <tr>
-                    <td><strong>AI Integration</strong></td>
-                    <td>Gemini Flash + Groq Llama 3.1 + offline NLP</td>
-                </tr>
-                <tr>
-                    <td><strong>Constraint Solver</strong></td>
-                    <td>12-type iterative relaxation solver (2D sketches)</td>
-                </tr>
-            </table>
-
-            <h3>Philosophy</h3>
-            <p><strong>"Agent-First OS for Manufacturing."</strong> cycleCAD is built for AI agents <em>first</em>, humans second. Every feature has a JSON API. Users interface through text prompts, not mouse clicks. Agents can design, simulate, order, and manufacture parts autonomously.</p>
-        </section>
-
-        <!-- Architecture Diagram -->
-        <section id="architecture">
-            <h2>2. Architecture Layers</h2>
-            <p>cycleCAD is organized in 5 horizontal layers, each with distinct responsibilities:</p>
-
-            <div class="arch-diagram">
-                <div class="layer">
-                    <div class="layer-label">USER</div>
-                    <div class="layer-content">
-                        <div class="layer-item highlight">Browser UI</div>
-                        <div class="layer-item highlight">Voice Input</div>
-                        <div class="layer-item highlight">Agent API</div>
-                        <div class="layer-item highlight">CLI Tool</div>
-                    </div>
-                </div>
-
-                <div class="layer">
-                    <div class="layer-label">GEOMETRY</div>
-                    <div class="layer-content">
-                        <div class="layer-item">Three.js Viewport</div>
-                        <div class="layer-item">Sketch Engine</div>
-                        <div class="layer-item">OpenCascade.js B-Rep</div>
-                        <div class="layer-item">Constraint Solver</div>
-                    </div>
-                </div>
-
-                <div class="layer">
-                    <div class="layer-label">AI</div>
-                    <div class="layer-content">
-                        <div class="layer-item">Gemini Flash</div>
-                        <div class="layer-item">Groq Llama</div>
-                        <div class="layer-item">Text-to-CAD</div>
-                        <div class="layer-item">Vision AI</div>
-                    </div>
-                </div>
-
-                <div class="layer">
-                    <div class="layer-label">DATA</div>
-                    <div class="layer-content">
-                        <div class="layer-item">IndexedDB</div>
-                        <div class="layer-item">localStorage</div>
-                        <div class="layer-item">File API</div>
-                        <div class="layer-item">Cloud Storage</div>
-                    </div>
-                </div>
-
-                <div class="layer">
-                    <div class="layer-label">PLATFORM</div>
-                    <div class="layer-content">
-                        <div class="layer-item">MCP Server</div>
-                        <div class="layer-item">REST API</div>
-                        <div class="layer-item">WebRTC Collab</div>
-                        <div class="layer-item">GitHub Actions</div>
-                    </div>
-                </div>
-            </div>
-
-            <h3>Layer Responsibilities</h3>
-            <table>
-                <tr>
-                    <th>Layer</th>
-                    <th>Components</th>
-                    <th>Responsibility</th>
-                </tr>
-                <tr>
-                    <td><strong>User</strong></td>
-                    <td>UI, Voice, API, CLI</td>
-                    <td>All user-facing interfaces — interactive, voice, programmatic, command-line</td>
-                </tr>
-                <tr>
-                    <td><strong>Geometry</strong></td>
-                    <td>Three.js, OpenCASCADE, Sketch, Solver</td>
-                    <td>3D geometry creation, editing, constraint solving, B-rep operations</td>
-                </tr>
-                <tr>
-                    <td><strong>AI</strong></td>
-                    <td>LLMs, Text-to-CAD, Vision</td>
-                    <td>Natural language understanding, design automation, image recognition</td>
-                </tr>
-                <tr>
-                    <td><strong>Data</strong></td>
-                    <td>IndexedDB, localStorage, Cloud</td>
-                    <td>Persistence, caching, sync, backup</td>
-                </tr>
-                <tr>
-                    <td><strong>Platform</strong></td>
-                    <td>APIs, Servers, Collaboration</td>
-                    <td>Integration, multi-user, automation, CI/CD</td>
-                </tr>
-            </table>
-        </section>
-
-        <!-- Module Map -->
-        <section id="modules">
-            <h2>3. Module Map (50+ Files)</h2>
-            <p>All 50+ JS modules organized by category. Each module is a standalone ES6 file (~200-2000 lines) with zero dependencies (imports from CDN only).</p>
-
-            <h3>ENGINE (Geometry & Rendering)</h3>
-            <div class="module-grid">
-                <div class="module-card">
-                    <h4>app.js</h4>
-                    <div class="lines">794 lines</div>
-                    <span class="category engine">ENGINE</span>
-                    <p>App state, mode management, history, save/load</p>
-                </div>
-                <div class="module-card">
-                    <h4>viewport.js</h4>
-                    <div class="lines">751 lines</div>
-                    <span class="category engine">ENGINE</span>
-                    <p>Three.js scene, camera, lights, shadows, grid, selection</p>
-                </div>
-                <div class="module-card">
-                    <h4>sketch.js</h4>
-                    <div class="lines">899 lines</div>
-                    <span class="category engine">ENGINE</span>
-                    <p>2D canvas overlay, line/rect/circle/arc, grid snap, constraints</p>
-                </div>
-                <div class="module-card">
-                    <h4>operations.js</h4>
-                    <div class="lines">1078 lines</div>
-                    <span class="category engine">ENGINE</span>
-                    <p>Extrude, revolve, fillet, chamfer, boolean, shell, pattern</p>
-                </div>
-                <div class="module-card">
-                    <h4>constraint-solver.js</h4>
-                    <div class="lines">1047 lines</div>
-                    <span class="category engine">ENGINE</span>
-                    <p>2D constraint solver, 12 types, iterative relaxation</p>
-                </div>
-                <div class="module-card">
-                    <h4>assembly.js</h4>
-                    <div class="lines">1103 lines</div>
-                    <span class="category engine">ENGINE</span>
-                    <p>Assembly workspace, components, mates, joints</p>
-                </div>
-            </div>
-
-            <h3>AI (LLM & Automation)</h3>
-            <div class="module-grid">
-                <div class="module-card">
-                    <h4>ai-chat.js</h4>
-                    <div class="lines">992 lines</div>
-                    <span class="category ai">AI</span>
-                    <p>Gemini Flash + Groq + offline NLP fallback chatbot</p>
-                </div>
-                <div class="module-card">
-                    <h4>agent-api.js</h4>
-                    <div class="lines">1180 lines</div>
-                    <span class="category ai">AI</span>
-                    <p>JSON-RPC Agent API, 55 commands, 10 namespaces</p>
-                </div>
-                <div class="module-card">
-                    <h4>text-to-cad.js</h4>
-                    <div class="lines">745 lines</div>
-                    <span class="category ai">AI</span>
-                    <p>Parse user text → CAD commands, intent detection, templates</p>
-                </div>
-                <div class="module-card">
-                    <h4>ai-vision.js</h4>
-                    <div class="lines">612 lines</div>
-                    <span class="category ai">AI</span>
-                    <p>Gemini Vision API, image → part identification</p>
-                </div>
-            </div>
-
-            <h3>DATA (Persistence & Import/Export)</h3>
-            <div class="module-grid">
-                <div class="module-card">
-                    <h4>export.js</h4>
-                    <div class="lines">658 lines</div>
-                    <span class="category data">DATA</span>
-                    <p>STL, OBJ, glTF 2.0, STEP export</p>
-                </div>
-                <div class="module-card">
-                    <h4>inventor-parser.js</h4>
-                    <div class="lines">1138 lines</div>
-                    <span class="category data">DATA</span>
-                    <p>OLE2/CFB binary parser for .ipt/.iam files</p>
-                </div>
-                <div class="module-card">
-                    <h4>reverse-engineer.js</h4>
-                    <div class="lines">1275 lines</div>
-                    <span class="category data">DATA</span>
-                    <p>STL import, geometry analysis, feature detection</p>
-                </div>
-                <div class="module-card">
-                    <h4>dxf-export.js</h4>
-                    <div class="lines">1174 lines</div>
-                    <span class="category data">DATA</span>
-                    <p>DXF export, engineering drawings, multi-view projection</p>
-                </div>
-            </div>
-
-            <h3>I/O (Integration & Tools)</h3>
-            <div class="module-grid">
-                <div class="module-card">
-                    <h4>project-loader.js</h4>
-                    <div class="lines">579 lines</div>
-                    <span class="category io">I/O</span>
-                    <p>Parse .ipj files, index Inventor project folders</p>
-                </div>
-                <div class="module-card">
-                    <h4>project-browser.js</h4>
-                    <div class="lines">741 lines</div>
-                    <span class="category io">I/O</span>
-                    <p>Folder tree UI, file categories, search, stats</p>
-                </div>
-                <div class="module-card">
-                    <h4>shortcuts.js</h4>
-                    <div class="lines">350 lines</div>
-                    <span class="category io">I/O</span>
-                    <p>25+ keyboard shortcuts</p>
-                </div>
-                <div class="module-card">
-                    <h4>params.js</h4>
-                    <div class="lines">523 lines</div>
-                    <span class="category io">I/O</span>
-                    <p>Parameter editor, material selector, 6 materials</p>
-                </div>
-            </div>
-
-            <h3>PLATFORM (Enterprise & Collaboration)</h3>
-            <div class="module-grid">
-                <div class="module-card">
-                    <h4>mcp-server.js</h4>
-                    <div class="lines">1161 lines</div>
-                    <span class="category platform">PLATFORM</span>
-                    <p>MCP Server, 55+ tools exposed as MCP</p>
-                </div>
-                <div class="module-card">
-                    <h4>api-server.js</h4>
-                    <div class="lines">1120 lines</div>
-                    <span class="category platform">PLATFORM</span>
-                    <p>REST API, HTTP + WebSocket endpoints</p>
-                </div>
-                <div class="module-card">
-                    <h4>token-engine.js</h4>
-                    <div class="lines">743 lines</div>
-                    <span class="category platform">PLATFORM</span>
-                    <p>$CYCLE token system, billing, ledger</p>
-                </div>
-                <div class="module-card">
-                    <h4>marketplace.js</h4>
-                    <div class="lines">1994 lines</div>
-                    <span class="category platform">PLATFORM</span>
-                    <p>Model marketplace, publish, buy, rate, earn royalties</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- Technical Decisions -->
-        <section id="decisions">
-            <h2>4. Key Technical Decisions (ADRs)</h2>
-
-            <h3>Why Three.js?</h3>
-            <p><strong>Decision:</strong> Use Three.js r170 (ES modules via CDN) instead of Babylon.js or custom WebGL.</p>
-            <p><strong>Rationale:</strong></p>
-            <ul style="margin-left: 20px; margin-bottom: 12px;">
-                <li>✅ <strong>Zero build step</strong> — import ES modules directly from CDN (jsdelivr)</li>
-                <li>✅ <strong>Mature ecosystem</strong> — 15+ years, millions of projects, extensive docs</li>
-                <li>✅ <strong>PBR materials</strong> — realistic rendering with metalness/roughness</li>
-                <li>✅ <strong>WebGL 2.0</strong> — shadow maps, normal maps, deferred rendering</li>
-                <li>✅ <strong>OrbitControls.js</strong> — production-ready camera navigation</li>
-            </ul>
-
-            <h3>Why OpenCascade.js?</h3>
-            <p><strong>Decision:</strong> Use OpenCascade.js WASM B-rep kernel (50MB download) instead of JSCAD or Manifold.</p>
-            <p><strong>Rationale:</strong></p>
-            <ul style="margin-left: 20px; margin-bottom: 12px;">
-                <li>✅ <strong>Real B-rep geometry</strong> — solids, not meshes. True booleans, fillets, proper topology</li>
-                <li>✅ <strong>STEP/IGES support</strong> — parse and generate industry-standard CAD formats</li>
-                <li>✅ <strong>Industrial-grade</strong> — used in Fusion 360, FreeCAD, AutoCAD</li>
-                <li>✅ <strong>Lazy-loaded</strong> — 50MB WASM only downloaded when user imports STEP file</li>
-            </ul>
-
-            <h3>Why ES Modules via CDN?</h3>
-            <p><strong>Decision:</strong> Import all dependencies (Three.js, Plotly, QRCode, etc.) from CDN with import maps. No webpack, no build step, no node_modules.</p>
-            <p><strong>Rationale:</strong></p>
-            <ul style="margin-left: 20px; margin-bottom: 12px;">
-                <li>✅ <strong>Zero build complexity</strong> — edit app.js, refresh browser, changes are live</li>
-                <li>✅ <strong>Browser-native</strong> — ES6 modules are a web standard (2015)</li>
-                <li>✅ <strong>Smaller artifact</strong> — no webpack overhead, tree-shaking by browser</li>
-                <li>✅ <strong>Easy versioning</strong> — pin Three.js to r170 in import map, instant updates</li>
-            </ul>
-
-            <h3>Why Gemini Flash?</h3>
-            <p><strong>Decision:</strong> Use Google Gemini Flash (multi-modal) instead of GPT-4 or Claude.</p>
-            <p><strong>Rationale:</strong></p>
-            <ul style="margin-left: 20px; margin-bottom: 12px;">
-                <li>✅ <strong>Vision API</strong> — understand sketches, screenshots, part images</li>
-                <li>✅ <strong>Fast + cheap</strong> — $0.075/1M input tokens (vs GPT-4: $30/1M)</li>
-                <li>✅ <strong>Multimodal</strong> — text + image in same prompt</li>
-                <li>✅ <strong>100K context window</strong> — entire design history in context</li>
-            </ul>
-
-            <h3>Why BroadcastChannel for Multiplayer?</h3>
-            <p><strong>Decision:</strong> Use BroadcastChannel API (same browser, same origin) for MVP multiplayer. Upgrade to WebRTC in Phase C.</p>
-            <p><strong>Rationale:</strong></p>
-            <ul style="margin-left: 20px; margin-bottom: 12px;">
-                <li>✅ <strong>Zero server</strong> — works peer-to-peer in same browser (dev + testing)</li>
-                <li>✅ <strong>Instant MVP</strong> — test multiplayer UX without infrastructure</li>
-                <li>✅ <strong>Upgrade path clear</strong> — swap BroadcastChannel for WebRTC+Firestore later</li>
-            </ul>
-        </section>
-
-        <!-- B-Rep Kernel -->
-        <section id="brep">
-            <h2>5. B-Rep Kernel Architecture</h2>
-            <p>The B-rep (Boundary Representation) kernel is the heart of cycleCAD's geometry engine. It's powered by <strong>OpenCascade.js</strong>, a 50MB WASM package compiled from the OpenCascade C++ library.</p>
-
-            <h3>WASM Loading Pipeline</h3>
-            <div class="flow-diagram">
-                <div class="flow-step">User imports STEP</div>
-                <div class="flow-arrow">→</div>
-                <div class="flow-step key">Lazy-load 50MB WASM</div>
-                <div class="flow-arrow">→</div>
-                <div class="flow-step">Parse STEP binary</div>
-                <div class="flow-arrow">→</div>
-                <div class="flow-step">Read B-rep topology</div>
-                <div class="flow-arrow">→</div>
-                <div class="flow-step key">Tessellate to mesh</div>
-                <div class="flow-arrow">→</div>
-                <div class="flow-step">Render in Three.js</div>
-            </div>
-
-            <h3>Geometry Operations</h3>
-            <table>
-                <tr>
-                    <th>Operation</th>
-                    <th>Input</th>
-                    <th>Output</th>
-                    <th>Status</th>
-                </tr>
-                <tr>
-                    <td><strong>Extrude</strong></td>
-                    <td>Face (2D sketch)</td>
-                    <td>Solid (3D box)</td>
-                    <td><span class="badge feature">Live</span></td>
-                </tr>
-                <tr>
-                    <td><strong>Revolve</strong></td>
-                    <td>Face + axis</td>
-                    <td>Solid (rotated)</td>
-                    <td><span class="badge feature">Live</span></td>
-                </tr>
-                <tr>
-                    <td><strong>Fillet</strong></td>
-                    <td>Edge + radius</td>
-                    <td>Solid (rounded)</td>
-                    <td><span class="badge feature">Live</span></td>
-                </tr>
-                <tr>
-                    <td><strong>Boolean Union</strong></td>
-                    <td>2 solids</td>
-                    <td>1 solid (fused)</td>
-                    <td><span class="badge feature">Live</span></td>
-                </tr>
-                <tr>
-                    <td><strong>Boolean Cut</strong></td>
-                    <td>Solid A − Solid B</td>
-                    <td>Solid A with hole</td>
-                    <td><span class="badge feature">Live</span></td>
-                </tr>
-                <tr>
-                    <td><strong>Shell</strong></td>
-                    <td>Solid + thickness</td>
-                    <td>Hollow (thin-wall)</td>
-                    <td><span class="badge feature">Live</span></td>
-                </tr>
-                <tr>
-                    <td><strong>STEP Export</strong></td>
-                    <td>B-rep shape</td>
-                    <td>.step file</td>
-                    <td><span class="badge status">Q2 2026</span></td>
-                </tr>
-            </table>
-
-            <h3>Undo Stack</h3>
-            <p>Every geometry operation is pushed to an undo stack. The stack stores:</p>
-            <pre>
-{
-  featureType: "extrude",
-  parameters: { depth: 50, sketch: {...} },
-  result: BRepShape,
-  timestamp: Date.now()
-}
-            </pre>
-            <p>Undo/redo works by replaying the feature list from the beginning (deterministic rebuilds).</p>
-        </section>
-
-        <!-- AI Pipeline -->
-        <section id="ai">
-            <h2>6. AI Pipeline</h2>
-            <p>cycleCAD has a <strong>3-tier AI architecture</strong>: Cloud LLM (Gemini Flash), Local LLM (Groq Llama), and Offline NLP fallback. Users can use any tier; they trade cost/speed for accuracy.</p>
-
-            <h3>Text-to-CAD Flow</h3>
-            <div class="flow-diagram">
-                <div class="flow-step">User: "draw a box 50×30×20mm"</div>
-                <div class="flow-arrow">→</div>
-                <div class="flow-step key">Detect intent: CREATE</div>
-                <div class="flow-arrow">→</div>
-                <div class="flow-step key">Extract params: {w:50, h:30, d:20}</div>
-                <div class="flow-arrow">→</div>
-                <div class="flow-step">Call shape.box(50, 30, 20)</div>
-                <div class="flow-arrow">→</div>
-                <div class="flow-step">Create B-rep solid</div>
-                <div class="flow-arrow">→</div>
-                <div class="flow-step key">Render in viewport</div>
-            </div>
-
-            <h3>AI Tier Comparison</h3>
-            <table>
-                <tr>
-                    <th>Tier</th>
-                    <th>Provider</th>
-                    <th>Cost</th>
-                    <th>Speed</th>
-                    <th>Accuracy</th>
-                    <th>Use Case</th>
-                </tr>
-                <tr>
-                    <td><strong>Cloud</strong></td>
-                    <td>Google Gemini Flash</td>
-                    <td>$0.075/1M tokens</td>
-                    <td>~2s</td>
-                    <td>95%</td>
-                    <td>Complex, multi-step designs</td>
-                </tr>
-                <tr>
-                    <td><strong>Local</strong></td>
-                    <td>Groq Llama 3.1 8B</td>
-                    <td>$0.02/1M tokens</td>
-                    <td>~1s</td>
-                    <td>85%</td>
-                    <td>Cost-conscious, latency-critical</td>
-                </tr>
-                <tr>
-                    <td><strong>Offline</strong></td>
-                    <td>NLP + keyword matching</td>
-                    <td>Free</td>
-                    <td>&lt;100ms</td>
-                    <td>70%</td>
-                    <td>No internet, simple commands</td>
-                </tr>
-            </table>
-
-            <h3>Supported Intents</h3>
-            <p><span class="badge feature">CREATE</span> <span class="badge feature">HOLE</span> <span class="badge feature">FILLET</span> <span class="badge feature">CHAMFER</span> <span class="badge feature">PATTERN</span> <span class="badge feature">MIRROR</span> <span class="badge feature">SHELL</span> <span class="badge feature">THREAD</span> <span class="badge feature">EXPORT</span> <span class="badge feature">MEASURE</span></p>
-        </section>
-
-        <!-- Killer Features -->
-        <section id="features">
-            <h2>7. Killer Features</h2>
-
-            <h3>1. Text-to-CAD with Real B-Rep Geometry</h3>
-            <p>Type "design a cylindrical bearing bore 25mm diameter" and cycleCAD generates production-ready B-rep geometry. Unlike image generators, the output is editable, parametric, and manufacturable.</p>
-
-            <h3>2. STEP Drag-and-Drop Import</h3>
-            <p>Drag a .step file onto the viewport. cycleCAD instantly parses it (server-side STEP converter for >50MB files) and renders it. Exploded view, part selection, assembly tree all auto-generated.</p>
-
-            <h3>3. GitHub Actions CAD Visual Diff</h3>
-            <p>Commit a design to GitHub. Our GitHub Action renders both versions as 3D screenshots. Visual diff shows what changed — moved parts in orange, new parts in green, deleted parts in red.</p>
-            <pre>
-# Render CAD diff on every commit
-- uses: vvlars-cmd/cyclecad-diff@v1
-  with:
-    before: main
-    after: HEAD
-            </pre>
-
-            <h3>4. 35+ Parametric Parts Library</h3>
-            <p>Built-in library of parametric parts: ISO bolts, DIN standard hardware, MISUMI components, bearing housings, motor mounts, etc. Drag-drop into assembly, adjust parameters, auto-BOM.</p>
-
-            <h3>5. Real-Time Multiplayer (BroadcastChannel MVP)</h3>
-            <p>Two tabs of cycleCAD in the same browser stay in sync via BroadcastChannel. Edit in one tab, see changes in the other instantly. Full upgrade to WebRTC+Firestore in Phase C.</p>
-
-            <h3>6. Design for Manufacturing (DFM) Analysis</h3>
-            <p>AI analyzes your design:</p>
-            <ul style="margin-left: 20px; margin-bottom: 12px;">
-                <li>🔴 Thin walls &lt;1mm (risky for injection molding)</li>
-                <li>🟡 Sharp internal corners (add fillet to avoid stress)</li>
-                <li>🟢 Feasible for CNC milling with 3-axis</li>
-            </ul>
-
-            <h3>7. Inventory Tracking &amp; Reorder</h3>
-            <p>Design a part, get BOM, auto-search MISUMI/McMaster-Carr, place order via REST API. Tracks inventory in IndexedDB. Reorder when stock &lt; threshold.</p>
-        </section>
-
-        <!-- Data Flow -->
-        <section id="dataflow">
-            <h2>8. Data Flow</h2>
-
-            <h3>How User Text Becomes 3D Geometry</h3>
-            <div class="flow-diagram">
-                <div class="flow-step">app.js: captureText()</div>
-                <div class="flow-arrow">→</div>
-                <div class="flow-step">text-to-cad.js: parseIntent()</div>
-                <div class="flow-arrow">→</div>
-                <div class="flow-step key">ai-chat.js: sendToGemini()</div>
-                <div class="flow-arrow">→</div>
-                <div class="flow-step">agent-api.js: execute()</div>
-                <div class="flow-arrow">→</div>
-                <div class="flow-step key">operations.js: extrude()</div>
-                <div class="flow-arrow">→</div>
-                <div class="flow-step">viewport.js: render()</div>
-            </div>
-
-            <h3>State Flow (Redux-style)</h3>
-            <table>
-                <tr>
-                    <th>State Object</th>
-                    <th>Managed By</th>
-                    <th>Contents</th>
-                </tr>
-                <tr>
-                    <td><code>window.appState</code></td>
-                    <td>app.js</td>
-                    <td>Mode (sketch/3d), selectedFeature, history, clipboard</td>
-                </tr>
-                <tr>
-                    <td><code>window.sceneState</code></td>
-                    <td>viewport.js</td>
-                    <td>Three.js scene, camera, renderer, lights</td>
-                </tr>
-                <tr>
-                    <td><code>window.sketchState</code></td>
-                    <td>sketch.js</td>
-                    <td>Canvas entities (lines/circles), constraints, DOF</td>
-                </tr>
-                <tr>
-                    <td><code>window.featureTree</code></td>
-                    <td>operations.js</td>
-                    <td>Array of features: [{type, params, result, ...}]</td>
-                </tr>
-                <tr>
-                    <td><code>window.inventory</code></td>
-                    <td>IndexedDB</td>
-                    <td>Parts, stock levels, reorder points</td>
-                </tr>
-            </table>
-
-            <h3>Multiplayer Sync (BroadcastChannel)</h3>
-            <pre>
-// Tab A (sender)
-const channel = new BroadcastChannel('cyclecad-sync');
-channel.postMessage({
-  type: 'FEATURE_ADDED',
-  payload: { featureType: 'extrude', depth: 50 }
-});
-
-// Tab B (receiver)
-channel.onmessage = (e) => {
-  if (e.data.type === 'FEATURE_ADDED') {
-    operations.extrude(e.data.payload);
-    viewport.render();
-  }
-};
-            </pre>
-        </section>
-
-        <!-- Performance -->
-        <section id="performance">
-            <h2>9. Performance Characteristics</h2>
-
-            <h3>Load Time Targets</h3>
-            <table>
-                <tr>
-                    <th>Scenario</th>
-                    <th>Target</th>
-                    <th>Achieved</th>
-                    <th>Notes</th>
-                </tr>
-                <tr>
-                    <td>App startup (no WASM)</td>
-                    <td>&lt; 100ms</td>
-                    <td>85ms</td>
-                    <td>ES modules from CDN, cached</td>
-                </tr>
-                <tr>
-                    <td>First 3D operation</td>
-                    <td>&lt; 500ms</td>
-                    <td>350ms</td>
-                    <td>Three.js + geometry kernel ready</td>
-                </tr>
-                <tr>
-                    <td>WASM kernel load (lazy)</td>
-                    <td>&lt; 5s</td>
-                    <td>3.2s</td>
-                    <td>50MB download, only on STEP import</td>
-                </tr>
-                <tr>
-                    <td>STEP parse (<50MB)</td>
-                    <td>&lt; 5s</td>
-                    <td>2.8s</td>
-                    <td>Browser WASM, main thread</td>
-                </tr>
-                <tr>
-                    <td>STEP parse (>50MB)</td>
-                    <td>&lt; 10s</td>
-                    <td>8.5s</td>
-                    <td>Server-side OCCT, faster</td>
-                </tr>
-                <tr>
-                    <td>Fillet edge (small)</td>
-                    <td>&lt; 100ms</td>
-                    <td>45ms</td>
-                    <td>OpenCascade.js B-rep kernel</td>
-                </tr>
-                <tr>
-                    <td>Boolean union (complex)</td>
-                    <td>&lt; 1s</td>
-                    <td>650ms</td>
-                    <td>Two 1000+ triangle solids</td>
-                </tr>
-                <tr>
-                    <td>Viewport FPS (idle)</td>
-                    <td>60 FPS</td>
-                    <td>60 FPS</td>
-                    <td>RequestAnimationFrame, no geometry changes</td>
-                </tr>
-            </table>
-
-            <h3>Memory Usage</h3>
-            <table>
-                <tr>
-                    <th>State</th>
-                    <th>Memory</th>
-                    <th>Notes</th>
-                </tr>
-                <tr>
-                    <td>App startup (no scene)</td>
-                    <td>~12 MB</td>
-                    <td>JS engine + ES modules cached</td>
-                </tr>
-                <tr>
-                    <td>Empty scene (no geometry)</td>
-                    <td>~18 MB</td>
-                    <td>Three.js + WebGL context</td>
-                </tr>
-                <tr>
-                    <td>Simple box (100 triangles)</td>
-                    <td>~22 MB</td>
-                    <td>BufferGeometry + material</td>
-                </tr>
-                <tr>
-                    <td>Complex assembly (10K triangles)</td>
-                    <td>~45 MB</td>
-                    <td>Typical CAD project</td>
-                </tr>
-                <tr>
-                    <td>WASM kernel (lazy-loaded)</td>
-                    <td>+50 MB</td>
-                    <td>Only loaded on STEP import</td>
-                </tr>
-            </table>
-        </section>
-
-        <!-- Deployment -->
-        <section id="deployment">
-            <h2>10. Deployment Architecture</h2>
-
-            <h3>GitHub Pages (Free Tier)</h3>
-            <p>cycleCAD.com runs on GitHub Pages, no server, no database:</p>
-            <ul style="margin-left: 20px; margin-bottom: 12px;">
-                <li>Static HTML/CSS/JS served globally from GitHub CDN</li>
-                <li>All state in browser (IndexedDB + localStorage)</li>
-                <li>No backend = no downtime, no infrastructure costs</li>
-            </ul>
-
-            <h3>Docker (Self-Hosted / Enterprise)</h3>
-            <pre>
-# 3-service stack
-version: '3'
-services:
-  cyclecad:       # nginx + app (port 3000)
-  converter:      # FastAPI STEP→GLB (port 8787)
-  cycledb:        # PostgreSQL for enterprise (port 5432)
-            </pre>
-
-            <h3>npm Package</h3>
-            <p>Embed cycleCAD in any web app:</p>
-            <pre>
-npm install cyclecad
-import cyclecad from 'cyclecad';
-
-const app = new cyclecad.App({ container: '#viewport' });
-app.shape.box(50, 30, 20);
-app.export.stl('box.stl');
-            </pre>
-
-            <h3>CLI Tool</h3>
-            <pre>
-npm install -g cyclecad
-cyclecad design.cad --format stl --output box.stl
-cyclecad --repl  # Interactive REPL
-            </pre>
-
-            <h3>MCP Server (for Claude, Cursor, VS Code)</h3>
-            <pre>
-npx @cyclecad/mcp-server --port 3000
-
-# In .cursor/rules.txt:
-mcp://cyclecad-mcp:3000
-  - shape.box
-  - shape.cylinder
-  - operations.extrude
-  - export.stl
-  - ... (55 total tools)
-            </pre>
-        </section>
-
-        <!-- Roadmap -->
-        <section id="roadmap">
-            <h2>11. Roadmap (4 Phases)</h2>
-
-            <div class="roadmap">
-                <div class="roadmap-phase">
-                    <h4>Phase A: NOW</h4>
-                    <h4 style="font-size: 0.85rem; color: #8b949e; font-weight: 400; margin-bottom: 12px;">Q2 2026</h4>
-                    <ul>
-                        <li>B-rep kernel ✅</li>
-                        <li>Text-to-CAD ✅</li>
-                        <li>Parts Library ✅</li>
-                        <li>STEP import via server</li>
-                        <li>Real STEP export</li>
-                    </ul>
-                </div>
-
-                <div class="roadmap-phase">
-                    <h4>Phase B: NEXT</h4>
-                    <h4 style="font-size: 0.85rem; color: #8b949e; font-weight: 400; margin-bottom: 12px;">Q3-Q4 2026</h4>
-                    <ul>
-                        <li>ExplodeView merge</li>
-                        <li>Plugin API</li>
-                        <li>Cloud storage</li>
-                        <li>DFM analysis</li>
-                        <li>CAM integration</li>
-                    </ul>
-                </div>
-
-                <div class="roadmap-phase">
-                    <h4>Phase C: GROWTH</h4>
-                    <h4 style="font-size: 0.85rem; color: #8b949e; font-weight: 400; margin-bottom: 12px;">Q1 2027</h4>
-                    <ul>
-                        <li>Real-time collab</li>
-                        <li>Enterprise SSO</li>
-                        <li>Self-hosted</li>
-                        <li>Mobile app</li>
-                        <li>Marketplace launch</li>
-                    </ul>
-                </div>
-
-                <div class="roadmap-phase">
-                    <h4>Phase D: PLATFORM</h4>
-                    <h4 style="font-size: 0.85rem; color: #8b949e; font-weight: 400; margin-bottom: 12px;">Q2-Q3 2027</h4>
-                    <ul>
-                        <li>Connected fabs</li>
-                        <li>Supply chain</li>
-                        <li>Circular economy</li>
-                        <li>Agent swarms</li>
-                        <li>Manufacturing API</li>
-                    </ul>
-                </div>
-            </div>
-
-            <h3>Key Milestones</h3>
-            <table>
-                <tr>
-                    <th>Date</th>
-                    <th>Milestone</th>
-                    <th>KPI</th>
-                </tr>
-                <tr>
-                    <td><strong>Apr 2026</strong></td>
-                    <td>v1.0 launch — Real B-rep + Text-to-CAD</td>
-                    <td>1,000 GitHub stars</td>
-                </tr>
-                <tr>
-                    <td><strong>Jun 2026</strong></td>
-                    <td>ExplodeView merge + AI vision</td>
-                    <td>5,000 weekly npm downloads</td>
-                </tr>
-                <tr>
-                    <td><strong>Sep 2026</strong></td>
-                    <td>Pro launch (€49/mo collab + cloud)</td>
-                    <td>1,000 paying users</td>
-                </tr>
-                <tr>
-                    <td><strong>Jan 2027</strong></td>
-                    <td>Marketplace live (creator royalties)</td>
-                    <td>100+ marketplace parts, $50K GMV</td>
-                </tr>
-                <tr>
-                    <td><strong>Jun 2027</strong></td>
-                    <td>Connected fab network (3+ manufacturers)</td>
-                    <td>10,000 parts ordered via cycleCAD</td>
-                </tr>
-            </table>
-        </section>
-
-        <div class="footer">
-            <p style="margin-bottom: 12px;"><strong>cycleCAD</strong> — Agent-First OS for Manufacturing</p>
-            <p style="font-size: 0.9rem; margin-bottom: 12px;">
-                <a href="https://cyclecad.com">cyclecad.com</a> ·
-                <a href="https://github.com/vvlars-cmd/cyclecad">GitHub</a> ·
-                <a href="https://www.npmjs.com/package/cyclecad">npm</a>
-            </p>
-            <p style="font-size: 0.85rem;">MIT License · MIT Design doc inspired by Amazon Working Backwards · Built by SACHIN · Updated 2026-03-30</p>
+    <div id="dependencies" class="tab-content">
+      <div class="dependency-graph">
+        <div class="graph-legend">
+          <div class="legend-item">
+            <div class="legend-color" style="background: #06b6d4;"></div>
+            <span>Core</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #3b82f6;"></div>
+            <span>Engine</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #22c55e;"></div>
+            <span>Tool</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #f59e0b;"></div>
+            <span>Data</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #a855f7;"></div>
+            <span>Service</span>
+          </div>
         </div>
-    </main>
+        <div class="graph-container" id="dependencyGraph"></div>
+      </div>
+    </div>
 
-    <script>
-        // Smooth scroll and active nav link
-        const links = document.querySelectorAll('nav.toc a');
-        const sections = document.querySelectorAll('main section');
+    <div id="dataflow" class="tab-content">
+      <h3 style="margin-bottom: 20px;">Data Flow Paths</h3>
 
-        window.addEventListener('scroll', () => {
-            let current = '';
-            sections.forEach(section => {
-                const sectionTop = section.offsetTop;
-                if (pageYOffset >= sectionTop - 100) {
-                    current = section.getAttribute('id');
-                }
-            });
+      <div class="data-flow">
+        <strong>User Input → Geometry:</strong><br>
+        UI Input → Kernel.exec() → Sketch/Operations → B-Rep Kernel → Viewport.addMesh() → Renderer
+      </div>
 
-            links.forEach(link => {
-                link.classList.remove('active');
-                if (link.getAttribute('href').slice(1) === current) {
-                    link.classList.add('active');
-                }
-            });
+      <div class="data-flow">
+        <strong>STEP Import:</strong><br>
+        File Input → STEP Module → Web Worker → WASM Parser → Mesh Array → Kernel.emit('step:complete') → Viewport Render
+      </div>
+
+      <div class="data-flow">
+        <strong>Assembly Animation:</strong><br>
+        Assembly.animateJoint() → Kernel.emit('joint:moved') → Viewport.updateMatrices() → Renderer → FPS Loop
+      </div>
+
+      <div class="data-flow">
+        <strong>Simulation Results:</strong><br>
+        FEA Solver → Mesh + Scalar Data → Viewport.setColorMap() → GPU Texture → Renderer
+      </div>
+
+      <div class="data-flow">
+        <strong>Undo/Redo Stack:</strong><br>
+        Feature Tree → History Manager → Kernel.swap(stateSnapshot) → All modules restore via events
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const modules = [
+      {
+        id: 'kernel', name: 'Microkernel', category: 'core', lines: 684, memory: 2, icon: '⚙️',
+        file: 'app/js/kernel.js', layer: 1,
+        description: 'Tiny core that manages everything. Module registry, event bus, command system, memory manager, shared state, hot-swap engine.',
+        commands: ['register', 'load', 'activate', 'deactivate', 'unload', 'swap', 'exec', 'on', 'off', 'emit'],
+        dependencies: [],
+        events: ['module:loaded', 'module:activated', 'module:deactivated', 'module:error', 'module:swapped'],
+        status: 'loaded',
+      },
+      {
+        id: 'viewport', name: '3D Viewport', category: 'engine', lines: 530, memory: 30, icon: '🎥',
+        file: 'app/js/modules/viewport-module.js', layer: 3,
+        description: 'Three.js r170 renderer. Scene, camera, lights, shadows, grid, OrbitControls, raycaster selection, ViewCube.',
+        commands: ['viewport.fitAll', 'viewport.fitTo', 'viewport.setView', 'viewport.toggleGrid', 'viewport.toggleWireframe', 'viewport.screenshot', 'viewport.addMesh', 'viewport.removeMesh'],
+        dependencies: [],
+        events: ['part:selected', 'part:deselected', 'viewport:ready', 'viewport:resize'],
+        status: 'loaded',
+      },
+      {
+        id: 'sketch', name: 'Sketch Engine', category: 'engine', lines: 720, memory: 15, icon: '✏️',
+        file: 'app/js/modules/sketch-module.js', layer: 3,
+        description: '17 sketch tools with Fusion 360 parity. Line, rect, circle, arc, ellipse, spline, polygon, slot, text, trim, extend, offset, mirror, fillet, chamfer, construction, dimension.',
+        commands: ['sketch.start', 'sketch.finish', 'sketch.setTool', 'sketch.addEntity', 'sketch.trim', 'sketch.extend', 'sketch.offset', 'sketch.mirror'],
+        dependencies: ['viewport'],
+        events: ['sketch:started', 'sketch:finished', 'sketch:entityAdded', 'sketch:toolChanged', 'sketch:dimensionAdded'],
+        status: 'loaded',
+      },
+      {
+        id: 'operations', name: '3D Operations', category: 'engine', lines: 660, memory: 10, icon: '🔧',
+        file: 'app/js/modules/operations-module.js', layer: 3,
+        description: 'Smart dispatch: uses B-Rep kernel if loaded, mesh fallback if not. 28 operations including extrude, revolve, fillet, chamfer, boolean, pattern, mirror, shell, draft, hole, thread.',
+        commands: ['ops.box', 'ops.cylinder', 'ops.sphere', 'ops.extrude', 'ops.revolve', 'ops.fillet', 'ops.chamfer', 'ops.shell', 'ops.hole', 'ops.thread', 'ops.union', 'ops.cut'],
+        dependencies: ['viewport', 'sketch'],
+        events: ['feature:created', 'feature:edited', 'feature:deleted', 'rebuild:complete'],
+        status: 'loaded',
+      },
+      {
+        id: 'brep-kernel', name: 'B-Rep Kernel', category: 'engine', lines: 853, memory: 55, icon: '💎',
+        file: 'app/js/brep-kernel.js', layer: 3,
+        description: 'OpenCascade.js WASM solid modeling kernel. Real edge fillets, real booleans, STEP I/O, mass properties. 50MB WASM downloads on first use (lazy loaded).',
+        commands: ['brep.makeBox', 'brep.makeCylinder', 'brep.fillet', 'brep.booleanUnion', 'brep.booleanCut', 'brep.importSTEP', 'brep.exportSTEP'],
+        dependencies: ['viewport'],
+        events: ['brep:initialized', 'brep:wasmLoaded', 'brep:operationComplete'],
+        status: 'standby',
+      },
+      {
+        id: 'drawing', name: '2D Drawing', category: 'tool', lines: 883, memory: 20, icon: '📐',
+        file: 'app/js/modules/drawing-module.js', layer: 4,
+        description: 'Engineering drawing workspace. Orthographic/section views, dimensions, GD&T, annotations, title blocks, BOM. Export to PDF/DXF/SVG.',
+        commands: ['drawing.create', 'drawing.addView', 'drawing.addDimension', 'drawing.addAnnotation', 'drawing.addBOM', 'drawing.export'],
+        dependencies: ['viewport', 'operations'],
+        events: ['drawing:created', 'drawing:viewAdded', 'drawing:exported'],
+        status: 'standby',
+      },
+      {
+        id: 'assembly', name: 'Assembly', category: 'tool', lines: 582, memory: 25, icon: '🔗',
+        file: 'app/js/modules/assembly-module.js', layer: 4,
+        description: '7 joint types (rigid, revolute, slider, cylindrical, pin-slot, planar, ball). Joint limits, animation, interference check, exploded views, BOM.',
+        commands: ['assembly.insertComponent', 'assembly.createJoint', 'assembly.setJointLimits', 'assembly.animateJoint', 'assembly.checkInterference'],
+        dependencies: ['viewport', 'operations'],
+        events: ['assembly:componentInserted', 'assembly:jointCreated', 'assembly:interferenceFound'],
+        status: 'standby',
+      },
+      {
+        id: 'simulation', name: 'FEA Simulation', category: 'tool', lines: 834, memory: 40, icon: '📊',
+        file: 'app/js/modules/simulation-module.js', layer: 4,
+        description: 'Finite element analysis. Static stress (von Mises), thermal, modal frequency, buckling. Tetrahedral meshing, loads, boundary conditions, color results.',
+        commands: ['sim.setup', 'sim.setMaterial', 'sim.addLoad', 'sim.addConstraint', 'sim.mesh', 'sim.solve', 'sim.showResults'],
+        dependencies: ['viewport', 'operations'],
+        events: ['sim:meshGenerated', 'sim:solveStart', 'sim:solveComplete', 'sim:resultsReady'],
+        status: 'standby',
+      },
+      {
+        id: 'step-io', name: 'STEP I/O', category: 'data', lines: 510, memory: 60, icon: '📦',
+        file: 'app/js/modules/step-module.js', layer: 5,
+        description: 'Dual-path STEP import: browser WASM (occt-import-js) for <50MB files, server-side (CadQuery/OCP) for larger files. Web Worker with heartbeat and timeout.',
+        commands: ['step.import', 'step.export', 'step.importFromURL', 'step.getMetadata'],
+        dependencies: ['viewport'],
+        events: ['step:importStart', 'step:importProgress', 'step:importComplete', 'step:importError'],
+        status: 'standby',
+      },
+      {
+        id: 'ai-copilot', name: 'AI Copilot', category: 'service', lines: 645, memory: 35, icon: '🤖',
+        file: 'app/js/modules/ai-copilot.js', layer: 5,
+        description: 'Text-to-CAD, NL editing, smart autocomplete. Gemini/Groq/offline fallback. Understands design intent, suggests optimizations, generates documentation.',
+        commands: ['ai.chat', 'ai.textToCAD', 'ai.suggestOptimization', 'ai.generateDocumentation'],
+        dependencies: ['viewport', 'operations', 'sketch'],
+        events: ['ai:response', 'ai:operation', 'ai:error'],
+        status: 'standby',
+      },
+    ];
+
+    const layerMap = {
+      1: { title: 'LEGO Microkernel (Core)', color: '#06b6d4' },
+      3: { title: 'Core Engine Modules', color: '#3b82f6' },
+      4: { title: 'Tool Modules', color: '#22c55e' },
+      5: { title: 'Service & Data Modules', color: '#a855f7' },
+    };
+
+    let selectedModule = null;
+
+    function createLayerHTML() {
+      const container = document.getElementById('layers');
+      const grouped = {};
+
+      modules.forEach(m => {
+        if (!grouped[m.layer]) grouped[m.layer] = [];
+        grouped[m.layer].push(m);
+      });
+
+      Object.keys(grouped)
+        .sort((a, b) => parseInt(a) - parseInt(b))
+        .forEach(layer => {
+          const layerInfo = layerMap[layer];
+          const html = `
+            <div class="layer">
+              <div class="layer-title" style="color: ${layerInfo.color};">${layerInfo.title}</div>
+              <div class="modules-grid">
+                ${grouped[layer].map(m => `
+                  <div class="module-block ${m.category}" data-id="${m.id}" style="--color: var(--color);">
+                    <div class="module-icon">${m.icon}</div>
+                    <div class="module-name">${m.name}<span class="module-status ${m.status}"></span></div>
+                    <div class="module-stats">
+                      <span>${m.lines} lines</span>
+                      <span>${m.memory} MB</span>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+          container.innerHTML += html;
         });
 
-        // Smooth scroll behavior for links
-        links.forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const targetId = link.getAttribute('href').slice(1);
-                const targetSection = document.getElementById(targetId);
-                targetSection.scrollIntoView({ behavior: 'smooth' });
-            });
+      document.querySelectorAll('.module-block').forEach(block => {
+        block.addEventListener('click', () => selectModule(block.dataset.id));
+      });
+    }
+
+    function selectModule(moduleId) {
+      selectedModule = modules.find(m => m.id === moduleId);
+      const panel = document.getElementById('detailPanel');
+
+      if (!selectedModule) return;
+
+      panel.className = 'detail-panel';
+      panel.innerHTML = `
+        <div class="detail-header" style="--color: ${getCategoryColor(selectedModule.category)};">
+          <div class="detail-title">${selectedModule.icon} ${selectedModule.name}</div>
+          <div class="detail-meta">
+            <div class="detail-meta-item">${selectedModule.category.toUpperCase()}</div>
+            <div class="detail-meta-item">v${(selectedModule.lines / 100).toFixed(1)}</div>
+            <div class="detail-meta-item" style="background: rgba(22, 163, 74, 0.1); color: #86efac;">⚡ ${selectedModule.status}</div>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-section-title">Description</div>
+          <p class="detail-description">${selectedModule.description}</p>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-section-title">Commands (${selectedModule.commands.length})</div>
+          <div class="commands-list">
+            ${selectedModule.commands.map(cmd => `<div class="command-item">${cmd}</div>`).join('')}
+          </div>
+        </div>
+
+        ${selectedModule.dependencies.length > 0 ? `
+          <div class="detail-section">
+            <div class="detail-section-title">Dependencies</div>
+            <div class="dependencies-list">
+              ${selectedModule.dependencies.map(dep => {
+                const depModule = modules.find(m => m.id === dep);
+                return `<div class="dependency">${depModule?.name || dep}</div>`;
+              }).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        <div class="detail-section">
+          <div class="detail-section-title">Events (${selectedModule.events.length})</div>
+          <div class="commands-list">
+            ${selectedModule.events.map(evt => `<div class="command-item">${evt}</div>`).join('')}
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-section-title">Metrics</div>
+          <div style="display: grid; gap: 8px; font-size: 0.9em;">
+            <div><span style="color: #94a3b8;">Lines of Code:</span> <strong>${selectedModule.lines}</strong></div>
+            <div><span style="color: #94a3b8;">Memory:</span> <strong>${selectedModule.memory} MB</strong></div>
+            <div><span style="color: #94a3b8;">File:</span> <strong style="font-size: 0.85em;">${selectedModule.file}</strong></div>
+          </div>
+        </div>
+      `;
+    }
+
+    function getCategoryColor(category) {
+      const colors = {
+        core: '#06b6d4',
+        engine: '#3b82f6',
+        tool: '#22c55e',
+        data: '#f59e0b',
+        service: '#a855f7',
+      };
+      return colors[category] || '#e2e8f0';
+    }
+
+    function createDependencyGraph() {
+      const container = document.getElementById('dependencyGraph');
+      let html = '<div style="margin-bottom: 20px;">All modules and their dependencies:</div>\n\n';
+
+      const categories = {};
+      modules.forEach(m => {
+        if (!categories[m.category]) categories[m.category] = [];
+        categories[m.category].push(m);
+      });
+
+      Object.keys(categories).forEach(cat => {
+        html += `<div style="margin-bottom: 20px;"><strong style="color: ${getCategoryColor(cat)};">${cat.toUpperCase()}:</strong></div>\n`;
+        categories[cat].forEach(m => {
+          const deps = m.dependencies.length > 0
+            ? m.dependencies.map(d => modules.find(x => x.id === d)?.name || d).join(', ')
+            : '(independent)';
+          html += `<div style="margin-left: 20px; margin-bottom: 8px;">
+            <span class="graph-node ${m.category}" data-module="${m.id}" style="cursor: pointer;">${m.icon} ${m.name}</span>
+            <span style="color: #64748b; font-size: 0.8em;"> → ${deps}</span>
+          </div>\n`;
         });
-    </script>
+      });
+
+      container.innerHTML = html;
+
+      document.querySelectorAll('.graph-node').forEach(node => {
+        node.addEventListener('click', () => selectModule(node.dataset.module));
+      });
+    }
+
+    function setupTabs() {
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+          btn.classList.add('active');
+          document.getElementById(btn.dataset.tab).classList.add('active');
+        });
+      });
+    }
+
+    createLayerHTML();
+    createDependencyGraph();
+    setupTabs();
+  </script>
 </body>
 </html>

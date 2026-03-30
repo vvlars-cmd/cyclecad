@@ -947,19 +947,62 @@ export async function executeTextCommand(prompt) {
 
     addMessage('ai', `Got it! ${preview}. Creating now...`);
 
-    // Execute: try direct geometry creation first (fastest path)
+    // ── B-REP ENGINE PATH ──────────────────────────────────────────────
+    // Try real OpenCascade.js B-rep first. Falls back to mesh preview.
+    const brep = window.brepEngine;
+    const brepCommands = commands.map(cmd => {
+      const method = cmd.method || '';
+      const type = method.replace('shape.', '').replace('feature.', '');
+      return { type, params: { ...cmd.params } };
+    });
+
+    // Attempt B-rep execution
+    if (brep) {
+      try {
+        if (!brep.isReady()) {
+          addMessage('ai', '⏳ Loading OpenCascade.js B-rep kernel (~50MB WASM)... first time only.');
+          await brep.initBRep();
+          addMessage('ai', '✅ B-rep kernel loaded!');
+        }
+
+        // Remove previous B-rep mesh from scene
+        if (window._brepMesh) {
+          if (window._brepMesh.mesh?.parent) window._brepMesh.mesh.parent.remove(window._brepMesh.mesh);
+          if (window._brepMesh.wireframe?.parent) window._brepMesh.wireframe.parent.remove(window._brepMesh.wireframe);
+        }
+
+        const result = await brep.executeCommands(brepCommands);
+        if (result && result.mesh) {
+          // Add to Three.js scene
+          const addFn = window.addToScene || ((m) => {
+            const scene = window._scene || window.getScene?.();
+            if (scene) scene.add(m);
+          });
+          addFn(result.mesh);
+          addFn(result.wireframe);
+          window._brepMesh = result;
+
+          addMessage('ai', `🔧 **Real B-rep**: ${result.description} — solid model with true edges and faces.`);
+          return { ok: true, brep: true, description: result.description };
+        }
+      } catch (brepErr) {
+        console.warn('[Copilot] B-rep execution failed, falling back to mesh preview:', brepErr);
+        addMessage('ai', `⚠️ B-rep kernel error: ${brepErr.message}. Using mesh preview instead.`);
+      }
+    }
+
+    // ── MESH PREVIEW FALLBACK ──────────────────────────────────────────
     const results = [];
     for (const cmd of commands) {
       try {
-        // Convert Agent API format {method: 'shape.cylinder', params: {}} to executeParsedPrompt format {type: 'cylinder', params: {}}
         if (window._executeParsedPrompt) {
           const method = cmd.method || '';
           const type = method.replace('shape.', '').replace('feature.', '');
 
-          // Operations that modify existing geometry — skip createPrimitive, show message
+          // Operations that modify existing geometry
           const modifyOps = ['fillet', 'chamfer', 'pattern', 'mirror', 'shell'];
           if (modifyOps.includes(type)) {
-            addMessage('ai', `⚡ ${type} applied to selected geometry (visual preview — real B-rep operations coming in Phase A).`);
+            addMessage('ai', `⚡ ${type} — install B-rep kernel for real edge operations. Using visual preview.`);
             results.push({ ok: true, method, note: 'modify-op' });
             continue;
           }
@@ -968,23 +1011,15 @@ export async function executeTextCommand(prompt) {
           const count = cmd.params?.count || 1;
           for (let ci = 0; ci < count; ci++) {
             const p = Object.assign({}, cmd.params);
-            // Position holes at 4 corners of a typical cube face
             if (count > 1 && type === 'hole') {
-              const cornerSpread = 3.5; // scene units — matches ~35mm on a 100mm cube at SCALE 0.1
-              const corners = [
-                [-cornerSpread, -cornerSpread],
-                [ cornerSpread, -cornerSpread],
-                [ cornerSpread,  cornerSpread],
-                [-cornerSpread,  cornerSpread],
-              ];
-              const idx = ci % corners.length;
-              p._offsetX = corners[idx][0];
-              p._offsetZ = corners[idx][1];
+              const cornerSpread = 3.5;
+              const corners = [[-cornerSpread, -cornerSpread], [cornerSpread, -cornerSpread], [cornerSpread, cornerSpread], [-cornerSpread, cornerSpread]];
+              p._offsetX = corners[ci % 4][0];
+              p._offsetZ = corners[ci % 4][1];
             } else if (count > 1) {
               const angle = (ci / count) * Math.PI * 2;
-              const spread = (p.radius || 5) * 3 * 0.1;
-              p._offsetX = Math.cos(angle) * spread;
-              p._offsetZ = Math.sin(angle) * spread;
+              p._offsetX = Math.cos(angle) * (p.radius || 5) * 3 * 0.1;
+              p._offsetZ = Math.sin(angle) * (p.radius || 5) * 3 * 0.1;
             }
             window._executeParsedPrompt({ type, params: p });
           }

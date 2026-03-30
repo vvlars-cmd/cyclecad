@@ -1,6 +1,6 @@
 {
   "name": "cyclecad",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Browser-based parametric 3D CAD modeler with AI-powered tools, native Inventor file parsing, and smart assembly management. No install required.",
   "main": "index.html",
   "bin": {

@@ -550,6 +550,7 @@
 
     return `
       <div id="vr-panel" style="
+        display: none;
         background: #1e1e1e;
         border: 1px solid #a855f7;
         border-radius: 8px;

@@ -711,6 +711,8 @@ function detectBooleanOp(text) {
   if (/\b(union|combine|merge|join|fuse)\b/i.test(text)) return 'booleanUnion';
 
   // Fuzzy match for typos like "interset", "subtrat", "intersec"
+  // BUT exclude common shape words that false-positive (e.g., "cube" → "fuse" dist=2)
+  const shapeWords = new Set(['cube', 'tube', 'cone', 'core', 'curve', 'line', 'join']);
   const boolKeywords = {
     booleanIntersect: ['intersect', 'intersection', 'overlap'],
     booleanSubtract: ['subtract', 'substract', 'difference'],
@@ -718,6 +720,7 @@ function detectBooleanOp(text) {
   };
   const words = text.replace(/[^a-z\s]/g, '').split(/\s+/).filter(w => w.length >= 4);
   for (const w of words) {
+    if (shapeWords.has(w)) continue; // skip shape words that false-positive
     for (const [op, keywords] of Object.entries(boolKeywords)) {
       for (const kw of keywords) {
         if (levenshtein(w, kw) <= 2) return op;

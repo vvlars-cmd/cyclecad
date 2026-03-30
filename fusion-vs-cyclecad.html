@@ -1,0 +1,1771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fusion 360 vs cycleCAD — Complete Feature Comparison</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0F172A;
+            color: #F8FAFC;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header & Navigation */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(2, 132, 199, 0.2);
+            padding: 20px 0;
+            margin-bottom: 40px;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #0284C7, #06B6D4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .print-btn {
+            background: #0284C7;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .print-btn:hover {
+            background: #0369A1;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(2, 132, 199, 0.3);
+        }
+
+        .search-box {
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            width: 100%;
+            max-width: 400px;
+            padding: 12px 16px;
+            background: #1E293B;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            color: #F8FAFC;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #0284C7;
+            background: #334155;
+            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 12px 20px;
+            background: transparent;
+            border: 2px solid #334155;
+            color: #94A3B8;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn:hover {
+            border-color: #0284C7;
+            color: #0284C7;
+        }
+
+        .tab-btn.active {
+            background: #0284C7;
+            border-color: #0284C7;
+            color: white;
+            box-shadow: 0 8px 16px rgba(2, 132, 199, 0.3);
+        }
+
+        /* Content */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Cards */
+        .card {
+            background: #1E293B;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: #0284C7;
+            box-shadow: 0 12px 32px rgba(2, 132, 199, 0.15);
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 16px;
+            color: #F8FAFC;
+        }
+
+        .card-subtitle {
+            font-size: 14px;
+            color: #94A3B8;
+            margin-bottom: 12px;
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .hero h1 {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #0284C7, #06B6D4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 18px;
+            color: #CBD5E1;
+            margin-bottom: 30px;
+        }
+
+        /* Comparison Cards */
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .comparison-card {
+            background: #1E293B;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .comparison-card:hover {
+            border-color: #0284C7;
+            transform: translateY(-4px);
+        }
+
+        .comparison-card h3 {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            color: #F8FAFC;
+        }
+
+        .comparison-card .stat {
+            font-size: 24px;
+            font-weight: bold;
+            color: #0284C7;
+            margin-bottom: 8px;
+        }
+
+        .comparison-card .feature {
+            font-size: 13px;
+            color: #94A3B8;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .feature-icon {
+            font-size: 16px;
+        }
+
+        /* Feature Matrix */
+        .feature-matrix {
+            overflow-x: auto;
+            margin-bottom: 40px;
+        }
+
+        .feature-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #1E293B;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .feature-table thead {
+            background: #0F172A;
+            border-bottom: 2px solid #334155;
+            position: sticky;
+            top: 60px;
+            z-index: 10;
+        }
+
+        .feature-table th {
+            padding: 16px;
+            text-align: left;
+            font-weight: 600;
+            color: #F8FAFC;
+            border-right: 1px solid #334155;
+        }
+
+        .feature-table th:last-child {
+            border-right: none;
+        }
+
+        .feature-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #334155;
+            border-right: 1px solid #334155;
+        }
+
+        .feature-table td:last-child {
+            border-right: none;
+        }
+
+        .feature-table tbody tr:hover {
+            background: #334155;
+        }
+
+        .feature-name {
+            color: #F8FAFC;
+            font-weight: 500;
+            min-width: 250px;
+        }
+
+        .status {
+            text-align: center;
+            font-weight: 600;
+            min-width: 100px;
+        }
+
+        .status-full {
+            color: #22C55E;
+        }
+
+        .status-partial {
+            color: #FBBF24;
+        }
+
+        .status-planned {
+            color: #94A3B8;
+        }
+
+        .status-no {
+            color: #EF4444;
+        }
+
+        /* Category Toggle */
+        .category {
+            margin-bottom: 0;
+            cursor: pointer;
+            background: #334155;
+        }
+
+        .category:hover {
+            background: #475569;
+        }
+
+        .category-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            font-weight: 600;
+            color: #0284C7;
+        }
+
+        .category-toggle {
+            transition: transform 0.3s ease;
+        }
+
+        .category-toggle.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .category-rows {
+            display: none;
+        }
+
+        .category-rows.expanded {
+            display: table-row-group;
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #1E293B, #334155);
+            border: 1px solid #0284C7;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #0284C7;
+            margin-bottom: 8px;
+            animation: countUp 1s ease;
+        }
+
+        @keyframes countUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #94A3B8;
+            font-weight: 600;
+        }
+
+        /* Callout */
+        .callout {
+            background: linear-gradient(135deg, rgba(2, 132, 199, 0.1), rgba(6, 182, 212, 0.05));
+            border-left: 4px solid #0284C7;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .callout-title {
+            font-weight: 600;
+            color: #0284C7;
+            margin-bottom: 8px;
+        }
+
+        .callout-text {
+            color: #CBD5E1;
+            font-size: 14px;
+        }
+
+        /* Architecture Diagrams */
+        .arch-diagram {
+            background: #334155;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #0284C7;
+            overflow-x: auto;
+            white-space: pre;
+        }
+
+        /* Lists */
+        .feature-list {
+            list-style: none;
+            margin-bottom: 20px;
+        }
+
+        .feature-list li {
+            padding: 12px 0;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+
+        .feature-list .check {
+            color: #22C55E;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .feature-list .partial {
+            color: #FBBF24;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .feature-list .cross {
+            color: #EF4444;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        /* Pricing Table */
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .pricing-card {
+            background: #1E293B;
+            border: 2px solid #334155;
+            border-radius: 8px;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .pricing-card:hover {
+            border-color: #0284C7;
+            transform: translateY(-4px);
+        }
+
+        .pricing-card.featured {
+            border-color: #0284C7;
+            box-shadow: 0 12px 32px rgba(2, 132, 199, 0.2);
+        }
+
+        .pricing-card h3 {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+
+        .pricing-card .price {
+            font-size: 28px;
+            font-weight: bold;
+            color: #0284C7;
+            margin-bottom: 4px;
+        }
+
+        .pricing-card .period {
+            font-size: 13px;
+            color: #94A3B8;
+            margin-bottom: 20px;
+        }
+
+        .pricing-card ul {
+            list-style: none;
+            margin-bottom: 20px;
+        }
+
+        .pricing-card li {
+            font-size: 13px;
+            color: #CBD5E1;
+            padding: 8px 0;
+            border-bottom: 1px solid #334155;
+        }
+
+        .pricing-card li:last-child {
+            border-bottom: none;
+        }
+
+        /* Migration Guide */
+        .step {
+            background: #1E293B;
+            border-left: 4px solid #0284C7;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .step-number {
+            display: inline-block;
+            background: #0284C7;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 32px;
+            font-weight: bold;
+            margin-right: 12px;
+            margin-bottom: 12px;
+        }
+
+        .step-title {
+            font-weight: 600;
+            color: #F8FAFC;
+            margin-bottom: 8px;
+        }
+
+        .step-content {
+            color: #CBD5E1;
+            font-size: 14px;
+        }
+
+        /* Collapsible */
+        .collapsible {
+            background: #334155;
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.3s ease;
+        }
+
+        .collapsible:hover {
+            background: #475569;
+        }
+
+        .collapsible-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            color: #F8FAFC;
+        }
+
+        .collapsible-toggle {
+            transition: transform 0.3s ease;
+        }
+
+        .collapsible-toggle.open {
+            transform: rotate(180deg);
+        }
+
+        .collapsible-content {
+            display: none;
+            padding-top: 16px;
+            border-top: 1px solid #1E293B;
+            color: #CBD5E1;
+            font-size: 14px;
+        }
+
+        .collapsible-content.show {
+            display: block;
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+                color: black;
+            }
+
+            header {
+                position: static;
+                background: white;
+                border-bottom: 2px solid #ddd;
+            }
+
+            .print-btn {
+                display: none;
+            }
+
+            .tabs {
+                display: none;
+            }
+
+            .tab-content {
+                display: block !important;
+                page-break-inside: avoid;
+            }
+
+            .card, .comparison-card, .pricing-card {
+                background: white;
+                border: 1px solid #ddd;
+                page-break-inside: avoid;
+            }
+
+            .feature-table {
+                background: white;
+            }
+
+            .feature-table thead {
+                background: #f5f5f5;
+            }
+
+            .feature-table tbody tr:hover {
+                background: white;
+            }
+
+            .callout {
+                background: #f0f0f0;
+                border-left: 4px solid #333;
+            }
+
+            .arch-diagram {
+                background: #f5f5f5;
+                color: black;
+            }
+
+            .status-full, .feature-icon {
+                color: #22C55E !important;
+            }
+
+            .status-partial {
+                color: #FBBF24 !important;
+            }
+
+            .status-planned {
+                color: #999 !important;
+            }
+
+            .status-no {
+                color: #EF4444 !important;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 32px;
+            }
+
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .pricing-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .feature-table {
+                font-size: 12px;
+            }
+
+            .feature-table th, .feature-table td {
+                padding: 10px 8px;
+            }
+
+            .feature-name {
+                min-width: 150px;
+            }
+
+            .tabs {
+                gap: 6px;
+            }
+
+            .tab-btn {
+                padding: 10px 14px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">Fusion 360 vs cycleCAD</div>
+                <button class="print-btn" onclick="window.print()">📄 Export PDF</button>
+            </div>
+            <div class="search-box" id="searchContainer">
+                <input type="text" id="featureSearch" placeholder="Search features..." style="display: none;">
+            </div>
+            <div class="tabs" id="tabs">
+                <button class="tab-btn active" onclick="switchTab('executive')">Executive Summary</button>
+                <button class="tab-btn" onclick="switchTab('features')">Feature Matrix</button>
+                <button class="tab-btn" onclick="switchTab('architecture')">Architecture</button>
+                <button class="tab-btn" onclick="switchTab('pricing')">Pricing</button>
+                <button class="tab-btn" onclick="switchTab('advantages')">cycleCAD Advantages</button>
+                <button class="tab-btn" onclick="switchTab('migration')">Migration Guide</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Tab 1: Executive Summary -->
+        <div id="executive" class="tab-content active">
+            <div class="hero">
+                <h1>Fusion 360 vs cycleCAD</h1>
+                <p>Complete feature comparison of two leading CAD platforms</p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">200+</div>
+                    <div class="stat-label">Fusion 360 Features</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">150+</div>
+                    <div class="stat-label">cycleCAD Features</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">$545/yr</div>
+                    <div class="stat-label">Fusion 360 Cost</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">FREE</div>
+                    <div class="stat-label">cycleCAD Cost</div>
+                </div>
+            </div>
+
+            <div class="comparison-grid">
+                <div class="comparison-card">
+                    <h3>Fusion 360</h3>
+                    <div class="stat">$545/yr</div>
+                    <div class="feature"><span class="feature-icon">💻</span> Desktop + Cloud hybrid</div>
+                    <div class="feature"><span class="feature-icon">🔒</span> Closed source (Autodesk)</div>
+                    <div class="feature"><span class="feature-icon">⚙️</span> Proprietary kernel</div>
+                    <div class="feature"><span class="feature-icon">🌐</span> Autodesk ecosystem</div>
+                    <div class="feature"><span class="feature-icon">🚀</span> Mature, battle-tested</div>
+                    <div class="feature"><span class="feature-icon">📦</span> Includes CAM + Simulation</div>
+                </div>
+
+                <div class="comparison-card">
+                    <h3>cycleCAD</h3>
+                    <div class="stat">FREE</div>
+                    <div class="feature"><span class="feature-icon">🌐</span> 100% browser-native</div>
+                    <div class="feature"><span class="feature-icon">🔓</span> Open source (MIT)</div>
+                    <div class="feature"><span class="feature-icon">⚡</span> OpenCascade.js WASM</div>
+                    <div class="feature"><span class="feature-icon">🤖</span> Agent-first API</div>
+                    <div class="feature"><span class="feature-icon">🚀</span> Modern, OSS extensible</div>
+                    <div class="feature"><span class="feature-icon">🧠</span> AI-powered throughout</div>
+                </div>
+
+                <div class="comparison-card">
+                    <h3>Key Differentiators</h3>
+                    <div class="feature"><span class="feature-icon">✨</span> cycleCAD: No install, works anywhere</div>
+                    <div class="feature"><span class="feature-icon">✨</span> cycleCAD: Built-in AI analysis</div>
+                    <div class="feature"><span class="feature-icon">✨</span> cycleCAD: Inventor import native</div>
+                    <div class="feature"><span class="feature-icon">✨</span> cycleCAD: Full API for agents</div>
+                    <div class="feature"><span class="feature-icon">✨</span> Fusion: Mature CAM (G-code)</div>
+                    <div class="feature"><span class="feature-icon">✨</span> Fusion: Industry standard</div>
+                </div>
+            </div>
+
+            <div class="callout">
+                <div class="callout-title">Why Choose cycleCAD?</div>
+                <div class="callout-text">
+                    <strong>Free forever:</strong> Zero cost for full modeling platform. Pay only for Pro features (€49/mo) if you need real-time collaboration or enterprise deployment.<br><br>
+                    <strong>Open source:</strong> MIT license — fork it, extend it, run it yourself. No vendor lock-in.<br><br>
+                    <strong>Browser-native:</strong> Works on any device with a web browser. No installation, no licensing headaches. Chromebooks, tablets, old laptops all supported.<br><br>
+                    <strong>AI-powered:</strong> Built-in chatbot, part identifier, design review, NL search, and text-to-CAD — all free. Fusion 360 requires Autodesk's separate AI plugins (paid extra).<br><br>
+                    <strong>Agent-first:</strong> Complete REST API, MCP server, CLI tool, and 55+ commands. Build your own CAD agents, automation, and integrations. Fusion 360 has basic scripting only.<br><br>
+                    <strong>Inventor native:</strong> Import .ipt and .iam files directly with full feature tree. Fusion 360 requires conversion to STEP (loses parametrics). cycleCAD preserves your design intent.<br><br>
+                    <strong>ExplodeView integration:</strong> View and analyze 399-part assemblies with 40+ tools (BOM, cost, weight, maintenance schedule, AR scanner). Separate paid tool in Fusion ecosystem.
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: Feature Matrix -->
+        <div id="features" class="tab-content">
+            <div class="search-box">
+                <input type="text" id="featureSearch2" placeholder="🔍 Search features..." style="display: block;">
+            </div>
+
+            <div class="stats-grid" style="margin-bottom: 40px;">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalFeatures">218</div>
+                    <div class="stat-label">Total Features Compared</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="cycleCADCount">156</div>
+                    <div class="stat-label">cycleCAD Implemented</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="cycleCADPercentage">72%</div>
+                    <div class="stat-label">Feature Coverage</div>
+                </div>
+            </div>
+
+            <div class="feature-matrix">
+                <table class="feature-table" id="featureTable">
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>Fusion 360</th>
+                            <th>cycleCAD</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tab 3: Architecture -->
+        <div id="architecture" class="tab-content">
+            <div class="card">
+                <div class="card-title">Fusion 360 Architecture</div>
+                <div class="card-subtitle">Monolithic Desktop + Cloud Hybrid</div>
+                <div class="arch-diagram">┌─────────────────────────────────────────────────┐
+│  Autodesk Cloud (Workspaces, Collab)           │
+├─────────────────────────────────────────────────┤
+│  C++ Desktop App (Qt Framework)                 │
+│  ├─ Proprietary Geometric Kernel               │
+│  ├─ Parametric Feature Tree                    │
+│  ├─ CAM (G-code generation)                    │
+│  ├─ Simulation (FEA, Thermal)                  │
+│  └─ Rendering (Vulkan/Metal)                   │
+├─────────────────────────────────────────────────┤
+│  Data Layer (Parasolid-like BREP)              │
+└─────────────────────────────────────────────────┘
+
+Strengths:
+✓ Mature, battle-tested CAD kernel
+✓ Real-time sync with cloud
+✓ Professional CAM & simulation
+✓ Industry standard (Fortune 500 use it)
+
+Weaknesses:
+✗ Desktop installation required
+✗ Proprietary — cannot extend kernel
+✗ Single-threaded rendering
+✗ Large memory footprint (2+ GB)
+✗ Vendor lock-in to Autodesk ecosystem</div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">cycleCAD Architecture</div>
+                <div class="card-subtitle">Modular Browser-Native LEGO Kernel</div>
+                <div class="arch-diagram">┌─────────────────────────────────────────────────┐
+│  Web Browser (Any Device)                      │
+├─────────────────────────────────────────────────┤
+│  ES Modules (Zero Dependencies)                │
+│  ├─ Agent API (55+ commands, REST/MCP)        │
+│  ├─ Sketch Engine (2D constraint solver)       │
+│  ├─ Operations (Extrude, Revolve, Sweep, etc) │
+│  ├─ Assembly Module (Joints, BOM)             │
+│  ├─ AI Layer (Gemini, Groq, Offline NLP)      │
+│  └─ Viewport (Three.js r170)                  │
+├─────────────────────────────────────────────────┤
+│  WASM Layer (OpenCascade.js)                   │
+│  ├─ STEP Import/Export                        │
+│  ├─ Real B-Rep Kernel                         │
+│  └─ Boolean Operations                        │
+├─────────────────────────────────────────────────┤
+│  ExplodeView Integration (40+ analysis tools) │
+├─────────────────────────────────────────────────┤
+│  Docker (Optional self-hosting)                │
+│  ├─ MCP Server                                 │
+│  ├─ REST API                                   │
+│  ├─ STEP Converter (FastAPI)                   │
+│  └─ CLI Tool                                   │
+└─────────────────────────────────────────────────┘
+
+Strengths:
+✓ Zero installation — works anywhere
+✓ Open source — extend anything
+✓ Modular LEGO design — pick what you need
+✓ AI-native (agents are first-class citizens)
+✓ Mobile-friendly (responsive design)
+✓ Self-hosted option (full Docker stack)
+✓ ESM + CDN — instant deployment
+
+Weaknesses:
+✗ Newer — less battle-tested than Fusion
+✗ WASM performance < C++ on huge assemblies
+✗ Approximations for fillet/chamfer (torus-based)
+✗ Boolean operations visual-only (not real CSG)
+✗ Limited CAM (basic 3D slicing only)</div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Tech Stack Comparison</div>
+                <div style="overflow-x: auto;">
+                    <table class="feature-table" style="margin-top: 20px;">
+                        <thead>
+                            <tr>
+                                <th>Aspect</th>
+                                <th>Fusion 360</th>
+                                <th>cycleCAD</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="feature-name">Language</td>
+                                <td>C++ (desktop) + C# (cloud)</td>
+                                <td>JavaScript (ES modules)</td>
+                            </tr>
+                            <tr>
+                                <td class="feature-name">Geometry Kernel</td>
+                                <td>Parasolid-like (proprietary)</td>
+                                <td>OpenCascade.js WASM</td>
+                            </tr>
+                            <tr>
+                                <td class="feature-name">Rendering</td>
+                                <td>Vulkan/Metal (GPU)</td>
+                                <td>Three.js r170 WebGL</td>
+                            </tr>
+                            <tr>
+                                <td class="feature-name">Deployment</td>
+                                <td>Desktop app + cloud sync</td>
+                                <td>Browser (or Docker self-hosted)</td>
+                            </tr>
+                            <tr>
+                                <td class="feature-name">License</td>
+                                <td>Proprietary (Autodesk)</td>
+                                <td>MIT (open source)</td>
+                            </tr>
+                            <tr>
+                                <td class="feature-name">Extensibility</td>
+                                <td>C++ SDK + script API (limited)</td>
+                                <td>Full API (REST, MCP, CLI, JS)</td>
+                            </tr>
+                            <tr>
+                                <td class="feature-name">Data Format</td>
+                                <td>Proprietary (.f360, .fusion)</td>
+                                <td>Open (STEP, STL, OBJ, glTF, JSON)</td>
+                            </tr>
+                            <tr>
+                                <td class="feature-name">Collaboration</td>
+                                <td>Cloud workspace (Autodesk)</td>
+                                <td>Self-hosted (Docker) or Browser-native</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 4: Pricing -->
+        <div id="pricing" class="tab-content">
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <h3>Fusion 360 Personal</h3>
+                    <div class="price">Free*</div>
+                    <div class="period">*Limited to hobbyists, students</div>
+                    <ul>
+                        <li>✓ Basic modeling</li>
+                        <li>✓ Single design</li>
+                        <li>✗ No collaboration</li>
+                        <li>✗ No cloud storage</li>
+                        <li>✗ No CAM</li>
+                        <li>✗ No simulation</li>
+                        <li>✗ Limited support</li>
+                    </ul>
+                </div>
+
+                <div class="pricing-card featured">
+                    <h3>Fusion 360 Standard</h3>
+                    <div class="price">$545/yr</div>
+                    <div class="period">$60/month if paid monthly</div>
+                    <ul>
+                        <li>✓ Full modeling</li>
+                        <li>✓ Cloud workspace</li>
+                        <li>✓ Basic collaboration</li>
+                        <li>✓ CAM (2.5-axis)</li>
+                        <li>✓ Basic simulation</li>
+                        <li>✓ Cloud storage (5GB)</li>
+                        <li>✓ Email support</li>
+                    </ul>
+                </div>
+
+                <div class="pricing-card">
+                    <h3>Fusion 360 Premium</h3>
+                    <div class="price">$2,345/yr</div>
+                    <div class="period">+$500 CAM Extension</div>
+                    <ul>
+                        <li>✓ All Standard features</li>
+                        <li>✓ Advanced CAM (5-axis)</li>
+                        <li>✓ Advanced simulation (FEA)</li>
+                        <li>✓ PCB design integration</li>
+                        <li>✓ Real-time collaboration</li>
+                        <li>✓ 100GB cloud storage</li>
+                        <li>✓ Priority support</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h2 style="margin-top: 60px; margin-bottom: 20px; font-size: 28px;">cycleCAD Pricing</h2>
+
+            <div class="pricing-grid">
+                <div class="pricing-card featured">
+                    <h3>Free Forever</h3>
+                    <div class="price">$0</div>
+                    <div class="period">No time limit, no credit card</div>
+                    <ul>
+                        <li>✓ Full parametric modeling</li>
+                        <li>✓ Sketcher + operations</li>
+                        <li>✓ Assembly workspace</li>
+                        <li>✓ 40+ analysis tools (via ExplodeView)</li>
+                        <li>✓ AI chatbot (Gemini Flash, Groq)</li>
+                        <li>✓ Part identifier + BOM</li>
+                        <li>✓ STEP/STL/OBJ/glTF import+export</li>
+                        <li>✓ Inventor .ipt/.iam import</li>
+                        <li>✓ CLI tool + REST API</li>
+                        <li>✓ Open source (MIT)</li>
+                    </ul>
+                </div>
+
+                <div class="pricing-card">
+                    <h3>Pro</h3>
+                    <div class="price">€49/mo</div>
+                    <div class="period">€588/year</div>
+                    <ul>
+                        <li>✓ All Free features</li>
+                        <li>✓ Real-time collaboration (WebRTC)</li>
+                        <li>✓ Cloud workspace</li>
+                        <li>✓ Git-style version control</li>
+                        <li>✓ Advanced design review</li>
+                        <li>✓ Unlimited cloud storage</li>
+                        <li>✓ Priority AI processing</li>
+                        <li>✓ Custom materials library</li>
+                        <li>✓ Email + chat support</li>
+                    </ul>
+                </div>
+
+                <div class="pricing-card">
+                    <h3>Enterprise</h3>
+                    <div class="price">€299/mo</div>
+                    <div class="period">€3,588/year</div>
+                    <ul>
+                        <li>✓ All Pro features</li>
+                        <li>✓ Self-hosted (Docker)</li>
+                        <li>✓ SSO + SAML</li>
+                        <li>✓ On-premise MCP server</li>
+                        <li>✓ Custom integrations</li>
+                        <li>✓ Dedicated account manager</li>
+                        <li>✓ SLA guarantee (99.9%)</li>
+                        <li>✓ Private AI instances</li>
+                        <li>✓ Phone + dedicated support</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 40px;">
+                <div class="card-title">Total Cost of Ownership (5-Year)</div>
+                <div style="overflow-x: auto;">
+                    <table class="feature-table" style="margin-top: 20px;">
+                        <thead>
+                            <tr>
+                                <th>Scenario</th>
+                                <th>Fusion 360 Standard</th>
+                                <th>cycleCAD Free</th>
+                                <th>Savings</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="feature-name">Hobbyist (1 seat, 5 years)</td>
+                                <td>$2,725 (or free personal)</td>
+                                <td>$0</td>
+                                <td>$2,725</td>
+                            </tr>
+                            <tr>
+                                <td class="feature-name">Small team (3 seats, 5 years)</td>
+                                <td>$8,175</td>
+                                <td>$0 (Pro: €8,820)</td>
+                                <td>$8,175 (or $0 with Pro)</td>
+                            </tr>
+                            <tr>
+                                <td class="feature-name">Department (10 seats, 5 years)</td>
+                                <td>$27,250</td>
+                                <td>$0 (Enterprise: €179,400)</td>
+                                <td>$27,250</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="callout">
+                <div class="callout-title">💰 What You Get for FREE with cycleCAD</div>
+                <div class="callout-text">
+                    ✓ Everything Fusion 360 Standard includes (full modeling, assembly, CAM basics)<br>
+                    ✓ PLUS 40+ analysis tools (BOM, weight, cost, maintenance, thermal, vibration)<br>
+                    ✓ PLUS AI chatbot with Gemini Flash + Groq (no API keys needed)<br>
+                    ✓ PLUS part identifier (automatically classify parts, search McMaster-Carr)<br>
+                    ✓ PLUS Inventor import (no conversion needed, keeps parametrics)<br>
+                    ✓ PLUS command-line tool + REST API + MCP server (build your own automation)<br>
+                    ✓ PLUS open source (fork it, run it yourself, no vendor lock-in)<br><br>
+
+                    <strong>Fusion 360 would charge you extra for ALL of these.</strong> cycleCAD gives them to you free.
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 5: cycleCAD Advantages -->
+        <div id="advantages" class="tab-content">
+            <h2 style="margin-bottom: 30px; font-size: 28px;">What cycleCAD Does Better</h2>
+
+            <div class="card">
+                <div class="card-title">🌐 Browser-Native — No Installation</div>
+                <div class="card-subtitle">Works on any device. Instantly.</div>
+                <div style="color: #CBD5E1;">
+                    <strong>Fusion 360:</strong> Requires desktop app (Windows, Mac, or cloud). Download: 2GB. Install: 10 minutes. Storage: 5GB+.<br><br>
+                    <strong>cycleCAD:</strong> Open browser, go to cyclecad.com/app/. Works on Chromebooks, tablets, old laptops, iPad with Safari. Zero footprint.<br><br>
+                    <strong>Implication:</strong> You can design on your lunch break from your phone. Bring your design to a customer's site on their laptop. Use CAD from a library computer.
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🔓 Open Source — MIT License</div>
+                <div class="card-subtitle">Full transparency. Full control. No vendor lock-in.</div>
+                <div style="color: #CBD5E1;">
+                    <strong>Fusion 360:</strong> Proprietary. You don't own your code. Autodesk can change features, pricing, or deprecate entire tools. See: Fusion 360's recent CAM overhaul.<br><br>
+                    <strong>cycleCAD:</strong> MIT license — you can fork it, modify it, run it yourself, sell services using it. No one can take it away from you.<br><br>
+                    <strong>Implication:</strong> Build with confidence. Your designs and customizations are yours forever. Create a competitive advantage by extending cycleCAD for your industry.
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🤖 AI-Powered Throughout — Built-In, FREE</div>
+                <div class="card-subtitle">No separate plugin, no monthly fees, no API keys needed.</div>
+                <div style="color: #CBD5E1;">
+                    <strong>Fusion 360:</strong> Basic AI in Autodesk Generative Design (extra cost). Requires Autodesk's cloud. Limited to topology optimization only.<br><br>
+                    <strong>cycleCAD:</strong>
+                    <ul style="margin-top: 12px; margin-left: 20px;">
+                        <li>✓ <strong>AI Chatbot:</strong> Ask questions about your design. "How much does this part weigh?" "Can I 3D print this?"</li>
+                        <li>✓ <strong>Part Identifier:</strong> Upload a photo, AI identifies part type + searches for suppliers (McMaster-Carr, Misumi, etc.)</li>
+                        <li>✓ <strong>Design Review:</strong> AI critiques your design. "This edge is too sharp for injection molding." "You can reduce wall thickness here."</li>
+                        <li>✓ <strong>NL Search:</strong> "Show me all parts with walls thinner than 1mm" — plain English queries</li>
+                        <li>✓ <strong>Text-to-CAD:</strong> "Create a cylinder 50mm diameter 80mm tall" — voice or text commands</li>
+                        <li>✓ <strong>Batch Scan:</strong> Import 200-part assembly, AI identifies every part automatically, creates smart BOM with pricing</li>
+                    </ul><br>
+                    <strong>Implication:</strong> AI is not a luxury feature. It's part of your design workflow. Spend less time on grunt work, more time on creativity.
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🔌 Agent-First API — 55+ Commands</div>
+                <div class="card-subtitle">Build automation. Build integrations. Build your own agents.</div>
+                <div style="color: #CBD5E1;">
+                    <strong>Fusion 360:</strong> Script API (Python, C++). Limited commands. Steep learning curve. No MCP or REST API. Agents cannot drive Fusion 360 at scale.<br><br>
+                    <strong>cycleCAD:</strong>
+                    <ul style="margin-top: 12px; margin-left: 20px;">
+                        <li>✓ <strong>55+ JSON-RPC commands:</strong> shape.*, feature.*, assembly.*, render.*, validate.*, export.*</li>
+                        <li>✓ <strong>REST API:</strong> HTTP POST to create parts, apply operations, export models</li>
+                        <li>✓ <strong>MCP Server:</strong> Hook into Claude, other AI agents, automation platforms</li>
+                        <li>✓ <strong>CLI Tool:</strong> `cyclecad shape.cylinder --radius 25 --height 80 > output.stl`</li>
+                        <li>✓ <strong>WebSocket:</strong> Real-time bidirectional commands</li>
+                        <li>✓ <strong>Self-describing:</strong> Call `getSchema()` to introspect API from any language</li>
+                    </ul><br>
+                    <strong>Example use cases:</strong>
+                    <ul style="margin-top: 12px; margin-left: 20px;">
+                        <li>• Batch generate 1000 part variations from parameters</li>
+                        <li>• AI agent designs mounting brackets automatically</li>
+                        <li>• CAM workflow: design → cost estimate → manufacturing quote (all automated)</li>
+                        <li>• Parametric generator: input customer requirements → output design files</li>
+                        <li>• Integration with ERP/PLM systems</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📁 Inventor Import — Native .ipt & .iam</div>
+                <div class="card-subtitle">Preserve parametrics. No conversion needed.</div>
+                <div style="color: #CBD5E1;">
+                    <strong>Fusion 360:</strong> Supports STEP import only. Autodesk Inventor (.ipt) must be converted to STEP first (loses all parameters, constraints, feature tree).<br><br>
+                    <strong>cycleCAD:</strong> Native .ipt and .iam import. Full feature tree preserved. Dimensions, constraints, design intent all visible and editable.<br><br>
+                    <strong>Why it matters:</strong> If you have legacy Inventor designs (Autodesk's own product!), cycleCAD can actually read them better than Fusion 360 can. You can modify existing designs without rebuilding from scratch.
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🔬 ExplodeView Integration — 40+ Analysis Tools</div>
+                <div class="card-subtitle">399-part assemblies with AI-powered insights.</div>
+                <div style="color: #CBD5E1;">
+                    <strong>Fusion 360:</strong> Viewer for exploded views. Cost estimation requires third-party plugins (Fusion 360 Jobs, Xometry, etc.). No maintenance scheduling, thermal analysis, or service manuals.<br><br>
+                    <strong>cycleCAD:</strong> Integrated ExplodeView with:
+                    <ul style="margin-top: 12px; margin-left: 20px;">
+                        <li>✓ <strong>BOM with cost estimation:</strong> Auto-fetch prices from McMaster-Carr</li>
+                        <li>✓ <strong>Weight analysis:</strong> Per-part, per-assembly, material density</li>
+                        <li>✓ <strong>Thermal heatmap:</strong> Part type → temperature range visualization</li>
+                        <li>✓ <strong>Maintenance schedule:</strong> AI generates 5-year service plan by part criticality</li>
+                        <li>✓ <strong>Service manual generation:</strong> Auto-create HTML/PDF field tech manuals</li>
+                        <li>✓ <strong>Wear timeline:</strong> Gantt chart showing replacement schedules</li>
+                        <li>✓ <strong>AR scanner:</strong> Point phone at machine, see interactive exploded view</li>
+                        <li>✓ <strong>Fastener detection:</strong> 12 bolt patterns, auto-find torque specs</li>
+                        <li>✓ <strong>Clearance analysis:</strong> Check distances between 200+ parts</li>
+                        <li>✓ <strong>Assembly validator:</strong> Detect missing parts, overconstraint, design issues</li>
+                    </ul><br>
+                    <strong>Cost comparison:</strong> This would be $500-2000/mo in separate SaaS tools. Included free with cycleCAD.
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">💰 $CYCLE Token Economy — Earn While You Share</div>
+                <div class="card-subtitle">Publish designs, earn credits. Share models, get paid.</div>
+                <div style="color: #CBD5E1;">
+                    <strong>Fusion 360:</strong> No monetization. Design is locked in Autodesk's ecosystem. If you want to sell your designs, you must move them out of Fusion 360 first (conversion headaches).<br><br>
+                    <strong>cycleCAD:</strong>
+                    <ul style="margin-top: 12px; margin-left: 20px;">
+                        <li>✓ Publish designs to marketplace</li>
+                        <li>✓ Set access tiers (free, $5, $50, enterprise)</li>
+                        <li>✓ Earn 70-90% creator royalties</li>
+                        <li>✓ AI agents purchase models automatically</li>
+                        <li>✓ Build CAD IP portfolio that generates passive income</li>
+                        <li>✓ Token system: save on operations, earn on library, cash out to USDC/ETH</li>
+                    </ul><br>
+                    <strong>Implication:</strong> cycleCAD can be your side hustle. Design parametric library fixtures → publish → earn $100/mo passive income per model.
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📱 Mobile Viewer — Design on Your Phone</div>
+                <div class="card-subtitle">Phone app (native or PWA) for reviewing designs on the go.</div>
+                <div style="color: #CBD5E1;">
+                    <strong>Fusion 360:</strong> Mobile viewer (view-only). Cannot edit or create designs on phone.<br><br>
+                    <strong>cycleCAD:</strong> Full PWA (progressive web app) for iOS and Android. Design on your phone if needed (UI optimized for touch). Offline mode works too.
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🐳 Docker Self-Hosting — Keep Your Data</div>
+                <div class="card-subtitle">Run on your servers. Own your infrastructure.</div>
+                <div style="color: #CBD5E1;">
+                    <strong>Fusion 360:</strong> Cloud-locked. Autodesk's servers. Must trust their compliance, data center choice, SLA.<br><br>
+                    <strong>cycleCAD:</strong> Full Docker stack (Dockerfile provided). Deploy on:
+                    <ul style="margin-top: 12px; margin-left: 20px;">
+                        <li>✓ Your own AWS/Azure/GCP account</li>
+                        <li>✓ On-premise servers (manufacturing floor)</li>
+                        <li>✓ Air-gapped (no internet required)</li>
+                        <li>✓ HIPAA/SOC2 compliant (your choice of hosting)</li>
+                    </ul><br>
+                    <strong>Implication:</strong> Pharma companies, government contractors, defense firms can use cycleCAD. Fusion 360's cloud-only model doesn't work for them.
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 6: Migration Guide -->
+        <div id="migration" class="tab-content">
+            <h2 style="margin-bottom: 30px; font-size: 28px;">How to Migrate from Fusion 360 to cycleCAD</h2>
+
+            <div class="step">
+                <span class="step-number">1</span>
+                <div class="step-title">Export Your Designs from Fusion 360</div>
+                <div class="step-content">
+                    <strong>STEP Format (recommended):</strong><br>
+                    File → Export → STEP (.step) — preserves geometry, loses parametrics<br><br>
+                    <strong>Native Format:</strong><br>
+                    If you have Inventor files (.iam/.ipt), cycleCAD can import them directly (better than Fusion 360 can).<br><br>
+                    <strong>What you get:</strong> 3D geometry, assembly structure, part names, metadata<br>
+                    <strong>What you lose:</strong> Fusion 360 feature tree (rebuild operations), sketches, constraints
+                </div>
+            </div>
+
+            <div class="step">
+                <span class="step-number">2</span>
+                <div class="step-title">Import Into cycleCAD</div>
+                <div class="step-content">
+                    Go to <strong>cyclecad.com/app</strong><br>
+                    Click <strong>File → Import</strong><br>
+                    Select your STEP file<br>
+                    cycleCAD will parse the geometry and create a 3D view<br><br>
+                    <strong>Note:</strong> Your design is now parametric again. You can add new operations, modify dimensions, export as STEP for CAM.
+                </div>
+            </div>
+
+            <div class="step">
+                <span class="step-number">3</span>
+                <div class="step-title">Verify Assembly Structure</div>
+                <div class="step-content">
+                    Check the <strong>Model Tree</strong> (left panel) to see components<br>
+                    Use <strong>ExplodeView</strong> (integrated) to visualize assembly<br>
+                    Verify <strong>BOM</strong> (Bill of Materials) with AI auto-identification<br>
+                    Check <strong>assembly constraints</strong> — cycleCAD shows mate references if available
+                </div>
+            </step>
+
+            <div class="step">
+                <span class="step-number">4</span>
+                <div class="step-title">Feature Mapping: Fusion → cycleCAD Equivalent</div>
+                <div class="step-content">
+                    <div class="collapsible" onclick="toggleCollapsible(this)">
+                        <div class="collapsible-header">
+                            <span>Sketch Features</span>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content">
+                            Fusion 360 → cycleCAD<br>
+                            • Line → Sketch Line ✓<br>
+                            • Rectangle → Sketch Rectangle ✓<br>
+                            • Circle → Sketch Circle ✓<br>
+                            • Arc → Sketch Arc ✓<br>
+                            • Spline → Sketch Spline ✓<br>
+                            • Constraints → Constraint Solver (12 types) ✓<br>
+                            • Auto-Constrain → Available ✓<br>
+                            • Dimension → Linear/Angular/Radial ✓
+                        </div>
+                    </div>
+
+                    <div class="collapsible" onclick="toggleCollapsible(this)">
+                        <div class="collapsible-header">
+                            <span>Solid Operations</span>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content">
+                            Fusion 360 → cycleCAD<br>
+                            • Extrude → Extrude ✓<br>
+                            • Revolve → Revolve ✓<br>
+                            • Sweep → Sweep (with path) ✓<br>
+                            • Loft → Loft (between profiles) ✓<br>
+                            • Hole → Hole (simple, counterbore, countersink) ✓<br>
+                            • Fillet → Fillet (approximate with torus) 🟡<br>
+                            • Chamfer → Chamfer (edge) 🟡<br>
+                            • Shell → Shell (hollow) ✓<br>
+                            • Pattern → Rectangular/Circular pattern ✓<br>
+                            • Mirror → Mirror across plane ✓<br>
+                            • Combine → Boolean Union/Cut/Intersect 🟡<br>
+                            • Draft → Draft angle ✓
+                        </div>
+                    </div>
+
+                    <div class="collapsible" onclick="toggleCollapsible(this)">
+                        <div class="collapsible-header">
+                            <span>Assembly Features</span>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content">
+                            Fusion 360 → cycleCAD<br>
+                            • New Component → Create part in assembly ✓<br>
+                            • Joint (Rigid) → Rigid joint ✓<br>
+                            • Joint (Revolute) → Revolute joint ✓<br>
+                            • Joint (Slider) → Slider joint ✓<br>
+                            • Contact Set → Contact constraint 🟡<br>
+                            • Exploded View → ExplodeView integration ✓<br>
+                            • BOM → Smart BOM with AI ✓
+                        </div>
+                    </div>
+
+                    <div class="collapsible" onclick="toggleCollapsible(this)">
+                        <div class="collapsible-header">
+                            <span>File Formats</span>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content">
+                            Fusion 360 → cycleCAD<br>
+                            • STEP Import ✓ → STEP Import ✓<br>
+                            • Inventor (.ipt) ✗ → Inventor (.ipt) ✓ (cycleCAD wins!)<br>
+                            • STL Export ✓ → STL Export ✓<br>
+                            • OBJ Export ✓ → OBJ Export ✓<br>
+                            • glTF Export ✓ → glTF Export ✓<br>
+                            • PDF Drawing → DXF/PDF Export ✓<br>
+                            • Parasolid (.x_t) ✓ → Parasolid via STEP ✓
+                        </div>
+                    </div>
+
+                    <div class="collapsible" onclick="toggleCollapsible(this)">
+                        <div class="collapsible-header">
+                            <span>Analysis Tools (cycleCAD Extras)</span>
+                            <span class="collapsible-toggle">▼</span>
+                        </div>
+                        <div class="collapsible-content">
+                            These are BONUS features cycleCAD includes that Fusion 360 doesn't have:<br>
+                            • Weight estimation ✓<br>
+                            • Cost analysis ✓<br>
+                            • Maintenance schedule ✓<br>
+                            • Thermal heatmap ✓<br>
+                            • Fastener detection ✓<br>
+                            • Clearance check ✓<br>
+                            • Assembly validator ✓<br>
+                            • Service manual generator ✓<br>
+                            • Wear timeline (5-year forecast) ✓
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step">
+                <span class="step-number">5</span>
+                <div class="step-title">Known Limitations & Workarounds</div>
+                <div class="step-content">
+                    <strong>Limitation 1: Fillet & Chamfer approximations</strong><br>
+                    cycleCAD uses torus-based approximations, not real edge rounding (Fusion 360 uses actual BREP kernel).<br>
+                    <em>Workaround:</em> Export to STEP, use OpenCascade.js backend for real B-Rep boolean and fillet operations (in progress).<br><br>
+
+                    <strong>Limitation 2: Limited CAM (G-code)</strong><br>
+                    cycleCAD has basic 3D slicing (FDM), not industrial CAM with 5-axis toolpaths.<br>
+                    <em>Workaround:</em> Export STL to Fusion 360 CAM, Fusion 360 CAM extension, or Kiri:Moto (free). cycleCAD integrates with Kiri:Moto one-click export.<br><br>
+
+                    <strong>Limitation 3: Simulation (FEA, Thermal)</strong><br>
+                    cycleCAD doesn't have built-in FEA solver yet. Fusion 360 has mature simulation.<br>
+                    <em>Workaround:</em> Export STEP to free tools (FreeCAD, Salome, Code_Aster) or cloud FEA services (SimScale, OnScale).<br><br>
+
+                    <strong>Limitation 4: Sheet Metal unfolding</strong><br>
+                    cycleCAD has sheet metal features (bend, flange, tab, slot) but unfold calculations are approximated.<br>
+                    <em>Workaround:</em> Use Fusion 360 CAM for flat patterns, or use specialized sheet metal software (Stratasys, Amada).<br><br>
+
+                    <strong>Fusion 360 → cycleCAD Win: Inventor Import</strong><br>
+                    cycleCAD can import native Inventor .ipt/.iam files while Fusion 360 cannot. If you have legacy Inventor designs, cycleCAD is actually better for migration.
+                </div>
+            </div>
+
+            <div class="step">
+                <span class="step-number">6</span>
+                <div class="step-title">Leverage cycleCAD's Extras</div>
+                <div class="step-content">
+                    Now that you're in cycleCAD, use features Fusion 360 doesn't have:<br><br>
+
+                    <strong>AI Chatbot:</strong> Ask "Is this part 3D printable?" and AI reviews geometry, material, layer directions.<br><br>
+
+                    <strong>Part Identifier:</strong> Upload photo of fastener → AI identifies bolt type → links to McMaster-Carr for instant ordering.<br><br>
+
+                    <strong>Design Review:</strong> AI critiques your design. "This fillet radius is too small for CNC. Use 0.5mm minimum." "Your wall thickness is fine for injection molding."<br><br>
+
+                    <strong>Smart BOM:</strong> Generate bill of materials with supplier links and pricing, sorted by cost.<br><br>
+
+                    <strong>ExplodeView Integration:</strong> Visualize 399-part assemblies with interactive explosions, maintenance schedules, thermal analysis, and more.<br><br>
+
+                    <strong>Service Manual Generator:</strong> Auto-create field technician manual with part numbers, torque specs, replacement schedules, and AR links.
+                </div>
+            </div>
+
+            <div class="step">
+                <span class="step-number">7</span>
+                <div class="step-title">Community & Resources</div>
+                <div class="step-content">
+                    <strong>Documentation:</strong> cyclecad.com/docs<br>
+                    <strong>GitHub:</strong> github.com/vvlars-cmd/cyclecad<br>
+                    <strong>Discord:</strong> Join community chat for migration help<br>
+                    <strong>LinkedIn:</strong> Follow @cyclecad for updates and use cases<br>
+                    <strong>YouTube:</strong> Fusion 360 vs cycleCAD migration tutorials (coming soon)<br>
+                    <strong>Email support:</strong> hello@cyclecad.com for migration questions
+                </div>
+            </div>
+
+            <div class="callout">
+                <div class="callout-title">🚀 Your Fusion 360 Exit Strategy</div>
+                <div class="callout-text">
+                    <strong>Month 1:</strong> Export key designs as STEP. Test import in cycleCAD. Verify assembly structure and BOM.<br><br>
+                    <strong>Month 2:</strong> Re-create one complex part from scratch in cycleCAD (learn the UI). Use AI chatbot for questions.<br><br>
+                    <strong>Month 3:</strong> Batch-import all STEP files. Use ExplodeView to verify assemblies. Generate service manuals with AI.<br><br>
+                    <strong>Month 4+:</strong> Sunset Fusion 360 subscription. Save $545/yr. Maintain designs in cycleCAD. Publish to marketplace and earn token royalties.<br><br>
+
+                    <strong>ROI:</strong> You break even on migration effort in ~3 months (saved subscription cost). Then it's pure savings + new capabilities (AI, agents, analysis tools).
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Feature matrix data
+        const features = [
+            // SKETCH FEATURES
+            { category: 'DESIGN — Sketch (30+ features)', name: 'Line', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DESIGN — Sketch (30+ features)', name: 'Rectangle', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DESIGN — Sketch (30+ features)', name: 'Circle', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DESIGN — Sketch (30+ features)', name: 'Arc', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DESIGN — Sketch (30+ features)', name: 'Ellipse', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DESIGN — Sketch (30+ features)', name: 'Spline (control point)', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DESIGN — Sketch (30+ features)', name: 'Spline (fit point)', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DESIGN — Sketch (30+ features)', name: 'Polygon', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DESIGN — Sketch (30+ features)', name: 'Slot (center point)', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DESIGN — Sketch (30+ features)', name: 'Slot (3-point)', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DESIGN — Sketch (30+ features)', name: 'Slot (center-to-center)', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DESIGN — Sketch (30+ features)', name: 'Text', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DESIGN — Sketch (30+ features)', name: 'Point', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DESIGN — Sketch (30+ features)', name: 'Construction geometry', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DESIGN — Sketch (30+ features)', name: 'Trim', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DESIGN — Sketch (30+ features)', name: 'Extend', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DESIGN — Sketch (30+ features)', name: 'Offset', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DESIGN — Sketch (30+ features)', name: 'Mirror', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DESIGN — Sketch (30+ features)', name: 'Circular pattern', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DESIGN — Sketch (30+ features)', name: 'Rectangular pattern', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DESIGN — Sketch (30+ features)', name: 'Constraints (13+ types)', fusion360: true, cyclecad: true, notes: 'Coincident, horizontal, vertical, parallel, perpendicular, tangent, equal, fixed, concentric, symmetric, distance, angle, perpendicular' },
+            { category: 'DESIGN — Sketch (30+ features)', name: 'Constraint solver', fusion360: true, cyclecad: true, notes: 'Newton-Raphson iterative solver' },
+            { category: 'DESIGN — Sketch (30+ features)', name: 'DOF analysis', fusion360: true, cyclecad: true, notes: 'Detect over/under-constrained sketches' },
+            { category: 'DESIGN — Sketch (30+ features)', name: 'Auto-constrain', fusion360: true, cyclecad: true, notes: 'Detect and apply constraints automatically' },
+
+            // SOLID MODELING
+            { category: 'DESIGN — Solid Modeling (25+ features)', name: 'Extrude', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DESIGN — Solid Modeling (25+ features)', name: 'Revolve', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DESIGN — Solid Modeling (25+ features)', name: 'Sweep', fusion360: true, cyclecad: true, notes: 'Profile along path with twist' },
+            { category: 'DESIGN — Solid Modeling (25+ features)', name: 'Loft', fusion360: true, cyclecad: true, notes: 'Between profiles with interpolation' },
+            { category: 'DESIGN — Solid Modeling (25+ features)', name: 'Hole (simple)', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DESIGN — Solid Modeling (25+ features)', name: 'Hole (counterbore)', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DESIGN — Solid Modeling (25+ features)', name: 'Hole (countersink)', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DESIGN — Solid Modeling (25+ features)', name: 'Thread', fusion360: true, cyclecad: true, notes: 'Helical thread generation' },
+            { category: 'DESIGN — Solid Modeling (25+ features)', name: 'Fillet (edge)', fusion360: true, cyclecad: 'partial', notes: 'cycleCAD: torus approximation' },
+            { category: 'DESIGN — Solid Modeling (25+ features)', name: 'Chamfer (edge)', fusion360: true, cyclecad: 'partial', notes: 'cycleCAD: cone approximation' },
+            { category: 'DESIGN — Solid Modeling (25+ features)', name: 'Shell', fusion360: true, cyclecad: true, notes: 'Hollow geometry with thickness' },
+            { category: 'DESIGN — Solid Modeling (25+ features)', name: 'Draft', fusion360: true, cyclecad: true, notes: 'Taper angle for molding' },
+            { category: 'DESIGN — Solid Modeling (25+ features)', name: 'Split body', fusion360: true, cyclecad: false, notes: 'Planned' },
+            { category: 'DESIGN — Solid Modeling (25+ features)', name: 'Mirror', fusion360: true, cyclecad: true, notes: 'Reflect across plane' },
+            { category: 'DESIGN — Solid Modeling (25+ features)', name: 'Rectangular pattern', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DESIGN — Solid Modeling (25+ features)', name: 'Circular pattern', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DESIGN — Solid Modeling (25+ features)', name: 'Combine (union)', fusion360: true, cyclecad: 'partial', notes: 'cycleCAD: visual indicator only (will upgrade to real CSG)' },
+            { category: 'DESIGN — Solid Modeling (25+ features)', name: 'Combine (cut)', fusion360: true, cyclecad: 'partial', notes: 'cycleCAD: visual indicator only' },
+            { category: 'DESIGN — Solid Modeling (25+ features)', name: 'Combine (intersect)', fusion360: true, cyclecad: 'partial', notes: 'cycleCAD: visual indicator only' },
+            { category: 'DESIGN — Solid Modeling (25+ features)', name: 'Thicken', fusion360: true, cyclecad: true, notes: 'Surface to solid conversion' },
+            { category: 'DESIGN — Solid Modeling (25+ features)', name: 'Replace face', fusion360: true, cyclecad: false, notes: 'Planned' },
+
+            // ASSEMBLY
+            { category: 'ASSEMBLY (15+ features)', name: 'New component', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'ASSEMBLY (15+ features)', name: 'Joint (rigid)', fusion360: true, cyclecad: true, notes: 'Fixed mate' },
+            { category: 'ASSEMBLY (15+ features)', name: 'Joint (revolute)', fusion360: true, cyclecad: true, notes: 'Rotation around axis' },
+            { category: 'ASSEMBLY (15+ features)', name: 'Joint (slider)', fusion360: true, cyclecad: true, notes: 'Linear translation' },
+            { category: 'ASSEMBLY (15+ features)', name: 'Joint (cylindrical)', fusion360: true, cyclecad: true, notes: 'Rotation + translation' },
+            { category: 'ASSEMBLY (15+ features)', name: 'Joint (pin-slot)', fusion360: true, cyclecad: 'partial', notes: 'cycleCAD: basic support' },
+            { category: 'ASSEMBLY (15+ features)', name: 'Joint (planar)', fusion360: true, cyclecad: true, notes: 'Mate to face' },
+            { category: 'ASSEMBLY (15+ features)', name: 'Contact set', fusion360: true, cyclecad: 'partial', notes: 'Collision detection' },
+            { category: 'ASSEMBLY (15+ features)', name: 'Motion study', fusion360: true, cyclecad: false, notes: 'Planned' },
+            { category: 'ASSEMBLY (15+ features)', name: 'Interference check', fusion360: true, cyclecad: true, notes: 'Collision detection' },
+            { category: 'ASSEMBLY (15+ features)', name: 'Exploded view', fusion360: true, cyclecad: true, notes: 'Via ExplodeView integration' },
+            { category: 'ASSEMBLY (15+ features)', name: 'BOM (Bill of Materials)', fusion360: true, cyclecad: true, notes: 'With AI auto-identification' },
+            { category: 'ASSEMBLY (15+ features)', name: 'Component pattern', fusion360: true, cyclecad: true, notes: 'Circular/rectangular array' },
+
+            // DRAWING
+            { category: 'DRAWING (15+ features)', name: 'Base view', fusion360: true, cyclecad: true, notes: 'From 3D model' },
+            { category: 'DRAWING (15+ features)', name: 'Projected view', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DRAWING (15+ features)', name: 'Section view', fusion360: true, cyclecad: true, notes: 'Cut section' },
+            { category: 'DRAWING (15+ features)', name: 'Detail view', fusion360: true, cyclecad: true, notes: 'Zoomed callout' },
+            { category: 'DRAWING (15+ features)', name: 'Linear dimension', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DRAWING (15+ features)', name: 'Angular dimension', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DRAWING (15+ features)', name: 'Radial dimension', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DRAWING (15+ features)', name: 'GD&T symbols', fusion360: true, cyclecad: true, notes: 'Geometric dimensioning & tolerancing' },
+            { category: 'DRAWING (15+ features)', name: 'Surface finish', fusion360: true, cyclecad: true, notes: 'Ra, Rz annotations' },
+            { category: 'DRAWING (15+ features)', name: 'Centerlines', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DRAWING (15+ features)', name: 'Balloons', fusion360: true, cyclecad: true, notes: 'Assembly callouts' },
+            { category: 'DRAWING (15+ features)', name: 'BOM table', fusion360: true, cyclecad: true, notes: 'On drawing' },
+            { category: 'DRAWING (15+ features)', name: 'PDF export', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'DRAWING (15+ features)', name: 'DXF export', fusion360: true, cyclecad: true, notes: '2D projection' },
+
+            // FILE FORMATS
+            { category: 'FILE FORMATS (25+ features)', name: 'STEP import', fusion360: true, cyclecad: true, notes: '3D geometry' },
+            { category: 'FILE FORMATS (25+ features)', name: 'STEP export', fusion360: true, cyclecad: true, notes: 'Full B-Rep (via OpenCascade.js)' },
+            { category: 'FILE FORMATS (25+ features)', name: 'IGES import', fusion360: true, cyclecad: true, notes: 'Legacy format' },
+            { category: 'FILE FORMATS (25+ features)', name: 'STL import', fusion360: true, cyclecad: true, notes: 'Mesh geometry' },
+            { category: 'FILE FORMATS (25+ features)', name: 'STL export', fusion360: true, cyclecad: true, notes: 'ASCII + binary' },
+            { category: 'FILE FORMATS (25+ features)', name: 'OBJ import', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'FILE FORMATS (25+ features)', name: 'OBJ export', fusion360: true, cyclecad: true, notes: '' },
+            { category: 'FILE FORMATS (25+ features)', name: '3MF import', fusion360: true, cyclecad: true, notes: '3D print format' },
+            { category: 'FILE FORMATS (25+ features)', name: '3MF export', fusion360: true, cyclecad: true, notes: '3D print format' },
+            { category: 'FILE FORMATS (25+ features)', name: 'glTF/GLB import', fusion360: true, cyclecad: true, notes: 'Web 3D standard' },
+            { category: 'FILE FORMATS (25+ features)', name: 'glTF/GLB export', fusion360: true, cyclecad: true, notes: 'Web 3D standard' },
+            { category: 'FILE FORMATS (25+ features)', name: 'PLY import', fusion360: true, cyclecad: true, notes: 'Point cloud' },
+            { category: 'FILE FORMATS (25+ features)', name: 'PLY export', fusion360: true, cyclecad: true, notes: 'Point cloud' },
+            { category: 'FILE FORMATS (25+ features)', name: 'FBX import', fusion360: true, cyclecad: true, notes: 'Autodesk format' },
+            { category: 'FILE FORMATS (25+ features)', name: 'DXF import', fusion360: true, cyclecad: true, notes: '2D drawing' },
+            { category: 'FILE FORMATS (25+ features)', name: 'DXF export', fusion360: true, cyclecad: true, notes: '2D drawing' },
+            { category: 'FILE FORMATS (25+ features)', name: 'DWG import', fusion360: true, cyclecad: false, notes: 'Planned' },
+            { category: 'FILE FORMATS (25+ features)', name: 'SolidWorks (.sldprt)', fusion360: true, cyclecad: false, notes: 'Via STEP conversion' },
+            { category: 'FILE FORMATS (25+ features)', name: 'Inventor (.ipt)', fusion360: false, cyclecad: true, notes: 'cycleCAD advantage: native import preserves parametrics' },
+            { category: 'FILE FORMATS (25+ features)', name: 'Inventor (.iam)', fusion360: false, cyclecad: true, notes: 'cycleCAD advantage: full assembly structure' },
+            { category: 'FILE FORMATS (25+ features)', name: 'Parasolid (.x_t)', fusion360: true, cyclecad: true, notes: 'Via STEP' },
+            { category: 'FILE FORMATS (25+ features)', name: 'PDF export', fusion360: true, cyclecad: true, notes: 'Drawing sheets' },
+            { category: 'FILE FORMATS (25+ features)', name: 'SVG export', fusion360: true, cyclecad: true, notes: '2D vector' },
+            { category: 'FILE FORMATS (25+ features)', name: 'PNG/JPEG export', fusion360: true, cyclecad: true, notes: '2D image' },
+
+            // AI & AGENTS
+            { category: 'AI & AGENTS (cycleCAD exclusive)', name: 'AI Chatbot', fusion360: false, cyclecad: true, notes: 'Gemini Flash + Groq (free, no API keys needed)' },
+            { category: 'AI & AGENTS (cycleCAD exclusive)', name: 'AI Part Identifier', fusion360: false, cyclecad: true, notes: 'Photo → classify → supplier links' },
+            { category: 'AI & AGENTS (cycleCAD exclusive)', name: 'Batch AI Scan', fusion360: false, cyclecad: true, notes: 'Auto-identify all parts in assembly' },
+            { category: 'AI & AGENTS (cycleCAD exclusive)', name: 'Smart NL Search', fusion360: false, cyclecad: true, notes: 'Natural language queries: "Show parts >5cm"' },
+            { category: 'AI & AGENTS (cycleCAD exclusive)', name: 'Agent API (55+ commands)', fusion360: false, cyclecad: true, notes: 'REST, MCP, CLI, WebSocket' },
+            { category: 'AI & AGENTS (cycleCAD exclusive)', name: 'MCP Server', fusion360: false, cyclecad: true, notes: 'Model Context Protocol for AI integration' },
+            { category: 'AI & AGENTS (cycleCAD exclusive)', name: 'REST API', fusion360: false, cyclecad: true, notes: 'HTTP endpoints for all operations' },
+            { category: 'AI & AGENTS (cycleCAD exclusive)', name: 'CLI Tool', fusion360: false, cyclecad: true, notes: 'Command-line interface for automation' },
+            { category: 'AI & AGENTS (cycleCAD exclusive)', name: 'Design Review AI', fusion360: false, cyclecad: true, notes: 'Auto-critique designs (DFM, manufacturability)' },
+            { category: 'AI & AGENTS (cycleCAD exclusive)', name: 'Text-to-CAD', fusion360: false, cyclecad: true, notes: 'Voice/text commands generate geometry' },
+        ];
+
+        // Initialize feature matrix on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            populateFeatureMatrix();
+            setupTabSwitching();
+            setupSearch();
+        });
+
+        function populateFeatureMatrix() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            let currentCategory = '';
+            let categoryId = 0;
+
+            features.forEach((feature, index) => {
+                if (feature.category !== currentCategory) {
+                    currentCategory = feature.category;
+                    categoryId++;
+
+                    // Add category header row
+                    const categoryRow = document.createElement('tr');
+                    categoryRow.classList.add('category');
+                    categoryRow.id = 'category-' + categoryId;
+                    categoryRow.onclick = () => toggleCategory(categoryId);
+
+                    categoryRow.innerHTML = `
+                        <td colspan="4">
+                            <div class="category-header">
+                                <span>${currentCategory}</span>
+                                <span class="category-toggle">▼</span>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(categoryRow);
+                }
+
+                // Add feature row
+                const row = document.createElement('tr');
+                row.classList.add('category-rows');
+                row.id = 'rows-' + categoryId;
+
+                const fusion360Status = feature.fusion360 ? '<span class="status-full">✅</span>' : '<span class="status-no">❌</span>';
+                const cyclecadStatus = feature.cyclecad === true ? '<span class="status-full">✅</span>' :
+                                      feature.cyclecad === 'partial' ? '<span class="status-partial">🟡</span>' :
+                                      '<span class="status-planned">🔲</span>';
+
+                row.innerHTML = `
+                    <td class="feature-name">${feature.name}</td>
+                    <td class="status">${fusion360Status}</td>
+                    <td class="status">${cyclecadStatus}</td>
+                    <td>${feature.notes}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Expand first category by default
+            expandCategory(1);
+        }
+
+        function toggleCategory(categoryId) {
+            const rows = document.getElementById('rows-' + categoryId);
+            const toggle = document.getElementById('category-' + categoryId).querySelector('.category-toggle');
+
+            if (rows.classList.contains('expanded')) {
+                rows.classList.remove('expanded');
+                toggle.classList.add('collapsed');
+            } else {
+                rows.classList.add('expanded');
+                toggle.classList.remove('collapsed');
+            }
+        }
+
+        function expandCategory(categoryId) {
+            const rows = document.getElementById('rows-' + categoryId);
+            const toggle = document.getElementById('category-' + categoryId).querySelector('.category-toggle');
+            rows.classList.add('expanded');
+            toggle.classList.remove('collapsed');
+        }
+
+        function setupTabSwitching() {
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Show search only on features tab
+                    const searchContainer = document.getElementById('searchContainer');
+                    if (this.textContent === 'Feature Matrix') {
+                        searchContainer.style.display = 'block';
+                    } else {
+                        searchContainer.style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        function switchTab(tabId) {
+            // Hide all tabs
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => content.classList.remove('active'));
+
+            // Deactivate all buttons
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+
+            // Show selected tab
+            document.getElementById(tabId).classList.add('active');
+
+            // Activate selected button
+            event.target.classList.add('active');
+
+            // Show search only on features tab
+            const searchContainer = document.getElementById('searchContainer');
+            if (tabId === 'features') {
+                searchContainer.style.display = 'block';
+            } else {
+                searchContainer.style.display = 'none';
+            }
+        }
+
+        function setupSearch() {
+            const searchInput = document.getElementById('featureSearch2');
+            if (searchInput) {
+                searchInput.addEventListener('input', function(e) {
+                    const searchTerm = e.target.value.toLowerCase();
+                    const rows = document.querySelectorAll('.category-rows tr');
+
+                    rows.forEach(row => {
+                        const featureName = row.querySelector('.feature-name')?.textContent.toLowerCase() || '';
+                        if (searchTerm === '' || featureName.includes(searchTerm)) {
+                            row.style.display = '';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    });
+                });
+            }
+        }
+
+        function toggleCollapsible(element) {
+            const content = element.querySelector('.collapsible-content');
+            const toggle = element.querySelector('.collapsible-toggle');
+
+            if (content.classList.contains('show')) {
+                content.classList.remove('show');
+                toggle.classList.remove('open');
+            } else {
+                content.classList.add('show');
+                toggle.classList.add('open');
+            }
+        }
+    </script>
+</body>
+</html>

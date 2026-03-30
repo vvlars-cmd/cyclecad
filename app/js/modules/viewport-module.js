@@ -1,17 +1,104 @@
 /**
- * ViewportModule — Core 3D Rendering Engine
- * Foundational LEGO block for Three.js scene, camera, renderer, and interaction
+ * @file viewport-module.js
+ * @description ViewportModule — Core 3D Rendering Engine for cycleCAD
+ *   Foundational LEGO block providing Three.js scene, camera, renderer, and 3D interaction.
+ *   Zero dependencies — this is the bedrock layer that all other modules depend on.
+ *
+ * @version 1.0.0
+ * @author cycleCAD Team
+ * @license MIT
+ * @see {@link https://github.com/vvlars-cmd/cyclecad}
+ *
+ * @module viewport-module
+ * @requires Three.js r170 (loaded globally)
+ * @requires OrbitControls from Three.js examples
  *
  * Provides:
- * - Scene setup (lights, grid, fog)
- * - Camera (perspective + orbit controls)
- * - Renderer (WebGL, shadows, MSAA)
- * - Selection (raycaster + click detection)
- * - View controls (preset views, fit-to-bounds)
+ *   - Three.js WebGL renderer (antialias, shadows, high-DPI support)
+ *   - Perspective camera with preset views (front, back, left, right, top, bottom, isometric)
+ *   - Lighting setup (3x directional lights + ambient for realistic shadows)
+ *   - Grid floor with shadow plane
+ *   - OrbitControls for rotation (left), pan (right), zoom (scroll)
+ *   - Selection via raycaster + click detection
+ *   - Fit-to-object camera animation
+ *   - View management (preset views, custom scale)
+ *   - Display modes (wireframe, grid toggle, shadow toggle)
+ *   - High-res screenshot capture
+ *   - Background color management
+ *   - Event emissions for part selection/deselection
  *
- * No dependencies — this is the base layer.
+ * Architecture (Three.js Scene Structure):
+ *   Scene
+ *   ├── Lights
+ *   │   ├── AmbientLight (0.5 intensity)
+ *   │   ├── DirectionalLight 1 (main, casts shadow)
+ *   │   ├── DirectionalLight 2 (fill)
+ *   │   └── DirectionalLight 3 (back)
+ *   ├── Grid floor (2000x2000 units, 20 divisions)
+ *   └── User meshes
+ *       ├── mesh_0 (with shadow, selection tracking)
+ *       ├── mesh_1
+ *       └── ...
+ *
+ * Commands Registered:
+ *   - viewport.fitAll() - Fit camera to all objects
+ *   - viewport.fitTo(meshId) - Fit to specific mesh
+ *   - viewport.setView(name) - Set preset view (front/back/left/right/top/bottom/iso)
+ *   - viewport.toggleGrid() - Show/hide grid
+ *   - viewport.toggleWireframe() - Toggle wireframe mode on all meshes
+ *   - viewport.toggleShadows() - Enable/disable shadow rendering
+ *   - viewport.addMesh(geometry, material, name) - Add mesh to scene
+ *   - viewport.removeMesh(meshId) - Remove mesh from scene
+ *   - viewport.setBackground(color) - Change background color
+ *   - viewport.screenshot(w, h) - Capture high-res screenshot
+ *
+ * Events Emitted:
+ *   - viewport:ready - Viewport fully loaded and ready to use
+ *   - viewport:resize - Window resized, new dimensions in data
+ *   - part:selected - Mesh clicked, data includes {meshId, point, face, object}
+ *   - part:deselected - Clicked on empty area, no geometry at cursor
+ *
+ * Usage Example:
+ *   ```javascript
+ *   import kernel from './kernel.js';
+ *   import ViewportModule from './modules/viewport-module.js';
+ *
+ *   // Register viewport module
+ *   kernel.register(ViewportModule);
+ *
+ *   // Activate it (loads Three.js, creates scene, attaches to DOM)
+ *   await kernel.activate('viewport');
+ *
+ *   // Now viewport is ready
+ *   await kernel.exec('viewport.setView', {viewName: 'front'});
+ *
+ *   // Listen for selections
+ *   kernel.on('part:selected', (data) => {
+ *     console.log('Selected:', data.meshId);
+ *   });
+ *
+ *   // Fit camera to all objects
+ *   await kernel.exec('viewport.fitAll');
+ *   ```
  */
 
+/**
+ * ViewportModule definition for kernel registration
+ *
+ * @type {Object}
+ * @property {string} id - Module ID ('viewport')
+ * @property {string} name - Human-readable name ('3D Viewport')
+ * @property {string} version - Semantic version ('1.0.0')
+ * @property {string} category - Module category ('engine' — foundational)
+ * @property {Array} dependencies - Required modules (empty — no deps)
+ * @property {number} memoryEstimate - Estimated memory (30 MB for Three.js + textures)
+ * @property {Array} replaces - Modules this replaces (none)
+ * @property {Function} load - Async lifecycle: load hook
+ * @property {Function} activate - Async lifecycle: activate hook
+ * @property {Function} deactivate - Async lifecycle: deactivate hook
+ * @property {Function} unload - Async lifecycle: unload hook
+ * @property {Object} provides - Exported API (commands and events)
+ */
 const ViewportModule = {
   id: 'viewport',
   name: '3D Viewport',

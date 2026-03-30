@@ -1,13 +1,46 @@
 /**
- * Operations Module — 3D Modeling Operations
- * Part of cycleCAD microkernel architecture
+ * @file operations-module.js
+ * @description OperationsModule — 3D Modeling Operations Engine
+ *   Part of cycleCAD microkernel architecture, providing all 3D shape creation,
+ *   modification, and transformation operations. Implements smart dispatch between
+ *   B-Rep kernel (for precision) and mesh fallbacks (for performance).
  *
- * Smart dispatch between B-Rep kernel and mesh fallbacks
- * All 3D operations (extrude, fillet, pattern, boolean, etc.) exposed as kernel commands
+ * @version 1.0.0
+ * @author cycleCAD Team
+ * @license MIT
+ * @see {@link https://github.com/vvlars-cmd/cyclecad}
  *
- * Version: 1.0.0
- * Author: cycleCAD Team
- * License: MIT
+ * @module operations-module
+ * @requires viewport (3D scene rendering)
+ * @requires sketch (for profile-based operations)
+ *
+ * Features:
+ *   - Primitive creation: Box, Cylinder, Sphere, Cone, Torus
+ *   - Profile-based: Extrude, Revolve, Sweep, Loft
+ *   - Dress-up features: Fillet, Chamfer, Shell, Draft
+ *   - Holes: Simple, Counterbore, Countersink, Tapped
+ *   - Advanced: Thread, Rib, Split
+ *   - Pattern: Rectangular, Circular, Path-based
+ *   - Transform: Mirror, Move, Rotate, Scale, Copy
+ *   - Boolean: Union, Cut, Intersect
+ *   - Feature tree management (suppress, reorder, delete, rebuild)
+ *   - History and undo support
+ *   - Automatic fallback to mesh approximations when B-Rep unavailable
+ *   - Lazy dispatch — uses B-Rep if available, falls back gracefully
+ *
+ * Architecture:
+ *   Operations Module
+ *   ├── B-Rep Dispatch (if available)
+ *   │   └── Uses opencascade.js for true solid modeling
+ *   └── Mesh Fallback (always available)
+ *       └── Uses Three.js geometry primitives and approximations
+ *
+ * Feature Tree:
+ *   - Tracks all features in order (Box → Extrude → Fillet → etc.)
+ *   - Each feature stores params for rebuild
+ *   - Features can be suppressed (hidden from rebuild)
+ *   - Features can be reordered (changes build sequence)
+ *   - Rebuild rebuilds all active features from scratch
  */
 
 const OperationsModule = {

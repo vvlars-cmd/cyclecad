@@ -1,11 +1,52 @@
 /**
- * STEP Module - Import/Export AP203/AP214 STEP files
- * Microkernel LEGO block for cycleCAD
+ * @file step-module.js
+ * @description STEPModule — STEP File Import/Export (AP203/AP214)
+ *   Handles STEP file I/O with intelligent routing:
+ *   - Small files (<50MB) → browser WASM (occt-import-js)
+ *   - Large files (>=50MB) → server-side Python converter
+ *   - B-Rep kernel (when available) → native STEP I/O with full fidelity
  *
- * Dual-path architecture:
- * 1. Browser WASM (occt-import-js) for files < 50MB
- * 2. Server-side converter (Python/CadQuery) for files >= 50MB
- * 3. B-Rep kernel (if available) for native STEP I/O
+ * @version 1.0.0
+ * @author cycleCAD Team
+ * @license MIT
+ * @see {@link https://github.com/vvlars-cmd/cyclecad}
+ *
+ * @module step-module
+ * @requires viewport (3D scene)
+ *
+ * Architecture (3-tier routing):
+ *   STEP file
+ *   ├─ <50MB: Browser WASM (fast, non-blocking for small files)
+ *   │  └─ occt-import-js Worker → mesh extraction → Three.js geometry
+ *   ├─ >=50MB: Server converter (Python FastAPI)
+ *   │  └─ Server /convert endpoint → GLB response → Three.js GLTFLoader
+ *   └─ B-Rep kernel available: Native STEP via OpenCascade.js
+ *      └─ Full B-Rep fidelity for further modeling
+ *
+ * Import Pipeline:
+ *   1. User selects STEP file (or imports from URL)
+ *   2. Module checks file size and WASM readiness
+ *   3. Routes to appropriate parser (WASM, server, or B-Rep)
+ *   4. Parser returns mesh data (position, normal, index, color)
+ *   5. Three.js geometry created and added to scene
+ *   6. Event emitted: 'step:importComplete' with part count
+ *
+ * Worker Heartbeat:
+ *   - Worker sends heartbeat every 5 seconds
+ *   - Main thread monitors for 90s timeout
+ *   - If Worker unresponsive: terminate and show user-friendly error
+ *   - Suggests solutions: split file, use server, reduce complexity
+ *
+ * Server Conversion:
+ *   - Configurable endpoint (default: http://localhost:8787/convert)
+ *   - Supports Docker deployment (see converter.py, Dockerfile)
+ *   - Adaptive deflection for large files (coarser mesh)
+ *   - Returns GLB (glTF binary) format for easy loading
+ *
+ * Metadata Extraction:
+ *   - Quick ASCII header parse (first 100KB)
+ *   - Part count estimation
+ *   - No full parse needed for metadata
  */
 
 const StepModule = {

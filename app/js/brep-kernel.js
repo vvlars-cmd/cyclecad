@@ -1,31 +1,128 @@
 /**
- * B-Rep Kernel Module for cycleCAD
+ * @file brep-kernel.js
+ * @description B-Rep (Boundary Representation) Solid Modeling Kernel for cycleCAD
+ *   Wraps OpenCascade.js (WASM build of OpenCASCADE) to provide real solid modeling
+ *   with B-Rep shapes, topology, and geometry operations.
  *
- * Wraps OpenCascade.js (WASM build of OpenCASCADE) to provide real solid modeling.
- * Lazy-loads the 50MB WASM file on first geometry operation.
+ *   Lazy-loads the ~50MB OpenCascade.js WASM file on first geometry operation.
+ *   Caches shapes in memory for efficient reuse.
  *
- * Usage:
- *   const kernel = window.brepKernel;
- *   const box = await kernel.makeBox(10, 20, 30);
- *   const mesh = await kernel.shapeToMesh(box.shape);
+ * @version 1.0.0
+ * @author cycleCAD Team (wrapped OpenCASCADE)
+ * @license MIT
+ * @see {@link https://github.com/vvlars-cmd/cyclecad}
+ * @see {@link https://github.com/CadQuery/opencascade.js}
+ *
+ * @module brep-kernel
+ * @requires OpenCascade.js (loaded via CDN on demand)
+ *
+ * Architecture:
+ *   ┌──────────────────────────────────────────┐
+ *   │   B-Rep Kernel (via OpenCascade.js)      │
+ *   │  Lazy-loaded WASM on first operation     │
+ *   ├──────────────────────────────────────────┤
+ *   │ Primitives: Box, Cylinder, Sphere, etc.  │
+ *   │ Shapes: Extrude, Revolve, Sweep, Loft    │
+ *   │ Booleans: Union, Cut, Intersect          │
+ *   │ Modifiers: Fillet, Chamfer, Shell, Draft │
+ *   │ I/O: STEP import/export                  │
+ *   │ Analysis: Mass properties, Meshing       │
+ *   └──────────────────────────────────────────┘
+ *
+ * Key Features:
+ *   - Real B-Rep solids with topology tracking
+ *   - STEP AP203/AP214 file import/export
+ *   - Boolean operations with robust overlap handling
+ *   - Fillets, chamfers, and dress-up features
+ *   - Mass property analysis (volume, surface area, COG)
+ *   - Automatic triangulation for visualization
+ *   - Shape caching for performance
+ *   - Lazy WASM initialization on first use
+ *
+ * Usage Example:
+ *   ```javascript
+ *   import brepKernel from './brep-kernel.js';
+ *
+ *   // Initialize (lazy — loads WASM only when needed)
+ *   await brepKernel.init();
+ *
+ *   // Create primitives
+ *   const box = await brepKernel.makeBox(10, 20, 30);
+ *   const cyl = await brepKernel.makeCylinder(5, 40);
+ *
+ *   // Boolean operations
+ *   const subtracted = await brepKernel.booleanCut(box, cyl);
+ *
+ *   // Dress-up features
+ *   const filleted = await brepKernel.fillet(subtracted, [0, 1, 2], 2);
+ *
+ *   // Convert to Three.js mesh for visualization
+ *   const mesh = await brepKernel.shapeToMesh(filleted.shape);
  *   scene.add(mesh);
+ *
+ *   // Export to STEP
+ *   const stepData = await brepKernel.exportSTEP([filleted.id]);
+ *   ```
  */
 
+/**
+ * B-Rep Kernel class — WASM wrapper for OpenCascade.js
+ *
+ * Provides high-level API to OpenCascade shape modeling.
+ * Handles lazy WASM initialization, shape caching, and memory management.
+ *
+ * @class BRepKernel
+ * @property {Object|null} oc - OpenCascade.js instance (null until init() called)
+ * @property {Map<string, Object>} shapeCache - Cached shapes: shapeId → TopoDS_Shape
+ * @property {number} nextShapeId - Auto-incrementing shape ID counter
+ * @property {boolean} isInitializing - Prevents concurrent initialization
+ * @property {Promise|null} initPromise - Caches the init() promise for idempotence
+ */
 class BRepKernel {
   constructor() {
-    this.oc = null;                    // OpenCascade instance (loaded on demand)
-    this.shapeCache = new Map();       // { id: TopoDS_Shape }
-    this.nextShapeId = 0;              // Auto-incrementing shape IDs
-    this.isInitializing = false;       // Prevent double-init
-    this.initPromise = null;           // Promise for async init
+    /** OpenCascade instance (loaded on first geometry operation) */
+    this.oc = null;
 
-    // CDN paths for OpenCascade.js
+    /** Shape cache: shapeId → TopoDS_Shape (OCC native object) */
+    this.shapeCache = new Map();
+
+    /** Auto-incrementing shape ID counter for unique IDs */
+    this.nextShapeId = 0;
+
+    /** Prevents concurrent init calls */
+    this.isInitializing = false;
+
+    /** Caches the init() promise for idempotence */
+    this.initPromise = null;
+
+    // CDN URL for OpenCascade.js full build (WASM + JS)
     this.OCCDNBase = 'https://cdn.jsdelivr.net/npm/opencascade.js@2.0.0-beta.b5ff984/dist/';
   }
 
+  // ═══════════════════════════════════════════════════════
+  // INITIALIZATION
+  // ═══════════════════════════════════════════════════════
+
   /**
-   * Initialize OpenCascade.js WASM lazily
-   * Called automatically on first operation
+   * Initialize OpenCascade.js WASM environment (lazy)
+   *
+   * Loads the ~50MB OpenCascade.js WASM file from CDN on first call.
+   * Subsequent calls return cached promise immediately (idempotent).
+   *
+   * The WASM file is quite large, so this is deferred until first geometry operation
+   * to avoid unnecessary startup overhead for headless or viewer-only workflows.
+   *
+   * @async
+   * @returns {Promise<Object>} OpenCascade instance (this.oc)
+   * @throws {Error} If WASM initialization fails
+   * @emits '[BRepKernel] Initializing OpenCascade.js WASM...' - On first init start
+   * @emits '[BRepKernel] OpenCascade.js initialized successfully' - On success
+   * @emits '[BRepKernel] Initialization error' - On failure
+   *
+   * @example
+   * const kernel = new BRepKernel();
+   * await kernel.init();  // Loads WASM (slow, first time only)
+   * const box = await kernel.makeBox(10, 20, 30);  // Uses initialized WASM
    */
   async init() {
     // Return cached promise if already initializing/initialized
@@ -106,15 +203,27 @@ class BRepKernel {
     }
   }
 
+  // ═══════════════════════════════════════════════════════
+  // PRIVATE HELPERS
+  // ═══════════════════════════════════════════════════════
+
   /**
-   * Helper: Generate unique shape ID
+   * Generate unique shape ID (internal helper)
+   * @private
+   * @returns {string} Unique shape ID (format: 'shape_N')
    */
   _newShapeId() {
     return `shape_${this.nextShapeId++}`;
   }
 
   /**
-   * Helper: Cache and return shape
+   * Cache a shape and return ID + shape (internal helper)
+   *
+   * All shapes created by this kernel are cached for reuse and reference.
+   *
+   * @private
+   * @param {Object} shape - OpenCascade TopoDS_Shape
+   * @returns {Object} {id: string, shape: TopoDS_Shape}
    */
   _cacheShape(shape) {
     const id = this._newShapeId();
@@ -122,10 +231,19 @@ class BRepKernel {
     return { id, shape };
   }
 
-  // ============================================================================
-  // PRIMITIVE OPERATIONS
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════
+  // PRIMITIVE OPERATIONS (Create)
+  // ═══════════════════════════════════════════════════════
 
+  /**
+   * Create a box (rectangular prism)
+   * @async
+   * @param {number} width - Width in mm
+   * @param {number} height - Height in mm
+   * @param {number} depth - Depth in mm
+   * @returns {Promise<Object>} {id: shapeId, shape: TopoDS_Shape}
+   * @throws {Error} If OpenCascade initialization fails
+   */
   async makeBox(width, height, depth) {
     await this.init();
     try {
@@ -181,10 +299,19 @@ class BRepKernel {
     }
   }
 
-  // ============================================================================
-  // SHAPE OPERATIONS
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════
+  // SHAPE OPERATIONS (Modify)
+  // ═══════════════════════════════════════════════════════
 
+  /**
+   * Extrude a face or wire along a direction
+   * @async
+   * @param {string|Object} shapeIdOrShape - Shape ID or TopoDS_Shape
+   * @param {Object} direction - Direction vector {x, y, z}
+   * @param {number} distance - Extrusion distance in mm
+   * @returns {Promise<Object>} {id: shapeId, shape: extruded TopoDS_Shape}
+   * @throws {Error} If extrusion fails
+   */
   async extrude(shapeIdOrShape, direction, distance) {
     await this.init();
     try {
@@ -502,10 +629,30 @@ class BRepKernel {
     }
   }
 
-  // ============================================================================
-  // MESHING (Convert TopoDS_Shape to THREE.js BufferGeometry)
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════
+  // MESHING (Convert to THREE.js)
+  // ═══════════════════════════════════════════════════════
 
+  /**
+   * Convert B-Rep shape to THREE.js BufferGeometry via triangulation
+   *
+   * Automatically applies incremental meshing with specified deflection parameters.
+   * Supports normal computation for proper shading and vertex normals.
+   *
+   * @async
+   * @param {string|Object} shapeIdOrShape - Shape ID or TopoDS_Shape
+   * @param {number} [linearDeflection=0.1] - Linear deflection in mm (lower = finer mesh)
+   * @param {number} [angularDeflection=0.5] - Angular deflection in radians
+   * @returns {Promise<THREE.BufferGeometry>} Triangulated geometry
+   * @returns {null} If shape has no triangles
+   * @throws {Error} If meshing fails
+   *
+   * @example
+   * const shape = await kernel.makeBox(10, 20, 30);
+   * const geometry = await kernel.shapeToMesh(shape.shape, 0.05);
+   * const mesh = new THREE.Mesh(geometry, material);
+   * scene.add(mesh);
+   */
   async shapeToMesh(shapeIdOrShape, linearDeflection = 0.1, angularDeflection = 0.5) {
     await this.init();
     try {
@@ -587,10 +734,26 @@ class BRepKernel {
     }
   }
 
-  // ============================================================================
-  // STEP I/O
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════
+  // STEP I/O (Import/Export AP203/AP214)
+  // ═══════════════════════════════════════════════════════
 
+  /**
+   * Import STEP file (AP203 or AP214)
+   *
+   * Parses binary STEP file and extracts all top-level shapes.
+   * Handles assemblies by recursively adding all component shapes.
+   *
+   * @async
+   * @param {ArrayBuffer} arrayBuffer - Binary STEP file data
+   * @returns {Promise<Array>} Array of {id, shape} for each imported shape
+   * @throws {Error} If STEP parsing fails
+   *
+   * @example
+   * const file = await fetch('model.step').then(r => r.arrayBuffer());
+   * const shapes = await kernel.importSTEP(file);
+   * console.log(`Imported ${shapes.length} shapes`);
+   */
   async importSTEP(arrayBuffer) {
     await this.init();
     try {
@@ -673,10 +836,16 @@ class BRepKernel {
     }
   }
 
-  // ============================================================================
-  // SHAPE INSPECTION
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════
+  // SHAPE INSPECTION (Analysis & Queries)
+  // ═══════════════════════════════════════════════════════
 
+  /**
+   * Get all edges from a shape
+   * @async
+   * @param {string|Object} shapeIdOrShape - Shape ID or TopoDS_Shape
+   * @returns {Promise<Array>} Array of TopoDS_Edge objects
+   */
   async getEdges(shapeIdOrShape) {
     await this.init();
     try {
@@ -824,8 +993,14 @@ class BRepKernel {
     }
   }
 
+  // ═══════════════════════════════════════════════════════
+  // MEMORY & STATE
+  // ═══════════════════════════════════════════════════════
+
   /**
-   * Clear all cached shapes
+   * Clear all cached shapes (free memory)
+   * @returns {void}
+   * @emits '[BRepKernel] Shape cache cleared' - On completion
    */
   clearCache() {
     this.shapeCache.clear();

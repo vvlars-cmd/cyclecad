@@ -1,7 +1,51 @@
 /**
- * Assembly Module for cycleCAD
- * Manages multi-body assemblies with joints, constraints, and motion studies
- * Version 1.0.0
+ * @file assembly-module.js
+ * @description AssemblyModule — Multi-body Assembly Management
+ *   Manages component placement, joint definitions, constraints, motion studies,
+ *   assembly explosions, and bill of materials generation. Supports 7 joint types
+ *   with configurable limits and real-time animation.
+ *
+ * @version 1.0.0
+ * @author cycleCAD Team
+ * @license MIT
+ * @see {@link https://github.com/vvlars-cmd/cyclecad}
+ *
+ * @module assembly-module
+ * @requires viewport (3D scene + camera + controls)
+ * @requires operations (for component geometry)
+ *
+ * Features:
+ *   - Component insertion and management
+ *   - 7 joint types: Rigid, Revolute, Slider, Cylindrical, Pin-Slot, Planar, Ball
+ *   - Joint limits (min/max values) with automatic clamping
+ *   - Real-time joint animation with easing
+ *   - Interference detection (BBox-based)
+ *   - Exploded view generation with configurable distance
+ *   - Bill of Materials (BOM) generation with quantity aggregation
+ *   - Component patterns (linear and circular arrays)
+ *   - Motion studies (animate joint through range with configurable steps)
+ *   - Assembly validation and statistics
+ *
+ * Joint Types & DOF:
+ *   - RIGID: 0 DOF (fixed position/orientation)
+ *   - REVOLUTE: 1 DOF (rotation around axis)
+ *   - SLIDER: 1 DOF (translation along axis)
+ *   - CYLINDRICAL: 2 DOF (rotation + translation on axis)
+ *   - PIN_SLOT: 2 DOF (rotation + perpendicular translation)
+ *   - PLANAR: 3 DOF (2D translation in plane + rotation around normal)
+ *   - BALL: 3 DOF (free rotation around origin point)
+ *
+ * Component Structure:
+ *   Component = {
+ *     id, partId, name, position, rotation, visible,
+ *     group (THREE.Group), matrix
+ *   }
+ *
+ * Motion Study:
+ *   - Animates a single joint through range
+ *   - Generates N steps from start to end value
+ *   - Smooth easing for natural motion
+ *   - Can play forward/backward
  */
 
 const AssemblyModule = {

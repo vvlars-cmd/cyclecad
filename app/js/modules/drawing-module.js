@@ -1,14 +1,60 @@
 /**
- * DrawingModule — 2D Engineering Drawing / Documentation Workspace
- * LEGO block for cycleCAD microkernel architecture
- * Fusion 360 Drawing parity — the #1 most-requested missing feature
+ * @file drawing-module.js
+ * @description DrawingModule — 2D Engineering Drawing & Documentation Workspace
+ *   LEGO block for cycleCAD microkernel, providing complete engineering drawing
+ *   capabilities with Fusion 360 parity. Creates sheet-based orthographic, section,
+ *   detail, and isometric views with associative dimensions, GD&T annotations,
+ *   and manufacturing documentation.
  *
- * Creates orthographic, section, detail, isometric, and auxiliary views
- * with associative dimensions, GD&T annotations, and manufacturing documentation
+ * @version 1.0.0
+ * @author cycleCAD Team
+ * @license MIT
+ * @see {@link https://github.com/vvlars-cmd/cyclecad}
  *
- * Version: 1.0.0
- * Author: cycleCAD Team
- * License: MIT
+ * @module drawing-module
+ * @requires viewport (3D geometry data)
+ * @requires operations (geometry operations)
+ *
+ * Features:
+ *   - Paper sizes: ISO (A0-A4), ANSI (A-E)
+ *   - Scalable: 1:1, 1:2, 1:5, 1:10, 1:20, 1:50, custom
+ *   - View types: Orthographic, Section, Detail, Isometric, Auxiliary
+ *   - Dimensions: Linear, Angular, Radial, Diameter, Ordinate
+ *   - Annotations: GD&T symbols (10 types), Surface finish, Weld symbols
+ *   - Associative: Dimensions update when model changes
+ *   - Assembly drawings: Balloon numbering, parts lists
+ *   - Center marks and centerlines
+ *   - Leaders with notes
+ *   - Title blocks: ISO 7200, ANSI Y14.1, custom templates
+ *   - Bill of Materials (BOM) table
+ *   - Export: PDF (vector), DXF (CAD), SVG (web), PNG (raster @ 300 DPI)
+ *   - Multi-sheet support
+ *
+ * Projection Systems:
+ *   - Orthographic: True orthographic projection (no perspective)
+ *   - Section: Cut through model with hatch pattern
+ *   - Detail: Zoomed view with callout
+ *   - Isometric: Pseudo-3D isometric projection
+ *   - Auxiliary: Rotated view on non-standard plane
+ *
+ * GD&T Symbols (10):
+ *   - Flatness, Straightness, Circularity, Cylindricity
+ *   - Perpendicularity, Parallelism, Position, Concentricity
+ *   - Runout, Profile of surface
+ *
+ * Workflow:
+ *   1. Create drawing (select paper size and scale)
+ *   2. Add views (orthographic, section, detail, etc.)
+ *   3. Annotate views (dimensions, GD&T, leaders)
+ *   4. Add assembly annotations (balloons, BOM)
+ *   5. Configure title block (company, date, rev, etc.)
+ *   6. Export to desired format
+ *
+ * Drawing Sheet Structure:
+ *   Sheet = {
+ *     id, paperSize, scale, views[], dimensions[], annotations[],
+ *     balloons[], centerMarks[], centerlines[], titleBlock, bom
+ *   }
  */
 
 const DrawingModule = {

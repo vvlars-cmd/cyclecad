@@ -1,7 +1,64 @@
 /**
- * Simulation Module for cycleCAD
- * FEA-based analysis: Static Stress, Thermal, Modal, Buckling
- * Version 1.0.0
+ * @file simulation-module.js
+ * @description SimulationModule — FEA (Finite Element Analysis) Simulator
+ *   Provides static structural, thermal, modal (vibration), and buckling analysis
+ *   with automated meshing, loading, constraints, and visualization.
+ *
+ * @version 1.0.0
+ * @author cycleCAD Team
+ * @license MIT
+ * @see {@link https://github.com/vvlars-cmd/cyclecad}
+ *
+ * @module simulation-module
+ * @requires viewport (3D scene + camera)
+ * @requires operations (geometry data)
+ *
+ * Analysis Types:
+ *   - STATIC: Linear static structural analysis (stress, displacement, safety factor)
+ *   - THERMAL: Steady-state heat transfer analysis
+ *   - MODAL: Eigenvalue analysis for natural frequencies and mode shapes
+ *   - BUCKLING: Buckling analysis (instability under load)
+ *
+ * Load Types (6):
+ *   - FORCE: Point or distributed force (N)
+ *   - MOMENT: Torque or moment (N·mm)
+ *   - PRESSURE: Surface pressure (N/mm²)
+ *   - GRAVITY: Gravitational acceleration (g)
+ *   - TEMPERATURE: Thermal load (°C)
+ *   - REMOTE_FORCE: Force at distance (moment arm)
+ *
+ * Boundary Conditions (5):
+ *   - FIXED: Fully constrained (no DOF)
+ *   - PIN: Point support (XY translation free)
+ *   - ROLLER: Unidirectional constraint
+ *   - SYMMETRY: Symmetric boundary condition
+ *   - PRESCRIBED_DISPLACEMENT: Applied displacement
+ *
+ * Materials Library (6):
+ *   - Steel (1045): E=205 GPa, ν=0.3, ρ=7.85 g/cm³, σ_y=380 MPa
+ *   - Aluminum (6061-T6): E=69 GPa, ν=0.33, ρ=2.7 g/cm³, σ_y=275 MPa
+ *   - ABS Plastic: E=2.3 GPa, ν=0.36, ρ=1.04 g/cm³, σ_y=40 MPa
+ *   - Brass (C360): E=110 GPa, ν=0.34, ρ=8.53 g/cm³, σ_y=380 MPa
+ *   - Titanium (Ti-6Al-4V): E=110 GPa, ν=0.31, ρ=4.42 g/cm³, σ_y=1160 MPa
+ *   - Nylon 6: E=2.8 GPa, ν=0.4, ρ=1.14 g/cm³, σ_y=75 MPa
+ *
+ * Workflow:
+ *   1. User selects analysis type (static, thermal, modal, buckling)
+ *   2. User selects material from library
+ *   3. User applies loads (forces, moments, pressure, etc.)
+ *   4. User applies boundary conditions (fixed, pin, symmetry, etc.)
+ *   5. User generates mesh (tetrahedral, configurable element size)
+ *   6. User runs solver
+ *   7. Results visualized as color map (stress, displacement, temperature, etc.)
+ *   8. User probes results or exports report
+ *
+ * Results:
+ *   - Von Mises stress distribution
+ *   - Nodal displacement field
+ *   - Safety factor (yield / stress)
+ *   - Temperature distribution (thermal analysis)
+ *   - Natural frequencies (modal analysis)
+ *   - Buckling loads (buckling analysis)
  */
 
 const SimulationModule = {

@@ -1,49 +1,191 @@
 /**
- * cycleCAD Microkernel
+ * @file kernel.js
+ * @description cycleCAD Microkernel — A lightweight, modular architecture for pluggable CAD components.
+ *   Manages module lifecycle, dependencies, lazy loading, hot-swapping, and inter-module communication
+ *   via events and commands.
  *
- * A lightweight, modular architecture for pluggable CAD components.
- * Manages module lifecycle, dependencies, lazy loading, hot-swapping,
- * and inter-module communication via events and commands.
+ * @version 1.0.0
+ * @author cycleCAD Team
+ * @license MIT
+ * @see {@link https://github.com/vvlars-cmd/cyclecad}
  *
  * @module kernel
- * @version 1.0.0
+ * @requires nothing (foundational — no dependencies)
+ *
+ * Architecture:
+ *   ┌──────────────────────────────────────────────┐
+ *   │         KERNEL (tiny & modular)              │
+ *   │ Registry · Bus · Loader · Memory · API       │
+ *   └──────────────────────────────────────────────┘
+ *
+ * Design Patterns:
+ *   - Module Registry: Central catalog of all loadable modules
+ *   - State Management: Shared kernel.state with watchers
+ *   - Event Bus: Pub/sub for inter-module communication
+ *   - Lazy Loading: Modules load on-demand when commands execute
+ *   - Memory Management: Automatic LRU eviction when budget exceeded
+ *   - Dependency Resolution: Recursive load of dependencies before activation
+ *
+ * Usage Example:
+ *   ```javascript
+ *   import kernel from './kernel.js';
+ *
+ *   // Register a module
+ *   kernel.register({
+ *     id: 'my-module',
+ *     name: 'My Module',
+ *     version: '1.0.0',
+ *     category: 'engine',
+ *     dependencies: ['viewport'],
+ *     memoryEstimate: 10,
+ *     async load(kernel) { console.log('Loading...'); },
+ *     async activate(kernel) { console.log('Activated'); },
+ *     async deactivate(kernel) { console.log('Deactivated'); },
+ *     async unload(kernel) { console.log('Unloaded'); },
+ *     provides: {
+ *       commands: {
+ *         'my-module.greet': (kernel) => (name) => `Hello, ${name}!`
+ *       }
+ *     }
+ *   });
+ *
+ *   // Execute a command (auto-loads module if needed)
+ *   const result = await kernel.exec('my-module.greet', {name: 'Alice'});
+ *
+ *   // Listen for events
+ *   kernel.on('module:loaded', (data) => {
+ *     console.log('Module loaded:', data.id);
+ *   });
+ *
+ *   // Watch shared state
+ *   kernel.state.watch('selectedPart', (newVal, oldVal) => {
+ *     console.log(`Selection changed from ${oldVal} to ${newVal}`);
+ *   });
+ *   ```
  */
 
+// ═══════════════════════════════════════════════════════
+// MODULE STATES
+// ═══════════════════════════════════════════════════════
+
 /**
- * Module lifecycle states
+ * Module lifecycle states enum
+ *
+ * State transitions:
+ *   REGISTERED → LOADING → INACTIVE/ACTIVE ↔ INACTIVE → UNLOADING → UNLOADED
+ *           ↓ (error)                                 ↓ (error)
+ *          ERROR (requires manual recovery)          ERROR
+ *
  * @enum {string}
+ * @const
  */
 const ModuleState = {
+  /** Initial state after registration, not yet loaded */
   REGISTERED: 'registered',
+  /** Currently loading (resolving dependencies, running load hook) */
   LOADING: 'loading',
+  /** Loaded and activated, commands available */
   ACTIVE: 'active',
+  /** Loaded but not activated, takes memory but no commands */
   INACTIVE: 'inactive',
+  /** Currently unloading (running unload hook, freeing memory) */
   UNLOADING: 'unloading',
+  /** Fully unloaded, memory freed, requires full reload to use again */
   UNLOADED: 'unloaded',
+  /** Load or activation failed, error message stored in metadata */
   ERROR: 'error',
 };
 
+// ═══════════════════════════════════════════════════════
+// KERNEL CLASS
+// ═══════════════════════════════════════════════════════
+
 /**
- * Kernel class — manages all modules and inter-module communication
+ * Kernel class — Central manager for all modules and inter-module communication
+ *
+ * The Kernel is the tiny heart of cycleCAD, handling:
+ *   - Module registration, loading, activation, deactivation, unloading
+ *   - Lazy loading on command execution
+ *   - Dependency resolution (recursive load of dependencies)
+ *   - Module state tracking (REGISTERED → LOADING → ACTIVE ↔ INACTIVE → UNLOADING → UNLOADED)
+ *   - Shared state management with watchers
+ *   - Event bus for pub/sub communication
+ *   - Command registry and dispatch
+ *   - Memory management with LRU eviction
+ *   - Hot-swap capability (swap old module for new one)
+ *
+ * @class Kernel
+ * @param {Object} [config={}] - Configuration options
+ * @param {number} [config.memoryBudget=512] - Total memory budget in MB
+ * @param {boolean} [config.autoGC=true] - Enable automatic garbage collection
  */
 class Kernel {
   constructor(config = {}) {
+    /**
+     * Kernel configuration
+     * @type {Object}
+     * @property {number} memoryBudget - Total memory budget in MB (default 512)
+     * @property {boolean} autoGC - Auto-GC enabled (default true)
+     */
     this.config = {
       memoryBudget: 512, // MB
       autoGC: true,
       ...config,
     };
 
-    // Registries
-    this.modules = new Map(); // id → {definition, state, instance, metadata}
-    this.commands = new Map(); // 'module.cmd' → handler
-    this.shortcuts = new Map(); // 'shortcut' → 'module.cmd'
+    // ═══════════════════════════════════════════════════════
+    // REGISTRIES
+    // ═══════════════════════════════════════════════════════
 
-    // Event bus
-    this.eventListeners = new Map(); // event → Set of handlers
-    this.onceListeners = new Map(); // event → Map(handler → true)
+    /**
+     * Module registry: id → {definition, state, instance, metadata}
+     * @type {Map<string, Object>}
+     */
+    this.modules = new Map();
 
-    // Shared state (accessible to all modules)
+    /**
+     * Command registry: 'module.cmd' → handler function
+     * @type {Map<string, Function>}
+     */
+    this.commands = new Map();
+
+    /**
+     * Keyboard shortcut bindings: 'Ctrl+B' → 'module.cmd'
+     * @type {Map<string, string>}
+     */
+    this.shortcuts = new Map();
+
+    // ═══════════════════════════════════════════════════════
+    // EVENT BUS
+    // ═══════════════════════════════════════════════════════
+
+    /**
+     * Event listeners: event → Set of handler functions
+     * Supports wildcards (e.g., 'module:*' matches 'module:loaded')
+     * @type {Map<string, Set<Function>>}
+     */
+    this.eventListeners = new Map();
+
+    /**
+     * One-time listeners: event → Map(handler → true)
+     * Auto-unsubscribed after first fire
+     * @type {Map<string, Map<Function, boolean>>}
+     */
+    this.onceListeners = new Map();
+
+    // ═══════════════════════════════════════════════════════
+    // SHARED STATE
+    // ═══════════════════════════════════════════════════════
+
+    /**
+     * Shared kernel state — accessible and watchable by all modules
+     * Usage: kernel.state.set('selectedPart', partId);
+     *        kernel.state.watch('selectedPart', (newVal, oldVal) => {...});
+     *
+     * @type {Object}
+     * @property {Map} _values - Stored state values (key → value)
+     * @property {Map} _watchers - Watchers (key → Set of handler functions)
+     */
     this.state = {
       _values: new Map(),
       _watchers: new Map(), // key → Set of handlers
@@ -81,7 +223,22 @@ class Kernel {
       all: () => Object.fromEntries(this.state._values),
     };
 
-    // Memory manager
+    // ═══════════════════════════════════════════════════════
+    // MEMORY MANAGER
+    // ═══════════════════════════════════════════════════════
+
+    /**
+     * Memory management system with LRU eviction policy
+     * Tracks memory usage across modules and auto-evicts LRU inactive modules
+     * if budget exceeded (when pressure > 0.8)
+     *
+     * @type {Object}
+     * @property {Map} _estimates - Module ID → estimated memory in MB
+     * @property {Function} usage() - Get total memory used
+     * @property {Function} pressure() - Get pressure ratio (0-1, where 1.0 = at budget)
+     * @property {number} budget - Total memory budget in MB
+     * @property {Function} gc() - Run garbage collection (auto evicts if needed)
+     */
     this.memory = {
       _estimates: new Map(), // moduleId → MB
 
@@ -117,10 +274,62 @@ class Kernel {
     console.log('[Kernel] Initialized with memory budget:', this.config.memoryBudget, 'MB');
   }
 
+  // ═══════════════════════════════════════════════════════
+  // MODULE LIFECYCLE METHODS
+  // ═══════════════════════════════════════════════════════
+
   /**
-   * Register a module definition
+   * Register a module definition with the kernel
+   *
+   * The module is not loaded until explicitly requested or when one of its
+   * commands is executed. This allows lazy loading of heavy modules.
+   *
    * @param {Object} definition - Module definition object
-   * @returns {boolean} Success
+   * @param {string} definition.id - Unique module identifier (e.g., 'viewport', 'sketch')
+   * @param {string} definition.name - Human-readable name (e.g., 'Sketch Engine')
+   * @param {string} definition.version - Semantic version string (e.g., '1.0.0')
+   * @param {string} definition.category - Module category: 'engine'|'tool'|'data'|'service'|'core'
+   * @param {string[]} [definition.dependencies] - Array of module IDs this depends on
+   * @param {number} definition.memoryEstimate - Estimated memory usage in MB
+   * @param {string[]} [definition.replaces] - Module IDs this replaces (for hot-swap)
+   * @param {Function} [definition.load] - Async load hook: async load(kernel) {...}
+   * @param {Function} [definition.activate] - Async activate hook: async activate(kernel) {...}
+   * @param {Function} [definition.deactivate] - Async deactivate hook: async deactivate(kernel) {...}
+   * @param {Function} [definition.unload] - Async unload hook: async unload(kernel) {...}
+   * @param {Object} definition.provides - Provided API
+   * @param {Object} [definition.provides.commands] - Commands: {cmd: handler(kernel)}
+   * @param {Object} [definition.provides.ui] - UI components and shortcuts
+   * @returns {boolean} Registration success
+   * @throws {Error} If module ID already registered
+   *
+   * @example
+   * kernel.register({
+   *   id: 'my-module',
+   *   name: 'My Module',
+   *   version: '1.0.0',
+   *   category: 'tool',
+   *   dependencies: ['viewport'],
+   *   memoryEstimate: 15,
+   *   async load(kernel) {
+   *     console.log('Module loading...');
+   *   },
+   *   async activate(kernel) {
+   *     console.log('Module activated');
+   *   },
+   *   async deactivate(kernel) {
+   *     console.log('Module deactivated');
+   *   },
+   *   async unload(kernel) {
+   *     console.log('Module unloaded, memory freed');
+   *   },
+   *   provides: {
+   *     commands: {
+   *       'my-module.doSomething': (kernel) => (param) => {
+   *         return `Did something with ${param}`;
+   *       }
+   *     }
+   *   }
+   * });
    */
   register(definition) {
     if (!definition.id || !definition.name) {
@@ -198,10 +407,25 @@ class Kernel {
   }
 
   /**
-   * Load a module (async)
-   * Resolves dependencies first, then calls module.load()
-   * @param {string} moduleId
-   * @returns {Promise<boolean>}
+   * Load a module asynchronously
+   *
+   * Handles complete lifecycle: resolves dependencies recursively,
+   * marks state as LOADING, calls module.load() hook, transitions to INACTIVE.
+   * Idempotent — safe to call multiple times.
+   *
+   * State transition: REGISTERED → LOADING → INACTIVE
+   *
+   * @async
+   * @param {string} moduleId - Module identifier to load
+   * @returns {Promise<boolean>} True if load successful, false on error
+   * @emits module:loaded - When module enters INACTIVE state
+   * @emits module:error - If load fails
+   *
+   * @example
+   * const loaded = await kernel.load('viewport');
+   * if (loaded) {
+   *   console.log('Viewport module is ready to activate');
+   * }
    */
   async load(moduleId) {
     const module = this.modules.get(moduleId);
@@ -253,9 +477,27 @@ class Kernel {
   }
 
   /**
-   * Activate a module (load first if needed, then call activate hook)
-   * @param {string} moduleId
-   * @returns {Promise<boolean>}
+   * Activate a module (load first if needed)
+   *
+   * Ensures module is loaded, then calls activate hook and registers commands.
+   * Only ACTIVE modules have their commands available in the command registry.
+   * Idempotent — safe to call multiple times.
+   *
+   * State transition: REGISTERED → LOADING → INACTIVE → ACTIVE
+   *                   (or jump to ACTIVE if already INACTIVE)
+   *
+   * @async
+   * @param {string} moduleId - Module identifier to activate
+   * @returns {Promise<boolean>} True if activation successful, false on error
+   * @emits module:activated - When module reaches ACTIVE state
+   * @emits module:error - If activation fails
+   *
+   * @example
+   * const activated = await kernel.activate('viewport');
+   * if (activated) {
+   *   // viewport.fitAll command is now available
+   *   await kernel.exec('viewport.fitAll');
+   * }
    */
   async activate(moduleId) {
     const module = this.modules.get(moduleId);
@@ -480,11 +722,31 @@ class Kernel {
   }
 
   /**
-   * Execute a named command
-   * Auto-loads the command's module if not already loaded
-   * @param {string} commandName - e.g., "brep.makeBox"
-   * @param {Object} params - Command parameters
-   * @returns {Promise<any>} Command result
+   * Execute a named command by name
+   *
+   * If command exists and module is active, executes immediately.
+   * Otherwise, auto-loads and auto-activates the command's module first.
+   * This enables transparent lazy loading — caller doesn't care if module is loaded.
+   *
+   * Command names follow pattern: 'module.command' (e.g., 'viewport.fitAll')
+   *
+   * @async
+   * @param {string} commandName - Fully-qualified command name (e.g., 'viewport.fitAll', 'brep.makeBox')
+   * @param {Object} [params={}] - Command parameters (passed directly to handler)
+   * @returns {Promise<any>} Command result (return value of handler function)
+   * @throws {Error} If command not found after module load/activate
+   * @throws {Error} If module fails to load or activate
+   *
+   * @example
+   * // Direct execution (module auto-loads if needed)
+   * const result = await kernel.exec('viewport.fitAll');
+   *
+   * // With parameters
+   * const box = await kernel.exec('brep.makeBox', {
+   *   width: 10,
+   *   height: 20,
+   *   depth: 30
+   * });
    */
   async exec(commandName, params = {}) {
     // Check if command exists
@@ -549,10 +811,30 @@ class Kernel {
     return await this.exec(commandName, { fromShortcut: true });
   }
 
+  // ═══════════════════════════════════════════════════════
+  // EVENT BUS METHODS
+  // ═══════════════════════════════════════════════════════
+
   /**
-   * Subscribe to an event
-   * @param {string} event - Event name or pattern (e.g., "module:*")
-   * @param {Function} handler
+   * Subscribe to an event (persistent listener)
+   *
+   * Listener fires every time the event is emitted.
+   * Supports wildcard patterns: 'module:*' matches 'module:loaded', 'module:error', etc.
+   *
+   * @param {string} event - Event name or wildcard pattern (e.g., 'module:loaded', 'module:*')
+   * @param {Function} handler - Handler function: handler(data) {...}
+   * @returns {void}
+   *
+   * @example
+   * // Listen for specific event
+   * kernel.on('module:loaded', (data) => {
+   *   console.log('Module loaded:', data.id);
+   * });
+   *
+   * // Listen for wildcard (all module events)
+   * kernel.on('module:*', (data) => {
+   *   console.log('Module event:', data);
+   * });
    */
   on(event, handler) {
     if (!this.eventListeners.has(event)) {
@@ -587,9 +869,24 @@ class Kernel {
   }
 
   /**
-   * Emit an event
-   * @param {string} event
-   * @param {Object} data
+   * Emit an event to all subscribers
+   *
+   * Triggers both direct listeners (exact event match) and wildcard listeners
+   * (pattern match on event prefix). All handlers called synchronously in order.
+   *
+   * Wildcard matching: 'module:loaded' triggers listeners for 'module:*'
+   *
+   * @param {string} event - Event name to emit (e.g., 'module:loaded')
+   * @param {Object} [data={}] - Event data (passed to all handler functions)
+   * @throws {Error} Suppressed — errors in handlers are caught and logged
+   * @returns {void}
+   *
+   * @example
+   * // Emit event with data
+   * kernel.emit('module:loaded', {
+   *   id: 'viewport',
+   *   version: '1.0.0'
+   * });
    */
   emit(event, data = {}) {
     // Direct listeners
@@ -647,9 +944,36 @@ class Kernel {
     }
   }
 
+  // ═══════════════════════════════════════════════════════
+  // INSPECTION METHODS
+  // ═══════════════════════════════════════════════════════
+
   /**
-   * Get detailed kernel status
-   * @returns {Object}
+   * Get detailed kernel status and statistics
+   *
+   * Returns comprehensive status of all modules, commands, state, and memory.
+   * Useful for debugging and monitoring kernel health.
+   *
+   * @returns {Object} Status report
+   * @returns {Object} .modules - Module counts by state
+   * @returns {number} .modules.registered - Number of registered modules
+   * @returns {number} .modules.active - Number of active modules
+   * @returns {number} .modules.inactive - Number of inactive (loaded but not active) modules
+   * @returns {number} .modules.error - Number of modules in error state
+   * @returns {number} .commands - Total registered commands
+   * @returns {number} .shortcuts - Total keyboard shortcuts
+   * @returns {Object} .memory - Memory usage information
+   * @returns {number} .memory.usage - Current usage in MB
+   * @returns {number} .memory.budget - Total budget in MB
+   * @returns {string} .memory.pressure - Pressure as percentage (0-100%)
+   * @returns {Object} .state - Shared state information
+   * @returns {number} .state.keys - Number of shared state keys
+   * @returns {number} .state.watchers - Number of active state watchers
+   *
+   * @example
+   * const status = kernel.status();
+   * console.log(`${status.modules.active} modules active, ${status.memory.pressure} pressure`);
+   * // Output: "3 modules active, 25.5% pressure"
    */
   status() {
     return {

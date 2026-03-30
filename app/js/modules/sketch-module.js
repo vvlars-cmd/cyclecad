@@ -1,9 +1,38 @@
 /**
- * SketchModule — 2D Sketching Engine (Fusion 360 parity)
- * LEGO block for cycleCAD microkernel
+ * @file sketch-module.js
+ * @description SketchModule — 2D Sketching Engine with Fusion 360 parity
+ *   LEGO block for cycleCAD microkernel, providing a complete 2D constraint-based
+ *   sketching environment on 3D faces or in standalone mode.
  *
- * Tools: Line, Rectangle, Circle, Arc, Ellipse, Spline, Polygon, Slot, Text,
- *        Trim, Extend, Offset, Mirror, Fillet, Chamfer, Construction, Dimension
+ * @version 1.0.0
+ * @author cycleCAD Team
+ * @license MIT
+ * @see {@link https://github.com/vvlars-cmd/cyclecad}
+ *
+ * @module sketch-module
+ * @requires viewport (3D scene for sketch visualization)
+ *
+ * Features:
+ *   - Drawing tools: Line, Rectangle, Circle, Arc, Ellipse, Spline, Polygon, Slot, Text
+ *   - Editing tools: Trim, Extend, Offset, Mirror, Fillet, Chamfer
+ *   - Construction geometry (reference-only entities)
+ *   - Dimensions: Linear, angular, radial, diameter, ordinate
+ *   - Constraints: Coincident, horizontal, vertical, parallel, perpendicular, tangent, etc.
+ *   - Grid snap and point snap (configurable)
+ *   - Live preview while drawing
+ *   - Undo/redo support
+ *   - 2D/3D canvas visualization
+ *   - Profile export for extrude/revolve operations
+ *
+ * Workflow:
+ *   1. User triggers sketch mode on face or starts new sketch
+ *   2. Sketch plane is established (normal, origin, U/V axes)
+ *   3. Drawing toolbar appears with tool buttons
+ *   4. User draws entities (lines, circles, etc.)
+ *   5. Entities are added to entity list and rendered to canvas
+ *   6. User applies dimensions and constraints
+ *   7. User finishes sketch (Esc or Finish button)
+ *   8. Sketch profile is returned for use in extrude/revolve/pad/pocket operations
  */
 
 const SketchModule = {

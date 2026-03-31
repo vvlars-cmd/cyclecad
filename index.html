@@ -569,8 +569,8 @@
 
     <p class="fade-up d3">
       CAD was built for humans with a mouse. We built it for AI agents.<br>
-      No GUI. No training. No screen required. Agents are the only interface.<br>
-      Every agent — from GPT to Claude to Gemini — designs, validates, and manufactures through cycleCAD.
+      12 killer features. 46 modules. 52,000+ lines of code. Zero install.<br>
+      Every agent — from GPT to Claude to Gemini — designs, simulates, and manufactures through cycleCAD.
     </p>
 
     <div class="hero-ctas fade-up d4">
@@ -742,49 +742,103 @@
        ============================================================ -->
   <section class="solution" id="features">
     <div class="container">
-      <div class="section-label reveal">THE SOLUTION</div>
-      <h2 class="reveal">Built for <span class="gradient-text">the modern designer</span></h2>
-      <div class="feature-cards">
+      <div class="section-label reveal">THE PLATFORM</div>
+      <h2 class="reveal">12 killer features. <span class="gradient-text">Zero competition.</span></h2>
+      <p class="subtitle reveal">No other browser CAD has all of these. Most desktop tools don't either. v3.9.0 — 52,000+ lines of module code across 46 modules.</p>
+
+      <!-- Stats Bar -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:2.5rem 0;text-align:center;" class="reveal">
+        <div style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:12px;padding:20px;">
+          <div style="font-size:2rem;font-weight:800;background:var(--accent-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">12</div>
+          <div style="color:var(--text-secondary);font-size:0.85rem;margin-top:4px;">Killer Features</div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:12px;padding:20px;">
+          <div style="font-size:2rem;font-weight:800;background:var(--accent-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">52K+</div>
+          <div style="color:var(--text-secondary);font-size:0.85rem;margin-top:4px;">Lines of Code</div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:12px;padding:20px;">
+          <div style="font-size:2rem;font-weight:800;background:var(--accent-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">46</div>
+          <div style="color:var(--text-secondary);font-size:0.85rem;margin-top:4px;">JS Modules</div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:12px;padding:20px;">
+          <div style="font-size:2rem;font-weight:800;background:var(--accent-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">200+</div>
+          <div style="color:var(--text-secondary);font-size:0.85rem;margin-top:4px;">Standard Parts</div>
+        </div>
+      </div>
+
+      <div class="feature-cards" style="grid-template-columns:repeat(3,1fr);">
+        <!-- Row 1: AI-Powered Design -->
         <div class="feature-card reveal">
           <div class="feature-icon gold">⚡</div>
-          <h3>Browser-native CAD</h3>
-          <p>Full parametric 3D modeler running entirely in your browser. Three.js-powered viewport with real-time rendering. No plugins, no install, no waiting.</p>
+          <h3>Text-to-CAD (AI)</h3>
+          <p>Type "flanged cylinder 50mm with 4 bolt holes on 70mm PCD" and watch it appear in real-time. 18 shape types, NLP parser, live ghost preview, multi-step builder.</p>
         </div>
         <div class="feature-card reveal">
-          <div class="feature-icon blue">🤖</div>
-          <h3>AI-powered tools</h3>
-          <p>AI part identification, smart natural language search, automated assembly instructions, and an integrated chatbot that understands your model.</p>
+          <div class="feature-icon blue">📷</div>
+          <h3>Photo-to-CAD</h3>
+          <p>Take a photo of any part — edge detection, contour extraction, and 3D reconstruction. Sobel + Hough transforms, reference scaling, Gemini Vision AI enhancement.</p>
         </div>
         <div class="feature-card reveal">
           <div class="feature-icon teal">🏭</div>
-          <h3>Native Inventor parsing</h3>
-          <p>Open Autodesk Inventor .ipt and .iam files directly in the browser. Extract features, parameters, and assembly constraints. Generate rebuild guides automatically.</p>
+          <h3>Manufacturability (DFM)</h3>
+          <p>Instant feedback for 9 processes: CNC, FDM, SLA, SLS, injection molding, sheet metal, sand/investment/die casting. 20+ materials database with cost estimator.</p>
+        </div>
+
+        <!-- Row 2: Simulation & Optimization -->
+        <div class="feature-card reveal">
+          <div class="feature-icon purple">🧬</div>
+          <h3>Generative Design</h3>
+          <p>SIMP topology optimization with live voxel visualization. Define loads and constraints, watch material dissolve away. Marching cubes isosurface, STL export.</p>
         </div>
         <div class="feature-card reveal">
-          <div class="feature-icon purple">📐</div>
-          <h3>Full parametric modeling</h3>
-          <p>Sketch, extrude, revolve, fillet, chamfer, boolean operations. Constraint-driven design with a live feature tree. Professional-grade CAD.</p>
+          <div class="feature-icon warn">🔬</div>
+          <h3>Multi-Physics Simulation</h3>
+          <p>Structural FEA (Von Mises), thermal analysis, modal frequency, drop test — all in-browser. Conjugate gradient solver, heatmap overlay, deformation visualization.</p>
         </div>
         <div class="feature-card reveal">
-          <div class="feature-icon warn">🔧</div>
-          <h3>Maintenance intelligence</h3>
-          <p>Heatmaps, wear timelines, service mode, and smart BOM generation with estimated pricing. Design to maintenance planning in one tool.</p>
+          <div class="feature-icon coral">🔩</div>
+          <h3>Smart Parts Library</h3>
+          <p>200+ standard parts: ISO fasteners, bearings, linear rails, extrusions, motors, PCBs. AI-powered fuzzy search, BOM management, McMaster/Misumi/DigiKey cross-ref.</p>
+        </div>
+
+        <!-- Row 3: Assembly & Automation -->
+        <div class="feature-card reveal">
+          <div class="feature-icon gold">🧲</div>
+          <h3>Smart Assembly Mating</h3>
+          <p>Drag parts near each other — auto-detect 8 constraint types (coincident, concentric, tangent, gear). Motion study with joint animation, interference detection.</p>
         </div>
         <div class="feature-card reveal">
-          <div class="feature-icon coral">📦</div>
-          <h3>Embeddable 3D viewer</h3>
-          <p>ExplodeView — our 3D viewer and embeddable widget with 40+ analysis tools. Embed interactive 3D views anywhere with a single script tag.</p>
+          <div class="feature-icon blue">🤖</div>
+          <h3>Auto-Assemble Parts</h3>
+          <p>AI geometry fingerprinting matches shafts to holes, faces to faces, bolts to bores. One-click assembly with animated placement, collision detection, validation.</p>
         </div>
         <div class="feature-card reveal">
-          <div class="feature-icon gold">🔌</div>
-          <h3>MCP + CLI + API</h3>
-          <p>First-class agent interfaces. AI agents connect via MCP server, CLI commands, or REST API. cycleCAD is infrastructure for autonomous design — not just a GUI.</p>
+          <div class="feature-icon teal">📊</div>
+          <h3>Parametric from Example</h3>
+          <p>Upload 2-5 design variants — AI infers which dimensions are parameters, detects relationships, generates a full parametric family with morphing animation.</p>
+        </div>
+
+        <!-- Row 4: Connected Manufacturing -->
+        <div class="feature-card reveal">
+          <div class="feature-icon purple">📡</div>
+          <h3>Digital Twin Live Data</h3>
+          <p>Connect IoT sensors (MQTT/REST/WebSocket) to your 3D model. Live temperature heatmaps, vibration animation, predictive maintenance, alert dashboard. cycleWASH-ready.</p>
         </div>
         <div class="feature-card reveal">
-          <div class="feature-icon teal">♻️</div>
-          <h3>Circular economy</h3>
-          <p>Built-in maintenance heatmaps, wear timelines, rebuild guides, and service mode. Design for disassembly, repair, and reuse — not obsolescence.</p>
+          <div class="feature-icon warn">🖨️</div>
+          <h3>Machine Control (CNC/3DP)</h3>
+          <p>Built-in G-code generator for FDM, CNC milling, and laser cutting. Connect to OctoPrint, Klipper, or Moonraker. Jog controls, temp monitoring, job tracking.</p>
         </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon coral">📓</div>
+          <h3>Engineering Notebook</h3>
+          <p>Auto-logs every design action. Rich text entries, AI-powered summaries, version snapshots with visual diff, decision tracking. Export as HTML/Markdown/JSON report.</p>
+        </div>
+      </div>
+
+      <!-- Plus the foundations -->
+      <div style="margin-top:2rem;text-align:center;" class="reveal">
+        <p style="color:var(--text-secondary);font-size:0.95rem;max-width:700px;margin:0 auto;"><strong>Plus the foundations:</strong> Full parametric modeling, native Inventor file parsing, ExplodeView 3D viewer, MCP server + CLI + REST API, $CYCLE token economy, model marketplace, 30+ tutorials, and comprehensive documentation.</p>
       </div>
     </div>
   </section>
@@ -1017,12 +1071,12 @@
           <div class="tier-price">€0</div>
           <div class="tier-period">Forever</div>
           <ul class="tier-features">
-            <li>Full parametric modeling</li>
-            <li>AI part identification</li>
-            <li>ExplodeView 3D viewer</li>
+            <li>All 12 killer features</li>
+            <li>Text-to-CAD + Photo-to-CAD</li>
+            <li>DFM analysis + cost estimator</li>
+            <li>Multi-physics simulation</li>
+            <li>200+ standard parts library</li>
             <li>STL / OBJ / glTF export</li>
-            <li>Inventor file parsing</li>
-            <li>Assembly analysis</li>
             <li>Community support</li>
           </ul>
         </div>
@@ -1034,10 +1088,10 @@
             <li>Everything in Free</li>
             <li>STEP import / export</li>
             <li>Real-time collaboration</li>
-            <li>Cloud storage</li>
-            <li>Priority AI processing</li>
-            <li>Smart BOM with pricing</li>
-            <li>Email support</li>
+            <li>Cloud storage + versioning</li>
+            <li>Machine control (CNC/3DP)</li>
+            <li>Digital twin + IoT sensors</li>
+            <li>Priority support</li>
           </ul>
           <div class="launch-badge">Most Popular</div>
         </div>
@@ -1050,9 +1104,9 @@
             <li>Self-hosted deployment</li>
             <li>SSO / SAML authentication</li>
             <li>SLA guarantee</li>
-            <li>Plugin API access</li>
+            <li>MCP server + REST API</li>
+            <li>Custom agent integrations</li>
             <li>Dedicated support</li>
-            <li>Custom integrations</li>
           </ul>
         </div>
       </div>

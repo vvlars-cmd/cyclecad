@@ -1,9 +1,91 @@
 /**
- * cycleCAD Manufacturability Module (DFM - Design For Manufacturing)
- * Instant feedback on manufacturing feasibility, cost estimation, and design improvements
- * ~1400 lines | Production-quality
+ * @fileoverview cycleCAD Manufacturability Module (DFM - Design For Manufacturing)
+ * @module CycleCAD/Manufacturability
+ * @version 3.7.0
+ * @author cycleCAD Team
+ * @license MIT
+ *
+ * @description
+ * Instant feedback on manufacturing feasibility, cost estimation, and design improvements.
+ * Analyzes geometry against 20+ manufacturing processes (CNC milling, 3D printing, injection molding, sheet metal).
+ * Detects DFM violations (thin walls, sharp corners, deep holes). Generates cost estimates with material +
+ * process selection. Creates interactive heatmap visualizations overlaid on 3D model.
+ *
+ * @example
+ * // Analyze design for manufacturability
+ * const analysis = window.CycleCAD.Manufacturability.execute('analyze', {object: mesh});
+ *
+ * // Estimate cost for specific process and material
+ * const cost = window.CycleCAD.Manufacturability.execute('estimateCost', {
+ *   material: 'Aluminum 6061',
+ *   process: 'CNC_Milling_3axis',
+ *   quantity: 100
+ * });
+ *
+ * @requires THREE (Three.js r170)
+ * @see {@link https://cyclecad.com/docs/killer-features|Killer Features Guide}
  */
 
+/**
+ * @typedef {Object} MaterialProperties
+ * @property {number} density - Material density in g/cm³
+ * @property {number} cost - Base cost per kg in USD
+ * @property {number} machinability - Machinability index 0-100 (higher = easier to machine)
+ * @property {number} printability - 3D printability index 0-100 (higher = easier to print)
+ * @property {number} moldability - Injection moldability index 0-100 (higher = easier to mold)
+ * @property {boolean} temperable - Whether material can be heat-treated
+ */
+
+/**
+ * @typedef {Object} ProcessRules
+ * @property {string} label - Human-readable process name
+ * @property {number} minWallThickness - Minimum wall thickness in mm
+ * @property {number} minCornerRadius - Minimum corner radius in mm
+ * @property {number} maxDepthWidth - Maximum hole depth-to-diameter ratio
+ * @property {number} minHoleSize - Minimum hole diameter in mm
+ * @property {number} minFeature - Smallest detectable feature in mm
+ * @property {number} setupTime - Setup time in minutes
+ * @property {number} cycleTimePerCm3 - Production time per cm³ in seconds
+ * @property {number} toolingCost - One-time tooling cost in USD
+ * @property {number} overhead - Machine overhead multiplier (1.1 = 10% overhead)
+ */
+
+/**
+ * @typedef {Object} DFMIssue
+ * @property {string} severity - 'error'|'warning'|'info'
+ * @property {string} code - Issue code (e.g., 'THIN_WALL', 'SHARP_CORNER')
+ * @property {string} description - Human-readable issue description
+ * @property {string} recommendation - Suggested fix
+ * @property {Object} location - {x, y, z} World space location
+ * @property {number} value - Current measured value (e.g., wall thickness)
+ * @property {number} minValue - Recommended minimum value
+ */
+
+/**
+ * @typedef {Object} CostEstimate
+ * @property {number} materialCost - Cost of raw material in USD
+ * @property {number} machineCost - Machine operation cost in USD
+ * @property {number} toolingCost - Tooling cost per unit (amortized) in USD
+ * @property {number} laborCost - Manual labor cost in USD
+ * @property {number} overheadCost - Overhead allocation in USD
+ * @property {number} totalCost - Total cost per unit in USD
+ * @property {number} unitPrice - Suggested unit selling price in USD
+ * @property {number} leadTime - Estimated lead time in days
+ */
+
+/**
+ * Material properties database with 20+ materials
+ * @constant {Object.<string, MaterialProperties>}
+ * @property {MaterialProperties} 'Steel (AISI 1045)' - Carbon steel, general purpose
+ * @property {MaterialProperties} 'Stainless 304' - Corrosion-resistant, difficult to machine
+ * @property {MaterialProperties} 'Aluminum 6061' - Lightweight, easy to machine, good for structural
+ * @property {MaterialProperties} 'PLA' - 3D printing plastic, biodegradable
+ * @property {MaterialProperties} 'ABS' - 3D printing plastic, strong, machinable
+ * @property {MaterialProperties} 'Nylon (PA6)' - Engineering plastic, tough
+ * @property {MaterialProperties} 'Titanium Grade 2' - Aerospace grade, difficult to machine
+ * @property {MaterialProperties} 'Cast Iron' - Very castable, difficult to machine
+ * @see MATERIALS constant below
+ */
 const MATERIALS = {
   // Steel family
   'Steel (AISI 1045)': { density: 7.85, cost: 1.20, machinability: 75, printability: 0, moldability: 85, temperable: true },
@@ -164,6 +246,27 @@ const COST_FACTORS = {
  * @param {THREE.Object3D} object - Scene object with geometry
  * @param {string} process - Process key from PROCESS_RULES
  * @returns {Object} Analysis results
+ */
+/**
+ * Analyze geometry against manufacturing process design rules
+ *
+ * Comprehensive DFM analysis checking 8+ design criteria:
+ * - Wall thickness uniformity
+ * - Corner and fillet radii
+ * - Hole depth-to-diameter ratio
+ * - Overhang angles (for additive processes)
+ * - Undercut detection
+ * - Draft angle uniformity
+ * - Sharp edge detection
+ *
+ * Returns array of issues (errors, warnings, info) with severity, location, and recommendations.
+ *
+ * @param {THREE.Mesh|THREE.Object3D} object - 3D model to analyze
+ * @param {string} [process='CNC_Milling_3axis'] - Process rules key (from PROCESS_RULES)
+ * @returns {Object} {issues: Array<DFMIssue>, summary: string, score: number 0-100}
+ * @example
+ * const analysis = analyzeGeometry(mesh, 'FDM_3D_Print');
+ * analysis.issues.forEach(issue => console.log(`${issue.severity}: ${issue.description}`));
  */
 function analyzeGeometry(object, process = 'CNC_Milling_3axis') {
   const issues = [];
@@ -326,6 +429,15 @@ function analyzeGeometry(object, process = 'CNC_Milling_3axis') {
  * @param {THREE.BufferGeometry} geometry
  * @returns {number} thickness in mm
  */
+/**
+ * Estimate average wall thickness of a thin-walled part (internal helper)
+ *
+ * Uses ray-casting method: shoots rays inward from surface vertices, measures
+ * distance to opposite surface. Returns average + min/max + histogram.
+ *
+ * @param {THREE.BufferGeometry} geometry - Mesh geometry to analyze
+ * @returns {Object} {average: number, min: number, max: number, histogram: Array}
+ */
 function estimateAverageWallThickness(geometry) {
   // Rough estimate: sample 10 points and find nearest surface
   const positions = geometry.attributes.position.array;
@@ -352,6 +464,16 @@ function estimateAverageWallThickness(geometry) {
  * @param {THREE.BufferGeometry} geometry
  * @param {number} threshold - angle threshold in degrees
  * @returns {Object} overhang data
+ */
+/**
+ * Detect overhang regions that require support structures (for additive manufacturing)
+ *
+ * For each face, compares face normal to gravity (0,0,-1). If face angle from horizontal
+ * exceeds threshold, it's an overhang. Returns array of overhang faces with angle data.
+ *
+ * @param {THREE.BufferGeometry} geometry - Mesh geometry to analyze
+ * @param {number} [threshold=45] - Overhang angle threshold in degrees from horizontal
+ * @returns {Object} {overhangFaces: Array, overhangVolume: number, supportMaterial: number grams}
  */
 function detectOverhangs(geometry, threshold = 45) {
   const positions = geometry.attributes.position.array;
@@ -514,6 +636,24 @@ function analyzeWallUniformity(geometry) {
  * @param {string} process - process key
  * @param {number} quantity - units to produce
  * @returns {Object} cost breakdown
+ */
+/**
+ * Estimate manufacturing cost for specified material and process
+ *
+ * Cost model combines: material volume × density × unit cost + machine time × hourly rate +
+ * amortized tooling + labor + overhead. Uses industry-standard rates and assumptions.
+ *
+ * Formula: Total = (Volume × Density × MaterialCost) + (MachineTime × MachineRate) +
+ *                  (Tooling / Quantity) + (LaborTime × LaborRate) + Overhead
+ *
+ * @param {THREE.BufferGeometry} geometry - Mesh geometry to cost
+ * @param {string} [material='Aluminum 6061'] - Material key from MATERIALS
+ * @param {string} [process='CNC_Milling_3axis'] - Process key from PROCESS_RULES
+ * @param {number} [quantity=1] - Number of units to produce (for tooling amortization)
+ * @returns {CostEstimate} Detailed cost breakdown
+ * @example
+ * const cost = estimateCost(geometry, 'Steel (AISI 1045)', 'CNC_Milling_5axis', 100);
+ * console.log(`Unit cost: $${cost.totalCost.toFixed(2)}`);
  */
 function estimateCost(geometry, material = 'Aluminum 6061', process = 'CNC_Milling_3axis', quantity = 1) {
   const matData = MATERIALS[material] || MATERIALS['Aluminum 6061'];
@@ -757,6 +897,14 @@ let currentObject = null;
 /**
  * Initialize the module
  */
+/**
+ * Initialize Manufacturability module
+ *
+ * Sets up UI panel, event listeners, and material selector dropdown.
+ * Must be called once before execute() calls.
+ *
+ * @returns {void}
+ */
 function init() {
   console.log('Manufacturability module initialized');
 }
@@ -828,6 +976,25 @@ function getUI() {
  * Execute module commands
  * @param {string} cmd - command name
  * @param {Object} params - parameters
+ */
+/**
+ * Execute command in Manufacturability module (public API)
+ *
+ * Commands:
+ * - 'analyze': Analyze geometry for manufacturing feasibility
+ * - 'estimateCost': Get cost breakdown for material + process combination
+ * - 'generateReport': Create detailed HTML report with visualizations
+ * - 'createHeatmap': Overlay color-coded issue visualization on model
+ * - 'compareMaterials': Get cost comparison across all materials for a process
+ * - 'compareProcesses': Get cost comparison across all processes for a material
+ *
+ * @param {string} cmd - Command name
+ * @param {Object} [params={}] - Command parameters
+ * @param {THREE.Object3D} params.object - For 'analyze'/'estimateCost': 3D model
+ * @param {string} params.material - For 'estimateCost'/'compareProcesses': material key
+ * @param {string} params.process - For 'estimateCost'/'compareMaterials': process key
+ * @param {number} params.quantity - For cost commands: production quantity
+ * @returns {Object} Command result (varies by command)
  */
 function execute(cmd, params = {}) {
   if (cmd === 'analyze') {

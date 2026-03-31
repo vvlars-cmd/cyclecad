@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>cycleCAD Help Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #252526;
+            --bg-tertiary: #2d2d30;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --accent-blue: #0284C7;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --border-color: #3e3e42;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            color: var(--accent-blue);
+            flex: 0 0 auto;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .search-box input {
+            flex: 1;
+            padding: 0.75rem;
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 4px;
+            font-size: 0.95rem;
+        }
+
+        .search-box input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+        }
+
+        .clear-btn {
+            padding: 0.75rem 1rem;
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .clear-btn:hover {
+            background-color: var(--accent-red);
+            color: white;
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 240px;
+            background-color: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-title {
+            padding: 0.75rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .module-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.5rem;
+        }
+
+        .module-filter {
+            padding: 0.5rem;
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            margin: 0.25rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .module-filter:hover {
+            background-color: var(--border-color);
+        }
+
+        .module-filter.active {
+            background-color: var(--accent-blue);
+            color: white;
+        }
+
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .results-header {
+            padding: 1rem;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .results-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .result-item {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .result-item:hover {
+            border-color: var(--accent-blue);
+            background-color: var(--bg-tertiary);
+        }
+
+        .result-header {
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .result-title-group {
+            flex: 1;
+        }
+
+        .result-title {
+            font-size: 1.05rem;
+            font-weight: 500;
+            color: var(--accent-blue);
+            margin-bottom: 0.25rem;
+        }
+
+        .result-module {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background-color: var(--bg-tertiary);
+            border-radius: 12px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-right: 0.5rem;
+        }
+
+        .result-module.Text-to-CAD {
+            background-color: rgba(2, 132, 199, 0.2);
+            color: #0284C7;
+        }
+
+        .result-module.Photo-to-CAD {
+            background-color: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .result-module.Manufacturability {
+            background-color: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .result-module.Generative {
+            background-color: rgba(168, 85, 247, 0.2);
+            color: #a855f7;
+        }
+
+        .result-module.Multi {
+            background-color: rgba(249, 115, 22, 0.2);
+            color: #f97316;
+        }
+
+        .result-module.Smart {
+            background-color: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+        }
+
+        .result-preview {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .expand-toggle {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--bg-tertiary);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+
+        .result-item.expanded .expand-toggle {
+            color: var(--accent-blue);
+        }
+
+        .result-detail {
+            display: none;
+            padding: 0 1rem 1rem;
+            border-top: 1px solid var(--border-color);
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .result-item.expanded .result-detail {
+            display: block;
+        }
+
+        .detail-section {
+            margin-bottom: 1rem;
+        }
+
+        .detail-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .detail-description {
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        .detail-syntax {
+            background-color: var(--bg-tertiary);
+            padding: 0.75rem;
+            border-left: 3px solid var(--accent-blue);
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.85rem;
+            border-radius: 2px;
+            margin-bottom: 1rem;
+            overflow-x: auto;
+        }
+
+        .detail-examples {
+            margin-bottom: 1rem;
+        }
+
+        .detail-examples .detail-label {
+            margin-bottom: 0.5rem;
+        }
+
+        .example-item {
+            background-color: var(--bg-tertiary);
+            padding: 0.5rem 0.75rem;
+            margin-bottom: 0.5rem;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .example-text {
+            flex: 1;
+            color: var(--text-secondary);
+        }
+
+        .copy-btn {
+            padding: 0.35rem 0.7rem;
+            background-color: var(--accent-blue);
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            background-color: #0975b4;
+        }
+
+        .copy-btn.copied {
+            background-color: var(--accent-green);
+        }
+
+        .detail-tips {
+            background-color: rgba(16, 185, 129, 0.15);
+            border-left: 3px solid var(--accent-green);
+            padding: 0.75rem;
+            border-radius: 2px;
+            margin-bottom: 1rem;
+        }
+
+        .tips-label {
+            color: var(--accent-green);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .tips-text {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .related-items {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .related-badge {
+            padding: 0.35rem 0.7rem;
+            background-color: var(--border-color);
+            border-radius: 12px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+        }
+
+        .related-badge:hover {
+            background-color: var(--accent-blue);
+            color: white;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state-text {
+            font-size: 1.05rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state-hint {
+            font-size: 0.9rem;
+        }
+
+        .recently-viewed {
+            padding: 1rem;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .recently-viewed-title {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .recently-viewed-items {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .recent-item {
+            padding: 0.4rem 0.8rem;
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .recent-item:hover {
+            border-color: var(--accent-blue);
+            background-color: var(--border-color);
+        }
+
+        @media print {
+            .header, .sidebar, .expand-toggle, .copy-btn, .clear-btn {
+                display: none;
+            }
+
+            .results-list {
+                overflow: visible;
+            }
+
+            .result-detail {
+                display: block !important;
+                max-height: none;
+            }
+
+            .result-item {
+                page-break-inside: avoid;
+                margin-bottom: 2rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box {
+                min-width: 100%;
+            }
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>cycleCAD Help</h1>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search help... (e.g., 'cylinder', 'fillet', 'FDM')" autocomplete="off">
+            <button class="clear-btn" id="clearBtn">Clear</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <div class="sidebar-title">Modules</div>
+            <div class="module-list" id="moduleList"></div>
+            <div class="recently-viewed">
+                <div class="recently-viewed-title">Recently Viewed</div>
+                <div class="recently-viewed-items" id="recentlyViewed"></div>
+            </div>
+        </div>
+
+        <div class="content-area">
+            <div class="results-header" id="resultsHeader"></div>
+            <div class="results-list" id="resultsList"></div>
+        </div>
+    </div>
+
+    <script>
+        // Help database
+        let helpData = [];
+
+        // Recently viewed (in-memory only)
+        let recentlyViewed = [];
+
+        // Current filters
+        let currentModule = null;
+        let currentSearch = '';
+
+        // Load help data
+        async function loadHelpData() {
+            try {
+                const response = await fetch('./js/killer-features-help.json');
+                helpData = await response.json();
+                renderModuleFilters();
+                renderResults();
+            } catch (error) {
+                console.error('Failed to load help data:', error);
+                document.getElementById('resultsList').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">!</div>
+                        <div class="empty-state-text">Failed to load help database</div>
+                        <div class="empty-state-hint">Make sure killer-features-help.json is in the js folder</div>
+                    </div>
+                `;
+            }
+        }
+
+        // Get unique modules
+        function getModules() {
+            const modules = [...new Set(helpData.map(item => item.module))];
+            return modules.sort();
+        }
+
+        // Render module filters
+        function renderModuleFilters() {
+            const moduleList = document.getElementById('moduleList');
+            moduleList.innerHTML = '';
+
+            getModules().forEach(module => {
+                const btn = document.createElement('button');
+                btn.className = 'module-filter';
+                btn.textContent = module;
+                btn.addEventListener('click', () => {
+                    currentModule = currentModule === module ? null : module;
+                    renderModuleFilters();
+                    renderResults();
+                });
+                if (currentModule === module) {
+                    btn.classList.add('active');
+                }
+                moduleList.appendChild(btn);
+            });
+        }
+
+        // Fuzzy search
+        function fuzzyMatch(query, text) {
+            const queryLower = query.toLowerCase();
+            const textLower = text.toLowerCase();
+
+            if (textLower.includes(queryLower)) return true;
+
+            let queryIdx = 0;
+            for (let i = 0; i < textLower.length && queryIdx < queryLower.length; i++) {
+                if (textLower[i] === queryLower[queryIdx]) {
+                    queryIdx++;
+                }
+            }
+            return queryIdx === queryLower.length;
+        }
+
+        // Filter and sort results
+        function getFilteredResults() {
+            let results = helpData;
+
+            // Filter by module
+            if (currentModule) {
+                results = results.filter(item => item.module === currentModule);
+            }
+
+            // Filter by search
+            if (currentSearch.trim()) {
+                results = results.filter(item => {
+                    const query = currentSearch.toLowerCase();
+                    return fuzzyMatch(query, item.title) ||
+                        fuzzyMatch(query, item.description) ||
+                        item.keywords.some(kw => fuzzyMatch(query, kw));
+                });
+            }
+
+            return results;
+        }
+
+        // Render results
+        function renderResults() {
+            const results = getFilteredResults();
+            const resultsList = document.getElementById('resultsList');
+            const resultsHeader = document.getElementById('resultsHeader');
+
+            // Update header
+            resultsHeader.textContent = `${results.length} result${results.length !== 1 ? 's' : ''} ${currentModule ? `in ${currentModule}` : ''}`;
+
+            // Render results
+            if (results.length === 0) {
+                resultsList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">O_o</div>
+                        <div class="empty-state-text">No results found</div>
+                        <div class="empty-state-hint">Try searching for something else or clear filters</div>
+                    </div>
+                `;
+                return;
+            }
+
+            resultsList.innerHTML = results.map(item => `
+                <div class="result-item" data-id="${item.id}">
+                    <div class="result-header">
+                        <div class="result-title-group">
+                            <div class="result-title">${item.title}</div>
+                            <div>
+                                <span class="result-module ${item.module.replace(/ /g, '-')}">${item.module}</span>
+                                <span class="result-module">${item.category}</span>
+                            </div>
+                            <div class="result-preview">${item.description}</div>
+                        </div>
+                        <div class="expand-toggle">▼</div>
+                    </div>
+                    <div class="result-detail">
+                        ${item.syntax !== 'N/A' ? `
+                            <div class="detail-section">
+                                <div class="detail-label">Syntax</div>
+                                <div class="detail-syntax">${item.syntax}</div>
+                            </div>
+                        ` : ''}
+
+                        ${item.examples && item.examples.length > 0 ? `
+                            <div class="detail-section">
+                                <div class="detail-label">Examples</div>
+                                <div class="detail-examples">
+                                    ${item.examples.map(ex => `
+                                        <div class="example-item">
+                                            <span class="example-text">${ex}</span>
+                                            <button class="copy-btn" onclick="copyToClipboard('${ex.replace(/'/g, "\\'")}', this)">Copy</button>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        ${Object.keys(item.parameters).length > 0 ? `
+                            <div class="detail-section">
+                                <div class="detail-label">Parameters</div>
+                                ${Object.entries(item.parameters).map(([key, desc]) => `
+                                    <div style="margin-bottom: 0.5rem;">
+                                        <strong>${key}:</strong> ${desc}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+
+                        ${item.tips ? `
+                            <div class="detail-tips">
+                                <div class="tips-label">Tips</div>
+                                <div class="tips-text">${item.tips}</div>
+                            </div>
+                        ` : ''}
+
+                        ${item.related && item.related.length > 0 ? `
+                            <div class="detail-section">
+                                <div class="detail-label">Related Topics</div>
+                                <div class="related-items">
+                                    ${item.related.map(id => {
+                                        const related = helpData.find(h => h.id === id);
+                                        return related ? `
+                                            <span class="related-badge" onclick="searchForId('${id}')">${related.title}</span>
+                                        ` : '';
+                                    }).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+
+            // Add expand/collapse handlers
+            document.querySelectorAll('.result-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    if (e.target.closest('.copy-btn')) return;
+                    item.classList.toggle('expanded');
+                    addToRecentlyViewed(item.dataset.id);
+                });
+            });
+        }
+
+        // Copy to clipboard
+        function copyToClipboard(text, button) {
+            navigator.clipboard.writeText(text).then(() => {
+                button.classList.add('copied');
+                button.textContent = 'Copied!';
+                setTimeout(() => {
+                    button.classList.remove('copied');
+                    button.textContent = 'Copy';
+                }, 2000);
+            });
+        }
+
+        // Add to recently viewed
+        function addToRecentlyViewed(id) {
+            const item = helpData.find(h => h.id === id);
+            if (!item) return;
+
+            recentlyViewed = recentlyViewed.filter(h => h.id !== id);
+            recentlyViewed.unshift(item);
+            if (recentlyViewed.length > 10) {
+                recentlyViewed.pop();
+            }
+
+            renderRecentlyViewed();
+        }
+
+        // Render recently viewed
+        function renderRecentlyViewed() {
+            const container = document.getElementById('recentlyViewed');
+            container.innerHTML = recentlyViewed.map(item => `
+                <span class="recent-item" onclick="searchForId('${item.id}')">${item.title}</span>
+            `).join('');
+        }
+
+        // Search for ID
+        function searchForId(id) {
+            const item = helpData.find(h => h.id === id);
+            if (!item) return;
+            document.getElementById('searchInput').value = item.title;
+            currentSearch = item.title;
+            currentModule = null;
+            renderModuleFilters();
+            renderResults();
+            document.getElementById('resultsList').scrollTop = 0;
+        }
+
+        // Search handler
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            currentSearch = e.target.value;
+            renderResults();
+        });
+
+        // Clear button
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            document.getElementById('searchInput').value = '';
+            currentSearch = '';
+            currentModule = null;
+            renderModuleFilters();
+            renderResults();
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                document.getElementById('searchInput').value = '';
+                currentSearch = '';
+                currentModule = null;
+                renderModuleFilters();
+                renderResults();
+            }
+        });
+
+        // Initialize
+        loadHelpData();
+    </script>
+</body>
+</html>

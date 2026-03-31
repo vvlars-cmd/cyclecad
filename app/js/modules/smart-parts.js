@@ -1,15 +1,72 @@
 /**
- * Smart Parts Library with AI Search
+ * @fileoverview Smart Parts Library with AI Search
+ * @module CycleCAD/SmartParts
+ * @version 3.7.0
+ * @author cycleCAD Team
+ * @license MIT
  *
- * Provides access to 200+ standard parts with:
- * - AI-powered natural language search
- * - 3D parametric geometry generation
- * - Supplier part number cross-reference
- * - BOM management and export
- * - Real-time pricing estimation
+ * @description
+ * Unified smart parts catalog with 200+ standard mechanical parts. Features AI-powered
+ * natural language search (fuzzy matching), 3D parametric geometry generation for all parts,
+ * supplier part number cross-reference (McMaster-Carr, MISUMI, Digi-Key), BOM management and export,
+ * real-time pricing from multiple suppliers, and smart consolidation (combines duplicate parts).
  *
- * @namespace CycleCAD.SmartParts
- * @requires THREE.js
+ * @example
+ * // Search for parts using natural language
+ * const results = window.CycleCAD.SmartParts.execute('search', {query: 'm3 socket head cap screw'});
+ *
+ * // Add part to BOM
+ * window.CycleCAD.SmartParts.execute('addToBOM', {partId: 'fastener_shcs_m3_8', quantity: 10});
+ *
+ * // Generate 3D geometry for part
+ * const geometry = window.CycleCAD.SmartParts.execute('generateGeometry', {partId: 'fastener_shcs_m3_8'});
+ *
+ * @requires THREE (Three.js r170)
+ * @see {@link https://cyclecad.com/docs/killer-features|Killer Features Guide}
+ */
+
+/**
+ * @typedef {Object} CatalogPart
+ * @property {string} id - Unique part identifier
+ * @property {string} name - Human-readable part name
+ * @property {string} category - Part category (e.g., 'Fasteners', 'Bearings')
+ * @property {string} subcategory - Subcategory (e.g., 'Socket Head Cap Screws')
+ * @property {string} standard - Standard designation (e.g., 'ISO 4762', 'ANSI B18.3')
+ * @property {Object} dimensions - Parametric dimensions {dia, length, headDia, etc.}
+ * @property {string} material - Material designation
+ * @property {string} finish - Surface finish (e.g., 'Zinc Plated', 'Stainless')
+ * @property {number} weight - Weight in grams
+ * @property {Object} supplier - Supplier part numbers {mcmaster, misumi, digi, amazon}
+ * @property {Object} price - Pricing in different currencies {usd, eur, gbp}
+ * @property {Array<string>} tags - Search tags (for fuzzy matching)
+ */
+
+/**
+ * @typedef {Object} SearchResult
+ * @property {CatalogPart} part - The matched part
+ * @property {number} score - Match score 0-1 (1.0 = perfect match)
+ * @property {string} reason - Why this matched (e.g., 'tag match', 'description match')
+ */
+
+/**
+ * @typedef {Object} BOMEntry
+ * @property {string} partId - Reference to catalog part
+ * @property {CatalogPart} partData - Full part information
+ * @property {number} quantity - Number of units required
+ * @property {number} costPerUnit - Unit price in default currency
+ * @property {number} totalCost - quantity × costPerUnit
+ * @property {string} notes - User notes (e.g., "green anodized")
+ */
+
+/**
+ * @typedef {Object} SupplierInfo
+ * @property {string} supplier - Supplier name (e.g., 'McMaster', 'MISUMI')
+ * @property {string} partNumber - Supplier's part number
+ * @property {string} url - Direct link to part on supplier website
+ * @property {number} leadTime - Delivery time in days
+ * @property {number} minimumOrder - Minimum order quantity
+ * @property {number} unitPrice - Current unit price
+ * @property {number} stockLevel - Available inventory (-1 if unknown)
  */
 
 window.CycleCAD = window.CycleCAD || {};
@@ -616,6 +673,15 @@ window.CycleCAD.SmartParts = (() => {
    * @param {Object} dims - { dia, length, headDia, headHeight }
    * @returns {THREE.Group}
    */
+  /**
+   * Generate 3D bolt/screw geometry from dimensions (internal helper)
+   *
+   * Parametric socket head cap screw geometry: cylindrical shank + hex socket head.
+   * Creates proper proportions per ISO 4762 standard. Head includes drive recess.
+   *
+   * @param {Object} dims - Bolt dimensions {dia, length, headDia, headHeight, socketSize}
+   * @returns {THREE.BufferGeometry} 3D bolt mesh
+   */
   function generateBolt(dims) {
     const group = new THREE.Group();
 
@@ -963,6 +1029,15 @@ window.CycleCAD.SmartParts = (() => {
    * @param {Object} part - Part catalog entry
    * @returns {THREE.Group}
    */
+  /**
+   * Dispatch parametric geometry generation for any part in catalog
+   *
+   * Routes to specialized generator function based on part category.
+   * Caches geometry results for repeated access. Returns Three.js mesh ready for scene.
+   *
+   * @param {CatalogPart} part - Part from catalog
+   * @returns {THREE.BufferGeometry} Generated 3D geometry
+   */
   function getPartGeometry(part) {
     if (geometryCache.has(part.id)) {
       return geometryCache.get(part.id).clone();
@@ -1022,6 +1097,15 @@ window.CycleCAD.SmartParts = (() => {
    * @param {string} query
    * @returns {string[]}
    */
+  /**
+   * Tokenize search query into words for matching (internal helper)
+   *
+   * Splits on whitespace, removes common words (stop words), converts to lowercase.
+   * Expands abbreviations (e.g., "dia" → "diameter") before tokenization.
+   *
+   * @param {string} query - Natural language search query
+   * @returns {Array<string>} Processed tokens
+   */
   function tokenizeQuery(query) {
     return query
       .toLowerCase()
@@ -1035,6 +1119,17 @@ window.CycleCAD.SmartParts = (() => {
    * @param {string} a
    * @param {string} b
    * @returns {number} 0-1
+   */
+  /**
+   * Compute string similarity using Levenshtein edit distance (internal helper)
+   *
+   * Measures minimum edits (insert/delete/replace) needed to transform a→b.
+   * Normalized 0-1: 1.0 = identical, 0.0 = completely different.
+   * Used for typo tolerance in search (e.g., "dieameter" matches "diameter").
+   *
+   * @param {string} a - First string
+   * @param {string} b - Second string
+   * @returns {number} Similarity score 0-1
    */
   function stringSimilarity(a, b) {
     a = a.toLowerCase();
@@ -1083,6 +1178,27 @@ window.CycleCAD.SmartParts = (() => {
    * @param {string} query
    * @param {Object} filters
    * @returns {Array} Sorted results with scores
+   */
+  /**
+   * Search parts catalog using natural language query with optional filters
+   *
+   * Implements multi-strategy fuzzy matching:
+   * 1. Exact keyword match in tags (score 1.0)
+   * 2. Substring match in name/description (score 0.9)
+   * 3. Levenshtein edit distance for typo tolerance (score 0.7-0.8)
+   * 4. Category/material filtering to narrow results
+   *
+   * Results sorted by score (highest first). Duplicate parts consolidated.
+   *
+   * @param {string} query - Natural language search query (e.g., "m3 socket head cap screw 10mm")
+   * @param {Object} [filters={}] - Optional filters
+   * @param {string} filters.category - Filter by category (e.g., 'Fasteners')
+   * @param {string} filters.material - Filter by material (e.g., 'Steel')
+   * @param {number} filters.maxPrice - Price ceiling in default currency
+   * @returns {Array<SearchResult>} Ranked search results (best match first)
+   * @example
+   * const results = searchCatalog('iso 4762 m5 socket head cap screw 16mm', {material: 'Steel'});
+   * // → [{part: {...}, score: 0.98, reason: 'tag match'}, ...]
    */
   function searchCatalog(query, filters = {}) {
     if (!query || query.trim().length === 0) {
@@ -1284,6 +1400,17 @@ window.CycleCAD.SmartParts = (() => {
    * @param {THREE.Vector3} position
    * @param {Object} config - { quantity, size, material, finish }
    * @returns {Object} { id, part, mesh, position }
+   */
+  /**
+   * Insert part instance into 3D scene at specified position
+   *
+   * Generates geometry, creates THREE.Mesh, applies material and transform,
+   * adds to scene. Optionally applies color, scale, and user-specified configurations.
+   *
+   * @param {CatalogPart} part - Part from catalog
+   * @param {THREE.Vector3} [position] - World position for part placement
+   * @param {Object} [config={}] - Configuration {color, scale, visible, castShadow, receiveShadow}
+   * @returns {THREE.Mesh} Instance mesh added to scene
    */
   function insertPart(part, position = new THREE.Vector3(0, 0, 0), config = {}) {
     const geometry = getPartGeometry(part);
@@ -1586,6 +1713,15 @@ window.CycleCAD.SmartParts = (() => {
    * Initialize module
    * @param {THREE.Scene} sceneRef
    */
+  /**
+   * Initialize SmartParts module with Three.js scene
+   *
+   * Sets up UI panel, search bar, category filters, BOM viewer,
+   * pricing display, and supplier links. Must be called once before execute() calls.
+   *
+   * @param {THREE.Scene} sceneRef - The Three.js scene for part insertion
+   * @returns {void}
+   */
   function init(sceneRef) {
     scene = sceneRef;
     console.log('[SmartParts] Initialized with', Object.keys(partCatalog).length, 'parts');
@@ -1664,6 +1800,40 @@ window.CycleCAD.SmartParts = (() => {
    * Execute command
    * @param {string} command
    * @param {Object} params
+   */
+  /**
+   * Execute command in SmartParts module (public API)
+   *
+   * Commands:
+   * - 'search': Search parts catalog with natural language query
+   * - 'getCatalog': Get full parts list (optionally filtered)
+   * - 'generateGeometry': Get 3D geometry for a part
+   * - 'insertPart': Add part instance to 3D scene
+   * - 'addToBOM': Add part to Bill of Materials
+   * - 'removeBOM': Remove part from BOM
+   * - 'consolidateBOM': Merge duplicate parts in BOM
+   * - 'exportBOM': Export BOM as CSV or Excel
+   * - 'getSuppliersForPart': Get all supplier options for a part
+   * - 'compareSuppliers': Compare pricing/lead time across suppliers
+   * - 'getCategories': List all part categories
+   * - 'getPricingHistory': Get historical pricing for a part
+   *
+   * @param {string} command - Command name
+   * @param {Object} [params={}] - Command parameters (varies by command)
+   * @param {string} params.query - For 'search': natural language query
+   * @param {string} params.partId - For most commands: part identifier
+   * @param {number} params.quantity - For 'addToBOM': quantity to add
+   * @param {string} params.format - For 'exportBOM': 'csv'|'excel'|'json'
+   * @returns {Object} Command result (varies by command)
+   * @example
+   * // Search for parts
+   * const results = window.CycleCAD.SmartParts.execute('search', {query: 'm5 socket head cap screw'});
+   *
+   * // Add to BOM
+   * window.CycleCAD.SmartParts.execute('addToBOM', {partId: results[0].part.id, quantity: 10});
+   *
+   * // Export BOM
+   * const bomData = window.CycleCAD.SmartParts.execute('exportBOM', {format: 'excel'});
    */
   function execute(command, params = {}) {
     switch (command) {

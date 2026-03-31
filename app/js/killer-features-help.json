@@ -1,395 +1,314 @@
-{
-  "killer_features": {
-    "ai_copilot_chat": {
-      "title": "AI Design Copilot Chat",
-      "category": "Input",
-      "shortcut": "Ctrl+K",
-      "description": "Natural language CAD commands. Convert English descriptions into 3D geometry instantly.",
-      "examples": [
-        {
-          "input": "gear 24 teeth module 2",
-          "output": "Spur gear with 24 teeth, module 2, 10mm bore"
-        },
-        {
-          "input": "bracket 80x40x5 with holes",
-          "output": "L-shaped bracket with mounting holes"
-        },
-        {
-          "input": "cylinder 50mm diameter 80 tall",
-          "output": "Parametric cylinder geometry"
-        },
-        {
-          "input": "sphere 30mm",
-          "output": "Smooth sphere with PBR material"
-        }
-      ],
-      "usage": "1. Press Ctrl+K to open copilot\n2. Type your command\n3. Press Enter to create geometry\n4. Geometry appears in viewport instantly",
-      "supported_types": [
-        "gear",
-        "bracket",
-        "cylinder",
-        "sphere",
-        "plate",
-        "washer",
-        "spacer"
-      ],
-      "tips": [
-        "Typos are OK: 'geer', 'dieameter', 'sylindr' all work",
-        "Units are always in mm",
-        "Use formulas in parameters: 'gear with bore =wall_thickness*5'",
-        "Undo with Ctrl+Z if you don't like the result"
-      ]
-    },
-    "physics_simulation": {
-      "title": "Physics Simulation",
-      "category": "Analysis",
-      "shortcut": "Ctrl+P",
-      "description": "Real-time drop testing with stress analysis. Identify where parts will fail under impact.",
-      "features": [
-        "Gravity simulation (-9.81 m/s²)",
-        "Collision detection",
-        "Stress visualization (blue-yellow-red)",
-        "60 FPS performance",
-        "Automatic material damping"
-      ],
-      "colors": {
-        "blue": "Safe (0-25% stress)",
-        "yellow": "Warning (25-50% stress)",
-        "red": "Critical (50-100% stress)"
-      },
-      "usage": "1. Press Ctrl+P to start simulation\n2. Objects fall due to gravity\n3. Watch for color changes on impact\n4. Red areas indicate failure points\n5. Optimize design to reduce red stress",
-      "tips": [
-        "Physics runs in background, doesn't block modeling",
-        "Bounce coefficient is 0.6 (60% energy rebound)",
-        "Each impact accumulates stress on meshes",
-        "Combine with Parameter Table to iterate quickly",
-        "Export stressmap as texture for analysis"
-      ]
-    },
-    "generative_design": {
-      "title": "Generative Design",
-      "category": "Optimization",
-      "shortcut": "Ctrl+G",
-      "description": "Auto-generate optimized topology with constraints. Create organic lattice structures that minimize material while maintaining stiffness.",
-      "parameters": {
-        "material_budget": {
-          "range": "10-100%",
-          "default": "50%",
-          "meaning": "Percentage of original volume to retain"
-        },
-        "iterations": {
-          "range": "1-100",
-          "default": "20",
-          "meaning": "Number of optimization cycles (higher = better but slower)"
-        }
-      },
-      "applications": [
-        "Lightweight aerospace brackets",
-        "Organic automotive parts",
-        "Heat sink designs",
-        "Lattice structures"
-      ],
-      "usage": "1. Press Ctrl+G\n2. Set material budget (e.g., 50%)\n3. Set iterations (e.g., 30)\n4. Click 'Generate Optimized Structure'\n5. Watch progress bar as algorithm runs\n6. Result is a strut-based lattice",
-      "tips": [
-        "More iterations = better results but takes longer",
-        "Lower budget = sparser, more artistic result",
-        "Export lattice as STL for 3D printing",
-        "Can layer multiple generative steps for refinement",
-        "Combine with Physics to validate optimized design"
-      ]
-    },
-    "cost_estimator": {
-      "title": "Real-time Cost Estimator",
-      "category": "Manufacturing",
-      "shortcut": "Ctrl+C",
-      "description": "Live manufacturing cost calculation for three methods: CNC, 3D printing, and injection molding.",
-      "methods": {
-        "cnc_machining": {
-          "formula": "$15/min × (volume/10), min $50",
-          "lead_time": "5-10 days",
-          "best_for": "One-offs, prototypes, small batches"
-        },
-        "3d_printing": {
-          "formula": "$0.10 per cm³, min $25",
-          "lead_time": "1-3 days",
-          "best_for": "Rapid prototyping, complex geometry"
-        },
-        "injection_molding": {
-          "formula": "($5,000 tooling + $0.05/cm³) ÷ 1,000 units",
-          "lead_time": "2-4 weeks",
-          "best_for": "High-volume (1,000+) production"
-        }
-      },
-      "usage": "1. Create or edit a part\n2. Cost estimator updates automatically\n3. See three prices in real-time\n4. Bottom shows recommended method\n5. Modify geometry and watch costs change",
-      "tips": [
-        "Always visible at top-right corner",
-        "Updates every 1 second as you model",
-        "Use for ROI analysis: 'At what volume does tooling pay off?'",
-        "Consider post-processing when estimating total cost",
-        "Material changes: titanium is ~5× steel cost"
-      ]
-    },
-    "smart_snap": {
-      "title": "Smart Snap & Auto-Dimension",
-      "category": "Assembly",
-      "shortcut": "Enabled by default",
-      "description": "Intelligent snapping recognizes design intent. Auto-detects bolt circles and linear arrays. Auto-places dimensions on drawings.",
-      "snap_threshold": "15 pixels",
-      "pattern_types": [
-        {
-          "type": "bolt_circle",
-          "detection": "3+ holes arranged in circle (variance < 5mm)",
-          "example": "8 holes on Ø80 PCD"
-        },
-        {
-          "type": "linear_array",
-          "detection": "3+ parts in evenly-spaced line",
-          "example": "5× fasteners at 25mm spacing"
-        }
-      ],
-      "usage": "1. Drag part towards another part\n2. Within 15px, snap preview appears\n3. Release to snap into place\n4. Bolt circles auto-detect during drawing generation",
-      "tips": [
-        "Snap distance is configurable: 15px default",
-        "Pattern detection is automatic, no manual input needed",
-        "Drawings auto-dimension detected patterns",
-        "Use for rapid assembly mockups",
-        "Combine with smart mate for full assembly workflow"
-      ]
-    },
-    "version_control": {
-      "title": "Version Control Visual Diff",
-      "category": "Documentation",
-      "shortcut": "None (use menu)",
-      "description": "Git-like CAD branching with visual geometry comparison. Track design iterations and rollback changes.",
-      "features": [
-        "Save versions with timestamps",
-        "Multiple branches (main, feature/*, bugfix/*)",
-        "Visual diff: green=added, red=removed, orange=modified",
-        "Restore any previous version",
-        "Feature count tracking"
-      ],
-      "workflow": "main/v1.0 → feature/optimization → main/v1.1 → feature/fixes → main/v1.2",
-      "usage": "1. Click 'Save Version' button\n2. Version appears in history with timestamp\n3. Switch branches from dropdown\n4. Click 'Show Diff' to compare last 2 versions\n5. Geometry changes highlighted with colors\n6. Click any version to restore",
-      "tips": [
-        "Save after every major milestone",
-        "Use descriptive branch names: feature/weight-opt, bugfix/hole-offset",
-        "Visual diff is instant, no git learning curve",
-        "Export version history as JSON for archival",
-        "Branching is non-destructive: always have a fallback"
-      ]
-    },
-    "parametric_table": {
-      "title": "Parametric Table",
-      "category": "Engineering",
-      "shortcut": "Ctrl+T",
-      "description": "Excel-like parameter editor with formula support. Create families of parts with one spreadsheet.",
-      "default_parameters": [
-        {
-          "name": "width",
-          "value": "100",
-          "unit": "mm"
-        },
-        {
-          "name": "height",
-          "value": "50",
-          "unit": "mm"
-        },
-        {
-          "name": "hole_diameter",
-          "value": "10",
-          "unit": "mm"
-        }
-      ],
-      "formulas": [
-        {
-          "example": "=width*2",
-          "result": "Double the width"
-        },
-        {
-          "example": "=wall_thickness*5",
-          "result": "Hole is 5× wall thickness"
-        },
-        {
-          "example": "=depth + 10",
-          "result": "Offset by 10mm"
-        }
-      ],
-      "usage": "1. Press Ctrl+T to open table\n2. Edit values directly in cells\n3. Add formulas with = prefix\n4. Press Enter to recalculate\n5. Geometry updates live in viewport\n6. Export/Import CSV for sharing",
-      "tips": [
-        "Formulas are live: change width, height auto-updates",
-        "CSV roundtrip: Export → Excel → Import",
-        "Create family of sizes: S, M, L variants",
-        "Use for design exploration: test 100 variations in 5 minutes",
-        "Parameters feed into BOM and cost estimates"
-      ]
-    },
-    "smart_assembly_mating": {
-      "title": "Smart Assembly Mating",
-      "category": "Assembly",
-      "shortcut": "Drag parts",
-      "description": "Drag-to-snap assembly with auto-detected mate types. No manual positioning needed.",
-      "mate_types": [
-        {
-          "type": "coincident",
-          "when": "General overlap",
-          "example": "Bracket on base plate"
-        },
-        {
-          "type": "concentric",
-          "when": "Both cylinder-like (aspect > 2)",
-          "example": "Shaft through bearing"
-        },
-        {
-          "type": "tangent",
-          "when": "One flat surface (aspect < 0.3)",
-          "example": "Sphere on ramp"
-        },
-        {
-          "type": "offset",
-          "when": "Parallel at distance",
-          "example": "Washers on bolt"
-        }
-      ],
-      "snap_threshold": "20 pixels",
-      "usage": "1. Click and drag part A towards part B\n2. System analyzes geometry\n3. Within 20px, snap preview shows\n4. System auto-selects mate type\n5. Release to snap and apply mate",
-      "tips": [
-        "Mate type is automatic based on geometry analysis",
-        "Snap distance is 20px (quite forgiving)",
-        "Visual preview before snapping prevents mistakes",
-        "Use for rapid assembly mockups",
-        "Undo with Ctrl+Z if snap was wrong"
-      ]
-    },
-    "manufacturing_drawings": {
-      "title": "Manufacturing Drawings Auto-Generator",
-      "category": "Output",
-      "shortcut": "Menu: File → Generate Drawing",
-      "description": "One-click ISO/ANSI engineering drawings with all technical details. Send directly to machine shop.",
-      "included_content": [
-        "Title block with document metadata",
-        "Three orthogonal views (Front, Top, Side)",
-        "Auto-placed dimensions",
-        "Geometric dimensioning & tolerancing (GD&T)",
-        "Bill of Materials table",
-        "Notes and revision history"
-      ],
-      "standards": [
-        "ISO 128 (default)",
-        "ANSI Y14.5 (optional)"
-      ],
-      "output_format": "PNG at 200 DPI (PDF-ready)",
-      "usage": "1. Complete your design in 3D\n2. Menu: File → Generate Drawing\n3. Wait 2 seconds for rendering\n4. Drawing appears in new window\n5. Click 'Download' to save PNG\n6. Send to machine shop or 3D print service",
-      "tips": [
-        "One-click: no configuration needed",
-        "Auto-dimensions: critical features highlighted",
-        "ISO standard: recognized worldwide",
-        "Export as PNG: edit in Photoshop if needed",
-        "BOM is live: changes in model → BOM auto-updates"
-      ]
-    },
-    "digital_twin_live_data": {
-      "title": "Digital Twin Live Data",
-      "category": "Monitoring",
-      "shortcut": "Menu: View → Digital Twin",
-      "description": "Real-time IoT sensor visualization on 3D model. Monitor temperature, vibration, and wear in real-time.",
-      "sensor_data": {
-        "temperature": {
-          "unit": "Celsius",
-          "color_blue": "45-50°C (safe)",
-          "color_yellow": "50-70°C (warning)",
-          "color_red": "70°C+ (critical)"
-        },
-        "vibration": {
-          "unit": "mm/s",
-          "effect": "Scale animation"
-        },
-        "wear": {
-          "unit": "Percentage (0-100%)",
-          "alert_level": "80% (schedule maintenance)"
-        }
-      },
-      "update_frequency": "100ms",
-      "usage": "1. Enable: Menu View → Digital Twin\n2. HUD appears showing live data\n3. Model colors reflect temperature\n4. Watch vibration scale animation\n5. Track wear percentage over time",
-      "tips": [
-        "Simulation mode: test with fake data (default)",
-        "Real sensors: connect via WebSocket",
-        "Color feedback is instant visual status",
-        "Export data: CSV for predictive analysis",
-        "Predictive maintenance: use wear trends to schedule service",
-        "Multi-sensor: monitor 4+ bearings simultaneously"
-      ]
-    }
+[
+  {
+    "id": "ttc-001",
+    "module": "Text-to-CAD",
+    "category": "shapes",
+    "title": "Create a Cylinder",
+    "keywords": ["cylinder", "round", "tube", "pipe", "circular", "create"],
+    "description": "Create a cylinder by describing its dimensions. Cylinders are the most common rotational feature in mechanical design.",
+    "examples": ["cylinder 50mm diameter 80mm tall", "round tube 25mm radius 100mm long", "pipe 10mm diameter 200 height"],
+    "syntax": "cylinder [diameter OR radius] [height]",
+    "parameters": {"diameter": "mm (outer dimension)", "height": "mm (length)", "radius": "mm (half diameter)"},
+    "tips": "You can specify either diameter or radius. Height, tall, and length are interchangeable. Default units are mm.",
+    "related": ["ttc-010", "ttc-015", "ttc-035"]
   },
-  "quick_start": {
-    "tutorial_1_minute": "Press Ctrl+K, type 'gear 24 teeth', press Enter",
-    "tutorial_5_minutes": "Create a part → Press Ctrl+P → Watch physics → Check costs",
-    "tutorial_10_minutes": "Full workflow: Copilot → Physics → Generative → Costs → Export Drawing"
+  {
+    "id": "ttc-002",
+    "module": "Text-to-CAD",
+    "category": "shapes",
+    "title": "Create a Box",
+    "keywords": ["box", "cube", "rectangular", "block", "prism", "create"],
+    "description": "Create a rectangular box/cube with specified width, height, and depth. The foundation for most part designs.",
+    "examples": ["box 100mm wide 50mm tall 80mm deep", "cube 50", "rectangular block 200x100x50"],
+    "syntax": "box [width] [height] [depth]",
+    "parameters": {"width": "mm (X dimension)", "height": "mm (Y dimension)", "depth": "mm (Z dimension)"},
+    "tips": "All three dimensions are required. If you specify only one value, it creates a cube. Square vs rectangular - specify different width/depth for rectangle.",
+    "related": ["ttc-001", "ttc-003", "ttc-020"]
   },
-  "keyboard_shortcuts": {
-    "Ctrl+K": "AI Copilot Chat",
-    "Ctrl+P": "Physics Simulation toggle",
-    "Ctrl+G": "Generative Design",
-    "Ctrl+C": "Cost Estimator (show)",
-    "Ctrl+T": "Parameter Table",
-    "Ctrl+Z": "Undo",
-    "Ctrl+Y": "Redo",
-    "Ctrl+S": "Save document"
+  {
+    "id": "ttc-003",
+    "module": "Text-to-CAD",
+    "category": "shapes",
+    "title": "Create a Sphere",
+    "keywords": ["sphere", "ball", "round", "globe", "circular"],
+    "description": "Create a perfect sphere with specified radius or diameter. Used for bearings, knobs, and aesthetic features.",
+    "examples": ["sphere 25mm radius", "ball 50mm diameter", "globe 100 mm"],
+    "syntax": "sphere [radius OR diameter]",
+    "parameters": {"radius": "mm from center", "diameter": "mm across"},
+    "tips": "Spheres are defined by a single dimension. Use radius for center-based design, diameter for overall size specification.",
+    "related": ["ttc-001", "ttc-004", "ttc-012"]
   },
-  "troubleshooting": [
-    {
-      "problem": "Copilot doesn't understand my command",
-      "solution": "Use simpler language: 'gear 24 teeth' instead of 'create a gearwheel with 24 teeth and a 5mm bore'",
-      "details": "The parser looks for specific keywords (gear, bracket, cylinder) and numerical values"
-    },
-    {
-      "problem": "Physics simulation is slow",
-      "solution": "Reduce number of meshes or disable for a moment",
-      "details": "Physics runs on all objects. Hide non-essential parts to improve speed"
-    },
-    {
-      "problem": "Snap isn't working",
-      "solution": "Check that snap is enabled and parts are within 15 pixels",
-      "details": "Move your parts closer together. Snap distance is 15px by default"
-    },
-    {
-      "problem": "Drawing is missing dimensions",
-      "solution": "Ensure your part has clear geometry and no internal holes",
-      "details": "Auto-dimension works best on simple shapes. Complex cavities may not be detected"
-    },
-    {
-      "problem": "Parameter formula error",
-      "solution": "Check formula syntax: =width*2 (not =width * 2 with spaces)",
-      "details": "Formulas are JavaScript expressions. Avoid spaces around operators"
-    }
-  ],
-  "api_reference": {
-    "ai_copilot": {
-      "show": "KillerFeatures.features.aiCopilot.show()",
-      "process_command": "KillerFeatures.features.aiCopilot.processCommand('gear 24 teeth')"
-    },
-    "physics": {
-      "toggle": "KillerFeatures.features.physics.toggle()",
-      "start": "KillerFeatures.features.physics.start()",
-      "stop": "KillerFeatures.features.physics.stop()"
-    },
-    "generative": {
-      "show": "KillerFeatures.features.generative.show()",
-      "generate": "KillerFeatures.features.generative.generateTopology(0.5, 20)"
-    },
-    "parameters": {
-      "show": "KillerFeatures.features.parameterTable.show()",
-      "update": "KillerFeatures.features.parameterTable.updateParameter('width', 150)",
-      "export_csv": "KillerFeatures.features.parameterTable.exportCSV()"
-    }
+  {
+    "id": "ttc-019",
+    "module": "Text-to-CAD",
+    "category": "features",
+    "title": "Add a Through Hole",
+    "keywords": ["hole", "through", "bore", "drill", "passage"],
+    "description": "Create a hole that passes completely through the part. Used for fastening, assembly, and functional passages.",
+    "examples": ["add hole 10mm diameter through center", "through hole 8mm", "drill bore 12 through"],
+    "syntax": "[shape] add hole [diameter] through [location]",
+    "parameters": {"diameter": "mm", "location": "center, top, bottom, custom coordinates"},
+    "tips": "Through holes go completely through the part. Perfect for bolts and screws. You can add multiple holes in arrays.",
+    "related": ["ttc-020", "ttc-021", "ttc-024"]
   },
-  "tips_and_tricks": [
-    "Combine AI Copilot + Generative Design to create optimized parts in 1 minute",
-    "Use Parameter Table to create a family of 10 sizes from one design",
-    "Physics + Parameter Table = rapid iteration on robust designs",
-    "Version Control branching: feature/weight-opt, feature/faster-assembly, etc.",
-    "Manufacturing Drawings export to PDF: File → Generate Drawing → Save → Print",
-    "Smart Snap works best with similar-sized parts; adjust snap distance if needed",
-    "Digital Twin: export live data to CSV, use Excel for trend analysis",
-    "Use Cost Estimator to decide: 1 part = 3D Print, 1000 parts = Injection Mold"
-  ]
-}
+  {
+    "id": "ttc-023",
+    "module": "Text-to-CAD",
+    "category": "features",
+    "title": "Add a Fillet",
+    "keywords": ["fillet", "round", "edge", "smooth", "blend"],
+    "description": "Round an edge with a smooth curve. Removes sharp corners for safety and strength.",
+    "examples": ["add fillet 5mm radius on all edges", "fillet top edge 3mm", "round corner 2mm"],
+    "syntax": "[shape] fillet [radius] [edges]",
+    "parameters": {"radius": "mm (curve radius)", "edges": "all, top, bottom, specific edge ID"},
+    "tips": "Fillets reduce stress concentration and improve safety. Small fillets (1-3mm) for sharp edges, larger (5-10mm) for structural corners.",
+    "related": ["ttc-024", "ttc-025", "ttc-028"]
+  },
+  {
+    "id": "ttc-026",
+    "module": "Text-to-CAD",
+    "category": "features",
+    "title": "Add Circular Pattern",
+    "keywords": ["pattern", "circular", "array", "polar", "repeating"],
+    "description": "Duplicate a feature in a circular array around a center point or axis. Used for bolt holes and gear teeth.",
+    "examples": ["pattern hole 4 times circular 90mm diameter", "circular array 6 equally spaced holes", "polar array boss every 60 degrees"],
+    "syntax": "[feature] pattern [count] circular [diameter or spacing]",
+    "parameters": {"count": "number of copies", "diameter": "PCD (bolt circle diameter)", "spacing": "degrees between copies"},
+    "tips": "Used for bolt holes (4/6/8 hole patterns), gear teeth, mounting positions. PCD = pitch circle diameter for bolt holes.",
+    "related": ["ttc-019", "ttc-027", "ttc-030"]
+  },
+  {
+    "id": "ttc-031",
+    "module": "Text-to-CAD",
+    "category": "operations",
+    "title": "Undo Last Action",
+    "keywords": ["undo", "revert", "previous", "go back", "history"],
+    "description": "Revert the last action. You can undo multiple steps.",
+    "examples": ["undo", "go back", "undo last step"],
+    "syntax": "undo",
+    "parameters": {},
+    "tips": "Each action (create, modify, delete) can be undone. The feature tree shows your history. Ctrl+Z is the keyboard shortcut.",
+    "related": ["ttc-030", "ttc-032", "ttc-033"]
+  },
+  {
+    "id": "ttc-042",
+    "module": "Text-to-CAD",
+    "category": "tips",
+    "title": "Understanding Confidence Score",
+    "keywords": ["confidence", "score", "accuracy", "nlu", "parsing"],
+    "description": "The confidence score shows how well the AI understood your voice/text command. Higher = more confident.",
+    "examples": ["'cylinder 50mm' = 95% confidence", "'round tube thing' = 60% confidence"],
+    "syntax": "N/A",
+    "parameters": {},
+    "tips": "Scores: 90%+ = execute immediately, 70-90% = check before creating, below 70% = ask for clarification. Specific measurements = higher confidence.",
+    "related": ["ttc-043", "ttc-044", "ttc-045"]
+  },
+  {
+    "id": "p2c-001",
+    "module": "Photo-to-CAD",
+    "category": "upload",
+    "title": "Upload an Image",
+    "keywords": ["upload", "image", "photo", "import", "file"],
+    "description": "Import a photo of an object or sketch to convert to CAD geometry.",
+    "examples": ["drag image to canvas", "click upload button", "paste from clipboard"],
+    "syntax": "N/A",
+    "parameters": {},
+    "tips": "Best results with clear, well-lit photos. White background helps. Avoid shadows and reflections. Square/rectangular framing is best.",
+    "related": ["p2c-002", "p2c-003", "p2c-004"]
+  },
+  {
+    "id": "p2c-002",
+    "module": "Photo-to-CAD",
+    "category": "upload",
+    "title": "Use Camera to Capture Image",
+    "keywords": ["camera", "webcam", "capture", "photo", "picture"],
+    "description": "Use your device's camera to capture a photo directly in cycleCAD.",
+    "examples": ["click camera button", "allow camera permission", "capture photo of part"],
+    "syntax": "N/A",
+    "parameters": {},
+    "tips": "Good lighting is essential. Place object on white/uniform background. Hold steady for clear image. Square photos work best.",
+    "related": ["p2c-001", "p2c-003", "p2c-004"]
+  },
+  {
+    "id": "p2c-006",
+    "module": "Photo-to-CAD",
+    "category": "reference",
+    "title": "Set Reference Dimension",
+    "keywords": ["reference", "scale", "dimension", "calibrate", "known size"],
+    "description": "Provide a known dimension in the photo to scale the entire model. Essential for accurate sizing.",
+    "examples": ["this ruler is 100mm", "coin diameter 25mm", "part is 50mm wide"],
+    "syntax": "[object in photo] is [dimension]",
+    "parameters": {"known_object": "ruler, coin, standard part", "dimension": "mm"},
+    "tips": "Click the object in the photo, enter its real-world size. All other dimensions scale proportionally. A ruler in frame works best.",
+    "related": ["p2c-004", "p2c-005", "p2c-007"]
+  },
+  {
+    "id": "mfg-001",
+    "module": "Manufacturability",
+    "category": "processes",
+    "title": "CNC Machining - 3 Axis",
+    "keywords": ["cnc", "machining", "3-axis", "milling", "subtractive"],
+    "description": "Subtractive manufacturing using a 3-axis CNC mill. Good for parts with limited overhangs. Fast and accurate.",
+    "examples": ["slot bottom face", "pocket 20mm deep", "through hole on horizontal face"],
+    "syntax": "N/A",
+    "parameters": {},
+    "tips": "X, Y, Z axes only - no angled cuts. Good for flat parts, pockets, holes. Expensive tooling, fast production. Chips must clear.",
+    "related": ["mfg-002", "mfg-003", "mfg-010"]
+  },
+  {
+    "id": "mfg-002",
+    "module": "Manufacturability",
+    "category": "processes",
+    "title": "CNC Machining - 5 Axis",
+    "keywords": ["cnc", "5-axis", "simultaneous", "complex", "tilting"],
+    "description": "CNC mill with additional A and B rotational axes. Can cut complex surfaces and undercuts in one setup.",
+    "examples": ["angled pocket", "undercut feature", "compound geometry", "impellers", "turbine blades"],
+    "syntax": "N/A",
+    "parameters": {},
+    "tips": "A (rotation around X), B (rotation around Y) allow tilted cuts. Fewer setups = faster. More expensive than 3-axis. Good for complex geometry.",
+    "related": ["mfg-001", "mfg-003", "mfg-011"]
+  },
+  {
+    "id": "mfg-003",
+    "module": "Manufacturability",
+    "category": "processes",
+    "title": "FDM 3D Printing",
+    "keywords": ["fdm", "3d print", "additive", "layer", "plastic"],
+    "description": "Additive manufacturing depositing plastic layer-by-layer. Fast prototyping, good for complex shapes.",
+    "examples": ["overhanging features OK", "complex internal geometry OK", "support material for overhangs"],
+    "syntax": "N/A",
+    "parameters": {},
+    "tips": "Good for overhangs, complex geometry, fast. Material: ABS, PLA, PETG, Nylon. Wall minimum: 1.5mm. Slow for large parts. Poor surface finish.",
+    "related": ["mfg-002", "mfg-004", "mfg-005"]
+  },
+  {
+    "id": "mfg-010",
+    "module": "Manufacturability",
+    "category": "issues",
+    "title": "Issue: Thin Walls",
+    "keywords": ["thin", "wall", "minimum", "problem", "strength"],
+    "description": "Parts with walls too thin for the manufacturing process. Causes failures and waste.",
+    "examples": ["<0.7mm sheet metal", "<1.5mm injection molded", "<1.5mm FDM"],
+    "syntax": "N/A",
+    "parameters": {},
+    "tips": "Minimum wall thickness varies by process: CNC 1mm, FDM 1.5mm, injection molding 2mm, sheet metal 0.7mm, casting 5mm.",
+    "related": ["mfg-011", "mfg-012", "mfg-013"]
+  },
+  {
+    "id": "gnv-001",
+    "module": "Generative Design",
+    "category": "basics",
+    "title": "What is Generative Design?",
+    "keywords": ["generative", "optimization", "ai", "design space"],
+    "description": "AI-driven design exploration that automatically generates optimal part geometry given constraints and loads.",
+    "examples": ["minimize weight while maintaining strength", "maximize stiffness in limited volume", "topology optimization"],
+    "syntax": "N/A",
+    "parameters": {},
+    "tips": "You define: design space, loads, constraints. AI finds the optimal shape. Results are biomorphic and often unintuitive.",
+    "related": ["gnv-002", "gnv-003", "gnv-004"]
+  },
+  {
+    "id": "gnv-002",
+    "module": "Generative Design",
+    "category": "workflow",
+    "title": "Define Design Space",
+    "keywords": ["design space", "bounding", "envelope", "keep", "avoid"],
+    "description": "Specify the volume where the optimizer can add or remove material.",
+    "examples": ["keep: mounting face (must stay)", "avoid: interference zone", "design space: 200x100x50mm envelope"],
+    "syntax": "N/A",
+    "parameters": {},
+    "tips": "Keep zones: fixed geometry (mounting faces, holes). Avoid zones: interference (moving parts, cables). Design space: free to change.",
+    "related": ["gnv-001", "gnv-003", "gnv-004"]
+  },
+  {
+    "id": "sim-001",
+    "module": "Multi-Physics",
+    "category": "analysis",
+    "title": "Static Stress Analysis (FEA)",
+    "keywords": ["fea", "stress", "static", "von mises", "strength"],
+    "description": "Finite element analysis of static loading. Predicts stress distribution and safety factor.",
+    "examples": ["bracket under 100N load", "safety factor > 2.0 required", "max stress: 150 MPa"],
+    "syntax": "N/A",
+    "parameters": {},
+    "tips": "Von Mises stress is the most common metric for ductile materials. Safety factor = material yield / max stress.",
+    "related": ["sim-002", "sim-003", "sim-004"]
+  },
+  {
+    "id": "sim-002",
+    "module": "Multi-Physics",
+    "category": "analysis",
+    "title": "Thermal Analysis",
+    "keywords": ["thermal", "heat", "temperature", "conduction", "thermal gradient"],
+    "description": "Calculate temperature distribution and heat flow in parts.",
+    "examples": ["heat sink cooling", "temperature rise with dissipation", "thermal stress"],
+    "syntax": "N/A",
+    "parameters": {},
+    "tips": "Input: heat source and boundary temperatures. Output: temperature field. Check for hotspots and thermal stress.",
+    "related": ["sim-001", "sim-003", "sim-004"]
+  },
+  {
+    "id": "sim-003",
+    "module": "Multi-Physics",
+    "category": "analysis",
+    "title": "Modal Frequency Analysis",
+    "keywords": ["modal", "frequency", "vibration", "resonance", "natural"],
+    "description": "Calculate natural vibration frequencies. Avoid resonance with operating frequencies.",
+    "examples": ["first mode: 450 Hz", "avoid 60 Hz operating frequency", "mode shape animation"],
+    "syntax": "N/A",
+    "parameters": {},
+    "tips": "First mode is lowest frequency. Keep operating speed away from natural frequencies to prevent resonance.",
+    "related": ["sim-001", "sim-002", "sim-004"]
+  },
+  {
+    "id": "smt-001",
+    "module": "Smart Parts",
+    "category": "search",
+    "title": "Search by Standard (ISO/DIN)",
+    "keywords": ["standard", "iso", "din", "norm", "specification"],
+    "description": "Find fasteners and components by international standard.",
+    "examples": ["ISO 4762 socket head cap screw", "DIN 912 hexagon socket head cap screw", "ISO 4032 hex nut"],
+    "syntax": "search [ISO/DIN number] [size]",
+    "parameters": {},
+    "tips": "ISO = international, DIN = German. Same part, different naming. Specify size (M8, 1/4-20, etc.).",
+    "related": ["smt-002", "smt-003", "smt-004"]
+  },
+  {
+    "id": "smt-002",
+    "module": "Smart Parts",
+    "category": "search",
+    "title": "Search by Supplier (McMaster, Misumi)",
+    "keywords": ["mcmaster", "misumi", "supplier", "catalog", "part number"],
+    "description": "Search engineering part libraries and link to supplier catalogs.",
+    "examples": ["McMaster 91290A111 (stainless socket head cap)", "Misumi HXB6-10 (aluminum profile)"],
+    "syntax": "search supplier [supplier name] [keyword]",
+    "parameters": {},
+    "tips": "Real-time pricing and availability. Direct links to BOM assembly. Misumi has 50+ categories.",
+    "related": ["smt-001", "smt-003", "smt-004"]
+  },
+  {
+    "id": "smt-003",
+    "module": "Smart Parts",
+    "category": "insertion",
+    "title": "Insert Component into Assembly",
+    "keywords": ["insert", "add", "place", "assembly", "component"],
+    "description": "Add a smart part into your assembly at the correct position and orientation.",
+    "examples": ["insert M10 bolt centered on hole", "place bearing on shaft", "snap fastener to grid"],
+    "syntax": "insert [component] on [target face/hole]",
+    "parameters": {},
+    "tips": "Auto-aligns component to target geometry. Can offset/rotate as needed. Adds to BOM automatically.",
+    "related": ["smt-002", "smt-004", "smt-005"]
+  },
+  {
+    "id": "smt-005",
+    "module": "Smart Parts",
+    "category": "bom",
+    "title": "Generate Bill of Materials (BOM)",
+    "keywords": ["bom", "bill of materials", "list", "quantity", "cost"],
+    "description": "Automatically generate a complete BOM with quantities, suppliers, and costs.",
+    "examples": ["4x M10 socket head cap screw, 6x M6 hex nut, supplier links"],
+    "syntax": "N/A",
+    "parameters": {},
+    "tips": "BOM updates as you add/modify smart parts. Includes supplier links and pricing. Export as Excel.",
+    "related": ["smt-004", "smt-006", "smt-007"]
+  }
+]

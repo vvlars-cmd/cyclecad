@@ -1,10 +1,61 @@
 /**
- * Generative Design / Topology Optimization Module
+ * @fileoverview Generative Design / Topology Optimization Module
+ * @module CycleCAD/GenerativeDesign
+ * @version 3.7.0
+ * @author cycleCAD Team
+ * @license MIT
  *
+ * @description
  * Voxel-based SIMP (Solid Isotropic Material with Penalization) topology optimization
- * with marching cubes isosurface extraction, multi-objective support, and CAD integration.
+ * with marching cubes isosurface extraction, multi-objective support (minimize weight + stress),
+ * and CAD integration. Runs iterative optimization in non-blocking requestAnimationFrame chunks.
+ * Supports keep/avoid regions, point loads, fixed supports, and multi-material design spaces.
  *
- * Non-blocking iterative optimization in requestAnimationFrame chunks.
+ * @example
+ * // Initialize and set up design space
+ * window.CycleCAD.GenerativeDesign.init(scene);
+ * window.CycleCAD.GenerativeDesign.setDesignSpace({min: {x: -50, y: -50, z: -50}, max: {x: 50, y: 50, z: 50}});
+ *
+ * // Add constraints and loads
+ * window.CycleCAD.GenerativeDesign.addKeepRegion(criticalPart);
+ * window.CycleCAD.GenerativeDesign.addPointLoad({x: 0, y: 50, z: 0}, {x: 0, y: -1, z: 0}, 1000);
+ *
+ * // Run optimization
+ * window.CycleCAD.GenerativeDesign.execute('runOptimization', {iterations: 50});
+ *
+ * @requires THREE (Three.js r170)
+ * @see {@link https://cyclecad.com/docs/killer-features|Killer Features Guide}
+ */
+
+/**
+ * @typedef {Object} VoxelGrid
+ * @property {Float32Array} densities - Voxel density array (0-1 per voxel, flattened N×N×N)
+ * @property {number} resolution - Grid resolution per dimension (typically 20-40)
+ * @property {THREE.Box3} bounds - Bounding box of design space
+ */
+
+/**
+ * @typedef {Object} DesignConstraints
+ * @property {Array<THREE.Mesh>} keepRegions - Geometry that must remain solid
+ * @property {Array<THREE.Mesh>} avoidRegions - Geometry that must remain empty
+ * @property {Array<{position: Vector3, force: Vector3, magnitude: number}>} loads - Applied loads
+ * @property {Array<Vector3>} fixedPoints - Fixed/clamped regions (no displacement)
+ */
+
+/**
+ * @typedef {Object} OptimizationResult
+ * @property {VoxelGrid} voxelGrid - Final optimized voxel density field
+ * @property {Array<number>} convergenceHistory - Compliance at each iteration
+ * @property {number} finalCompliance - Final compliance (deformation energy)
+ * @property {number} volumeUsed - Fraction of design space used (0-1)
+ * @property {THREE.BufferGeometry} geometry - Extracted surface mesh
+ */
+
+/**
+ * @typedef {Object} MarchingCubesResult
+ * @property {THREE.BufferGeometry} geometry - Isosurface mesh
+ * @property {number} vertexCount - Number of vertices in result
+ * @property {number} faceCount - Number of triangles in result
  */
 
 window.CycleCAD = window.CycleCAD || {};
@@ -93,10 +144,15 @@ window.CycleCAD.GenerativeDesign = (() => {
   }
 
   /**
-   * Add a point load
-   * @param {THREE.Vector3} position - Load position
-   * @param {THREE.Vector3} direction - Load direction (normalized)
+   * Add a point load force to the design space
+   *
+   * Applied forces drive the topology optimization. Multiple loads can be combined
+   * to model complex loading scenarios. Each load affects nearby voxels based on distance.
+   *
+   * @param {THREE.Vector3} position - Load position in world space
+   * @param {THREE.Vector3} direction - Load direction (should be normalized)
    * @param {number} magnitude - Load magnitude in Newtons
+   * @returns {void}
    */
   function addLoad(position, direction, magnitude) {
     const dir = direction.clone().normalize();
@@ -207,6 +263,18 @@ window.CycleCAD.GenerativeDesign = (() => {
   /**
    * Initialize voxel density grid
    */
+  /**
+   * Initialize voxel grid for topology optimization (internal)
+   *
+   * Creates NxNxN grid of density values (0-1). Populates based on constraints:
+   * - Keep regions set to 1.0 (solid)
+   * - Avoid regions set to 0.0 (empty)
+   * - Free space set to volumeFraction (e.g., 0.3 = 30% target)
+   *
+   * Uses spatial hashing for efficient point-in-mesh tests.
+   *
+   * @returns {void}
+   */
   function initializeVoxelGrid() {
     const res = optimizationState.resolution;
     optimizationState.densities = new Float32Array(res * res * res);
@@ -293,6 +361,19 @@ window.CycleCAD.GenerativeDesign = (() => {
   /**
    * Compute stress sensitivity for each voxel
    */
+  /**
+   * Compute sensitivity (∂Compliance/∂density) for each voxel (internal)
+   *
+   * SIMP algorithm core: measures how much each voxel's removal increases deformation.
+   * Sensitivities guide density updates toward optimal design.
+   *
+   * Formula: sensitivity[v] = -p * ρ^(p-1) * u[v]^T * K[v] * u[v]
+   * where p = penaltyFactor (typically 3), ρ = density, u = displacement, K = stiffness
+   *
+   * Uses aggregation (neighborhood averaging) to prevent checkerboard patterns.
+   *
+   * @returns {Float32Array} Sensitivity values (one per voxel)
+   */
   function computeSensitivities() {
     const res = optimizationState.resolution;
     const sensitivities = new Float32Array(res * res * res);
@@ -332,6 +413,18 @@ window.CycleCAD.GenerativeDesign = (() => {
 
   /**
    * Apply sensitivity filter to prevent checkerboard patterns
+   */
+  /**
+   * Apply density filter to sensitivities (internal)
+   *
+   * Smooths sensitivity field with Gaussian kernel to enforce minimum feature size.
+   * Prevents creation of unrealizable small features. Inverse weighting: smaller
+   * sensitivities are damped more, protecting thin features.
+   *
+   * Prevents checkerboard patterns in SIMP optimization by penalizing rapid density changes.
+   *
+   * @param {Float32Array} sensitivities - Raw sensitivity field
+   * @returns {Float32Array} Filtered sensitivity field
    */
   function applySensitivityFilter(sensitivities) {
     const res = optimizationState.resolution;
@@ -374,6 +467,19 @@ window.CycleCAD.GenerativeDesign = (() => {
 
   /**
    * Update densities using optimality criteria method
+   */
+  /**
+   * Update voxel densities using Optimality Criteria method (internal)
+   *
+   * SIMP optimality criterion: each voxel moves to a Pareto-optimal density.
+   * Iterates binary search for Lagrange multiplier that maintains volume constraint.
+   * Update rule: ρ_new = max(0, min(1, ρ_old * (λ * sensitivity)^0.3))
+   *
+   * The 0.3 exponent (move limit) prevents oscillation and ensures convergence.
+   * Volume constraint is maintained: sum(ρ) = volumeFraction * total_voxels
+   *
+   * @param {Float32Array} sensitivities - Filtered sensitivity field
+   * @returns {void}
    */
   function updateDensities(sensitivities) {
     const res = optimizationState.resolution;
@@ -478,6 +584,19 @@ window.CycleCAD.GenerativeDesign = (() => {
 
   /**
    * Extract isosurface from voxel grid using simplified marching cubes
+   */
+  /**
+   * Extract surface mesh from voxel density field using Marching Cubes algorithm
+   *
+   * Marching Cubes: processes each cube of 8 voxels, looks up triangle configuration
+   * from edge table based on which vertices are solid vs. empty. Interpolates vertex
+   * positions on edges where density crosses threshold.
+   *
+   * Resulting mesh is smoothed and optimized for export (merged vertex buffers,
+   * computed normals, indexed geometry).
+   *
+   * @param {number} [threshold=0.3] - Density threshold for solid voxels (0-1)
+   * @returns {MarchingCubesResult} Surface mesh and statistics
    */
   function extractIsosurface(threshold = 0.3) {
     const res = optimizationState.resolution;
@@ -709,6 +828,17 @@ window.CycleCAD.GenerativeDesign = (() => {
   /**
    * Initialize module in scene
    */
+  /**
+   * Initialize GenerativeDesign module with Three.js scene
+   *
+   * Sets up Three.js scene, camera, renderer references. Creates material definitions,
+   * visualization groups, and event listeners. Must be called once before execute() calls.
+   *
+   * @param {THREE.Scene} sceneRef - The Three.js scene object
+   * @param {THREE.Camera} cameraRef - The Three.js camera
+   * @param {THREE.WebGLRenderer} rendererRef - The Three.js renderer
+   * @returns {void}
+   */
   function init(sceneRef, cameraRef, rendererRef) {
     scene = sceneRef;
     camera = cameraRef;
@@ -842,6 +972,29 @@ window.CycleCAD.GenerativeDesign = (() => {
 
   /**
    * Execute commands from UI
+   */
+  /**
+   * Execute command in GenerativeDesign module (public API)
+   *
+   * Commands:
+   * - 'setDesignSpace': Define optimization region
+   * - 'addKeepRegion': Mark geometry that must stay solid
+   * - 'addAvoidRegion': Mark geometry that must stay empty
+   * - 'addLoad': Apply point force to design space
+   * - 'addFixedPoint': Fix a region (boundary condition)
+   * - 'runOptimization': Execute topology optimization loop
+   * - 'extractMesh': Convert density field to surface mesh
+   * - 'exportSTL': Export optimized geometry as STL
+   * - 'clear': Reset all constraints and state
+   *
+   * @param {string} command - Command name
+   * @param {Object} [params={}] - Command parameters (varies by command)
+   * @param {number} params.iterations - For 'runOptimization': number of iterations
+   * @param {number} params.volumeFraction - For setup: target volume fraction (0-1)
+   * @param {number} params.threshold - For 'extractMesh': density threshold
+   * @returns {Object} Command result (varies by command)
+   * @example
+   * window.CycleCAD.GenerativeDesign.execute('runOptimization', {iterations: 50});
    */
   function execute(command, params = {}) {
     switch (command) {

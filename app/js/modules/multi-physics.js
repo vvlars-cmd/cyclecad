@@ -1,11 +1,80 @@
 /**
- * Multi-Physics Real-Time Simulation Module
- * cycleCAD v3.4.0
+ * @fileoverview Multi-Physics Real-Time Simulation Module
+ * @module CycleCAD/MultiPhysics
+ * @version 3.7.0
+ * @author cycleCAD Team
+ * @license MIT
  *
- * Integrates structural FEA, thermal analysis, modal analysis, and drop test simulation.
- * Uses Three.js for visualization, iterative solvers for performance.
+ * @description
+ * Integrates structural FEA (finite element analysis), thermal analysis, modal frequency analysis,
+ * and drop test simulation. Uses Three.js for visualization, conjugate gradient solver for structural FEA
+ * (Newmark-beta time integration for dynamics). Real-time GPU-accelerated stress heatmaps, modal shape
+ * visualization, and thermal contours.
  *
- * @namespace window.CycleCAD.MultiPhysics
+ * @example
+ * // Set up simulation
+ * window.CycleCAD.MultiPhysics.init(scene, geometry);
+ *
+ * // Run static stress analysis
+ * const result = window.CycleCAD.MultiPhysics.execute('analyzeStatic', {
+ *   material: 'steel',
+ *   loadType: 'distributed',
+ *   loadValue: 1000
+ * });
+ *
+ * @requires THREE (Three.js r170)
+ * @see {@link https://cyclecad.com/docs/killer-features|Killer Features Guide}
+ */
+
+/**
+ * @typedef {Object} FEAMesh
+ * @property {Array<{x: number, y: number, z: number}>} nodes - Mesh nodes/vertices
+ * @property {Array<Array<number>>} elements - Connectivity (indices into nodes array)
+ * @property {Float32Array} stiffnessMatrix - Global stiffness matrix (sparse format)
+ * @property {Uint32Array} nodeConstraints - Fixed/pinned node flags
+ */
+
+/**
+ * @typedef {Object} StressResult
+ * @property {Float32Array} vonMises - Von Mises stress at each node (Pa)
+ * @property {Float32Array} principalStress - Largest principal stress (Pa)
+ * @property {number} maxStress - Maximum stress value in model
+ * @property {THREE.Vector3} maxStressLocation - Where max stress occurs
+ * @property {number} safetyFactor - maxStress / material.yieldStress
+ * @property {THREE.BufferGeometry} deformedGeometry - Deformed mesh at peak load
+ * @property {Array<number>> vonMisesHistory - Von Mises progression over time steps
+ */
+
+/**
+ * @typedef {Object} ThermalResult
+ * @property {Float32Array} temperature - Temperature at each node (Kelvin)
+ * @property {number} maxTemperature - Peak temperature in model
+ * @property {number} minTemperature - Minimum temperature
+ * @property {THREE.Texture} temperatureHeatmap - Texture for 3D visualization
+ */
+
+/**
+ * @typedef {Object} ModalResult
+ * @property {Array<number>} frequencies - Natural frequencies in Hz
+ * @property {Array<Float32Array>} eigenvectors - Mode shapes (displacements per mode)
+ * @property {number} firstFrequency - First natural frequency (Hz)
+ * @property {Array<THREE.BufferGeometry>} modeShapes - Deformed geometries for visualization
+ */
+
+/**
+ * @typedef {Object} DropTestResult
+ * @property {Array<{time: number, maxStress: number, maxDisplacement: number}>} timeline - Results per time step
+ * @property {StressResult} peakStress - Stresses at impact moment
+ * @property {number} impactEnergy - Kinetic energy at contact
+ * @property {boolean} survived - Did part survive without exceeding yield stress
+ */
+
+/**
+ * @typedef {Object} SimulationResult
+ * @property {string} analysisType - 'static'|'thermal'|'modal'|'dynamic'|'droptest'
+ * @property {StressResult|ThermalResult|ModalResult|DropTestResult} data - Analysis results
+ * @property {number} computeTime - Execution time in milliseconds
+ * @property {string} solverStatus - 'converged'|'diverged'|'partial'
  */
 
 window.CycleCAD = window.CycleCAD || {};
@@ -74,8 +143,18 @@ window.CycleCAD.MultiPhysics = (() => {
   // ========== 1. MESH DISCRETIZATION ==========
 
   /**
-   * Convert Three.js geometry to mesh with nodes and elements
-   * Uses surface triangles + interior sampling for tetrahedra-like structure
+   * Discretize Three.js geometry into FEA mesh (nodes + elements)
+   *
+   * Converts surface geometry to volumetric mesh for FEA analysis.
+   * - Extracts unique vertices as nodes
+   * - Faces become surface elements (triangular shell elements)
+   * - Interior sampled for 3D elements (tetrahedra approximation)
+   *
+   * Resolution ('coarse'|'medium'|'fine') controls element density (affects compute time).
+   *
+   * @param {THREE.BufferGeometry} geometry - Input Three.js geometry
+   * @param {string} [resolution='medium'] - Mesh refinement: 'coarse'|'medium'|'fine'
+   * @returns {FEAMesh} Discretized mesh with nodes and elements
    */
   function discretizeMesh(geometry, resolution = 'medium') {
     const posAttr = geometry.getAttribute('position');
@@ -185,6 +264,20 @@ window.CycleCAD.MultiPhysics = (() => {
   /**
    * Run linear static structural analysis
    * Uses conjugate gradient solver for K·u = F
+   */
+  /**
+   * Solve structural static FEA problem using Conjugate Gradient solver
+   *
+   * Linear elasticity: K·u = f, where K is stiffness matrix, u is displacement, f is applied loads.
+   * Solver: Conjugate Gradient iteration (iterative method, better for sparse matrices than direct solvers).
+   * Time integration: Newmark-beta for dynamics (α=0.25, δ=0.5 gives implicit integration).
+   *
+   * Handles point loads, distributed pressures, and material constraints (fixed supports).
+   *
+   * @param {Object} material - Material properties {E, poissonsRatio, yieldStress, density}
+   * @param {Array<{position: Vector3, force: Vector3}>} loads - Applied loads at nodes
+   * @param {Uint32Array} constraints - Node flags: 0=free, 1=x-fixed, 2=y-fixed, 4=z-fixed
+   * @returns {StressResult} Von Mises stress, deformation, and safety factors
    */
   function solveStructural(material, loads, constraints) {
     if (!meshData) return { error: 'No mesh data' };
@@ -297,6 +390,23 @@ window.CycleCAD.MultiPhysics = (() => {
 
   /**
    * Conjugate gradient iterative solver for Ax = b
+   */
+  /**
+   * Conjugate Gradient iterative linear solver (internal)
+   *
+   * Solves Ax = b for symmetric positive-definite systems.
+   * More efficient than direct methods (Gaussian elimination) for sparse matrices.
+   * Convergence: typically reaches solution in n iterations (n = system size),
+   * but often converges faster in practice with preconditioning.
+   *
+   * Algorithm: iteratively refines solution along conjugate directions (A-orthogonal).
+   *
+   * @param {Float32Array} A - Stiffness matrix data (sparse, row-major)
+   * @param {Float32Array} b - Right-hand side (load vector)
+   * @param {number} n - System size (number of unknowns)
+   * @param {number} maxIter - Maximum iterations (typically 2*n)
+   * @param {number} tol - Convergence tolerance (e.g., 1e-6)
+   * @returns {Float32Array} Solution vector x
    */
   function conjugateGradient(A, b, n, maxIter, tol) {
     const x = new Float64Array(n);
@@ -432,6 +542,21 @@ window.CycleCAD.MultiPhysics = (() => {
 
   /**
    * Compute natural frequencies and mode shapes via power iteration
+   */
+  /**
+   * Compute natural frequencies and mode shapes using eigenvalue analysis
+   *
+   * Solves generalized eigenvalue problem: K·φ = λ·M·φ
+   * where K = stiffness, M = mass, λ = eigenvalue (ω²), φ = eigenvector (mode shape).
+   * Returns lowest numModes frequencies and their mode shapes.
+   *
+   * Algorithm: Subspace iteration (inverse power method with spectral shifting).
+   * Identifies resonant frequencies where structure is vulnerable to vibration.
+   *
+   * @param {Object} material - Material properties {E, poissonsRatio, density, etc.}
+   * @param {Uint32Array} constraints - Fixed nodes (boundary conditions)
+   * @param {number} [numModes=6] - Number of modes to compute
+   * @returns {ModalResult} Natural frequencies and mode shapes for visualization
    */
   function solveModal(material, constraints, numModes = 6) {
     if (!meshData) return { error: 'No mesh data' };
@@ -802,6 +927,15 @@ window.CycleCAD.MultiPhysics = (() => {
 
   /**
    * Initialize module with scene
+   */
+  /**
+   * Initialize MultiPhysics module with Three.js scene
+   *
+   * Sets up visualization materials, camera, renderer, and UI panel.
+   * Must be called once before execute() calls.
+   *
+   * @param {THREE.Scene} sceneRef - The Three.js scene object
+   * @returns {void}
    */
   function init(sceneRef) {
     scene = sceneRef;
@@ -1180,6 +1314,32 @@ window.CycleCAD.MultiPhysics = (() => {
 
   /**
    * Execute command (for agent API)
+   */
+  /**
+   * Execute command in MultiPhysics module (public API)
+   *
+   * Analysis types:
+   * - 'analyzeStatic': Structural FEA with applied loads
+   * - 'analyzeThermal': Steady-state temperature analysis
+   * - 'analyzeModal': Natural frequencies and mode shapes
+   * - 'analyzeDynamic': Time-domain response to excitation
+   * - 'analyzeDropTest': Impact analysis from specified drop height
+   * - 'visualize': Render results with heatmaps and deformation
+   * - 'probePoint': Query results at specific world location
+   * - 'exportReport': Generate PDF report with all results
+   *
+   * @param {string} command - Command name
+   * @param {Object} [params={}] - Command parameters
+   * @param {string} params.analysisType - Type of analysis to run
+   * @param {string} params.material - Material key (from MATERIALS)
+   * @param {Object} params.load - Load specification {type, value, location, direction}
+   * @param {number} params.dropHeight - For drop test: height in mm
+   * @returns {SimulationResult} Analysis results with stresses, temperatures, frequencies, etc.
+   * @example
+   * const result = window.CycleCAD.MultiPhysics.execute('analyzeStatic', {
+   *   material: 'steel',
+   *   load: {type: 'point', value: 1000, location: {x: 0, y: 100, z: 0}}
+   * });
    */
   function execute(command, params = {}) {
     if (command === 'runFEA') {

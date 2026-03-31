@@ -1,14 +1,28 @@
 /**
- * Photo-to-CAD Reverse Engineering Module
- * Converts photographs of parts into parametric 3D CAD models
+ * @fileoverview Photo-to-CAD Reverse Engineering Module
+ * @module CycleCAD/PhotoToCAD
+ * @version 3.7.0
+ * @author cycleCAD Team
+ * @license MIT
  *
- * Features:
- * - Image input: drag-drop, camera, clipboard
- * - Edge detection: Sobel + Canny + contour tracing
- * - Geometry reconstruction: 2D contours → 3D primitives
- * - Interactive refinement: overlay, sliders, reference dimensions
- * - AI enhancement: Gemini Flash Vision API integration
- * - UI panel with side-by-side photo + 3D preview
+ * @description
+ * Converts photographs of parts into parametric 3D CAD models through image analysis.
+ * Features drag-drop/camera/clipboard image input, Sobel+Canny edge detection with non-maximum suppression,
+ * contour tracing, 2D → 3D primitive reconstruction, interactive refinement with sliders,
+ * Gemini Flash Vision API integration, and side-by-side photo + 3D preview.
+ *
+ * @example
+ * // Initialize the module
+ * window.CycleCAD.PhotoToCAD.init();
+ *
+ * // Load image and detect features
+ * window.CycleCAD.PhotoToCAD.execute('loadImage', {imageData: dataUrl});
+ *
+ * // Detect geometric primitives
+ * window.CycleCAD.PhotoToCAD.execute('detectPrimitives');
+ *
+ * @requires THREE (Three.js r170)
+ * @see {@link https://cyclecad.com/docs/killer-features|Killer Features Guide}
  */
 
 (function() {
@@ -18,6 +32,40 @@
   // STATE
   // ============================================================================
 
+  // ========== TYPEDEFS ==========
+  /**
+   * @typedef {Object} DetectedFeature
+   * @property {string} type - Feature type: 'circle'|'rectangle'|'line'|'arc'
+   * @property {Array<Point>} contour - Ordered points defining the feature boundary
+   * @property {Object} geometry - Computed geometric properties
+   * @property {number} confidence - Detection confidence 0-1
+   */
+
+  /**
+   * @typedef {Object} ContourPoint
+   * @property {number} x - X coordinate in image pixels
+   * @property {number} y - Y coordinate in image pixels
+   * @property {number} angle - Edge angle in radians (-π to π)
+   * @property {number} magnitude - Edge magnitude 0-255
+   */
+
+  /**
+   * @typedef {Object} EdgeMap
+   * @property {Uint8ClampedArray} data - Edge magnitude per pixel
+   * @property {number} width - Image width in pixels
+   * @property {number} height - Image height in pixels
+   * @property {number} maxMagnitude - Highest magnitude value found
+   * @property {Uint8ClampedArray} angles - Edge angle per pixel
+   */
+
+  /**
+   * @typedef {Object} ReconstructionResult
+   * @property {THREE.Object3D} geometry - Generated 3D model
+   * @property {Array<DetectedFeature>} features - Detected 2D features
+   * @property {Object} metrics - Quality metrics (area coverage, confidence, etc.)
+   */
+
+  // ========== MODULE STATE ==========
   const state = {
     originalImage: null,
     processedImage: null,
@@ -45,7 +93,15 @@
   // ============================================================================
 
   /**
-   * Initialize image input handlers
+   * Initialize image input handlers (drag-drop, file input, camera, paste)
+   *
+   * Sets up event listeners for multiple image input methods:
+   * - Drag-drop files onto designated drop zone
+   * - File <input> element selection
+   * - Camera/device capture via getUserMedia
+   * - Paste from clipboard (Ctrl+V)
+   *
+   * @returns {void}
    */
   function initImageInput() {
     const dropZone = document.getElementById('photo-cad-drop-zone');
@@ -276,6 +332,18 @@
   /**
    * Detect edges using Sobel operator + Canny-style thinning
    */
+  /**
+   * Detect edges in image using Sobel operator with non-maximum suppression
+   *
+   * Two-stage edge detection:
+   * 1. Sobel: Applies 3x3 Sobel kernels for Gx/Gy gradients (fast, robust to noise)
+   * 2. Non-Maximum Suppression: Thins edges to single-pixel width, removes weak edges below threshold
+   *
+   * Sobel is chosen over Canny here for speed (no hysteresis linking) while maintaining quality.
+   * Non-maximum suppression uses gradient angle to suppress perpendicular pixels.
+   *
+   * @returns {void} Updates state.processedImage with binary edge map
+   */
   function detectEdges() {
     if (!state.canvas) return;
 
@@ -325,6 +393,22 @@
    * @param {number} height
    * @returns {Uint8Array} Edge magnitude
    */
+  /**
+   * Apply Sobel edge detection operator to grayscale image
+   *
+   * Computes image gradients using 3x3 Sobel kernels (Gx for horizontal, Gy for vertical).
+   * Returns magnitude (edge strength) and angle (edge direction) for each pixel.
+   *
+   * Sobel kernels:
+   * Gx = [-1 0 +1] / 2    Gy = [-1 -2 -1] / 2
+   *      [-2 0 +2]             [ 0  0  0]
+   *      [-1 0 +1]             [+1 +2 +1]
+   *
+   * @param {Uint8ClampedArray} gray - Grayscale image data (single channel)
+   * @param {number} width - Image width in pixels
+   * @param {number} height - Image height in pixels
+   * @returns {EdgeMap} Edge magnitude and direction data
+   */
   function sobelEdgeDetection(gray, width, height) {
     const sobelX = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]];
     const sobelY = [[-1, -2, -1], [0, 0, 0], [1, 2, 1]];
@@ -355,6 +439,20 @@
    * @param {number} width
    * @param {number} height
    * @returns {Uint8Array} Thinned edges
+   */
+  /**
+   * Apply non-maximum suppression to thin edges and remove weak responses
+   *
+   * For each edge pixel: checks if it's a local maximum along the gradient direction.
+   * Only keeps pixels stronger than both perpendicular neighbors. Applies threshold
+   * to remove weak edges below sensitivity level. Produces single-pixel-wide edge outlines.
+   *
+   * Used in classic Canny algorithm but applied here after Sobel for performance.
+   *
+   * @param {EdgeMap} edges - Edge map from sobelEdgeDetection()
+   * @param {number} width - Image width in pixels
+   * @param {number} height - Image height in pixels
+   * @returns {Uint8ClampedArray} Binary edge map (0 or 255 per pixel)
    */
   function nonMaximumSuppression(edges, width, height) {
     const thinned = new Uint8Array(width * height);
@@ -390,6 +488,18 @@
    * @param {number} width
    * @param {number} height
    */
+  /**
+   * Extract closed contours from binary edge map using flood fill
+   *
+   * Finds all edge pixels and traces connected components to form contours.
+   * Each contour is an ordered array of points that form a closed loop.
+   * Contours smaller than minSize are discarded as noise.
+   *
+   * @param {Uint8ClampedArray} binary - Binary edge map (0 or 255 per pixel)
+   * @param {number} width - Image width in pixels
+   * @param {number} height - Image height in pixels
+   * @returns {Array<Array<ContourPoint>>} Array of contours, each contour is array of points
+   */
   function extractContours(binary, width, height) {
     const visited = new Uint8Array(width * height);
     const contours = [];
@@ -418,6 +528,21 @@
    * @param {number} width
    * @param {number} height
    * @returns {Array<{x, y}>} Contour points
+   */
+  /**
+   * Trace a single contour starting from a seed point (internal helper)
+   *
+   * Uses 8-connectivity neighborhood traversal to follow edge pixels.
+   * Starts at seed point and walks perimeter in consistent direction.
+   * Marks visited pixels to avoid tracing same contour twice.
+   *
+   * @param {Uint8ClampedArray} binary - Binary edge map
+   * @param {Set<string>} visited - Set of already-traced pixel coordinates
+   * @param {number} startX - X coordinate of seed point
+   * @param {number} startY - Y coordinate of seed point
+   * @param {number} width - Image width in pixels
+   * @param {number} height - Image height in pixels
+   * @returns {Array<ContourPoint>} Ordered contour points
    */
   function traceContour(binary, visited, startX, startY, width, height) {
     const contour = [];
@@ -459,6 +584,19 @@
   /**
    * Detect primitives: circles, lines, rectangles, arcs
    */
+  /**
+   * Detect geometric primitives (circles, rectangles, lines) from extracted contours
+   *
+   * For each contour, attempts to fit known shapes in order of specificity:
+   * 1. Circle: Uses least-squares circle fitting (Taubin method)
+   * 2. Rectangle: Finds axis-aligned bounding box, checks linearity
+   * 3. Line: Fits line segment if contour is nearly straight
+   * 4. Arc: Fits circular arc for partial shapes
+   *
+   * Assigns confidence score based on fit quality. Returns array of detected features.
+   *
+   * @returns {Array<DetectedFeature>} Detected geometric primitives
+   */
   function detectPrimitives() {
     const contours = state.detectedFeatures.contours;
     state.detectedFeatures.circles = [];
@@ -491,6 +629,16 @@
    * Detect circle in contour using Hough circle transform (simplified)
    * @param {Array<{x, y}>} contour
    * @returns {{x, y, radius, confidence} | null}
+   */
+  /**
+   * Fit least-squares circle to contour points (internal helper)
+   *
+   * Uses Taubin circle fitting algorithm (robust, algebraic method).
+   * Computes circle center and radius minimizing algebraic distance to all points.
+   * Returns null if fit quality is poor (e.g., contour is linear, not circular).
+   *
+   * @param {Array<ContourPoint>} contour - Ordered contour points
+   * @returns {Object|null} {center: {x, y}, radius, confidence} or null if not a circle
    */
   function detectCircle(contour) {
     if (contour.length < 8) return null;
@@ -724,6 +872,20 @@
 
   /**
    * Reconstruct 3D geometry from detected features
+   */
+  /**
+   * Reconstruct 3D geometry from 2D detected primitives
+   *
+   * Multi-mode reconstruction based on detected shape types:
+   * - Single circle → cylinder (rotational extrusion)
+   * - Single rectangle → box (extrusion)
+   * - Circle + reference dimension → scaled cylinder
+   * - Multiple shapes → composite assembly
+   *
+   * Uses reference dimension to establish real-world scale from pixel measurements.
+   * Returns composite THREE.Group with all 3D models.
+   *
+   * @returns {ReconstructionResult} 3D geometry and metrics
    */
   function reconstruct3D() {
     const features = Array.from(state.selectedFeatures);
@@ -1048,6 +1210,14 @@
   /**
    * Initialize module
    */
+  /**
+   * Initialize PhotoToCAD module with UI and event handlers
+   *
+   * Sets up drop zone, file input, camera button, and Three.js preview scene.
+   * Must be called once before execute() calls. Safe to call multiple times.
+   *
+   * @returns {void}
+   */
   function init() {
     initImageInput();
     setupUIEventListeners();
@@ -1273,6 +1443,26 @@
    * Execute command
    * @param {string} command
    * @param {*} params
+   */
+  /**
+   * Execute command in PhotoToCAD module (public API)
+   *
+   * Main entry point for reverse engineering operations:
+   * - 'loadImage': Load image from data URL, file, or camera
+   * - 'detectEdges': Apply Sobel edge detection
+   * - 'detectPrimitives': Recognize circles, rectangles, lines
+   * - 'reconstruct3D': Convert 2D shapes to 3D geometry
+   * - 'setReferenceDimension': Set pixel-to-mm scale
+   * - 'enhanceWithAI': Ask Gemini to refine detection
+   * - 'exportModel': Export as STL or glTF
+   *
+   * @param {string} command - Command name
+   * @param {Object} [params={}] - Command parameters
+   * @param {string} params.imageData - For 'loadImage': data URL or file
+   * @param {number} params.pixelLength - For 'setReferenceDimension': length in pixels
+   * @param {number} params.mmLength - For 'setReferenceDimension': length in mm
+   * @param {string} params.format - For 'exportModel': 'stl'|'gltf'|'glb'
+   * @returns {Object} Command result (varies by command)
    */
   function execute(command, params) {
     switch (command) {

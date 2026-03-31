@@ -1,19 +1,25 @@
 /**
- * TextToCAD - Natural Language to 3D Geometry with Live Preview
+ * @fileoverview TextToCAD - Natural Language to 3D Geometry with Live Preview
+ * @module CycleCAD/TextToCAD
+ * @version 3.7.0
+ * @author cycleCAD Team
+ * @license MIT
+ *
+ * @description
  * Converts English descriptions to parametric 3D CAD models in real-time.
+ * Features NLP parser for 50+ shape types, live ghost preview, multi-step builder with state awareness,
+ * Gemini Flash API integration with local fallback, 3D dimension annotations, undo/redo, variant generation,
+ * and production-ready error handling.
  *
- * @module TextToCAD
- * @version 1.0.0
+ * @example
+ * // Initialize the module
+ * window.CycleCAD.TextToCAD.init(scene, renderer);
  *
- * Features:
- * - NLP parser for 50+ shape types and features
- * - Live preview with ghost geometry as you type
- * - Multi-step builder with state awareness
- * - Gemini Flash API integration (with local fallback)
- * - 3D dimension annotations
- * - Undo/redo per step
- * - Variant generation (3 alternatives)
- * - Production-ready error handling
+ * // Parse natural language and generate geometry
+ * const result = window.CycleCAD.TextToCAD.execute('parseDescription', 'create a cylinder 50mm diameter 80mm tall');
+ *
+ * @requires THREE (Three.js r170)
+ * @see {@link https://cyclecad.com/docs/killer-features|Killer Features Guide}
  */
 
 (function initTextToCAD() {
@@ -35,7 +41,58 @@
     lastAction: null
   };
 
+  // ========== TYPEDEFS ==========
+  /**
+   * @typedef {Object} ParseResult
+   * @property {string} intent - User intent: 'create', 'add', 'modify', 'combine', 'pattern', 'export'
+   * @property {string} primaryShape - Primary shape type (e.g., 'cylinder', 'box')
+   * @property {Object} dimensions - Extracted numeric dimensions in mm
+   * @property {Array} features - Array of feature objects (holes, fillets, etc.)
+   * @property {Object} relationships - Spatial relationships between components
+   * @property {Object} parameters - Computed parameters for shape generation
+   * @property {number} confidence - Confidence score 0-1
+   */
+
+  /**
+   * @typedef {Object} ShapeVocab
+   * @property {Array<string>} alias - Alternative names for the shape
+   * @property {Array<string>} params - Parameter names this shape accepts
+   */
+
+  /**
+   * @typedef {Object} FeatureSpec
+   * @property {string} type - Feature type: 'hole', 'fillet', 'chamfer', 'pattern', 'counterbore', etc.
+   * @property {Object} params - Feature parameters
+   * @property {number} diameter - For hole features
+   * @property {number} depth - For counterbore/countersink
+   * @property {string} direction - For patterns: 'radial' or 'rectangular'
+   */
+
+  /**
+   * @typedef {Object} BuildStep
+   * @property {number} index - Step number
+   * @property {string} description - User's natural language description
+   * @property {ParseResult} parsed - Parsed specification
+   * @property {THREE.Object3D} geometry - Generated 3D geometry
+   * @property {number} timestamp - Creation time
+   */
+
   // ========== SHAPE VOCABULARY & PATTERNS ==========
+
+  /**
+   * Vocabulary of recognized shapes with aliases and parameter names
+   * @constant {Object.<string, ShapeVocab>}
+   * @property {ShapeVocab} cylinder - Cylindrical shape (aliases: cyl, tube, pipe)
+   * @property {ShapeVocab} box - Rectangular block (aliases: cube, block, rectangular)
+   * @property {ShapeVocab} sphere - Spherical shape (aliases: ball, round)
+   * @property {ShapeVocab} cone - Conical shape (aliases: taper)
+   * @property {ShapeVocab} torus - Toroidal shape (aliases: donut, ring, washer)
+   * @property {ShapeVocab} gear - Gear teeth (aliases: cog, sprocket)
+   * @property {ShapeVocab} flange - Cylindrical collar (aliases: rim, collar)
+   * @property {ShapeVocab} shaft - Rotating shaft (aliases: axle, spindle)
+   * @property {ShapeVocab} housing - Enclosure (aliases: enclosure, case, container)
+   * @property {ShapeVocab} keyway - Key slot (aliases: key-slot)
+   */
   const SHAPE_VOCAB = {
     // Basic primitives
     cylinder: { alias: ['cyl', 'tube', 'pipe'], params: ['diameter', 'radius', 'height', 'tall'] },
@@ -94,8 +151,17 @@
 
   /**
    * Parse natural language description into structured CAD commands
-   * @param {string} input - English description
-   * @returns {Object} Structured geometry specification
+   *
+   * Performs multi-stage NLP pipeline: intent detection → shape recognition → dimension extraction →
+   * feature identification → relationship analysis → parameter computation → confidence scoring.
+   * Uses regex patterns and statistical scoring for robustness with imperfect input.
+   *
+   * @param {string} input - English description of part to create
+   * @returns {ParseResult|null} Structured geometry specification or null if unparseable
+   * @throws {Error} If input contains invalid UTF-8 or is longer than 2000 characters
+   * @example
+   * const spec = parseDescription('create cylinder 50mm diameter 80mm tall with 10mm hole');
+   * // Returns: { intent: 'create', primaryShape: 'cylinder', dimensions: {...}, features: [...], confidence: 0.92 }
    */
   function parseDescription(input) {
     if (!input || input.trim().length === 0) {
@@ -128,9 +194,17 @@
   }
 
   /**
-   * Detect user intent from input
-   * @param {string} input
-   * @returns {string} Intent type
+   * Detect user intent (action) from natural language input
+   *
+   * Maps keywords and patterns to one of 6 primary intents. Uses priority-ordered regex matching
+   * to distinguish between creation, modification, combination, and export workflows.
+   *
+   * @param {string} input - Natural language description
+   * @returns {string} Intent type: 'create'|'add'|'modify'|'combine'|'pattern'|'export'
+   * @example
+   * detectIntent('make a cylinder') // → 'create'
+   * detectIntent('add a hole') // → 'add'
+   * detectIntent('fillet the edges') // → 'modify'
    */
   function detectIntent(input) {
     const lower = input.toLowerCase();
@@ -144,9 +218,18 @@
   }
 
   /**
-   * Detect primary shape from natural language
-   * @param {string} input
-   * @returns {string|null} Shape type
+   * Detect primary shape type from natural language input
+   *
+   * Uses vocabulary lookup followed by heuristic fallback. Checks all registered shapes and their aliases
+   * using case-insensitive word-boundary regex matching. Maintains a ranked preference order for
+   * common shapes (cylinder > box > sphere) when multiple matches exist.
+   *
+   * @param {string} input - Natural language description
+   * @returns {string|null} Shape type (e.g., 'cylinder', 'box', 'sphere') or null if no match
+   * @example
+   * detectShape('create a cylindrical tube') // → 'cylinder'
+   * detectShape('make a round ball') // → 'sphere'
+   * detectShape('totally ambiguous text') // → null
    */
   function detectShape(input) {
     const lower = input.toLowerCase();
@@ -167,9 +250,18 @@
   }
 
   /**
-   * Extract numerical dimensions with unit conversion
-   * @param {string} input
-   * @returns {Object} Dimensions in mm
+   * Extract numerical dimensions and convert to millimeters
+   *
+   * Multi-pass extraction: first identifies all numbers with explicit units (mm/cm/in/m) using regex patterns,
+   * then performs context-aware labeling based on dimension order (diameter → height → width → depth).
+   * Supports explicit parameter names (e.g., "diameter 50mm", "height 80mm") and implicit positional inference.
+   * Handles ambiguous units by preferring explicit labels.
+   *
+   * @param {string} input - Natural language with measurements
+   * @returns {Object} Dimensions object with keys like {diameter, height, width, depth, etc.} all in mm
+   * @example
+   * extractDimensions('cylinder 50mm dia 80 tall') // → {diameter: 50, height: 80, radius: 25}
+   * extractDimensions('2 inch width and 3cm depth') // → {width: 50.8, depth: 30}
    */
   function extractDimensions(input) {
     const dimensions = {};
@@ -229,9 +321,16 @@
   }
 
   /**
-   * Extract features from input
-   * @param {string} input
-   * @returns {Array} Feature specifications
+   * Extract manufacturing features from natural language description
+   *
+   * Identifies hole, counterbore, countersink, thread, fillet, chamfer, pattern, and slot features
+   * using regex pattern matching. Returns array of feature specs with extracted parameters.
+   *
+   * @param {string} input - Natural language description
+   * @returns {Array<FeatureSpec>} Array of feature specifications
+   * @example
+   * extractFeatures('cylinder with 10mm hole, 5mm fillet, and 4x pattern')
+   * // → [{type: 'hole', diameter: 10}, {type: 'fillet', radius: 5}, {type: 'pattern', count: 4}]
    */
   function extractFeatures(input) {
     const features = [];
@@ -399,10 +498,17 @@
   }
 
   /**
-   * Convert value to millimeters
-   * @param {number} value
-   * @param {string} unit
-   * @returns {number} Value in mm
+   * Convert measurement value to millimeters (internal utility)
+   *
+   * Handles four common unit systems: metric (mm/cm/m) and imperial (inches).
+   * Used internally by extractDimensions for consistent unit handling.
+   *
+   * @param {number} value - Numeric value in source units
+   * @param {string} unit - Unit type: 'mm'|'cm'|'inch'|'m'
+   * @returns {number} Converted value in millimeters
+   * @example
+   * convertToMM(2, 'inch') // → 50.8
+   * convertToMM(5, 'cm') // → 50
    */
   function convertToMM(value, unit) {
     switch (unit) {
@@ -417,9 +523,18 @@
   // ========== GEOMETRY GENERATION (~300 lines) ==========
 
   /**
-   * Generate THREE.js geometry from parsed specification
-   * @param {Object} spec - Parsed CAD specification
-   * @returns {THREE.Group} Composite 3D geometry
+   * Generate THREE.js 3D geometry from parsed CAD specification
+   *
+   * Dispatcher function that creates appropriate Three.js primitives based on shape type.
+   * Applies features (holes, fillets, patterns) to base geometry. Returns composite group
+   * containing all geometry and feature visualizations.
+   *
+   * @param {ParseResult} spec - Parsed CAD specification with shape and parameters
+   * @returns {THREE.Group|null} Composite 3D geometry with all features applied, or null if invalid
+   * @example
+   * const spec = parseDescription('cylinder 50mm diameter 80mm tall with 10mm hole');
+   * const geometry = generateGeometry(spec);
+   * scene.add(geometry);
    */
   function generateGeometry(spec) {
     if (!spec || !spec.primaryShape) {
@@ -542,6 +657,17 @@
    * @param {Object} params
    * @returns {THREE.BufferGeometry}
    */
+  /**
+   * Create parametric spur gear geometry
+   *
+   * Generates involute gear profile with user-specified teeth count and module.
+   * Implements involute curve construction for smooth tooth engagement.
+   *
+   * @param {Object} params - Gear parameters
+   * @param {number} params.teeth - Number of teeth
+   * @param {number} params.module - Module (mm/tooth) - standard values: 0.5, 1.0, 1.5, 2.0, 3.0, 4.0
+   * @returns {THREE.BufferGeometry} Gear geometry
+   */
   function createGearGeometry(params) {
     const teeth = params.teeth || 24;
     const module = params.module || 2;
@@ -583,6 +709,18 @@
    * Create bracket geometry
    * @param {Object} params
    * @returns {THREE.BufferGeometry}
+   */
+  /**
+   * Create parametric angle bracket (L-shaped) geometry
+   *
+   * Constructs two perpendicular flange sheets with optional boss features.
+   * Common in mechanical assemblies for structural support.
+   *
+   * @param {Object} params - Bracket parameters
+   * @param {number} params.width - Horizontal width (mm)
+   * @param {number} params.height - Vertical height (mm)
+   * @param {number} params.thickness - Material thickness (mm)
+   * @returns {THREE.BufferGeometry} Bracket geometry
    */
   function createBracketGeometry(params) {
     const w = params.width || 60;
@@ -723,6 +861,16 @@
    * Update live preview as user types
    * @param {string} input
    */
+  /**
+   * Update live preview geometry as user types (debounced)
+   *
+   * Implements 500ms debounce to avoid excessive parsing/rendering. Creates "ghost" geometry
+   * with semi-transparent material to show real-time feedback without committing to history.
+   * Updates confidence score display and dimension annotations.
+   *
+   * @param {string} input - Current user input text
+   * @returns {void}
+   */
   function updateLivePreview(input) {
     // Clear existing debounce timer
     if (state.parseDebounceTimer) {
@@ -771,6 +919,14 @@
   /**
    * Commit preview to actual geometry
    */
+  /**
+   * Commit current preview to history and make permanent
+   *
+   * Replaces ghost geometry with opaque final geometry, adds to feature tree,
+   * pushes to step history, enables undo/redo. Triggers event listeners.
+   *
+   * @returns {void}
+   */
   function commitPreview() {
     if (!state.previewGeometry) return;
 
@@ -815,6 +971,14 @@
   /**
    * Undo to previous step
    */
+  /**
+   * Undo last step in feature history
+   *
+   * Moves currentStepIndex backward, restores previous geometry state,
+   * updates UI and 3D view. Does nothing if already at first step.
+   *
+   * @returns {BuildStep|null} Previous step or null if at beginning
+   */
   function undoStep() {
     if (state.currentStepIndex > 0) {
       state.currentStepIndex--;
@@ -836,6 +1000,14 @@
 
   /**
    * Redo to next step
+   */
+  /**
+   * Redo last undone step in feature history
+   *
+   * Moves currentStepIndex forward, restores next geometry state,
+   * updates UI and 3D view. Does nothing if already at latest step.
+   *
+   * @returns {BuildStep|null} Next step or null if at end
    */
   function redoStep() {
     if (state.currentStepIndex < state.steps.length - 1) {
@@ -1273,6 +1445,17 @@
    * @param {THREE.Scene} scene
    * @param {Object} renderer
    */
+  /**
+   * Initialize TextToCAD module with Three.js scene and renderer
+   *
+   * Sets up event listeners, UI panel, material definitions, and camera controls.
+   * Must be called once before any execute() calls. Safe to call multiple times.
+   *
+   * @param {THREE.Scene} scene - The Three.js scene object
+   * @param {THREE.WebGLRenderer} renderer - The Three.js renderer for viewport updates
+   * @returns {void}
+   * @throws {Error} If scene is null or not a THREE.Scene instance
+   */
   function init(scene, renderer) {
     state.scene = scene;
     state.renderer = renderer;
@@ -1366,6 +1549,32 @@
    * @param {string} command
    * @param {Object} params
    * @returns {any}
+   */
+  /**
+   * Execute command in TextToCAD module (public API)
+   *
+   * Main entry point for all text-to-CAD operations. Commands include:
+   * - 'parse': Parse natural language and return structured spec
+   * - 'generate': Generate and display geometry
+   * - 'commit': Add to history
+   * - 'undo'/'redo': Navigate history
+   * - 'clear': Reset everything
+   * - 'setVariant': Select one of 3 generated alternatives
+   *
+   * @param {string} command - Command name: 'parse'|'generate'|'commit'|'undo'|'redo'|'clear'|'setVariant'
+   * @param {Object} [params={}] - Command parameters (varies by command)
+   * @param {string} params.input - For 'parse' and 'generate': natural language text
+   * @param {number} params.variantIndex - For 'setVariant': index 0-2
+   * @returns {Object} Command result (structure varies by command)
+   * @example
+   * // Parse natural language
+   * const spec = window.CycleCAD.TextToCAD.execute('parse', {input: 'cylinder 50mm dia 80mm tall'});
+   *
+   * // Generate geometry with preview
+   * window.CycleCAD.TextToCAD.execute('generate', {input: 'cylinder 50mm dia 80mm tall'});
+   *
+   * // Commit to history
+   * window.CycleCAD.TextToCAD.execute('commit');
    */
   function execute(command, params) {
     switch (command) {

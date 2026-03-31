@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>cycleCAD Assembly Tests</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      display: flex;
+      height: 100vh;
+      gap: 1px;
+    }
+
+    .app-container {
+      flex: 0 0 70%;
+      background: #1a202c;
+      border: 1px solid #2d3748;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .test-panel {
+      flex: 0 0 30%;
+      display: flex;
+      flex-direction: column;
+      background: #1a202c;
+      border-left: 1px solid #2d3748;
+      overflow: hidden;
+    }
+
+    .test-header {
+      padding: 16px;
+      border-bottom: 1px solid #2d3748;
+      background: #0f172a;
+    }
+
+    .test-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #38bdf8;
+    }
+
+    .test-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      font-size: 12px;
+    }
+
+    .stat-box {
+      padding: 8px;
+      background: #1e293b;
+      border-radius: 4px;
+      border-left: 2px solid #64748b;
+    }
+
+    .stat-box.pass {
+      border-left-color: #10b981;
+    }
+
+    .stat-box.fail {
+      border-left-color: #ef4444;
+    }
+
+    .stat-box.skip {
+      border-left-color: #f59e0b;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-bottom: 2px;
+    }
+
+    .stat-value {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .test-controls {
+      display: flex;
+      gap: 8px;
+      padding: 12px;
+      border-bottom: 1px solid #2d3748;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 8px 12px;
+      background: #0ea5e9;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #0284c7;
+    }
+
+    button.secondary {
+      background: #475569;
+    }
+
+    button.secondary:hover {
+      background: #64748b;
+    }
+
+    .test-log {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      font-size: 12px;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    }
+
+    .test-log-entry {
+      margin-bottom: 8px;
+      padding: 8px;
+      background: #0f172a;
+      border-left: 3px solid #64748b;
+      border-radius: 2px;
+      line-height: 1.5;
+    }
+
+    .test-log-entry.pass {
+      border-left-color: #10b981;
+      background: rgba(16, 185, 129, 0.05);
+    }
+
+    .test-log-entry.fail {
+      border-left-color: #ef4444;
+      background: rgba(239, 68, 68, 0.05);
+    }
+
+    .test-log-entry.skip {
+      border-left-color: #f59e0b;
+      background: rgba(245, 158, 11, 0.05);
+    }
+
+    .test-log-entry.info {
+      border-left-color: #3b82f6;
+      background: rgba(59, 130, 246, 0.05);
+    }
+
+    .log-label {
+      font-weight: 600;
+      color: #38bdf8;
+      margin-right: 8px;
+    }
+
+    .log-message {
+      color: #cbd5e1;
+    }
+
+    .test-footer {
+      padding: 12px;
+      border-top: 1px solid #2d3748;
+      background: #0f172a;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: #1e293b;
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #38bdf8, #f59e0b);
+      width: 0%;
+      transition: width 0.3s;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <iframe id="appFrame" src="../index.html"></iframe>
+  </div>
+
+  <div class="test-panel">
+    <div class="test-header">
+      <div class="test-title">Assembly Tests</div>
+      <div class="test-stats">
+        <div class="stat-box pass">
+          <div class="stat-label">PASS</div>
+          <div class="stat-value" id="passCount">0</div>
+        </div>
+        <div class="stat-box fail">
+          <div class="stat-label">FAIL</div>
+          <div class="stat-value" id="failCount">0</div>
+        </div>
+        <div class="stat-box skip">
+          <div class="stat-label">SKIP</div>
+          <div class="stat-value" id="skipCount">0</div>
+        </div>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </div>
+
+    <div class="test-controls">
+      <button onclick="runAllTests()">Run All Tests</button>
+      <button class="secondary" onclick="runCategory('joints')">Joints</button>
+      <button class="secondary" onclick="runCategory('components')">Components</button>
+      <button class="secondary" onclick="runCategory('analysis')">Analysis</button>
+    </div>
+
+    <div class="test-log" id="testLog"></div>
+
+    <div class="test-footer">
+      <div id="testStatus">Ready to test</div>
+    </div>
+  </div>
+
+  <script>
+    const tests = {
+      joints: [
+        { name: 'Fixed Joint', fn: testFixedJoint },
+        { name: 'Revolute Joint', fn: testRevoluteJoint },
+        { name: 'Slider Joint', fn: testSliderJoint },
+        { name: 'Ball Joint', fn: testBallJoint },
+        { name: 'Screw Joint', fn: testScrewJoint },
+        { name: 'Cylindrical Joint', fn: testCylindricalJoint },
+        { name: 'Planar Joint', fn: testPlanarJoint },
+      ],
+      components: [
+        { name: 'Insert Component', fn: testInsertComponent },
+        { name: 'Ground Component', fn: testGroundComponent },
+        { name: 'Suppress Component', fn: testSuppressComponent },
+        { name: 'Hide Component', fn: testHideComponent },
+        { name: 'Show Component', fn: testShowComponent },
+      ],
+      analysis: [
+        { name: 'Interference Detection', fn: testInterferenceDetection },
+        { name: 'Assembly Explode', fn: testAssemblyExplode },
+        { name: 'Assembly Collapse', fn: testAssemblyCollapse },
+        { name: 'Motion Study', fn: testMotionStudy },
+        { name: 'Drive Joint', fn: testDriveJoint },
+      ],
+    };
+
+    let stats = { pass: 0, fail: 0, skip: 0, total: 0 };
+    let appFrame;
+    let appWindow;
+
+    async function init() {
+      appFrame = document.getElementById('appFrame');
+      await new Promise(resolve => {
+        appFrame.onload = resolve;
+      });
+      appWindow = appFrame.contentWindow;
+      addLog('info', 'App loaded', 'Assembly tests ready');
+    }
+
+    async function runAllTests() {
+      resetStats();
+      for (const category in tests) {
+        await runCategory(category);
+      }
+      addLog('info', 'Completed', `${stats.pass} passed, ${stats.fail} failed, ${stats.skip} skipped`);
+    }
+
+    async function runCategory(categoryName) {
+      resetStats();
+      const categoryTests = tests[categoryName] || [];
+
+      for (const test of categoryTests) {
+        try {
+          const result = await test.fn();
+          recordResult(test.name, result);
+          await delay(300);
+        } catch (error) {
+          recordResult(test.name, { pass: false, error: error.message });
+        }
+      }
+
+      updateProgress();
+    }
+
+    function recordResult(testName, result) {
+      stats.total++;
+      if (result.skip) {
+        stats.skip++;
+        addLog('skip', testName, 'Skipped');
+      } else if (result.pass) {
+        stats.pass++;
+        addLog('pass', testName, 'Passed');
+      } else {
+        stats.fail++;
+        addLog('fail', testName, result.error || 'Failed');
+      }
+      updateStats();
+    }
+
+    function updateStats() {
+      document.getElementById('passCount').textContent = stats.pass;
+      document.getElementById('failCount').textContent = stats.fail;
+      document.getElementById('skipCount').textContent = stats.skip;
+    }
+
+    function updateProgress() {
+      const percent = stats.total > 0 ? (stats.pass / stats.total) * 100 : 0;
+      document.getElementById('progressFill').style.width = percent + '%';
+    }
+
+    function resetStats() {
+      stats = { pass: 0, fail: 0, skip: 0, total: 0 };
+      document.getElementById('testLog').innerHTML = '';
+      updateStats();
+    }
+
+    function addLog(level, label, message) {
+      const log = document.getElementById('testLog');
+      const entry = document.createElement('div');
+      entry.className = `test-log-entry ${level}`;
+      entry.innerHTML = `<span class="log-label">${label}</span><span class="log-message">${message}</span>`;
+      log.appendChild(entry);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // Test implementations
+    async function testFixedJoint() {
+      try {
+        const assembly = appWindow.cycleCAD?.assembly;
+        if (!assembly) return { skip: true };
+
+        const result = await assembly.createJoint('fixed');
+        return { pass: result !== null };
+      } catch (e) {
+        return { pass: false, error: e.message };
+      }
+    }
+
+    async function testRevoluteJoint() {
+      try {
+        const assembly = appWindow.cycleCAD?.assembly;
+        if (!assembly) return { skip: true };
+
+        const result = await assembly.createJoint('revolute');
+        return { pass: result !== null };
+      } catch (e) {
+        return { pass: false, error: e.message };
+      }
+    }
+
+    async function testSliderJoint() {
+      return { skip: true };
+    }
+
+    async function testBallJoint() {
+      return { skip: true };
+    }
+
+    async function testScrewJoint() {
+      return { skip: true };
+    }
+
+    async function testCylindricalJoint() {
+      return { skip: true };
+    }
+
+    async function testPlanarJoint() {
+      return { skip: true };
+    }
+
+    async function testInsertComponent() {
+      try {
+        const assembly = appWindow.cycleCAD?.assembly;
+        if (!assembly) return { skip: true };
+
+        const result = await assembly.insertComponent();
+        return { pass: result !== null };
+      } catch (e) {
+        return { pass: false, error: e.message };
+      }
+    }
+
+    async function testGroundComponent() {
+      return { skip: true };
+    }
+
+    async function testSuppressComponent() {
+      return { skip: true };
+    }
+
+    async function testHideComponent() {
+      return { skip: true };
+    }
+
+    async function testShowComponent() {
+      return { skip: true };
+    }
+
+    async function testInterferenceDetection() {
+      return { skip: true };
+    }
+
+    async function testAssemblyExplode() {
+      try {
+        const assembly = appWindow.cycleCAD?.assembly;
+        if (!assembly) return { skip: true };
+
+        const result = await assembly.explode();
+        return { pass: result !== null };
+      } catch (e) {
+        return { pass: false, error: e.message };
+      }
+    }
+
+    async function testAssemblyCollapse() {
+      try {
+        const assembly = appWindow.cycleCAD?.assembly;
+        if (!assembly) return { skip: true };
+
+        const result = await assembly.collapse();
+        return { pass: result !== null };
+      } catch (e) {
+        return { pass: false, error: e.message };
+      }
+    }
+
+    async function testMotionStudy() {
+      return { skip: true };
+    }
+
+    async function testDriveJoint() {
+      return { skip: true };
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

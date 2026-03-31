@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>cycleCAD Sketch Tests</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      display: flex;
+      height: 100vh;
+      gap: 1px;
+    }
+
+    .app-container {
+      flex: 0 0 70%;
+      background: #1a202c;
+      border: 1px solid #2d3748;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .test-panel {
+      flex: 0 0 30%;
+      display: flex;
+      flex-direction: column;
+      background: #1a202c;
+      border-left: 1px solid #2d3748;
+      overflow: hidden;
+    }
+
+    .test-header {
+      padding: 16px;
+      border-bottom: 1px solid #2d3748;
+      background: #0f172a;
+    }
+
+    .test-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #38bdf8;
+    }
+
+    .test-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      font-size: 12px;
+    }
+
+    .stat-box {
+      padding: 8px;
+      background: #1e293b;
+      border-radius: 4px;
+      border-left: 2px solid #64748b;
+    }
+
+    .stat-box.pass {
+      border-left-color: #10b981;
+    }
+
+    .stat-box.fail {
+      border-left-color: #ef4444;
+    }
+
+    .stat-box.skip {
+      border-left-color: #f59e0b;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-bottom: 2px;
+    }
+
+    .stat-value {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .test-controls {
+      display: flex;
+      gap: 8px;
+      padding: 12px;
+      border-bottom: 1px solid #2d3748;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 8px 12px;
+      background: #0ea5e9;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #0284c7;
+    }
+
+    button.secondary {
+      background: #475569;
+    }
+
+    button.secondary:hover {
+      background: #64748b;
+    }
+
+    .test-log {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      font-size: 12px;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    }
+
+    .test-log-entry {
+      margin-bottom: 8px;
+      padding: 8px;
+      background: #0f172a;
+      border-left: 3px solid #64748b;
+      border-radius: 2px;
+      line-height: 1.5;
+    }
+
+    .test-log-entry.pass {
+      border-left-color: #10b981;
+      background: rgba(16, 185, 129, 0.05);
+    }
+
+    .test-log-entry.fail {
+      border-left-color: #ef4444;
+      background: rgba(239, 68, 68, 0.05);
+    }
+
+    .test-log-entry.skip {
+      border-left-color: #f59e0b;
+      background: rgba(245, 158, 11, 0.05);
+    }
+
+    .test-log-entry.info {
+      border-left-color: #3b82f6;
+      background: rgba(59, 130, 246, 0.05);
+    }
+
+    .log-label {
+      font-weight: 600;
+      color: #38bdf8;
+      margin-right: 8px;
+    }
+
+    .log-message {
+      color: #cbd5e1;
+    }
+
+    .test-footer {
+      padding: 12px;
+      border-top: 1px solid #2d3748;
+      background: #0f172a;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: #1e293b;
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #38bdf8, #f59e0b);
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    .highlight-flash {
+      animation: flashHighlight 0.5s ease-out;
+    }
+
+    @keyframes flashHighlight {
+      0% {
+        background: rgba(16, 185, 129, 0.6);
+        box-shadow: 0 0 8px rgba(16, 185, 129, 0.8);
+      }
+      100% {
+        background: transparent;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <iframe id="appFrame" src="../index.html"></iframe>
+  </div>
+
+  <div class="test-panel">
+    <div class="test-header">
+      <div class="test-title">Sketch Feature Tests</div>
+      <div class="test-stats">
+        <div class="stat-box pass">
+          <div class="stat-label">PASS</div>
+          <div class="stat-value" id="passCount">0</div>
+        </div>
+        <div class="stat-box fail">
+          <div class="stat-label">FAIL</div>
+          <div class="stat-value" id="failCount">0</div>
+        </div>
+        <div class="stat-box skip">
+          <div class="stat-label">SKIP</div>
+          <div class="stat-value" id="skipCount">0</div>
+        </div>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </div>
+
+    <div class="test-controls">
+      <button onclick="runAllTests()">Run All Tests</button>
+      <button class="secondary" onclick="runCategory('basic')">Basic Shapes</button>
+      <button class="secondary" onclick="runCategory('advanced')">Advanced</button>
+      <button class="secondary" onclick="runCategory('constraints')">Constraints</button>
+      <button class="secondary" onclick="runCategory('export')">Export</button>
+    </div>
+
+    <div class="test-log" id="testLog"></div>
+
+    <div class="test-footer">
+      <div id="testStatus">Ready to test</div>
+    </div>
+  </div>
+
+  <script>
+    const tests = {
+      basic: [
+        { name: 'Create Line', fn: testCreateLine },
+        { name: 'Create Rectangle', fn: testCreateRectangle },
+        { name: 'Create Circle', fn: testCreateCircle },
+        { name: 'Create Ellipse', fn: testCreateEllipse },
+        { name: 'Create Arc', fn: testCreateArc },
+        { name: 'Create Spline', fn: testCreateSpline },
+        { name: 'Create Slot', fn: testCreateSlot },
+        { name: 'Create Polygon', fn: testCreatePolygon },
+      ],
+      advanced: [
+        { name: 'Mirror Sketch', fn: testMirror },
+        { name: 'Pattern Sketch', fn: testPattern },
+        { name: 'Offset', fn: testOffset },
+        { name: 'Trim', fn: testTrim },
+        { name: 'Extend', fn: testExtend },
+        { name: 'Fillet 2D', fn: testFillet2D },
+        { name: 'Chamfer 2D', fn: testChamfer2D },
+        { name: 'Project Geometry', fn: testProjectGeometry },
+      ],
+      constraints: [
+        { name: 'Coincident Constraint', fn: testCoincident },
+        { name: 'Horizontal Constraint', fn: testHorizontal },
+        { name: 'Vertical Constraint', fn: testVertical },
+        { name: 'Parallel Constraint', fn: testParallel },
+        { name: 'Perpendicular Constraint', fn: testPerpendicular },
+        { name: 'Tangent Constraint', fn: testTangent },
+        { name: 'Equal Constraint', fn: testEqual },
+        { name: 'Fixed Constraint', fn: testFixed },
+        { name: 'Concentric Constraint', fn: testConcentric },
+        { name: 'Symmetric Constraint', fn: testSymmetric },
+        { name: 'Distance Constraint', fn: testDistanceConstraint },
+        { name: 'Angle Constraint', fn: testAngleConstraint },
+      ],
+      export: [
+        { name: 'Export to DXF', fn: testExportDXF },
+        { name: 'Export to SVG', fn: testExportSVG },
+      ],
+    };
+
+    let stats = { pass: 0, fail: 0, skip: 0, total: 0 };
+    let appFrame;
+    let appWindow;
+
+    async function init() {
+      appFrame = document.getElementById('appFrame');
+      await new Promise(resolve => {
+        appFrame.onload = resolve;
+      });
+      appWindow = appFrame.contentWindow;
+      addLog('info', 'App loaded and ready', 'Sketch tests initialized');
+    }
+
+    async function runAllTests() {
+      resetStats();
+      for (const category in tests) {
+        await runCategory(category);
+      }
+      addLog('info', 'All tests completed', `${stats.pass} passed, ${stats.fail} failed, ${stats.skip} skipped`);
+    }
+
+    async function runCategory(categoryName) {
+      resetStats();
+      const categoryTests = tests[categoryName] || [];
+
+      for (const test of categoryTests) {
+        try {
+          const result = await test.fn();
+          recordResult(test.name, result);
+          await delay(300);
+        } catch (error) {
+          recordResult(test.name, { pass: false, error: error.message });
+        }
+      }
+
+      updateProgress();
+    }
+
+    function recordResult(testName, result) {
+      stats.total++;
+      if (result.skip) {
+        stats.skip++;
+        addLog('skip', testName, 'Skipped');
+      } else if (result.pass) {
+        stats.pass++;
+        addLog('pass', testName, 'Passed');
+      } else {
+        stats.fail++;
+        addLog('fail', testName, result.error || 'Failed');
+      }
+      updateStats();
+    }
+
+    function updateStats() {
+      document.getElementById('passCount').textContent = stats.pass;
+      document.getElementById('failCount').textContent = stats.fail;
+      document.getElementById('skipCount').textContent = stats.skip;
+    }
+
+    function updateProgress() {
+      const percent = stats.total > 0 ? (stats.pass / stats.total) * 100 : 0;
+      document.getElementById('progressFill').style.width = percent + '%';
+    }
+
+    function resetStats() {
+      stats = { pass: 0, fail: 0, skip: 0, total: 0 };
+      document.getElementById('testLog').innerHTML = '';
+      updateStats();
+    }
+
+    function addLog(level, label, message) {
+      const log = document.getElementById('testLog');
+      const entry = document.createElement('div');
+      entry.className = `test-log-entry ${level}`;
+      entry.innerHTML = `<span class="log-label">${label}</span><span class="log-message">${message}</span>`;
+      log.appendChild(entry);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // Test implementations
+    async function testCreateLine() {
+      try {
+        const sketch = appWindow.sketch;
+        if (!sketch) return { skip: true };
+
+        sketch.startLine();
+        sketch.addPoint(0, 0);
+        sketch.addPoint(100, 100);
+        sketch.finishLine();
+
+        return { pass: sketch.entities.length > 0 };
+      } catch (e) {
+        return { pass: false, error: e.message };
+      }
+    }
+
+    async function testCreateRectangle() {
+      try {
+        const sketch = appWindow.sketch;
+        if (!sketch) return { skip: true };
+
+        sketch.startRectangle();
+        sketch.addPoint(10, 10);
+        sketch.addPoint(110, 110);
+        sketch.finishRectangle();
+
+        return { pass: sketch.entities.length > 0 };
+      } catch (e) {
+        return { pass: false, error: e.message };
+      }
+    }
+
+    async function testCreateCircle() {
+      try {
+        const sketch = appWindow.sketch;
+        if (!sketch) return { skip: true };
+
+        sketch.startCircle();
+        sketch.addPoint(50, 50);
+        sketch.setRadius(30);
+        sketch.finishCircle();
+
+        return { pass: sketch.entities.length > 0 };
+      } catch (e) {
+        return { pass: false, error: e.message };
+      }
+    }
+
+    async function testCreateEllipse() {
+      try {
+        const sketch = appWindow.sketch;
+        if (!sketch) return { skip: true };
+
+        sketch.startEllipse();
+        sketch.addPoint(50, 50);
+        sketch.addPoint(80, 50);
+        sketch.addPoint(50, 70);
+        sketch.finishEllipse();
+
+        return { pass: sketch.entities.length > 0 };
+      } catch (e) {
+        return { pass: false, error: e.message };
+      }
+    }
+
+    async function testCreateArc() {
+      try {
+        const sketch = appWindow.sketch;
+        if (!sketch) return { skip: true };
+
+        sketch.startArc();
+        sketch.addPoint(50, 50);
+        sketch.addPoint(100, 50);
+        sketch.addPoint(75, 75);
+        sketch.finishArc();
+
+        return { pass: sketch.entities.length > 0 };
+      } catch (e) {
+        return { pass: false, error: e.message };
+      }
+    }
+
+    async function testCreateSpline() {
+      try {
+        const sketch = appWindow.sketch;
+        if (!sketch) return { skip: true };
+
+        sketch.startSpline();
+        sketch.addPoint(0, 0);
+        sketch.addPoint(50, 50);
+        sketch.addPoint(100, 0);
+        sketch.finishSpline();
+
+        return { pass: sketch.entities.length > 0 };
+      } catch (e) {
+        return { pass: false, error: e.message };
+      }
+    }
+
+    async function testCreateSlot() {
+      try {
+        const sketch = appWindow.sketch;
+        if (!sketch) return { skip: true };
+
+        sketch.startSlot();
+        sketch.addPoint(10, 50);
+        sketch.addPoint(90, 50);
+        sketch.setRadius(20);
+        sketch.finishSlot();
+
+        return { pass: sketch.entities.length > 0 };
+      } catch (e) {
+        return { pass: false, error: e.message };
+      }
+    }
+
+    async function testCreatePolygon() {
+      try {
+        const sketch = appWindow.sketch;
+        if (!sketch) return { skip: true };
+
+        sketch.startPolygon(6);
+        sketch.addPoint(50, 50);
+        sketch.setRadius(40);
+        sketch.finishPolygon();
+
+        return { pass: sketch.entities.length > 0 };
+      } catch (e) {
+        return { pass: false, error: e.message };
+      }
+    }
+
+    async function testMirror() {
+      return { skip: true };
+    }
+
+    async function testPattern() {
+      return { skip: true };
+    }
+
+    async function testOffset() {
+      return { skip: true };
+    }
+
+    async function testTrim() {
+      return { skip: true };
+    }
+
+    async function testExtend() {
+      return { skip: true };
+    }
+
+    async function testFillet2D() {
+      return { skip: true };
+    }
+
+    async function testChamfer2D() {
+      return { skip: true };
+    }
+
+    async function testProjectGeometry() {
+      return { skip: true };
+    }
+
+    async function testCoincident() {
+      try {
+        const app = appWindow.cycleCAD;
+        if (!app || !app.constraintSolver) return { skip: true };
+
+        const result = app.constraintSolver.addConstraint('coincident', [0, 1]);
+        return { pass: result !== null };
+      } catch (e) {
+        return { pass: false, error: e.message };
+      }
+    }
+
+    async function testHorizontal() {
+      return { skip: true };
+    }
+
+    async function testVertical() {
+      return { skip: true };
+    }
+
+    async function testParallel() {
+      return { skip: true };
+    }
+
+    async function testPerpendicular() {
+      return { skip: true };
+    }
+
+    async function testTangent() {
+      return { skip: true };
+    }
+
+    async function testEqual() {
+      return { skip: true };
+    }
+
+    async function testFixed() {
+      return { skip: true };
+    }
+
+    async function testConcentric() {
+      return { skip: true };
+    }
+
+    async function testSymmetric() {
+      return { skip: true };
+    }
+
+    async function testDistanceConstraint() {
+      return { skip: true };
+    }
+
+    async function testAngleConstraint() {
+      return { skip: true };
+    }
+
+    async function testExportDXF() {
+      return { skip: true };
+    }
+
+    async function testExportSVG() {
+      return { skip: true };
+    }
+
+    // Initialize when DOM is ready
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

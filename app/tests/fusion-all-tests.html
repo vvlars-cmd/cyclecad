@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>cycleCAD Master Test Runner</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .header {
+      margin-bottom: 32px;
+    }
+
+    .title {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #38bdf8;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #94a3b8;
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    button {
+      padding: 10px 16px;
+      background: #0ea5e9;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #0284c7;
+    }
+
+    button.secondary {
+      background: #475569;
+    }
+
+    button.secondary:hover {
+      background: #64748b;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .progress-section {
+      background: #1a202c;
+      border: 1px solid #2d3748;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .progress-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #cbd5e1;
+    }
+
+    .progress-time {
+      font-size: 13px;
+      color: #94a3b8;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #0f172a;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #38bdf8, #f59e0b);
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    .progress-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+    }
+
+    .stat-card {
+      padding: 12px;
+      background: #0f172a;
+      border-radius: 6px;
+      border-left: 3px solid #64748b;
+    }
+
+    .stat-card.pass {
+      border-left-color: #10b981;
+    }
+
+    .stat-card.fail {
+      border-left-color: #ef4444;
+    }
+
+    .stat-card.skip {
+      border-left-color: #f59e0b;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #e2e8f0;
+    }
+
+    .test-suite-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .test-suite-card {
+      background: #1a202c;
+      border: 1px solid #2d3748;
+      border-radius: 8px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .test-suite-card:hover {
+      border-color: #475569;
+      background: #1e293b;
+    }
+
+    .test-suite-card.running {
+      border-color: #0284c7;
+      background: #1e293b;
+    }
+
+    .test-suite-card.completed {
+      border-color: #10b981;
+    }
+
+    .test-suite-card.failed {
+      border-color: #ef4444;
+    }
+
+    .suite-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #38bdf8;
+      margin-bottom: 12px;
+    }
+
+    .suite-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      font-size: 12px;
+    }
+
+    .suite-stat {
+      padding: 8px;
+      background: #0f172a;
+      border-radius: 4px;
+      border-left: 2px solid #64748b;
+    }
+
+    .suite-stat.pass {
+      border-left-color: #10b981;
+    }
+
+    .suite-stat.fail {
+      border-left-color: #ef4444;
+    }
+
+    .suite-stat.skip {
+      border-left-color: #f59e0b;
+    }
+
+    .suite-stat-label {
+      font-size: 10px;
+      color: #94a3b8;
+      margin-bottom: 2px;
+    }
+
+    .suite-stat-value {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .suite-progress {
+      margin-top: 12px;
+      height: 4px;
+      background: #0f172a;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .suite-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #0284c7);
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    .results-section {
+      background: #1a202c;
+      border: 1px solid #2d3748;
+      border-radius: 8px;
+      padding: 24px;
+    }
+
+    .results-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #cbd5e1;
+    }
+
+    .export-controls {
+      display: flex;
+      gap: 8px;
+    }
+
+    .results-empty {
+      text-align: center;
+      color: #64748b;
+      padding: 32px;
+    }
+
+    .footer {
+      text-align: center;
+      color: #64748b;
+      font-size: 12px;
+      margin-top: 32px;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+
+    .status-badge.running {
+      background: #0284c7;
+      color: white;
+    }
+
+    .status-badge.completed {
+      background: #10b981;
+      color: white;
+    }
+
+    .status-badge.failed {
+      background: #ef4444;
+      color: white;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.6;
+      }
+    }
+
+    .running {
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="title">cycleCAD Master Test Runner</div>
+      <div class="subtitle">Comprehensive test suite for all features — sketch, solid modeling, assembly, CAM, and simulation</div>
+    </div>
+
+    <div class="controls">
+      <button onclick="runAllSuites()">Run All Tests</button>
+      <button class="secondary" onclick="clearResults()">Clear Results</button>
+      <button class="secondary" onclick="exportResults('json')">Export JSON</button>
+      <button class="secondary" onclick="exportResults('html')">Export HTML</button>
+    </div>
+
+    <div class="progress-section">
+      <div class="progress-header">
+        <div class="progress-label">Overall Progress</div>
+        <div class="progress-time" id="elapsedTime">0s</div>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="overallProgress"></div>
+      </div>
+      <div class="progress-stats">
+        <div class="stat-card pass">
+          <div class="stat-label">PASSED</div>
+          <div class="stat-value" id="totalPassed">0</div>
+        </div>
+        <div class="stat-card fail">
+          <div class="stat-label">FAILED</div>
+          <div class="stat-value" id="totalFailed">0</div>
+        </div>
+        <div class="stat-card skip">
+          <div class="stat-label">SKIPPED</div>
+          <div class="stat-value" id="totalSkipped">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="test-suite-grid" id="suiteGrid"></div>
+
+    <div class="results-section">
+      <div class="results-title">Test Results</div>
+      <div class="export-controls">
+        <button onclick="exportResults('json')">Export JSON</button>
+        <button class="secondary" onclick="exportResults('html')">Export HTML Report</button>
+      </div>
+      <div id="resultsContainer" class="results-empty">No test results yet</div>
+    </div>
+
+    <div class="footer">
+      Running cycleCAD test suites — comprehensive feature validation
+    </div>
+  </div>
+
+  <script>
+    const suites = [
+      {
+        name: 'Sketch Features',
+        path: 'fusion-sketch-tests.html',
+        description: 'All sketch tools, constraints, and dimensions',
+      },
+      {
+        name: 'Solid Modeling',
+        path: 'fusion-solid-tests.html',
+        description: 'Basic and advanced 3D operations',
+      },
+      {
+        name: 'Assembly',
+        path: 'fusion-assembly-tests.html',
+        description: 'Joints, components, and assemblies',
+      },
+      {
+        name: 'CAM & Toolpath',
+        path: 'fusion-cam-tests.html',
+        description: 'Setup, operations, and G-code',
+      },
+      {
+        name: 'Simulation',
+        path: 'fusion-simulation-tests.html',
+        description: 'Stress, thermal, modal analysis',
+      },
+    ];
+
+    let results = {
+      suites: {},
+      startTime: null,
+      endTime: null,
+    };
+
+    let elapsedSeconds = 0;
+    let elapsedTimer = null;
+
+    function initUI() {
+      const grid = document.getElementById('suiteGrid');
+      suites.forEach((suite, idx) => {
+        const card = document.createElement('div');
+        card.id = `suite-${idx}`;
+        card.className = 'test-suite-card';
+        card.innerHTML = `
+          <div class="suite-name">${suite.name}</div>
+          <div style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">${suite.description}</div>
+          <div class="suite-stats">
+            <div class="suite-stat pass">
+              <div class="suite-stat-label">PASS</div>
+              <div class="suite-stat-value" id="stat-${idx}-pass">-</div>
+            </div>
+            <div class="suite-stat fail">
+              <div class="suite-stat-label">FAIL</div>
+              <div class="suite-stat-value" id="stat-${idx}-fail">-</div>
+            </div>
+            <div class="suite-stat skip">
+              <div class="suite-stat-label">SKIP</div>
+              <div class="suite-stat-value" id="stat-${idx}-skip">-</div>
+            </div>
+          </div>
+          <div class="suite-progress">
+            <div class="suite-progress-fill" id="progress-${idx}" style="width: 0%"></div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    async function runAllSuites() {
+      results = { suites: {}, startTime: Date.now(), endTime: null };
+      elapsedSeconds = 0;
+      clearInterval(elapsedTimer);
+      elapsedTimer = setInterval(() => {
+        elapsedSeconds++;
+        updateElapsedTime();
+      }, 1000);
+
+      for (let i = 0; i < suites.length; i++) {
+        await runSuite(i);
+        await delay(500);
+      }
+
+      results.endTime = Date.now();
+      clearInterval(elapsedTimer);
+      updateOverallStats();
+      displayResults();
+    }
+
+    async function runSuite(idx) {
+      const suite = suites[idx];
+      const card = document.getElementById(`suite-${idx}`);
+      card.classList.add('running');
+
+      results.suites[suite.name] = {
+        pass: 0,
+        fail: 0,
+        skip: 0,
+        tests: [],
+      };
+
+      return new Promise(resolve => {
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = suite.path;
+        iframe.onload = () => {
+          setTimeout(() => {
+            try {
+              const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+              const passCount = iframeDoc.getElementById('passCount')?.textContent || '0';
+              const failCount = iframeDoc.getElementById('failCount')?.textContent || '0';
+              const skipCount = iframeDoc.getElementById('skipCount')?.textContent || '0';
+
+              results.suites[suite.name].pass = parseInt(passCount);
+              results.suites[suite.name].fail = parseInt(failCount);
+              results.suites[suite.name].skip = parseInt(skipCount);
+
+              updateSuiteStats(idx);
+              card.classList.remove('running');
+              card.classList.add('completed');
+
+              document.body.removeChild(iframe);
+              resolve();
+            } catch (e) {
+              console.error('Error reading iframe results:', e);
+              card.classList.remove('running');
+              card.classList.add('failed');
+              resolve();
+            }
+          }, 100);
+        };
+        document.body.appendChild(iframe);
+      });
+    }
+
+    function updateSuiteStats(idx) {
+      const suite = suites[idx];
+      const suiteData = results.suites[suite.name];
+
+      document.getElementById(`stat-${idx}-pass`).textContent = suiteData.pass;
+      document.getElementById(`stat-${idx}-fail`).textContent = suiteData.fail;
+      document.getElementById(`stat-${idx}-skip`).textContent = suiteData.skip;
+
+      const total = suiteData.pass + suiteData.fail + suiteData.skip;
+      const percent = total > 0 ? (suiteData.pass / total) * 100 : 0;
+      document.getElementById(`progress-${idx}`).style.width = percent + '%';
+
+      updateOverallStats();
+    }
+
+    function updateOverallStats() {
+      let totalPass = 0, totalFail = 0, totalSkip = 0;
+
+      for (const suite in results.suites) {
+        totalPass += results.suites[suite].pass;
+        totalFail += results.suites[suite].fail;
+        totalSkip += results.suites[suite].skip;
+      }
+
+      document.getElementById('totalPassed').textContent = totalPass;
+      document.getElementById('totalFailed').textContent = totalFail;
+      document.getElementById('totalSkipped').textContent = totalSkip;
+
+      const total = totalPass + totalFail + totalSkip;
+      const percent = total > 0 ? (totalPass / total) * 100 : 0;
+      document.getElementById('overallProgress').style.width = percent + '%';
+    }
+
+    function updateElapsedTime() {
+      const mins = Math.floor(elapsedSeconds / 60);
+      const secs = elapsedSeconds % 60;
+      document.getElementById('elapsedTime').textContent = `${mins}m ${secs}s`;
+    }
+
+    function displayResults() {
+      const container = document.getElementById('resultsContainer');
+      let html = '<table style="width: 100%; border-collapse: collapse;">';
+      html += '<thead><tr style="background: #0f172a; border-bottom: 1px solid #2d3748;">';
+      html += '<th style="text-align: left; padding: 12px; color: #cbd5e1;">Suite</th>';
+      html += '<th style="text-align: center; padding: 12px; color: #10b981;">Passed</th>';
+      html += '<th style="text-align: center; padding: 12px; color: #ef4444;">Failed</th>';
+      html += '<th style="text-align: center; padding: 12px; color: #f59e0b;">Skipped</th>';
+      html += '</tr></thead><tbody>';
+
+      for (const suite in results.suites) {
+        const data = results.suites[suite];
+        html += `<tr style="border-bottom: 1px solid #2d3748;">
+          <td style="padding: 12px; color: #cbd5e1;">${suite}</td>
+          <td style="text-align: center; color: #10b981;">${data.pass}</td>
+          <td style="text-align: center; color: #ef4444;">${data.fail}</td>
+          <td style="text-align: center; color: #f59e0b;">${data.skip}</td>
+        </tr>`;
+      }
+
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    function exportResults(format) {
+      if (format === 'json') {
+        const json = JSON.stringify(results, null, 2);
+        downloadFile(json, 'cyclecad-test-results.json', 'application/json');
+      } else if (format === 'html') {
+        const html = generateHTMLReport();
+        downloadFile(html, 'cyclecad-test-results.html', 'text/html');
+      }
+    }
+
+    function generateHTMLReport() {
+      const total = Object.values(results.suites).reduce((acc, s) => acc + s.pass + s.fail + s.skip, 0);
+      const passed = Object.values(results.suites).reduce((acc, s) => acc + s.pass, 0);
+
+      let html = `<!DOCTYPE html>
+<html>
+<head>
+  <title>cycleCAD Test Report</title>
+  <style>
+    body { font-family: sans-serif; background: #f5f5f5; padding: 24px; }
+    .header { background: #0f172a; color: white; padding: 24px; border-radius: 8px; margin-bottom: 24px; }
+    .title { font-size: 28px; font-weight: bold; margin-bottom: 8px; }
+    .subtitle { color: #cbd5e1; font-size: 14px; }
+    table { width: 100%; border-collapse: collapse; background: white; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+    th { background: #f3f4f6; font-weight: 600; }
+    .pass { color: #10b981; }
+    .fail { color: #ef4444; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="title">cycleCAD Test Report</div>
+    <div class="subtitle">Generated: ${new Date().toLocaleString()}</div>
+  </div>
+
+  <h2>Summary</h2>
+  <p>Total Tests: ${total} | <span class="pass">Passed: ${passed}</span> | <span class="fail">Failed: ${total - passed}</span></p>
+
+  <h2>Results by Suite</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Suite</th>
+        <th class="pass">Passed</th>
+        <th class="fail">Failed</th>
+        <th>Skipped</th>
+      </tr>
+    </thead>
+    <tbody>`;
+
+      for (const suite in results.suites) {
+        const data = results.suites[suite];
+        html += `<tr>
+          <td>${suite}</td>
+          <td class="pass">${data.pass}</td>
+          <td class="fail">${data.fail}</td>
+          <td>${data.skip}</td>
+        </tr>`;
+      }
+
+      html += `</tbody>
+  </table>
+</body>
+</html>`;
+
+      return html;
+    }
+
+    function downloadFile(content, filename, type) {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function clearResults() {
+      results = { suites: {}, startTime: null, endTime: null };
+      suites.forEach((_, idx) => {
+        document.getElementById(`stat-${idx}-pass`).textContent = '-';
+        document.getElementById(`stat-${idx}-fail`).textContent = '-';
+        document.getElementById(`stat-${idx}-skip`).textContent = '-';
+        document.getElementById(`progress-${idx}`).style.width = '0%';
+        document.getElementById(`suite-${idx}`).classList.remove('running', 'completed', 'failed');
+      });
+      updateOverallStats();
+      document.getElementById('resultsContainer').innerHTML = '<div class="results-empty">No test results yet</div>';
+    }
+
+    function delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    window.addEventListener('DOMContentLoaded', initUI);
+  </script>
+</body>
+</html>

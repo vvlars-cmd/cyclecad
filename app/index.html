@@ -1362,11 +1362,16 @@
 <!-- Toast Container -->
 <div id="toast-container"></div>
 
+<!-- Token Engine & Marketplace Scripts (IIFE-based) -->
+<script src="js/token-engine.js"></script>
+<script src="js/marketplace.js"></script>
+
 <script type="module">
   // ===== Three.js Imports =====
   import * as THREE from 'three';
   import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
   import { GridHelper } from 'three';
+  import { KillerFeatures } from './js/killer-features.js';
 
   // ===== Three.js Viewport Setup =====
   const scene = new THREE.Scene();
@@ -1380,6 +1385,16 @@
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  // Set initial canvas size immediately
+  function resizeViewport() {
+    const w = viewportEl.clientWidth;
+    const h = viewportEl.clientHeight;
+    if (w === 0 || h === 0) return;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+  }
 
   const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 10000);
   camera.position.set(150, 120, 200);
@@ -1429,17 +1444,9 @@
   ground.receiveShadow = true;
   scene.add(ground);
 
-  // Resize handler
-  function resizeViewport() {
-    const w = viewportEl.clientWidth;
-    const h = viewportEl.clientHeight;
-    if (w === 0 || h === 0) return;
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
-    renderer.setSize(w, h);
-  }
+  // Setup ResizeObserver for viewport changes
   new ResizeObserver(resizeViewport).observe(viewportEl);
-  resizeViewport();
+  resizeViewport(); // Call initial resize to set canvas dimensions
 
   // Animation loop
   function animate() {
@@ -1825,6 +1832,12 @@
       { name: 'Extrude1', type: 'extrude' },
       { name: 'Fillet1', type: 'fillet' }
     ]);
+
+    // Initialize killer features module
+    KillerFeatures.init({ scene, camera, renderer, controls, appState });
+
+    // Token engine and marketplace are auto-initialized via global scripts
+    // They expose APIs at window.cycleCAD.tokens, window.cycleCAD.marketplace
   }
 
   // ===== Export Global Functions =====

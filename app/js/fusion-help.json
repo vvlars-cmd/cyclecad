@@ -1,0 +1,1808 @@
+[
+  {
+    "id": "sketch-line",
+    "title": "Line Tool",
+    "category": "Sketch",
+    "workspace": "Sketch",
+    "shortcut": "L",
+    "description": "Creates straight line segments connecting points",
+    "steps": [
+      "Press L or click Line icon in toolbar",
+      "Click first point on canvas",
+      "Click second point to create line",
+      "Continue clicking to create additional connected lines",
+      "Press Esc to finish"
+    ],
+    "tips": [
+      "Double-click to create a closed line returning to start point",
+      "Hold Shift to constrain to 45° angles",
+      "Use grid snapping for precise placement",
+      "Lines automatically snap to endpoints, midpoints, centers"
+    ],
+    "related": ["sketch-rectangle", "sketch-polyline"]
+  },
+  {
+    "id": "sketch-rectangle",
+    "title": "Rectangle Tool",
+    "category": "Sketch",
+    "workspace": "Sketch",
+    "shortcut": "R",
+    "description": "Creates rectangles with four corners from two diagonal points",
+    "steps": [
+      "Press R or click Rectangle icon",
+      "Click first corner point",
+      "Click opposite corner to complete rectangle",
+      "Dimensions auto-populate as default values"
+    ],
+    "tips": [
+      "Hold Shift to create perfect square (equal width/height)",
+      "Rectangle automatically applies perpendicular and coincident constraints",
+      "Corners snap to grid for perfect alignment",
+      "Edit dimensions afterward in properties panel for precise sizing"
+    ],
+    "related": ["sketch-line", "constraint-coincident"]
+  },
+  {
+    "id": "sketch-circle",
+    "title": "Circle Tool",
+    "category": "Sketch",
+    "workspace": "Sketch",
+    "shortcut": "C",
+    "description": "Creates circles defined by center point and radius",
+    "steps": [
+      "Press C or click Circle icon",
+      "Click center point",
+      "Click to set radius (or type value in properties)",
+      "Press Esc to finish"
+    ],
+    "tips": [
+      "Hold Shift while dragging to set radius visually",
+      "Type radius value directly for precision",
+      "Create multiple circles in one session",
+      "Circles snap to existing geometry"
+    ],
+    "related": ["sketch-arc", "constraint-concentric"]
+  },
+  {
+    "id": "sketch-arc",
+    "title": "Arc Tool",
+    "category": "Sketch",
+    "workspace": "Sketch",
+    "shortcut": "A",
+    "description": "Creates arc segments in multiple ways: 3-point, center-point, tangent",
+    "steps": [
+      "Press A to access arc modes",
+      "For 3-point arc: click start, point on path, end point",
+      "For center-point: click center, start point, end point",
+      "For tangent: select line first, then create tangent arc"
+    ],
+    "tips": [
+      "3-point arc is most intuitive for freehand arcs",
+      "Center-point arc better for precise angles",
+      "Tangent arcs connect smoothly to adjacent lines",
+      "Press A twice to toggle between arc modes"
+    ],
+    "related": ["sketch-circle", "sketch-polyline"]
+  },
+  {
+    "id": "sketch-polyline",
+    "title": "Polyline Tool",
+    "category": "Sketch",
+    "workspace": "Sketch",
+    "shortcut": "P",
+    "description": "Creates multiple connected line/arc segments rapidly",
+    "steps": [
+      "Press P or click Polyline icon",
+      "Click first point",
+      "Click additional points to build connected segments",
+      "Right-click or press Esc to finish",
+      "Double-click last point to close path back to start"
+    ],
+    "tips": [
+      "Can mix line and arc segments in one polyline",
+      "Shift-click to toggle between line and arc mode",
+      "Double-clicking last point on start point closes shape",
+      "Useful for creating complex profiles rapidly"
+    ],
+    "related": ["sketch-line", "sketch-arc"]
+  },
+  {
+    "id": "sketch-spline",
+    "title": "Spline Tool",
+    "category": "Sketch",
+    "workspace": "Sketch",
+    "shortcut": "S",
+    "description": "Creates smooth B-spline curves through multiple interpolation points",
+    "steps": [
+      "Press S or click Spline icon",
+      "Click multiple points to define spline path",
+      "Right-click on final point to apply spline",
+      "Control points and handles appear (optional: drag to adjust curvature)"
+    ],
+    "tips": [
+      "Curve passes through all points (interpolated)",
+      "Hold Ctrl while dragging handle to adjust curvature",
+      "Splines can be constrained like lines",
+      "Edit spline by selecting and dragging control points"
+    ],
+    "related": ["sketch-line", "sketch-polyline"]
+  },
+  {
+    "id": "sketch-text",
+    "title": "Text Tool",
+    "category": "Sketch",
+    "workspace": "Sketch",
+    "shortcut": "T",
+    "description": "Adds text annotations to sketches and drawings",
+    "steps": [
+      "Press T or click Text icon",
+      "Click location for text anchor point",
+      "Type text in input box",
+      "Set font size and style in properties",
+      "Press Enter to place"
+    ],
+    "tips": [
+      "Text is annotation only (doesn't affect 3D model)",
+      "Text size is in 2D sketch units",
+      "Can be rotated and moved like other sketch elements",
+      "Essential for labeling features in engineering drawings"
+    ],
+    "related": ["drawing-text"]
+  },
+  {
+    "id": "constraint-coincident",
+    "title": "Coincident Constraint",
+    "category": "Sketch Constraints",
+    "workspace": "Sketch",
+    "shortcut": "Co",
+    "description": "Forces two points to same location or point onto line/curve",
+    "steps": [
+      "Select two points or point and line",
+      "Press Co or click Coincident",
+      "Constraint applied immediately"
+    ],
+    "tips": [
+      "Most frequently used constraint",
+      "Auto-applied when points overlap (toggleable)",
+      "Reduces degrees of freedom by 1",
+      "Use to connect geometry pieces"
+    ],
+    "related": ["constraint-distance", "constraint-horizontal"]
+  },
+  {
+    "id": "constraint-horizontal",
+    "title": "Horizontal Constraint",
+    "category": "Sketch Constraints",
+    "workspace": "Sketch",
+    "shortcut": "H",
+    "description": "Forces line segment to be perfectly horizontal",
+    "steps": [
+      "Select a line segment",
+      "Press H or click Horizontal",
+      "Line becomes horizontal"
+    ],
+    "tips": [
+      "Only applies to line segments",
+      "Check constraint count to avoid over-constraining",
+      "Over-constraint makes line horizontal AND violates other constraints",
+      "Complementary to Vertical constraint"
+    ],
+    "related": ["constraint-vertical", "constraint-parallel"]
+  },
+  {
+    "id": "constraint-vertical",
+    "title": "Vertical Constraint",
+    "category": "Sketch Constraints",
+    "workspace": "Sketch",
+    "shortcut": "V",
+    "description": "Forces line segment to be perfectly vertical",
+    "steps": [
+      "Select a line segment",
+      "Press V or click Vertical",
+      "Line becomes vertical"
+    ],
+    "tips": [
+      "Only applies to line segments",
+      "Check constraint status to avoid over-constraining",
+      "Complementary to Horizontal constraint",
+      "Essential for rectangular profiles"
+    ],
+    "related": ["constraint-horizontal", "constraint-perpendicular"]
+  },
+  {
+    "id": "constraint-perpendicular",
+    "title": "Perpendicular Constraint",
+    "category": "Sketch Constraints",
+    "workspace": "Sketch",
+    "shortcut": "Pe",
+    "description": "Forces two line segments to meet at exactly 90° angle",
+    "steps": [
+      "Select two line segments",
+      "Press Pe or click Perpendicular",
+      "Segments become perpendicular"
+    ],
+    "tips": [
+      "Works on any pair of lines, connected or not",
+      "Will move lines to create 90° angle if needed",
+      "Essential for rectangular geometry",
+      "Reduces degrees of freedom by 1"
+    ],
+    "related": ["constraint-parallel", "constraint-angle"]
+  },
+  {
+    "id": "constraint-parallel",
+    "title": "Parallel Constraint",
+    "category": "Sketch Constraints",
+    "workspace": "Sketch",
+    "shortcut": "Pa",
+    "description": "Forces two line segments to be parallel (never intersect)",
+    "steps": [
+      "Select two line segments",
+      "Press Pa or click Parallel",
+      "Segments become parallel"
+    ],
+    "tips": [
+      "Works on any pair of lines, connected or not",
+      "Maintains relative angle between lines",
+      "Useful for symmetric geometry",
+      "Can apply to multiple lines in one operation"
+    ],
+    "related": ["constraint-perpendicular", "constraint-symmetric"]
+  },
+  {
+    "id": "constraint-tangent",
+    "title": "Tangent Constraint",
+    "category": "Sketch Constraints",
+    "workspace": "Sketch",
+    "shortcut": "Ta",
+    "description": "Forces line tangent to circle/arc or two curves to touch smoothly",
+    "steps": [
+      "Select line and circle/arc",
+      "Press Ta or click Tangent",
+      "Line becomes tangent to circle"
+    ],
+    "tips": [
+      "Creates smooth transitions in profiles",
+      "Essential for sweep and loft operations",
+      "Works with splines and other curves",
+      "Two arcs can be tangent to each other"
+    ],
+    "related": ["sketch-arc", "sketch-spline"]
+  },
+  {
+    "id": "constraint-equal",
+    "title": "Equal Constraint",
+    "category": "Sketch Constraints",
+    "workspace": "Sketch",
+    "shortcut": "Eq",
+    "description": "Forces line segments equal length or circles equal radius",
+    "steps": [
+      "Select two lines or two circles",
+      "Press Eq or click Equal",
+      "Geometry becomes equal"
+    ],
+    "tips": [
+      "For lines: both become average length",
+      "For circles: both become average radius",
+      "Useful for symmetric patterns",
+      "Can apply to multiple objects at once"
+    ],
+    "related": ["constraint-symmetric", "constraint-concentric"]
+  },
+  {
+    "id": "constraint-fixed",
+    "title": "Fixed Constraint",
+    "category": "Sketch Constraints",
+    "workspace": "Sketch",
+    "shortcut": "F",
+    "description": "Locks point or line in place (prevents all movement)",
+    "steps": [
+      "Select point or line segment",
+      "Press F or click Fixed",
+      "Element becomes locked"
+    ],
+    "tips": [
+      "Eliminates degrees of freedom entirely",
+      "Use sparingly (can over-constrain easily)",
+      "Lock only essential reference geometry",
+      "Can lock individual coordinates (X or Y only)"
+    ],
+    "related": ["constraint-concentric", "constraint-distance"]
+  },
+  {
+    "id": "constraint-concentric",
+    "title": "Concentric Constraint",
+    "category": "Sketch Constraints",
+    "workspace": "Sketch",
+    "shortcut": "Cc",
+    "description": "Forces two circles/arcs to share same center point",
+    "steps": [
+      "Select two circles or arcs",
+      "Press Cc or click Concentric",
+      "Circles become concentric"
+    ],
+    "tips": [
+      "Commonly used for holes inside parts",
+      "Creates accurate bore patterns",
+      "Works with circles, arcs, and ellipses",
+      "Reduces degrees of freedom by 2"
+    ],
+    "related": ["constraint-equal", "constraint-distance"]
+  },
+  {
+    "id": "constraint-symmetric",
+    "title": "Symmetric Constraint",
+    "category": "Sketch Constraints",
+    "workspace": "Sketch",
+    "shortcut": "Sy",
+    "description": "Forces two points/lines to be mirror-images across line",
+    "steps": [
+      "Select two points and a symmetry line",
+      "Press Sy or click Symmetric",
+      "Points become symmetric about line"
+    ],
+    "tips": [
+      "Third selection is symmetry axis (usually line)",
+      "Can apply to multiple point pairs",
+      "Essential for symmetric part design",
+      "Automatically maintains reflection"
+    ],
+    "related": ["constraint-parallel", "constraint-equal"]
+  },
+  {
+    "id": "constraint-distance",
+    "title": "Distance Constraint",
+    "category": "Sketch Constraints",
+    "workspace": "Sketch",
+    "shortcut": "D",
+    "description": "Sets distance between two points or point and line",
+    "steps": [
+      "Select two points or point and line",
+      "Press D or click Distance",
+      "Type dimension value in dialog",
+      "Press Enter to apply"
+    ],
+    "tips": [
+      "Most important constraint for controlling size",
+      "Can reference parameters for parametric design",
+      "Negative distance inverts direction",
+      "Can constrain distance from origin (0,0)"
+    ],
+    "related": ["constraint-angle", "constraint-horizontal"]
+  },
+  {
+    "id": "constraint-angle",
+    "title": "Angle Constraint",
+    "category": "Sketch Constraints",
+    "workspace": "Sketch",
+    "shortcut": "An",
+    "description": "Sets angle between two line segments",
+    "steps": [
+      "Select two line segments",
+      "Press An or click Angle",
+      "Type angle value in degrees",
+      "Press Enter to apply"
+    ],
+    "tips": [
+      "Angle measured counter-clockwise from first to second line",
+      "Valid range: 0° to 360°",
+      "Useful for precise angular relationships",
+      "Essential for gear teeth, draft angles"
+    ],
+    "related": ["constraint-perpendicular", "constraint-distance"]
+  },
+  {
+    "id": "solid-extrude",
+    "title": "Extrude",
+    "category": "Solid Operations",
+    "workspace": "Solid",
+    "shortcut": "E",
+    "description": "Pulls 2D sketch profile into 3D space creating solid",
+    "steps": [
+      "Create and constrain sketch",
+      "Exit sketch (Esc)",
+      "Press E or click Extrude",
+      "Select sketch profile (auto-selected if only one exists)",
+      "Set extrude distance (direction up/down or symmetric)",
+      "Click OK"
+    ],
+    "tips": [
+      "Symmetric extrude spreads distance equally above/below sketch",
+      "Hold Shift while dragging to preview direction",
+      "Can apply taper angle for draft",
+      "Negative distance extrudes opposite direction"
+    ],
+    "related": ["solid-revolve", "solid-sweep"]
+  },
+  {
+    "id": "solid-revolve",
+    "title": "Revolve",
+    "category": "Solid Operations",
+    "workspace": "Solid",
+    "shortcut": "R",
+    "description": "Rotates 2D profile around axis creating solid of revolution",
+    "steps": [
+      "Create profile sketch (must include separate center line for axis)",
+      "Exit sketch",
+      "Press R or click Revolve",
+      "Select sketch profile",
+      "Select axis line (auto-detects centerline if exists)",
+      "Set rotation angle (default 360° for full revolution)",
+      "Click OK"
+    ],
+    "tips": [
+      "Axis MUST be separate line, not part of profile",
+      "Profile must be on one side of axis only",
+      "Full 360° creates complete rotationally symmetric part",
+      "Partial angle creates sectors (e.g., pie-shaped features)"
+    ],
+    "related": ["solid-extrude", "solid-sweep"]
+  },
+  {
+    "id": "solid-sweep",
+    "title": "Sweep",
+    "category": "Solid Operations",
+    "workspace": "Solid",
+    "shortcut": "Sw",
+    "description": "Moves 2D profile along 3D path creating swept solid",
+    "steps": [
+      "Create profile sketch (2D closed or open shape)",
+      "Create path sketch or edge (3D curve)",
+      "Exit sketches",
+      "Press Sw or click Sweep",
+      "Select profile sketch",
+      "Select path (line, arc, 3D spline, or edge)",
+      "Set twist angle and scale options",
+      "Click OK"
+    ],
+    "tips": [
+      "Profile should be perpendicular to path start",
+      "Path can twist: set twist angle for helical sweeps (springs, threads)",
+      "Scale along path: profile grows/shrinks following path",
+      "Path must be continuous (no branches)"
+    ],
+    "related": ["solid-extrude", "solid-loft"]
+  },
+  {
+    "id": "solid-loft",
+    "title": "Loft",
+    "category": "Solid Operations",
+    "workspace": "Solid",
+    "shortcut": "Lo",
+    "description": "Interpolates between multiple 2D profiles creating smooth solid",
+    "steps": [
+      "Create multiple sketch profiles at different heights/planes",
+      "Exit sketches",
+      "Press Lo or click Loft",
+      "Select profiles in order (first to last)",
+      "Set continuity: Positional, Tangent, or Curvature",
+      "Click OK"
+    ],
+    "tips": [
+      "Profiles should have same number of points and similar topology",
+      "Tangent continuity creates smooth surfaces",
+      "Can loft point to circle (cone), circle to rectangle, etc.",
+      "Order of selection matters"
+    ],
+    "related": ["solid-sweep", "surface-filled"]
+  },
+  {
+    "id": "solid-fillet",
+    "title": "Fillet",
+    "category": "Modification",
+    "workspace": "Solid",
+    "shortcut": "Fi",
+    "description": "Rounds sharp edges on solid creating smooth transitions",
+    "steps": [
+      "Create solid body",
+      "Press Fi or click Fillet",
+      "Select edges to fillet (click multiple edges)",
+      "Set radius value (default 5mm)",
+      "Click OK"
+    ],
+    "tips": [
+      "Select edge by clicking on it, not the face",
+      "Can fillet multiple edges in one operation",
+      "Radius must be smaller than adjacent geometry",
+      "Variable radius: set different radii for different edges"
+    ],
+    "related": ["solid-chamfer", "solid-shell"]
+  },
+  {
+    "id": "solid-chamfer",
+    "title": "Chamfer",
+    "category": "Modification",
+    "workspace": "Solid",
+    "shortcut": "Ch",
+    "description": "Cuts away sharp edges with flat or angled surface",
+    "steps": [
+      "Create solid body",
+      "Press Ch or click Chamfer",
+      "Select edges to chamfer",
+      "Set chamfer distance (or angle and distance)",
+      "Click OK"
+    ],
+    "tips": [
+      "Select edges like with Fillet",
+      "Distance typically smaller than fillet",
+      "Angle + distance for angled chamfer",
+      "Useful for deburring and functional design"
+    ],
+    "related": ["solid-fillet", "solid-draft"]
+  },
+  {
+    "id": "solid-shell",
+    "title": "Shell",
+    "category": "Modification",
+    "workspace": "Solid",
+    "shortcut": "Sh",
+    "description": "Removes material creating hollow shell with uniform wall thickness",
+    "steps": [
+      "Create solid body",
+      "Press Sh or click Shell",
+      "Select faces to remove (empty removes none)",
+      "Set wall thickness (uniform throughout)",
+      "Click OK"
+    ],
+    "tips": [
+      "Remove top face for open container",
+      "Can remove multiple faces",
+      "Wall thickness applies to all remaining faces",
+      "Useful for containers, enclosures, thin-wall parts"
+    ],
+    "related": ["solid-fillet", "surface-thicken"]
+  },
+  {
+    "id": "solid-draft",
+    "title": "Draft",
+    "category": "Modification",
+    "workspace": "Solid",
+    "shortcut": "Dr",
+    "description": "Applies draft angle to faces for molding/casting/functional reasons",
+    "steps": [
+      "Create solid body",
+      "Press Dr or click Draft",
+      "Select faces to draft",
+      "Set draft plane (reference plane for direction)",
+      "Set draft angle (typically 5-10°)",
+      "Click OK"
+    ],
+    "tips": [
+      "Draft plane determines taper direction",
+      "Positive angle tapers one direction, negative opposes",
+      "Essential for injection molding and casting",
+      "Pull direction must be consistent"
+    ],
+    "related": ["solid-shell", "solid-fillet"]
+  },
+  {
+    "id": "pattern-rectangular",
+    "title": "Rectangular Pattern",
+    "category": "Pattern Operations",
+    "workspace": "Solid",
+    "shortcut": "Pr",
+    "description": "Creates array of features in rectangular grid (X and Y directions)",
+    "steps": [
+      "Create feature (extrude, hole, etc.)",
+      "Press Pr or click Rectangular Pattern",
+      "Select feature to pattern",
+      "Set X count (number of columns)",
+      "Set Y count (number of rows)",
+      "Set X spacing and Y spacing",
+      "Click OK"
+    ],
+    "tips": [
+      "Feature is duplicated (count-1) times in each direction",
+      "Spacing measured from feature center to center",
+      "Can pattern holes, bosses, slots, etc.",
+      "All instances synchronized (edit original, all update)"
+    ],
+    "related": ["pattern-circular", "pattern-mirror"]
+  },
+  {
+    "id": "pattern-circular",
+    "title": "Circular Pattern",
+    "category": "Pattern Operations",
+    "workspace": "Solid",
+    "shortcut": "Pc",
+    "description": "Creates array of features arranged in circle around axis",
+    "steps": [
+      "Create feature",
+      "Press Pc or click Circular Pattern",
+      "Select feature to pattern",
+      "Select axis (or default to Z-axis)",
+      "Set count (total instances including original)",
+      "Set angle (360° for full circle, less for partial)",
+      "Click OK"
+    ],
+    "tips": [
+      "Count includes original feature",
+      "Equal spacing around circle",
+      "Angle less than 360° creates partial arrays",
+      "Useful for bolt holes, impellers, gear teeth"
+    ],
+    "related": ["pattern-rectangular", "pattern-mirror"]
+  },
+  {
+    "id": "pattern-mirror",
+    "title": "Mirror",
+    "category": "Pattern Operations",
+    "workspace": "Solid",
+    "shortcut": "Mi",
+    "description": "Creates mirror-image of feature across plane",
+    "steps": [
+      "Create feature",
+      "Press Mi or click Mirror",
+      "Select feature to mirror",
+      "Select mirror plane (XY, YZ, XZ, or custom)",
+      "Click OK"
+    ],
+    "tips": [
+      "Mirror plane must be perpendicular to feature",
+      "Useful for symmetric parts",
+      "Mirrored feature stays linked to original",
+      "Edit original, mirror updates automatically"
+    ],
+    "related": ["pattern-rectangular", "pattern-circular"]
+  },
+  {
+    "id": "boolean-union",
+    "title": "Boolean Union",
+    "category": "Boolean Operations",
+    "workspace": "Solid",
+    "shortcut": "Bu",
+    "description": "Combines two bodies into one, merging volumes",
+    "steps": [
+      "Create two separate bodies",
+      "Press Bu or click Union",
+      "Select first body",
+      "Select second body (or multiple)",
+      "Click OK"
+    ],
+    "tips": [
+      "Overlapping volumes merge smoothly",
+      "Creates single resulting body",
+      "Order of selection doesn't matter",
+      "Can union 3+ bodies in one operation"
+    ],
+    "related": ["boolean-cut", "boolean-intersect"]
+  },
+  {
+    "id": "boolean-cut",
+    "title": "Boolean Cut",
+    "category": "Boolean Operations",
+    "workspace": "Solid",
+    "shortcut": "Bc",
+    "description": "Subtracts one body from another like using cutting tool",
+    "steps": [
+      "Create two bodies (one to keep, one to remove)",
+      "Press Bc or click Cut",
+      "Select target body (the one to keep)",
+      "Select tool body (the one to subtract)",
+      "Click OK"
+    ],
+    "tips": [
+      "Keep material from first body, subtract second",
+      "Tool body is deleted after cut",
+      "Order of selection matters (first = target, second = tool)",
+      "Can use complex shapes as cutting tools"
+    ],
+    "related": ["boolean-union", "boolean-intersect"]
+  },
+  {
+    "id": "boolean-intersect",
+    "title": "Boolean Intersect",
+    "category": "Boolean Operations",
+    "workspace": "Solid",
+    "shortcut": "Bi",
+    "description": "Keeps only overlapping volume between two bodies",
+    "steps": [
+      "Create two overlapping bodies",
+      "Press Bi or click Intersect",
+      "Select first body",
+      "Select second body",
+      "Click OK"
+    ],
+    "tips": [
+      "Result is overlap region only",
+      "Both input bodies are consumed",
+      "Useful for finding common geometry",
+      "Less commonly used than Union and Cut"
+    ],
+    "related": ["boolean-union", "boolean-cut"]
+  },
+  {
+    "id": "assembly-insert",
+    "title": "Insert Component",
+    "category": "Assembly",
+    "workspace": "Assembly",
+    "shortcut": "I",
+    "description": "Adds new part (body) to assembly",
+    "steps": [
+      "Press I or click Insert Component",
+      "Select part file or create new",
+      "Click in 3D view to place component",
+      "Press Esc to finish placement"
+    ],
+    "tips": [
+      "Components can be cycleCAD parts or imported STEP files",
+      "First component placement is freeform",
+      "Subsequent components should be constrained with joints",
+      "Components remain editable in assembly context"
+    ],
+    "related": ["assembly-rigid-joint", "assembly-revolute-joint"]
+  },
+  {
+    "id": "assembly-rigid-joint",
+    "title": "Rigid Joint",
+    "category": "Assembly Joints",
+    "workspace": "Assembly",
+    "shortcut": "Jr",
+    "description": "Locks two components in fixed position and rotation (welded connection)",
+    "steps": [
+      "Select two components",
+      "Press Jr or click Rigid Joint",
+      "Align faces/edges as needed",
+      "Click OK"
+    ],
+    "tips": [
+      "Creates immovable connection",
+      "Both components move together",
+      "Often used for sub-assemblies",
+      "Simplest joint type"
+    ],
+    "related": ["assembly-revolute-joint", "assembly-slider-joint"]
+  },
+  {
+    "id": "assembly-revolute-joint",
+    "title": "Revolute Joint (Hinge)",
+    "category": "Assembly Joints",
+    "workspace": "Assembly",
+    "shortcut": "Jh",
+    "description": "Allows rotation around one axis like door hinge",
+    "steps": [
+      "Select two components",
+      "Press Jh or click Revolute Joint",
+      "Select axis line or edge (rotation axis)",
+      "Set angle limits (optional)",
+      "Click OK"
+    ],
+    "tips": [
+      "Components rotate relative to each other",
+      "Can specify angle limits (e.g., 0-90°)",
+      "Can set friction/damping for motion study",
+      "Useful for doors, levers, wheels"
+    ],
+    "related": ["assembly-slider-joint", "assembly-ball-joint"]
+  },
+  {
+    "id": "assembly-slider-joint",
+    "title": "Slider Joint",
+    "category": "Assembly Joints",
+    "workspace": "Assembly",
+    "shortcut": "Js",
+    "description": "Allows one component to slide along axis relative to another",
+    "steps": [
+      "Select two components",
+      "Press Js or click Slider Joint",
+      "Select axis direction",
+      "Set travel limits (optional)",
+      "Click OK"
+    ],
+    "tips": [
+      "Components can translate along axis",
+      "Can specify distance limits",
+      "Useful for pistons, drawer slides",
+      "Axis must be defined by edge or constructed line"
+    ],
+    "related": ["assembly-revolute-joint", "assembly-ball-joint"]
+  },
+  {
+    "id": "assembly-ball-joint",
+    "title": "Ball Joint",
+    "category": "Assembly Joints",
+    "workspace": "Assembly",
+    "shortcut": "Jb",
+    "description": "Allows rotation in all directions around point (ball-and-socket)",
+    "steps": [
+      "Select two components",
+      "Press Jb or click Ball Joint",
+      "Select center point",
+      "Set rotation limits (optional cone angle)",
+      "Click OK"
+    ],
+    "tips": [
+      "Maximally flexible rotation",
+      "Can restrict cone angle for limited motion",
+      "Useful for robotic joints, universal joints",
+      "Reduces degrees of freedom by 3"
+    ],
+    "related": ["assembly-revolute-joint", "assembly-planar-joint"]
+  },
+  {
+    "id": "assembly-planar-joint",
+    "title": "Planar Joint",
+    "category": "Assembly Joints",
+    "workspace": "Assembly",
+    "shortcut": "Jp",
+    "description": "Locks one plane to another plane (allows translation in plane, rotation around normal)",
+    "steps": [
+      "Select two components",
+      "Press Jp or click Planar Joint",
+      "Select mating planes",
+      "Click OK"
+    ],
+    "tips": [
+      "Useful for parts sliding on flat surface",
+      "Reduces degrees of freedom by 3",
+      "Can add additional constraints for more restriction",
+      "Like placing book on table"
+    ],
+    "related": ["assembly-cylinder-joint", "assembly-revolute-joint"]
+  },
+  {
+    "id": "assembly-cylinder-joint",
+    "title": "Cylinder Joint",
+    "category": "Assembly Joints",
+    "workspace": "Assembly",
+    "shortcut": "Jc",
+    "description": "Locks axes together (rotation around axis + translation along axis)",
+    "steps": [
+      "Select two components",
+      "Press Jc or click Cylinder Joint",
+      "Select axis (edge or constructed line)",
+      "Click OK"
+    ],
+    "tips": [
+      "Like piston in cylinder",
+      "Can translate and rotate along same axis",
+      "Reduces degrees of freedom by 4",
+      "Useful for rotating + moving parts"
+    ],
+    "related": ["assembly-slider-joint", "assembly-revolute-joint"]
+  },
+  {
+    "id": "assembly-explode",
+    "title": "Explode View",
+    "category": "Assembly Tools",
+    "workspace": "Assembly",
+    "shortcut": "Ex",
+    "description": "Creates animated explosion showing how parts fit together",
+    "steps": [
+      "Select components to explode (or all if none selected)",
+      "Press Ex or click Explode",
+      "Drag components outward in 3D view",
+      "Set animation timing",
+      "Click OK to save exploded state"
+    ],
+    "tips": [
+      "Useful for assembly instructions and documentation",
+      "Can be animated for presentations",
+      "Multiple explosion states can be saved",
+      "Reset to assembled state anytime"
+    ],
+    "related": ["assembly-insert", "assembly-rigid-joint"]
+  },
+  {
+    "id": "assembly-collision",
+    "title": "Collision Detection",
+    "category": "Assembly Tools",
+    "workspace": "Assembly",
+    "shortcut": "Cc",
+    "description": "Finds interference between components (overlapping geometry)",
+    "steps": [
+      "Complete assembly (all components positioned)",
+      "Press Cc or click Check Collisions",
+      "Colliding parts highlighted in red",
+      "View violation details in panel",
+      "Adjust components to resolve"
+    ],
+    "tips": [
+      "Essential quality check before manufacturing",
+      "Shows exact volume of overlap",
+      "Can create clearance report",
+      "Run before exporting design"
+    ],
+    "related": ["assembly-insert", "assembly-rigid-joint"]
+  },
+  {
+    "id": "cam-setup",
+    "title": "CAM Setup",
+    "category": "CAM",
+    "workspace": "Manufacturing",
+    "shortcut": "Su",
+    "description": "Defines workpiece, stock, and machine type for CAM operations",
+    "steps": [
+      "Click Setup in CAM panel",
+      "Select Stock type (Box, Cylinder, or from geometry)",
+      "Set dimensions (length, width, height)",
+      "Select Machine type (3-axis mill, 4-axis, laser, etc.)",
+      "Click OK"
+    ],
+    "tips": [
+      "Stock should be larger than final part",
+      "Machine type determines available tool paths",
+      "Multiple setups can be created for different operations",
+      "Setup defines anchor point and orientation"
+    ],
+    "related": ["cam-tool-library", "cam-contour"]
+  },
+  {
+    "id": "cam-tool-library",
+    "title": "Tool Library",
+    "category": "CAM",
+    "workspace": "Manufacturing",
+    "shortcut": "Tl",
+    "description": "Manages cutting tools with feeds/speeds",
+    "steps": [
+      "Click Tool Library",
+      "Browse or create tool",
+      "Set dimensions: diameter, flute length",
+      "Set material compatibility (aluminum, steel, plastic)",
+      "Feeds and speeds auto-populate",
+      "Click Add to Library"
+    ],
+    "tips": [
+      "Library is persistent (saved with project)",
+      "Can import standard tool libraries",
+      "Feeds/speeds can be customized",
+      "Tool material affects recommendations"
+    ],
+    "related": ["cam-setup", "cam-contour"]
+  },
+  {
+    "id": "cam-contour",
+    "title": "Contour (Profile)",
+    "category": "CAM 2D Toolpaths",
+    "workspace": "Manufacturing",
+    "shortcut": "Cn",
+    "description": "Mills outline/perimeter of 2D sketch (cutting the edge)",
+    "steps": [
+      "Select 2D sketch or face edge",
+      "Click Contour",
+      "Select tool from library",
+      "Set passes (depth per pass)",
+      "Set climb/conventional milling",
+      "Click OK"
+    ],
+    "tips": [
+      "Used for cutting outer profiles",
+      "Can cut inside or outside contour",
+      "Climb milling = faster but more vibration",
+      "Conventional = safer but slower"
+    ],
+    "related": ["cam-pocket", "cam-drill"]
+  },
+  {
+    "id": "cam-pocket",
+    "title": "Pocket (Cavity)",
+    "category": "CAM 2D Toolpaths",
+    "workspace": "Manufacturing",
+    "shortcut": "Pk",
+    "description": "Mills out enclosed area to specified depth (creating recess)",
+    "steps": [
+      "Select closed sketch or face",
+      "Click Pocket",
+      "Select tool",
+      "Set depth",
+      "Set passes",
+      "Click OK"
+    ],
+    "tips": [
+      "Area inside closed profile is machined",
+      "Multiple passes prevent tool breakage",
+      "Tool diameter affects sharp corners",
+      "Can use ball mill for smooth contours"
+    ],
+    "related": ["cam-contour", "cam-drill"]
+  },
+  {
+    "id": "cam-drill",
+    "title": "Drilling",
+    "category": "CAM 2D Toolpaths",
+    "workspace": "Manufacturing",
+    "shortcut": "Dr",
+    "description": "Creates drilling operation (plunge straight down, rapid feed)",
+    "steps": [
+      "Select drill points (sketch or construction points)",
+      "Click Drill",
+      "Select drill tool",
+      "Set depth",
+      "Click OK"
+    ],
+    "tips": [
+      "Selects drill tool automatically based on hole size",
+      "Can specify peck drilling (multiple steps)",
+      "Rapid traverse above part, plunge to depth",
+      "G-code output includes M03 spindle start"
+    ],
+    "related": ["cam-contour", "cam-pocket"]
+  },
+  {
+    "id": "cam-roughing",
+    "title": "Roughing",
+    "category": "CAM 3D Toolpaths",
+    "workspace": "Manufacturing",
+    "shortcut": "Rg",
+    "description": "Removes bulk material quickly using large tool (prepares for finishing)",
+    "steps": [
+      "Select body or face to machine",
+      "Click Roughing",
+      "Select large tool (roughing endmill)",
+      "Set step-down (vertical depth per pass)",
+      "Set step-over (horizontal spacing)",
+      "Click OK"
+    ],
+    "tips": [
+      "Aggressive feeds/speeds (trades tool life for speed)",
+      "Leaves finishing allowance (stock for final pass)",
+      "Large step-over reduces time",
+      "Heavier machine loads than finishing"
+    ],
+    "related": ["cam-finishing", "cam-contour"]
+  },
+  {
+    "id": "cam-finishing",
+    "title": "Finishing",
+    "category": "CAM 3D Toolpaths",
+    "workspace": "Manufacturing",
+    "shortcut": "Fn",
+    "description": "Fine cuts to achieve final dimensions and surface finish",
+    "steps": [
+      "Select body or face to finish",
+      "Click Finishing",
+      "Select finishing tool (ball mill or fine endmill)",
+      "Set small step-down and step-over",
+      "Set tight feeds/speeds for surface quality",
+      "Click OK"
+    ],
+    "tips": [
+      "Precise tool path following surface contours",
+      "Small step-over = smooth surface",
+      "Ball mill = better for complex organic shapes",
+      "Endmill = better for faceted geometry"
+    ],
+    "related": ["cam-roughing", "cam-contour"]
+  },
+  {
+    "id": "cam-gcode",
+    "title": "Export G-Code",
+    "category": "CAM Output",
+    "workspace": "Manufacturing",
+    "shortcut": "Gc",
+    "description": "Generates CNC machine code (.NC, .GCode file) from tool paths",
+    "steps": [
+      "Complete all CAM setups and tool paths",
+      "Click Export G-Code",
+      "Select output format (Fanuc, Haas, Siemens, etc.)",
+      "Set post-processor options",
+      "Click Save and choose location"
+    ],
+    "tips": [
+      "Different machine types use different dialects",
+      "Post-processor translates to machine-specific code",
+      "Verify code before running on machine",
+      "Safe Z height critical (prevent collisions)"
+    ],
+    "related": ["cam-setup", "cam-preview"]
+  },
+  {
+    "id": "cam-preview",
+    "title": "Preview Tool Path",
+    "category": "CAM Output",
+    "workspace": "Manufacturing",
+    "shortcut": "Pv",
+    "description": "Simulates cutting operation (visualizes material removal)",
+    "steps": [
+      "Complete CAM setup",
+      "Click Preview",
+      "Watch animation of tool cutting",
+      "Check for collisions or unexpected behavior",
+      "Can pause and inspect at any point"
+    ],
+    "tips": [
+      "Essential before running real machine",
+      "Shows tool holder clearance",
+      "Detects collisions with clamps/fixtures",
+      "Slow down animation for detail inspection"
+    ],
+    "related": ["cam-gcode", "cam-roughing"]
+  },
+  {
+    "id": "drawing-new",
+    "title": "New Drawing",
+    "category": "Drawing",
+    "workspace": "Drawing",
+    "shortcut": "Ns",
+    "description": "Creates 2D drawing sheet from 3D model",
+    "steps": [
+      "Click New Drawing",
+      "Select 3D model/body to draw",
+      "Choose sheet size (A4, A3, Letter, Ledger, custom)",
+      "Click OK"
+    ],
+    "tips": [
+      "Multiple sheets can be created for complex drawings",
+      "Sheet size affects view scale",
+      "Title block can be added",
+      "Drawing views are live-linked to 3D model"
+    ],
+    "related": ["drawing-orthographic", "drawing-title-block"]
+  },
+  {
+    "id": "drawing-orthographic",
+    "title": "Orthographic Projection",
+    "category": "Drawing Views",
+    "workspace": "Drawing",
+    "shortcut": "Or",
+    "description": "Creates standard 2D projections (front, top, right side, isometric)",
+    "steps": [
+      "On drawing sheet, click Orthographic View",
+      "Drag to place front view",
+      "Drag adjacent to place related views (top, right, etc.)",
+      "Scale and position as needed",
+      "Click OK"
+    ],
+    "tips": [
+      "Views are parametrically linked to 3D model",
+      "Edit 3D model, views update automatically",
+      "Standard arrangement: front center, top above, right side right",
+      "Hidden lines can be shown/hidden per view"
+    ],
+    "related": ["drawing-section", "drawing-detail"]
+  },
+  {
+    "id": "drawing-section",
+    "title": "Sectional View (Cross-Section)",
+    "category": "Drawing Views",
+    "workspace": "Drawing",
+    "shortcut": "Se",
+    "description": "Shows interior details by cutting slice through model",
+    "steps": [
+      "On drawing, click Section View",
+      "Select section plane (or create new)",
+      "Drag view location on sheet",
+      "Configure cutting plane direction",
+      "Click OK"
+    ],
+    "tips": [
+      "Cutting plane line shown on main view (A-A, B-B, etc.)",
+      "Cross-hatching indicates cut material",
+      "Can offset section plane for complex internal details",
+      "Half-section shows interior on one side"
+    ],
+    "related": ["drawing-orthographic", "drawing-detail"]
+  },
+  {
+    "id": "drawing-detail",
+    "title": "Detail View",
+    "category": "Drawing Views",
+    "workspace": "Drawing",
+    "shortcut": "De",
+    "description": "Creates enlarged view of specific area (showing small features)",
+    "steps": [
+      "On drawing, click Detail View",
+      "Select rectangle or circle area to detail",
+      "Set magnification ratio (2x, 5x, 10x, etc.)",
+      "Drag to place enlarged view",
+      "Click OK"
+    ],
+    "tips": [
+      "Detail circle/rectangle shown on source view with label",
+      "Magnified view labeled with same letter",
+      "Shows hidden details clearly",
+      "Typically 2-5x magnification"
+    ],
+    "related": ["drawing-orthographic", "drawing-section"]
+  },
+  {
+    "id": "drawing-dimensions",
+    "title": "Automatic Dimensions",
+    "category": "Drawing Annotations",
+    "workspace": "Drawing",
+    "shortcut": "Ad",
+    "description": "Adds dimensions to drawing automatically based on 3D model",
+    "steps": [
+      "Select view (or all views)",
+      "Click Automatic Dimensions",
+      "Placement options dialog appears",
+      "Select placement: inside/outside view boundaries",
+      "Click OK"
+    ],
+    "tips": [
+      "Dimensions come from 3D parametric constraints",
+      "Avoid over-dimensioning (creates manufacturing conflicts)",
+      "Manual cleanup usually needed (delete redundant dimensions)",
+      "Critical dimensions highlighted"
+    ],
+    "related": ["drawing-manual-dimension", "drawing-gdt"]
+  },
+  {
+    "id": "drawing-manual-dimension",
+    "title": "Manual Dimension",
+    "category": "Drawing Annotations",
+    "workspace": "Drawing",
+    "shortcut": "D",
+    "description": "Adds custom dimensions (lengths, angles, radii) to views",
+    "steps": [
+      "Click Dimension tool",
+      "Select edge or two points to dimension",
+      "Click location for dimension text",
+      "Edit dimension value if needed",
+      "Click OK"
+    ],
+    "tips": [
+      "Dimension linked to geometry (update 3D, dimension updates)",
+      "Can create reference dimensions (no manufacturing requirement)",
+      "Dimension text can be edited",
+      "Font size and style can be customized"
+    ],
+    "related": ["drawing-gdt", "drawing-text"]
+  },
+  {
+    "id": "drawing-gdt",
+    "title": "Geometric Dimensioning & Tolerancing (GD&T)",
+    "category": "Drawing Annotations",
+    "workspace": "Drawing",
+    "shortcut": "Gt",
+    "description": "Adds geometric control frames for form, runout, position tolerance",
+    "steps": [
+      "Click GD&T tool",
+      "Select feature to control (surface, hole, etc.)",
+      "Select control type: Flatness, Roundness, Runout, Position, Profile, etc.",
+      "Set tolerance value",
+      "Set datum references (A, B, C, etc.)",
+      "Click OK"
+    ],
+    "tips": [
+      "GD&T frames appear below dimension",
+      "Controls form, orientation, location, runout",
+      "Datums establish reference axes/planes",
+      "Position tolerance controls hole location (crucial for assembly)"
+    ],
+    "related": ["drawing-manual-dimension", "drawing-text"]
+  },
+  {
+    "id": "drawing-text",
+    "title": "Text & Notes",
+    "category": "Drawing Annotations",
+    "workspace": "Drawing",
+    "shortcut": "T",
+    "description": "Adds freeform text annotations (general notes, instructions)",
+    "steps": [
+      "Click Text tool",
+      "Click location on drawing",
+      "Type text in input box",
+      "Press Enter to place"
+    ],
+    "tips": [
+      "Text can be scaled and positioned",
+      "Font selection available",
+      "Can add box/border around text",
+      "Useful for manufacturing notes, material specs"
+    ],
+    "related": ["drawing-manual-dimension", "drawing-gdt"]
+  },
+  {
+    "id": "drawing-title-block",
+    "title": "Title Block",
+    "category": "Drawing Layout",
+    "workspace": "Drawing",
+    "shortcut": "Tb",
+    "description": "Adds standard title block with company info, drawing number, revision",
+    "steps": [
+      "Click Title Block",
+      "Select template (or create custom)",
+      "Edit fields: Title, Drawing Number, Revision, Date, Company, Designer, Scale",
+      "Click OK"
+    ],
+    "tips": [
+      "Title block appears at bottom-right of sheet",
+      "Fields can be linked to project properties",
+      "Custom templates can be saved and reused",
+      "Professional appearance essential for production drawings"
+    ],
+    "related": ["drawing-new", "drawing-orthographic"]
+  },
+  {
+    "id": "render-material",
+    "title": "Apply Material",
+    "category": "Materials",
+    "workspace": "Render",
+    "shortcut": "Ma",
+    "description": "Assigns physical material properties to surfaces",
+    "steps": [
+      "Select face(s) or body",
+      "Click Apply Material",
+      "Select material from library (or create custom)",
+      "Set parameters: color, metalness (0-1), roughness (0-1)",
+      "Click OK"
+    ],
+    "tips": [
+      "Metalness: 0 = matte, 1 = mirror-polished metal",
+      "Roughness: 0 = smooth glossy, 1 = rough/brushed",
+      "Can preview in real-time viewport",
+      "Multiple materials on one part possible"
+    ],
+    "related": ["render-studio-lighting", "render-environment"]
+  },
+  {
+    "id": "render-studio-lighting",
+    "title": "Studio Lighting",
+    "category": "Lighting",
+    "workspace": "Render",
+    "shortcut": "Sl",
+    "description": "Sets up professional 3-point lighting (key, fill, back light)",
+    "steps": [
+      "Click Studio Lighting",
+      "Drag key light (primary) to position",
+      "Drag fill light (soften shadows)",
+      "Drag back light (rim lighting)",
+      "Adjust intensity for each light",
+      "Click OK"
+    ],
+    "tips": [
+      "Key light typically 45° above, 45° to side",
+      "Fill light opposite key light, lower intensity",
+      "Back light creates rim effect (edge separation)",
+      "Scene updates in real-time"
+    ],
+    "related": ["render-environment", "render-material"]
+  },
+  {
+    "id": "render-environment",
+    "title": "Environment Map",
+    "category": "Lighting",
+    "workspace": "Render",
+    "shortcut": "En",
+    "description": "Sets background scene (HDRI image for realistic reflections)",
+    "steps": [
+      "Click Environment",
+      "Select HDRI map from library or file",
+      "Rotate to adjust lighting direction",
+      "Adjust intensity",
+      "Click OK"
+    ],
+    "tips": [
+      "HDRI (High Dynamic Range Image) provides realistic global illumination",
+      "Scene appears reflected in shiny surfaces",
+      "Rotation changes light direction",
+      "Presets for studio, outdoor, industrial"
+    ],
+    "related": ["render-studio-lighting", "render-turntable"]
+  },
+  {
+    "id": "render-turntable",
+    "title": "Turntable",
+    "category": "Animation",
+    "workspace": "Render",
+    "shortcut": "Tu",
+    "description": "Creates automatic rotating animation (like display turntable)",
+    "steps": [
+      "Click Turntable",
+      "Set rotation speed (10-60 RPM)",
+      "Set duration (seconds)",
+      "Set camera height (0 = center, 1 = top)",
+      "Click Render to create video"
+    ],
+    "tips": [
+      "Useful for product presentations",
+      "Includes all materials and lights from scene",
+      "Can loop video continuously",
+      "Output is MP4 or image sequence"
+    ],
+    "related": ["render-storyboard", "render-environment"]
+  },
+  {
+    "id": "render-storyboard",
+    "title": "Storyboard",
+    "category": "Animation",
+    "workspace": "Render",
+    "shortcut": "Sb",
+    "description": "Creates animated sequence with camera movements and object animations",
+    "steps": [
+      "Click Storyboard",
+      "Create keyframes: set camera position, object position/rotation at each frame",
+      "Timeline shows all keyframes",
+      "Drag keyframes to adjust timing",
+      "Click Render"
+    ],
+    "tips": [
+      "Each keyframe stores complete scene state",
+      "Interpolation between keyframes creates smooth motion",
+      "Can hide/show objects in timeline",
+      "Professional presentations and marketing videos"
+    ],
+    "related": ["render-turntable", "render-environment"]
+  },
+  {
+    "id": "simulation-stress",
+    "title": "Stress Simulation",
+    "category": "Simulation",
+    "workspace": "Simulation",
+    "shortcut": "Ss",
+    "description": "Calculates stress distribution under applied loads",
+    "steps": [
+      "Click Stress Simulation",
+      "Set Material (auto-populated from body properties)",
+      "Apply Loads: click face, set force magnitude and direction",
+      "Apply Constraints: click face, fix it",
+      "Set Mesh density (fine/coarse)",
+      "Click Solve (results show stress colors)"
+    ],
+    "tips": [
+      "Red areas = high stress (risk of failure)",
+      "Factor of Safety shown",
+      "Mesh refinement = more accurate but slower",
+      "Can probe stress at any point"
+    ],
+    "related": ["simulation-deformation", "simulation-thermal"]
+  },
+  {
+    "id": "simulation-deformation",
+    "title": "Deformation Analysis",
+    "category": "Simulation",
+    "workspace": "Simulation",
+    "shortcut": "Df",
+    "description": "Shows how much part bends under load (displacement, deflection)",
+    "steps": [
+      "After Stress Simulation completes",
+      "Click Deformation",
+      "Choose visualization: total displacement, X/Y/Z displacement",
+      "Scale factor adjusts exaggeration (1 = actual, 10 = exaggerated)",
+      "View deformed shape"
+    ],
+    "tips": [
+      "Shows which features bend or flex most",
+      "Exaggeration helps visualize small deformations",
+      "Useful for spring designs, compliant mechanisms",
+      "Compare to allowable tolerance"
+    ],
+    "related": ["simulation-stress", "simulation-thermal"]
+  },
+  {
+    "id": "simulation-thermal",
+    "title": "Heat Transfer",
+    "category": "Simulation",
+    "workspace": "Simulation",
+    "shortcut": "Th",
+    "description": "Calculates temperature distribution with thermal loads",
+    "steps": [
+      "Click Thermal Analysis",
+      "Set Material (thermal properties: conductivity, specific heat)",
+      "Apply Heat Sources: click face, set heat flux or temperature",
+      "Apply Boundary Conditions: click face, set ambient temperature",
+      "Set Time (steady-state or transient)",
+      "Click Solve"
+    ],
+    "tips": [
+      "Results show temperature distribution (blue = cold, red = hot)",
+      "Useful for electronics cooling, heat sinks",
+      "Steady-state = equilibrium temperature",
+      "Transient = temperature over time"
+    ],
+    "related": ["simulation-stress", "simulation-modal"]
+  },
+  {
+    "id": "simulation-modal",
+    "title": "Frequency Analysis",
+    "category": "Simulation",
+    "workspace": "Simulation",
+    "shortcut": "Mo",
+    "description": "Finds natural frequencies and mode shapes (vibration modes)",
+    "steps": [
+      "Click Modal Analysis",
+      "Set Material",
+      "Fix constraints (typically fix mounting points)",
+      "Set Modes to analyze (typically 5-10 first modes)",
+      "Click Solve (results show frequencies and mode shapes)"
+    ],
+    "tips": [
+      "Frequencies shown in Hz",
+      "Lower frequency = easier to vibrate",
+      "Mode shapes show which features vibrate most",
+      "Useful for avoiding resonance"
+    ],
+    "related": ["simulation-stress", "simulation-deformation"]
+  },
+  {
+    "id": "inspect-measure",
+    "title": "Measurement",
+    "category": "Inspection",
+    "workspace": "Inspection",
+    "shortcut": "Me",
+    "description": "Measures distances, angles, and radii directly in 3D model",
+    "steps": [
+      "Click Measure",
+      "Click two points to measure distance",
+      "Distance shown with dimension line",
+      "Can measure angles (3 points) and radii (click edge)",
+      "Create report of all measurements"
+    ],
+    "tips": [
+      "Measurements are temporary (don't affect model)",
+      "Can create multiple measurements in one session",
+      "Radius measurement clicks curved edge",
+      "Useful for verification against drawing"
+    ],
+    "related": ["inspect-section", "inspect-curvature"]
+  },
+  {
+    "id": "inspect-section",
+    "title": "Section Analysis",
+    "category": "Inspection",
+    "workspace": "Inspection",
+    "shortcut": "Sc",
+    "description": "Cuts cross-section through model to inspect interior",
+    "steps": [
+      "Click Section",
+      "Drag plane through model",
+      "Cross-section view appears in panel",
+      "Adjust plane position interactively",
+      "Analyze wall thickness, hole depth, etc."
+    ],
+    "tips": [
+      "Plane can be rotated (X, Y, Z orientation)",
+      "Shows actual geometry at cut plane",
+      "Check for undercuts, sharp corners, minimum wall thickness",
+      "Useful for injection molding and casting design"
+    ],
+    "related": ["inspect-measure", "inspect-draft"]
+  },
+  {
+    "id": "inspect-curvature",
+    "title": "Curvature Analysis",
+    "category": "Inspection",
+    "workspace": "Inspection",
+    "shortcut": "Cv",
+    "description": "Visualizes surface curvature (flat, curved, tight curves in color)",
+    "steps": [
+      "Click Curvature",
+      "Select surface to analyze",
+      "Color map shows curvature: blue = flat/gentle, red = tight radius",
+      "Adjust scale to highlight problem areas"
+    ],
+    "tips": [
+      "Tight curves may be hard to manufacture or cause stress",
+      "Useful for mold design (undercuts, draft angles)",
+      "Can identify areas needing fillet radius increase",
+      "Export curvature report"
+    ],
+    "related": ["inspect-section", "inspect-draft"]
+  },
+  {
+    "id": "inspect-draft",
+    "title": "Draft Analysis",
+    "category": "Inspection",
+    "workspace": "Inspection",
+    "shortcut": "Dr",
+    "description": "Shows which faces can be removed from mold without undercut",
+    "steps": [
+      "Click Draft",
+      "Select pull direction (mold opening direction)",
+      "Green faces = removable without undercut",
+      "Red faces = require core or undercut feature",
+      "Adjust direction angle (typically 2-5° draft)"
+    ],
+    "tips": [
+      "Essential for designing injection-molded parts",
+      "Pull direction usually vertical",
+      "Red areas must be avoided or require extra mold complexity",
+      "Can add draft angles in CAD to fix issues"
+    ],
+    "related": ["inspect-curvature", "inspect-zebra"]
+  },
+  {
+    "id": "inspect-zebra",
+    "title": "Zebra Stripe Analysis",
+    "category": "Inspection",
+    "workspace": "Inspection",
+    "shortcut": "Zb",
+    "description": "Visualizes surface smoothness using reflected stripe pattern",
+    "steps": [
+      "Click Zebra",
+      "Stripes appear reflected on surfaces",
+      "Smooth surfaces show straight, undisturbed stripes",
+      "Bumpy surfaces show wavy/broken stripes",
+      "Adjust stripe spacing to highlight different scales"
+    ],
+    "tips": [
+      "Used in automotive and consumer product design",
+      "Identifies surface discontinuities invisible to naked eye",
+      "Stripe pattern instantly reveals surface quality",
+      "Essential for Class A (visible) surfaces"
+    ],
+    "related": ["inspect-curvature", "inspect-section"]
+  },
+  {
+    "id": "data-version-save",
+    "title": "Save Version",
+    "category": "Version Control",
+    "workspace": "Data Management",
+    "shortcut": "Sv",
+    "description": "Creates named checkpoint of design (like Git commit)",
+    "steps": [
+      "Make design changes",
+      "Click Save Version",
+      "Enter version name (v1.0, prototype, final, etc.)",
+      "Enter description (change notes)",
+      "Click Save"
+    ],
+    "tips": [
+      "Version includes all parts, assemblies, drawings",
+      "Can restore to any previous version",
+      "Version history shows all saved states",
+      "Useful for comparing designs over time"
+    ],
+    "related": ["data-version-restore", "data-import-step"]
+  },
+  {
+    "id": "data-version-restore",
+    "title": "Restore Version",
+    "category": "Version Control",
+    "workspace": "Data Management",
+    "shortcut": "Rs",
+    "description": "Reverts design to previous saved version",
+    "steps": [
+      "Click Restore Version",
+      "Select version from list",
+      "Confirm restore (discards current unsaved changes)",
+      "Design reverts to that point"
+    ],
+    "tips": [
+      "Non-destructive (old version remains in history)",
+      "Compare versions before restoring (diff view)",
+      "Can create branch (separate development line)"
+    ],
+    "related": ["data-version-save", "data-import-step"]
+  },
+  {
+    "id": "data-import-step",
+    "title": "Import STEP File",
+    "category": "Import/Export",
+    "workspace": "Data Management",
+    "shortcut": "Im",
+    "description": "Loads 3D geometry from .STEP file (standard CAD interchange format)",
+    "steps": [
+      "Click Import STEP",
+      "Select .STEP or .STP file",
+      "Choose: create new part or add to current assembly",
+      "Click Import (file parsed and geometry displayed)"
+    ],
+    "tips": [
+      "STEP = Standard for Exchange of Product Model Data",
+      "Industry standard (all CAD software supports it)",
+      "Preserves solid body geometry, not feature history",
+      "Useful for exchanging designs with different CAD"
+    ],
+    "related": ["data-export-step", "data-export-stl"]
+  },
+  {
+    "id": "data-export-step",
+    "title": "Export STEP File",
+    "category": "Import/Export",
+    "workspace": "Data Management",
+    "shortcut": "Ex",
+    "description": "Saves current design as .STEP file for sharing/manufacturing",
+    "steps": [
+      "Click Export STEP",
+      "Select geometry to export (current body, assembly, or selection)",
+      "Choose file location and name",
+      "Click Save (STEP file created)"
+    ],
+    "tips": [
+      "Include all bodies and assemblies",
+      "STEP is readable by CNC machines and laser cutters",
+      "Most manufacturers prefer STEP format",
+      "Preserves solid geometry accurately"
+    ],
+    "related": ["data-import-step", "data-export-stl"]
+  },
+  {
+    "id": "data-export-stl",
+    "title": "Export STL File",
+    "category": "Import/Export",
+    "workspace": "Data Management",
+    "shortcut": "St",
+    "description": "Saves as .STL (Stereolithography) for 3D printing",
+    "steps": [
+      "Click Export STL",
+      "Select body/part",
+      "Set resolution (tessellation): coarse/normal/fine",
+      "Choose ASCII or binary format",
+      "Click Save"
+    ],
+    "tips": [
+      "STL = mesh format (triangles, not solid bodies)",
+      "Finer resolution = smaller triangles = better accuracy",
+      "Binary STL = smaller file, ASCII = readable in text editor",
+      "Essential for 3D printer preparation"
+    ],
+    "related": ["data-export-step", "data-export-dxf"]
+  },
+  {
+    "id": "data-export-dxf",
+    "title": "Export DXF File",
+    "category": "Import/Export",
+    "workspace": "Data Management",
+    "shortcut": "Dx",
+    "description": "Saves 2D sketch or drawing as .DXF (for laser cutting, waterjet)",
+    "steps": [
+      "Click Export DXF",
+      "Select sketch or drawing sheet",
+      "Set scale",
+      "Click Save"
+    ],
+    "tips": [
+      "DXF = common 2D CAD format",
+      "Used for laser cutting, waterjet, plasma cutting",
+      "Preserves lines, arcs, circles, text",
+      "Layer information can be included"
+    ],
+    "related": ["data-export-step", "data-export-pdf"]
+  },
+  {
+    "id": "data-export-pdf",
+    "title": "Export PDF",
+    "category": "Import/Export",
+    "workspace": "Data Management",
+    "shortcut": "Pd",
+    "description": "Saves drawing as PDF document (for sharing, printing, archiving)",
+    "steps": [
+      "Click Export PDF",
+      "Select drawing sheet(s)",
+      "Set page size and orientation",
+      "Click Save"
+    ],
+    "tips": [
+      "PDF is universal (all computers can open)",
+      "Good for sharing with non-CAD users",
+      "Preserves dimensions and annotations",
+      "Print-ready format"
+    ],
+    "related": ["data-export-dxf", "data-share"]
+  },
+  {
+    "id": "data-share",
+    "title": "Share Design",
+    "category": "Collaboration",
+    "workspace": "Data Management",
+    "shortcut": "Sh",
+    "description": "Creates shareable link to design (view-only or edit permission)",
+    "steps": [
+      "Click Share",
+      "Choose permission: view-only or edit",
+      "Generate share link",
+      "Copy link and send to recipient"
+    ],
+    "tips": [
+      "View-only: recipient sees 3D model, cannot change",
+      "Edit: recipient can modify (simultaneous collaboration)",
+      "Link expires after set time (1 day, 1 week, permanent)",
+      "Useful for customer review, team feedback"
+    ],
+    "related": ["data-comments", "data-version-save"]
+  },
+  {
+    "id": "data-comments",
+    "title": "Comments & Feedback",
+    "category": "Collaboration",
+    "workspace": "Data Management",
+    "shortcut": "Co",
+    "description": "Adds comments to 3D geometry (like sticky notes)",
+    "steps": [
+      "Click Comment tool",
+      "Click location in 3D view (or on face/edge)",
+      "Type comment text",
+      "Optionally attach image or file",
+      "Press Enter to place"
+    ],
+    "tips": [
+      "Comments visible to all collaborators",
+      "Useful for design reviews and feedback",
+      "Can resolve/close comments when addressed",
+      "Threaded discussion possible"
+    ],
+    "related": ["data-share", "data-version-save"]
+  }
+]

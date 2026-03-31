@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>cycleCAD Test Suite Hub</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1a202c 100%);
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 48px 24px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .title {
+      font-size: 42px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #38bdf8, #0284c7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      font-size: 16px;
+      color: #94a3b8;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      background: #10b981;
+      color: white;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 12px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
+      margin: 32px auto;
+      max-width: 600px;
+    }
+
+    .stat-card {
+      background: #1e293b;
+      border: 1px solid #2d3748;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    .test-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+
+    .test-card {
+      background: #1a202c;
+      border: 1px solid #2d3748;
+      border-radius: 8px;
+      padding: 24px;
+      transition: all 0.3s;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+
+    .test-card:hover {
+      border-color: #38bdf8;
+      background: #1e293b;
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(56, 189, 248, 0.1);
+    }
+
+    .card-icon {
+      font-size: 32px;
+      margin-bottom: 12px;
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #38bdf8;
+    }
+
+    .card-description {
+      font-size: 13px;
+      color: #94a3b8;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    .card-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      font-size: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #2d3748;
+    }
+
+    .card-stat {
+      padding: 8px;
+      background: #0f172a;
+      border-radius: 4px;
+    }
+
+    .card-stat-label {
+      color: #64748b;
+      font-size: 10px;
+      margin-bottom: 2px;
+    }
+
+    .card-stat-value {
+      color: #cbd5e1;
+      font-weight: 600;
+    }
+
+    .master-card {
+      grid-column: 1 / -1;
+      background: linear-gradient(135deg, #1a202c 0%, #1e293b 100%);
+      border: 2px solid #0284c7;
+    }
+
+    .master-card:hover {
+      border-color: #38bdf8;
+      box-shadow: 0 12px 32px rgba(56, 189, 248, 0.2);
+    }
+
+    .master-card .card-title {
+      font-size: 20px;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin: 32px 0 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #2d3748;
+    }
+
+    .features-list {
+      background: #1a202c;
+      border: 1px solid #2d3748;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 32px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+    }
+
+    .feature-item {
+      padding: 12px;
+      background: #0f172a;
+      border-radius: 6px;
+      border-left: 3px solid #38bdf8;
+      font-size: 13px;
+    }
+
+    .footer {
+      text-align: center;
+      padding: 24px;
+      color: #64748b;
+      font-size: 12px;
+      border-top: 1px solid #2d3748;
+      margin-top: 48px;
+    }
+
+    .button {
+      display: inline-block;
+      padding: 10px 20px;
+      background: #0ea5e9;
+      color: white;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 13px;
+      transition: background 0.2s;
+      margin-top: 8px;
+    }
+
+    .button:hover {
+      background: #0284c7;
+    }
+
+    .button.secondary {
+      background: #475569;
+    }
+
+    .button.secondary:hover {
+      background: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="title">cycleCAD Test Suite</div>
+      <div class="subtitle">Comprehensive automated testing for sketch, solid modeling, assembly, CAM, and simulation features</div>
+      <div class="badge">103 Total Tests</div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Test Suites</div>
+        <div class="stat-value">5</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Tests</div>
+        <div class="stat-value">103</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Categories</div>
+        <div class="stat-value">17</div>
+      </div>
+    </div>
+
+    <div class="section-title">Master Test Runner</div>
+    <div class="test-grid">
+      <a href="fusion-all-tests.html" class="test-card master-card">
+        <div class="card-icon">🚀</div>
+        <div class="card-title">Run All Tests</div>
+        <div class="card-description">Execute all 5 test suites sequentially and view aggregated results. Export reports as JSON or HTML.</div>
+        <div class="button">Launch Master Runner</div>
+      </a>
+    </div>
+
+    <div class="section-title">Individual Test Suites</div>
+    <div class="test-grid">
+      <a href="fusion-sketch-tests.html" class="test-card">
+        <div class="card-icon">✏️</div>
+        <div class="card-title">Sketch Tests</div>
+        <div class="card-description">All 2D sketch tools: basic shapes, advanced operations, constraints, dimensions, and export.</div>
+        <div class="card-stats">
+          <div class="card-stat">
+            <div class="card-stat-label">Tests</div>
+            <div class="card-stat-value">30</div>
+          </div>
+          <div class="card-stat">
+            <div class="card-stat-label">Categories</div>
+            <div class="card-stat-value">4</div>
+          </div>
+        </div>
+        <div class="button">Run Tests</div>
+      </a>
+
+      <a href="fusion-solid-tests.html" class="test-card">
+        <div class="card-icon">🔶</div>
+        <div class="card-title">Solid Modeling Tests</div>
+        <div class="card-description">3D operations: extrude, revolve, sweep, loft, booleans, fillets, chamfers, and patterns.</div>
+        <div class="card-stats">
+          <div class="card-stat">
+            <div class="card-stat-label">Tests</div>
+            <div class="card-stat-value">22</div>
+          </div>
+          <div class="card-stat">
+            <div class="card-stat-label">Categories</div>
+            <div class="card-stat-value">4</div>
+          </div>
+        </div>
+        <div class="button">Run Tests</div>
+      </a>
+
+      <a href="fusion-assembly-tests.html" class="test-card">
+        <div class="card-icon">⚙️</div>
+        <div class="card-title">Assembly Tests</div>
+        <div class="card-description">Multi-body workflows: 7 joint types, component management, interference detection, and motion.</div>
+        <div class="card-stats">
+          <div class="card-stat">
+            <div class="card-stat-label">Tests</div>
+            <div class="card-stat-value">17</div>
+          </div>
+          <div class="card-stat">
+            <div class="card-stat-label">Categories</div>
+            <div class="card-stat-value">3</div>
+          </div>
+        </div>
+        <div class="button">Run Tests</div>
+      </a>
+
+      <a href="fusion-cam-tests.html" class="test-card">
+        <div class="card-icon">🔨</div>
+        <div class="card-title">CAM Tests</div>
+        <div class="card-description">CAM workflows: setup, 2D/3D operations, toolpath, G-code generation, and post-processing.</div>
+        <div class="card-stats">
+          <div class="card-stat">
+            <div class="card-stat-label">Tests</div>
+            <div class="card-stat-value">17</div>
+          </div>
+          <div class="card-stat">
+            <div class="card-stat-label">Categories</div>
+            <div class="card-stat-value">3</div>
+          </div>
+        </div>
+        <div class="button">Run Tests</div>
+      </a>
+
+      <a href="fusion-simulation-tests.html" class="test-card">
+        <div class="card-icon">📊</div>
+        <div class="card-title">Simulation Tests</div>
+        <div class="card-description">FEA analysis: static stress, thermal, modal frequency, buckling, and shape optimization.</div>
+        <div class="card-stats">
+          <div class="card-stat">
+            <div class="card-stat-label">Tests</div>
+            <div class="card-stat-value">17</div>
+          </div>
+          <div class="card-stat">
+            <div class="card-stat-label">Categories</div>
+            <div class="card-stat-value">3</div>
+          </div>
+        </div>
+        <div class="button">Run Tests</div>
+      </a>
+    </div>
+
+    <div class="section-title">Test Architecture</div>
+    <div class="features-list">
+      <div class="features-grid">
+        <div class="feature-item">
+          <strong>Split-Screen Layout</strong> — App in iframe (70%) + test log (30%)
+        </div>
+        <div class="feature-item">
+          <strong>Real-Time Logging</strong> — Color-coded pass/fail/skip with timestamps
+        </div>
+        <div class="feature-item">
+          <strong>Progress Tracking</strong> — Visual bars for each test and overall progress
+        </div>
+        <div class="feature-item">
+          <strong>Category Buttons</strong> — Run all tests or specific test categories
+        </div>
+        <div class="feature-item">
+          <strong>Error Details</strong> — Detailed error messages for failed tests
+        </div>
+        <div class="feature-item">
+          <strong>Export Reports</strong> — JSON and HTML export formats
+        </div>
+        <div class="feature-item">
+          <strong>Dark Theme</strong> — Professional dark UI with Tailwind-inspired colors
+        </div>
+        <div class="feature-item">
+          <strong>Fast Execution</strong> — 300ms delay between tests for reliability
+        </div>
+        <div class="feature-item">
+          <strong>Multi-Suite Aggregation</strong> — Master runner combines all results
+        </div>
+        <div class="feature-item">
+          <strong>Browser Compatible</strong> — Chrome, Firefox, Safari, Edge 90+
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">Quick Stats</div>
+    <div class="features-list">
+      <div class="features-grid">
+        <div class="feature-item">
+          ✓ <strong>670 lines</strong> — Master test runner
+        </div>
+        <div class="feature-item">
+          ✓ <strong>613 lines</strong> — Sketch test suite
+        </div>
+        <div class="feature-item">
+          ✓ <strong>529 lines</strong> — Solid modeling tests
+        </div>
+        <div class="feature-item">
+          ✓ <strong>461 lines</strong> — Assembly tests
+        </div>
+        <div class="feature-item">
+          ✓ <strong>421 lines</strong> — CAM tests
+        </div>
+        <div class="feature-item">
+          ✓ <strong>421 lines</strong> — Simulation tests
+        </div>
+        <div class="feature-item">
+          ✓ <strong>3,115 lines</strong> — Total code
+        </div>
+        <div class="feature-item">
+          ✓ <strong>88 KB</strong> — Total size
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">Documentation</div>
+    <div class="features-list">
+      <p style="margin-bottom: 16px; color: #cbd5e1;">Full documentation available in <a href="FUSION_TEST_SUITE.md" style="color: #38bdf8;">FUSION_TEST_SUITE.md</a></p>
+      <div class="features-grid">
+        <div class="feature-item">
+          📖 Complete test architecture guide
+        </div>
+        <div class="feature-item">
+          📋 Detailed category breakdown (17 categories)
+        </div>
+        <div class="feature-item">
+          🔧 Development patterns for adding tests
+        </div>
+        <div class="feature-item">
+          🎨 Design system & color scheme documentation
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      cycleCAD Test Suite — Comprehensive feature validation
+      <br>
+      <small>Built for automated testing and quality assurance</small>
+    </div>
+  </div>
+</body>
+</html>

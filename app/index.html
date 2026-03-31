@@ -966,6 +966,10 @@
       <button class="menu-item-link" data-action="tools-addins">Add-ins...</button>
       <button class="menu-item-link" data-action="tools-marketplace">Marketplace...</button>
       <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="tools-text-to-cad">Text-to-CAD (AI)</button>
+      <button class="menu-item-link" data-action="tools-photo-to-cad">Photo-to-CAD</button>
+      <button class="menu-item-link" data-action="tools-dfm">Manufacturability Check</button>
+      <div class="menu-separator"></div>
       <button class="menu-item-link" data-action="tools-settings">Settings...</button>
     </div>
   </div>
@@ -1366,6 +1370,11 @@
 <script src="js/token-engine.js"></script>
 <script src="js/marketplace.js"></script>
 
+<!-- Killer Feature Modules -->
+<script src="js/modules/text-to-cad.js"></script>
+<script src="js/modules/photo-to-cad.js"></script>
+<script src="js/modules/manufacturability.js"></script>
+
 <script type="module">
   // ===== Three.js Imports =====
   import * as THREE from 'three';
@@ -1532,6 +1541,30 @@
         break;
       case 'help-about':
         showDialog('About cycleCAD', 'cycleCAD v0.9.0 - Fusion 360 Clone<br>Open-source parametric 3D CAD modeler<br><br>Built with Three.js, supporting STEP/IGES import, full parametric modeling, and AI-powered design assistance.');
+        break;
+      case 'tools-text-to-cad':
+        if (window.CycleCAD && window.CycleCAD.TextToCAD) {
+          const ttcPanel = window.CycleCAD.TextToCAD.getUI();
+          showDialog('Text-to-CAD (AI)', '');
+          const dlg = document.querySelector('.dialog-content');
+          if (dlg) { dlg.innerHTML = ''; dlg.appendChild(ttcPanel); dlg.style.maxHeight = '500px'; dlg.style.overflow = 'auto'; }
+        }
+        break;
+      case 'tools-photo-to-cad':
+        if (window.CycleCAD && window.CycleCAD.PhotoToCAD) {
+          const ptcPanel = window.CycleCAD.PhotoToCAD.getUI();
+          showDialog('Photo-to-CAD', '');
+          const dlg2 = document.querySelector('.dialog-content');
+          if (dlg2) { dlg2.innerHTML = ''; dlg2.appendChild(ptcPanel); dlg2.style.maxHeight = '500px'; dlg2.style.overflow = 'auto'; }
+        }
+        break;
+      case 'tools-dfm':
+        if (window.CycleCAD && window.CycleCAD.Manufacturability) {
+          const dfmPanel = window.CycleCAD.Manufacturability.getUI();
+          showDialog('Manufacturability Check', '');
+          const dlg3 = document.querySelector('.dialog-content');
+          if (dlg3) { dlg3.innerHTML = ''; dlg3.appendChild(dfmPanel); dlg3.style.maxHeight = '500px'; dlg3.style.overflow = 'auto'; }
+        }
         break;
       default:
         showToast(`${action}`, 'success');
@@ -1838,6 +1871,24 @@
 
     // Token engine and marketplace are auto-initialized via global scripts
     // They expose APIs at window.cycleCAD.tokens, window.cycleCAD.marketplace
+
+    // Initialize Text-to-CAD module
+    if (window.CycleCAD && window.CycleCAD.TextToCAD) {
+      window.CycleCAD.TextToCAD.init(scene, renderer);
+      console.log('[cycleCAD] Text-to-CAD module initialized');
+    }
+
+    // Initialize Photo-to-CAD module
+    if (window.CycleCAD && window.CycleCAD.PhotoToCAD) {
+      window.CycleCAD.PhotoToCAD.init();
+      console.log('[cycleCAD] Photo-to-CAD module initialized');
+    }
+
+    // Initialize Manufacturability module
+    if (window.CycleCAD && window.CycleCAD.Manufacturability) {
+      window.CycleCAD.Manufacturability.init(scene);
+      console.log('[cycleCAD] Manufacturability (DFM) module initialized');
+    }
   }
 
   // ===== Export Global Functions =====

@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B-Rep Live Test — OpenCascade.js WASM + Three.js</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #2d2d30;
+            color: #cccccc;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .header {
+            background: #1e1e1e;
+            border-bottom: 1px solid #3e3e42;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .wasm-progress {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #999;
+        }
+
+        .progress-bar {
+            width: 120px;
+            height: 4px;
+            background: #3e3e42;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #007acc;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        button {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            background: #1084d7;
+        }
+
+        button:disabled {
+            background: #3e3e42;
+            color: #858585;
+            cursor: not-allowed;
+        }
+
+        .main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            gap: 0;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: #252526;
+            border-right: 1px solid #3e3e42;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid #3e3e42;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #858585;
+            letter-spacing: 0.5px;
+        }
+
+        .test-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .test-item {
+            padding: 10px 12px;
+            margin-bottom: 4px;
+            background: #2d2d30;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .test-item:hover {
+            background: #323236;
+            border-color: #007acc;
+        }
+
+        .test-item.running {
+            background: #1e1e1e;
+            border-color: #f4d03f;
+        }
+
+        .test-item.passed {
+            border-color: #4ec9b0;
+            background: #1a3a3a;
+        }
+
+        .test-item.failed {
+            border-color: #f48771;
+            background: #3a1a1a;
+        }
+
+        .test-status {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+
+        .test-status.pending {
+            background: #3e3e42;
+            color: #999;
+        }
+
+        .test-status.running {
+            background: #f4d03f;
+            color: #1e1e1e;
+            animation: pulse 1s infinite;
+        }
+
+        .test-status.passed {
+            background: #4ec9b0;
+            color: #1e1e1e;
+        }
+
+        .test-status.failed {
+            background: #f48771;
+            color: #1e1e1e;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .test-label {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .test-name {
+            font-weight: 500;
+        }
+
+        .test-time {
+            font-size: 11px;
+            color: #858585;
+            margin-top: 2px;
+        }
+
+        .viewport {
+            flex: 1;
+            background: #1e1e1e;
+            position: relative;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .stats-overlay {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: rgba(29, 29, 29, 0.9);
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            padding: 12px;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            color: #4ec9b0;
+            pointer-events: none;
+            z-index: 10;
+            max-width: 250px;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 6px;
+            white-space: nowrap;
+        }
+
+        .stats-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .stats-label {
+            color: #858585;
+        }
+
+        .footer {
+            background: #1e1e1e;
+            border-top: 1px solid #3e3e42;
+            padding: 12px 16px;
+            font-size: 12px;
+            max-height: 120px;
+            overflow-y: auto;
+            color: #999;
+        }
+
+        .log-entry {
+            margin-bottom: 4px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .log-time {
+            color: #858585;
+            flex-shrink: 0;
+        }
+
+        .log-text {
+            flex: 1;
+        }
+
+        .log-error {
+            color: #f48771;
+        }
+
+        .log-success {
+            color: #4ec9b0;
+        }
+
+        .log-warning {
+            color: #f4d03f;
+        }
+
+        .error-banner {
+            background: #3a1a1a;
+            border: 1px solid #f48771;
+            border-radius: 4px;
+            padding: 12px;
+            margin: 12px;
+            color: #f48771;
+            font-size: 13px;
+        }
+
+        .error-banner strong {
+            display: block;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>B-Rep Live Test — OpenCascade.js WASM + Three.js</h1>
+            <div class="header-controls">
+                <div class="wasm-progress">
+                    <span>WASM:</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="wasmProgress"></div>
+                    </div>
+                    <span id="wasmStatus">Loading...</span>
+                </div>
+                <button id="runAllBtn" disabled>Run All Tests</button>
+            </div>
+        </div>
+
+        <div class="main">
+            <div class="sidebar">
+                <div class="sidebar-header">Tests (14 total)</div>
+                <div class="test-list" id="testList"></div>
+            </div>
+
+            <div class="viewport">
+                <canvas id="canvas"></canvas>
+                <div class="stats-overlay" id="statsOverlay">
+                    <div class="stats-row">
+                        <span class="stats-label">FPS:</span>
+                        <span id="statsFPS">0</span>
+                    </div>
+                    <div class="stats-row">
+                        <span class="stats-label">Triangles:</span>
+                        <span id="statsTriangles">0</span>
+                    </div>
+                    <div class="stats-row">
+                        <span class="stats-label">Vertices:</span>
+                        <span id="statsVertices">0</span>
+                    </div>
+                    <div class="stats-row">
+                        <span class="stats-label">Operation:</span>
+                        <span id="statsOp">—</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div id="logContainer"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        const CDN_BASE = 'https://cdn.jsdelivr.net/npm/opencascade.js@2.0.0-beta.b5ff984/dist/';
+        const THREE_CDN = 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
+
+        // Import Three.js
+        import * as THREE from THREE_CDN;
+
+        // Globals
+        let oc = null;
+        let scene, camera, renderer, controls;
+        let currentMesh = null;
+        let frameCount = 0;
+        let fps = 0;
+        let lastFpsTime = Date.now();
+
+        const tests = [
+            { id: 'box', name: 'Box (100x50x30)', category: 'Primitives' },
+            { id: 'cylinder', name: 'Cylinder (r=25, h=60)', category: 'Primitives' },
+            { id: 'sphere', name: 'Sphere (r=30)', category: 'Primitives' },
+            { id: 'cone', name: 'Cone (r1=20, r2=5, h=50)', category: 'Primitives' },
+            { id: 'torus', name: 'Torus (major=30, minor=8)', category: 'Primitives' },
+            { id: 'fillet', name: 'Fillet (box + 5mm edges)', category: 'Operations' },
+            { id: 'chamfer', name: 'Chamfer (box + 3mm)', category: 'Operations' },
+            { id: 'union', name: 'Boolean Union (box + cyl)', category: 'Operations' },
+            { id: 'cut', name: 'Boolean Cut (box - cyl)', category: 'Operations' },
+            { id: 'intersect', name: 'Boolean Intersect (box ∩ sphere)', category: 'Operations' },
+            { id: 'extrude', name: 'Extrude (face → 3D)', category: 'Operations' },
+            { id: 'mass', name: 'Mass Properties (volume/area)', category: 'Analysis' },
+            { id: 'edges', name: 'Edge Count (topological)', category: 'Analysis' },
+            { id: 'faces', name: 'Face Count (topological)', category: 'Analysis' },
+        ];
+
+        const testResults = {};
+
+        function log(message, type = 'info') {
+            const container = document.getElementById('logContainer');
+            const entry = document.createElement('div');
+            entry.className = `log-entry`;
+
+            const time = new Date().toLocaleTimeString();
+            const timeEl = document.createElement('span');
+            timeEl.className = 'log-time';
+            timeEl.textContent = `[${time}]`;
+
+            const textEl = document.createElement('span');
+            textEl.className = `log-text ${type === 'error' ? 'log-error' : type === 'success' ? 'log-success' : type === 'warning' ? 'log-warning' : ''}`;
+            textEl.textContent = message;
+
+            entry.appendChild(timeEl);
+            entry.appendChild(textEl);
+            container.appendChild(entry);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function loadOpenCascade() {
+            try {
+                log('Downloading OpenCascade.js WASM (~50MB)...', 'warning');
+
+                // Fetch JS file
+                const jsUrl = `${CDN_BASE}opencascade.full.js`;
+                const jsResp = await fetch(jsUrl);
+                if (!jsResp.ok) throw new Error(`Failed to fetch JS: ${jsResp.status}`);
+
+                // Fetch WASM file with progress
+                const wasmUrl = `${CDN_BASE}opencascade.full.wasm`;
+                const wasmResp = await fetch(wasmUrl);
+                if (!wasmResp.ok) throw new Error(`Failed to fetch WASM: ${wasmResp.status}`);
+
+                const total = parseInt(wasmResp.headers.get('content-length') || '0', 10);
+                let loaded = 0;
+                const reader = wasmResp.body.getReader();
+                const chunks = [];
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    chunks.push(value);
+                    loaded += value.length;
+                    const progress = total ? (loaded / total) * 100 : 0;
+                    document.getElementById('wasmProgress').style.width = progress + '%';
+                    document.getElementById('wasmStatus').textContent = `${Math.round(progress)}%`;
+                }
+
+                const wasmBuffer = new Uint8Array(loaded);
+                let offset = 0;
+                for (const chunk of chunks) {
+                    wasmBuffer.set(chunk, offset);
+                    offset += chunk.length;
+                }
+
+                log(`WASM loaded: ${(wasmBuffer.length / 1024 / 1024).toFixed(1)}MB`, 'success');
+
+                // Create blob and evaluate JS
+                const jsBlob = await jsResp.blob();
+                const jsText = await jsBlob.text();
+
+                // Create a temporary Module object to capture the factory
+                window.Module = undefined;
+                const script = document.createElement('script');
+                script.textContent = jsText;
+                document.head.appendChild(script);
+
+                // Wait for Module to be defined and initialized
+                while (!window.Module || !window.Module.onRuntimeInitialized) {
+                    await new Promise(r => setTimeout(r, 100));
+                }
+
+                // Initialize with WASM binary
+                oc = await new window.Module({
+                    wasmBinary: wasmBuffer,
+                    locateFile: (filename) => `${CDN_BASE}${filename}`
+                });
+
+                log('OpenCascade.js initialized successfully', 'success');
+                document.getElementById('wasmStatus').textContent = 'Ready';
+                document.getElementById('runAllBtn').disabled = false;
+                return true;
+            } catch (err) {
+                log(`Failed to load OpenCascade.js: ${err.message}`, 'error');
+                return false;
+            }
+        }
+
+        function initThreeJS() {
+            const canvas = document.getElementById('canvas');
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1e1e1e);
+            scene.fog = new THREE.Fog(0x1e1e1e, 500, 1000);
+
+            camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 5000);
+            camera.position.set(150, 120, 150);
+
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+            renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+            renderer.shadowMap.enabled = true;
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(200, 200, 200);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            directionalLight.shadow.camera.left = -500;
+            directionalLight.shadow.camera.right = 500;
+            directionalLight.shadow.camera.top = 500;
+            directionalLight.shadow.camera.bottom = -500;
+            scene.add(directionalLight);
+
+            // Grid
+            const gridHelper = new THREE.GridHelper(400, 20, 0x444444, 0x222222);
+            scene.add(gridHelper);
+
+            // Controls
+            const OrbitControls = await import(`${THREE_CDN.replace('three.module.js', 'examples/jsm/controls/OrbitControls.js')}`);
+            controls = new OrbitControls.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.autoRotate = false;
+
+            // Animation loop
+            function animate() {
+                requestAnimationFrame(animate);
+
+                frameCount++;
+                const now = Date.now();
+                if (now - lastFpsTime >= 1000) {
+                    fps = frameCount;
+                    frameCount = 0;
+                    lastFpsTime = now;
+                }
+
+                document.getElementById('statsFPS').textContent = fps;
+
+                controls.update();
+                renderer.render(scene, camera);
+            }
+
+            animate();
+
+            log('Three.js scene initialized', 'success');
+        }
+
+        function clearViewport() {
+            if (currentMesh) {
+                scene.remove(currentMesh);
+                if (currentMesh.geometry) currentMesh.geometry.dispose();
+                if (currentMesh.material) currentMesh.material.dispose();
+                currentMesh = null;
+            }
+        }
+
+        function tessellateShape(shape, linearDeflection = 0.1) {
+            try {
+                // Mesh the shape
+                new oc.BRepMesh_IncrementalMesh(shape, linearDeflection);
+
+                const vertices = [];
+                const indices = [];
+                let vertexOffset = 0;
+
+                // Iterate faces
+                const faceExplorer = new oc.TopExp_Explorer(shape, oc.TopAbs_ShapeEnum.TopAbs_FACE);
+
+                while (faceExplorer.More()) {
+                    const face = oc.TopoDS.Face(faceExplorer.Current());
+                    const triangulation = oc.BRep_Tool.Triangulation(face);
+
+                    if (triangulation) {
+                        const nodes = triangulation.Nodes();
+                        const triangles = triangulation.Triangles();
+
+                        // Add vertices
+                        for (let i = 1; i <= nodes.Length(); i++) {
+                            const node = nodes.Value(i);
+                            vertices.push(node.X(), node.Y(), node.Z());
+                        }
+
+                        // Add indices
+                        for (let i = 1; i <= triangles.Length(); i++) {
+                            const tri = triangles.Value(i);
+                            indices.push(
+                                tri.Value(1) - 1 + vertexOffset,
+                                tri.Value(2) - 1 + vertexOffset,
+                                tri.Value(3) - 1 + vertexOffset
+                            );
+                        }
+
+                        vertexOffset += nodes.Length();
+                    }
+
+                    faceExplorer.Next();
+                }
+
+                return { vertices, indices };
+            } catch (err) {
+                log(`Tessellation error: ${err.message}`, 'error');
+                return null;
+            }
+        }
+
+        function renderGeometry(vertices, indices) {
+            clearViewport();
+
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3));
+            geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));
+            geometry.computeVertexNormals();
+
+            const material = new THREE.MeshStandardMaterial({
+                color: 0x007acc,
+                metalness: 0.3,
+                roughness: 0.4,
+                side: THREE.DoubleSide
+            });
+
+            currentMesh = new THREE.Mesh(geometry, material);
+            currentMesh.castShadow = true;
+            currentMesh.receiveShadow = true;
+            scene.add(currentMesh);
+
+            // Fit camera
+            const bbox = new THREE.Box3().setFromObject(currentMesh);
+            const size = bbox.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const fov = camera.fov * (Math.PI / 180);
+            let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+            cameraZ *= 1.5;
+            camera.position.z = cameraZ;
+            camera.lookAt(bbox.getCenter(new THREE.Vector3()));
+            controls.target.copy(bbox.getCenter(new THREE.Vector3()));
+            controls.update();
+
+            const triangleCount = indices.length / 3;
+            const vertexCount = vertices.length / 3;
+            document.getElementById('statsTriangles').textContent = triangleCount.toLocaleString();
+            document.getElementById('statsVertices').textContent = vertexCount.toLocaleString();
+
+            return { triangleCount, vertexCount };
+        }
+
+        async function runTest(testId) {
+            const test = tests.find(t => t.id === testId);
+            if (!test) return;
+
+            const startTime = performance.now();
+            updateTestStatus(testId, 'running');
+            document.getElementById('statsOp').textContent = test.name;
+
+            try {
+                let shape = null;
+
+                if (testId === 'box') {
+                    shape = new oc.BRepPrimAPI_MakeBox_3(100, 50, 30).Shape();
+                } else if (testId === 'cylinder') {
+                    shape = new oc.BRepPrimAPI_MakeCylinder_2(25, 60).Shape();
+                } else if (testId === 'sphere') {
+                    shape = new oc.BRepPrimAPI_MakeSphere_1(30).Shape();
+                } else if (testId === 'cone') {
+                    shape = new oc.BRepPrimAPI_MakeCone_3(20, 5, 50).Shape();
+                } else if (testId === 'torus') {
+                    shape = new oc.BRepPrimAPI_MakeTorus_3(30, 8).Shape();
+                } else if (testId === 'fillet') {
+                    const box = new oc.BRepPrimAPI_MakeBox_3(100, 50, 30).Shape();
+                    const makeFillet = new oc.BRepFilletAPI_MakeFillet(box);
+                    const edgeExplorer = new oc.TopExp_Explorer(box, oc.TopAbs_ShapeEnum.TopAbs_EDGE);
+
+                    while (edgeExplorer.More()) {
+                        const edge = oc.TopoDS.Edge(edgeExplorer.Current());
+                        makeFillet.Add(5, edge);
+                        edgeExplorer.Next();
+                    }
+
+                    shape = makeFillet.Shape();
+                } else if (testId === 'chamfer') {
+                    const box = new oc.BRepPrimAPI_MakeBox_3(100, 50, 30).Shape();
+                    const makeChamfer = new oc.BRepFilletAPI_MakeChamfer(box);
+                    const edgeExplorer = new oc.TopExp_Explorer(box, oc.TopAbs_ShapeEnum.TopAbs_EDGE);
+
+                    while (edgeExplorer.More()) {
+                        const edge = oc.TopoDS.Edge(edgeExplorer.Current());
+                        makeChamfer.Add(3, edge);
+                        edgeExplorer.Next();
+                    }
+
+                    shape = makeChamfer.Shape();
+                } else if (testId === 'union') {
+                    const box = new oc.BRepPrimAPI_MakeBox_3(100, 50, 30).Shape();
+                    const cylinder = new oc.BRepPrimAPI_MakeCylinder_2(20, 60).Shape();
+                    shape = new oc.BRepAlgoAPI_Fuse(box, cylinder).Shape();
+                } else if (testId === 'cut') {
+                    const box = new oc.BRepPrimAPI_MakeBox_3(100, 50, 30).Shape();
+                    const cylinder = new oc.BRepPrimAPI_MakeCylinder_2(20, 60).Shape();
+                    shape = new oc.BRepAlgoAPI_Cut(box, cylinder).Shape();
+                } else if (testId === 'intersect') {
+                    const box = new oc.BRepPrimAPI_MakeBox_3(100, 50, 30).Shape();
+                    const sphere = new oc.BRepPrimAPI_MakeSphere_1(30).Shape();
+                    shape = new oc.BRepAlgoAPI_Common(box, sphere).Shape();
+                } else if (testId === 'extrude') {
+                    const box = new oc.BRepPrimAPI_MakeBox_3(100, 50, 30).Shape();
+                    const faceExplorer = new oc.TopExp_Explorer(box, oc.TopAbs_ShapeEnum.TopAbs_FACE);
+                    const face = oc.TopoDS.Face(faceExplorer.Current());
+                    const direction = new oc.gp_Dir_3(0, 0, 1);
+                    shape = new oc.BRepPrimAPI_MakePrism(face, new oc.gp_Vec_1(direction, 50)).Shape();
+                } else if (testId === 'mass') {
+                    const box = new oc.BRepPrimAPI_MakeBox_3(100, 50, 30).Shape();
+                    const props = new oc.GProp_GProps();
+                    oc.BRepGProp.VolumeProperties(box, props);
+                    const volume = props.Mass();
+
+                    oc.BRepGProp.SurfaceProperties(box, props);
+                    const area = props.Mass();
+
+                    log(`Box volume: ${volume.toFixed(2)} mm³, area: ${area.toFixed(2)} mm²`, 'success');
+                    document.getElementById('statsOp').textContent = `Vol: ${volume.toFixed(0)}, Area: ${area.toFixed(0)}`;
+                    updateTestStatus(testId, 'passed', performance.now() - startTime);
+                    return;
+                } else if (testId === 'edges') {
+                    const box = new oc.BRepPrimAPI_MakeBox_3(100, 50, 30).Shape();
+                    const edgeExplorer = new oc.TopExp_Explorer(box, oc.TopAbs_ShapeEnum.TopAbs_EDGE);
+                    let edgeCount = 0;
+
+                    while (edgeExplorer.More()) {
+                        edgeCount++;
+                        edgeExplorer.Next();
+                    }
+
+                    log(`Box has ${edgeCount} edges`, 'success');
+                    document.getElementById('statsOp').textContent = `Edges: ${edgeCount}`;
+                    updateTestStatus(testId, 'passed', performance.now() - startTime);
+                    return;
+                } else if (testId === 'faces') {
+                    const box = new oc.BRepPrimAPI_MakeBox_3(100, 50, 30).Shape();
+                    const faceExplorer = new oc.TopExp_Explorer(box, oc.TopAbs_ShapeEnum.TopAbs_FACE);
+                    let faceCount = 0;
+
+                    while (faceExplorer.More()) {
+                        faceCount++;
+                        faceExplorer.Next();
+                    }
+
+                    log(`Box has ${faceCount} faces`, 'success');
+                    document.getElementById('statsOp').textContent = `Faces: ${faceCount}`;
+                    updateTestStatus(testId, 'passed', performance.now() - startTime);
+                    return;
+                }
+
+                if (!shape) throw new Error('Failed to create shape');
+
+                const tessData = tessellateShape(shape);
+                if (!tessData) throw new Error('Tessellation failed');
+
+                const { triangleCount, vertexCount } = renderGeometry(tessData.vertices, tessData.indices);
+
+                const elapsed = performance.now() - startTime;
+                log(`${test.name}: ${elapsed.toFixed(1)}ms, ${triangleCount} triangles`, 'success');
+                updateTestStatus(testId, 'passed', elapsed);
+            } catch (err) {
+                log(`${test.name}: ${err.message}`, 'error');
+                updateTestStatus(testId, 'failed', performance.now() - startTime);
+            }
+        }
+
+        function updateTestStatus(testId, status, elapsed = 0) {
+            const item = document.querySelector(`[data-test-id="${testId}"]`);
+            if (!item) return;
+
+            item.classList.remove('running', 'passed', 'failed');
+            item.classList.add(status);
+
+            const statusEl = item.querySelector('.test-status');
+            statusEl.classList.remove('pending', 'running', 'passed', 'failed');
+            statusEl.classList.add(status);
+
+            if (status === 'running') {
+                statusEl.textContent = '⟳';
+            } else if (status === 'passed') {
+                statusEl.textContent = '✓';
+                const timeEl = item.querySelector('.test-time');
+                timeEl.textContent = `${elapsed.toFixed(1)}ms`;
+            } else if (status === 'failed') {
+                statusEl.textContent = '✕';
+                const timeEl = item.querySelector('.test-time');
+                timeEl.textContent = `${elapsed.toFixed(1)}ms`;
+            }
+
+            testResults[testId] = { status, elapsed };
+        }
+
+        function renderTestList() {
+            const container = document.getElementById('testList');
+            container.innerHTML = '';
+
+            let currentCategory = '';
+            for (const test of tests) {
+                if (test.category !== currentCategory) {
+                    currentCategory = test.category;
+                    const categoryDiv = document.createElement('div');
+                    categoryDiv.style.cssText = 'padding: 8px 12px; margin-top: 12px; font-size: 11px; text-transform: uppercase; color: #858585; border-bottom: 1px solid #3e3e42;';
+                    categoryDiv.textContent = test.category;
+                    container.appendChild(categoryDiv);
+                }
+
+                const item = document.createElement('div');
+                item.className = 'test-item';
+                item.setAttribute('data-test-id', test.id);
+
+                item.innerHTML = `
+                    <div class="test-status pending">—</div>
+                    <div class="test-label">
+                        <div class="test-name">${test.name}</div>
+                        <div class="test-time"></div>
+                    </div>
+                `;
+
+                item.addEventListener('click', () => runTest(test.id));
+                container.appendChild(item);
+            }
+        }
+
+        async function runAllTests() {
+            for (const test of tests) {
+                await runTest(test.id);
+                await new Promise(r => setTimeout(r, 200));
+            }
+
+            const passed = Object.values(testResults).filter(r => r.status === 'passed').length;
+            const failed = Object.values(testResults).filter(r => r.status === 'failed').length;
+            log(`All tests completed: ${passed} passed, ${failed} failed`, passed > failed ? 'success' : 'warning');
+        }
+
+        // Init
+        log('Starting B-Rep Live Test...', 'info');
+        renderTestList();
+
+        const success = await loadOpenCascade();
+        if (success) {
+            await initThreeJS();
+            document.getElementById('runAllBtn').addEventListener('click', runAllTests);
+            log('Ready to run tests. Click "Run All" or select individual tests.', 'success');
+        }
+    </script>
+</body>
+</html>

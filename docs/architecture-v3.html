@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>cycleCAD v3.2 Architecture</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1a1f3a 100%);
+      color: #e0e0e0;
+      line-height: 1.6;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+      border-bottom: 2px solid #0284c7;
+      padding-bottom: 20px;
+    }
+    h1 {
+      font-size: 2.5em;
+      color: #0284c7;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      font-size: 1.1em;
+      color: #a0a0a0;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin: 30px 0;
+    }
+    .stat-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid #0284c7;
+      border-radius: 8px;
+      padding: 15px;
+      text-align: center;
+    }
+    .stat-number {
+      font-size: 2em;
+      color: #0284c7;
+      font-weight: bold;
+    }
+    .stat-label {
+      color: #a0a0a0;
+      font-size: 0.9em;
+      margin-top: 5px;
+    }
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin: 30px 0;
+      border-bottom: 1px solid #3e3e42;
+      flex-wrap: wrap;
+    }
+    .tab-button {
+      padding: 12px 24px;
+      background: transparent;
+      color: #a0a0a0;
+      border: none;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.3s;
+      font-size: 1em;
+    }
+    .tab-button:hover {
+      color: #0284c7;
+    }
+    .tab-button.active {
+      color: #0284c7;
+      border-bottom-color: #0284c7;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.3s;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .section {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid #3e3e42;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    .section h2 {
+      color: #0284c7;
+      margin-bottom: 15px;
+      font-size: 1.5em;
+    }
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+    }
+    .module-card {
+      background: rgba(2, 132, 199, 0.1);
+      border: 1px solid #0284c7;
+      border-radius: 6px;
+      padding: 15px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .module-card:hover {
+      background: rgba(2, 132, 199, 0.2);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.2);
+    }
+    .module-name {
+      font-weight: bold;
+      color: #0284c7;
+      margin-bottom: 5px;
+    }
+    .module-lines {
+      font-size: 0.9em;
+      color: #a0a0a0;
+    }
+    .module-status {
+      font-size: 0.8em;
+      padding: 4px 8px;
+      border-radius: 3px;
+      margin-top: 8px;
+      display: inline-block;
+    }
+    .status-complete {
+      background: rgba(16, 185, 129, 0.2);
+      color: #10b981;
+    }
+    .status-inprogress {
+      background: rgba(245, 158, 11, 0.2);
+      color: #f59e0b;
+    }
+    .flow-diagram {
+      background: rgba(255, 255, 255, 0.02);
+      border-left: 3px solid #0284c7;
+      padding: 15px 20px;
+      margin: 15px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 0.95em;
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #3e3e42;
+    }
+    th {
+      background: rgba(2, 132, 199, 0.1);
+      color: #0284c7;
+      font-weight: bold;
+    }
+    tr:hover {
+      background: rgba(2, 132, 199, 0.05);
+    }
+    .code-block {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid #3e3e42;
+      border-radius: 4px;
+      padding: 12px;
+      font-family: 'Courier New', monospace;
+      overflow-x: auto;
+      margin: 10px 0;
+      font-size: 0.9em;
+    }
+    .highlight {
+      color: #10b981;
+    }
+    .warning {
+      background: rgba(239, 68, 68, 0.1);
+      border-left: 3px solid #ef4444;
+      padding: 12px;
+      margin: 15px 0;
+      border-radius: 4px;
+    }
+    .note {
+      background: rgba(2, 132, 199, 0.1);
+      border-left: 3px solid #0284c7;
+      padding: 12px;
+      margin: 15px 0;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>cycleCAD v3.2 Architecture</h1>
+      <p class="subtitle">Complete System Design & Component Documentation</p>
+    </header>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-number">90K+</div>
+        <div class="stat-label">Total Lines of Code</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">261</div>
+        <div class="stat-label">Project Files</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">21</div>
+        <div class="stat-label">Core Modules</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">664</div>
+        <div class="stat-label">Tests</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-button active" onclick="switchTab(event, 'overview')">System Overview</button>
+      <button class="tab-button" onclick="switchTab(event, 'modules')">Module Map</button>
+      <button class="tab-button" onclick="switchTab(event, 'dataflow')">Data Flow</button>
+      <button class="tab-button" onclick="switchTab(event, 'infrastructure')">Infrastructure</button>
+      <button class="tab-button" onclick="switchTab(event, 'api')">API Surface</button>
+      <button class="tab-button" onclick="switchTab(event, 'tech')">Technology Stack</button>
+    </div>
+
+    <!-- ===== SYSTEM OVERVIEW ===== -->
+    <div id="overview" class="tab-content active">
+      <div class="section">
+        <h2>System Architecture</h2>
+        <p style="margin-bottom: 20px;">cycleCAD is built on a <strong>LEGO microkernel</strong> architecture where the kernel provides a minimal set of core services and 21 specialized modules provide all user-facing functionality.</p>
+
+        <div class="flow-diagram">
+┌────────────────────────────────────────────────────────┐
+│         User Interface Layer (React/Vanilla)           │
+│  Menu Bar | Toolbars | Panels | 3D Viewport | Timeline │
+└──────────────────────┬─────────────────────────────────┘
+                       │
+┌──────────────────────▼─────────────────────────────────┐
+│         cycleCAD Kernel (LEGO Event Bus)               │
+│  - register() - activate() - exec() - on()             │
+│  - state management - module lifecycle - error handling │
+└──────────────────────┬─────────────────────────────────┘
+                       │
+┌──────────────────────▼─────────────────────────────────┐
+│              21 Specialized Modules                     │
+│  [Sketch] [Design] [Assembly] [CAM] [Render] ...       │
+└──────────────────────┬─────────────────────────────────┘
+                       │
+┌──────────────────────▼─────────────────────────────────┐
+│  Core Services Layer                                   │
+│  - Three.js Renderer  - IndexedDB Persistence          │
+│  - WebRTC Networking  - WASM GeometryKernel            │
+│  - Stripe Billing     - AI/LLM Integration             │
+└────────────────────────────────────────────────────────┘
+        </div>
+
+        <h3 style="margin: 25px 0 15px 0; color: #0284c7;">Kernel (100 lines)</h3>
+        <p>Minimal event-driven kernel providing:</p>
+        <ul style="margin: 10px 0 20px 20px; list-style: none;">
+          <li>✓ Module registration & lifecycle management</li>
+          <li>✓ Event pub/sub system (30+ core events)</li>
+          <li>✓ Command execution pipeline</li>
+          <li>✓ Global state management</li>
+          <li>✓ Error handling & recovery</li>
+        </ul>
+
+        <h3 style="margin: 25px 0 15px 0; color: #0284c7;">Module System</h3>
+        <p>Each module follows a standardized interface:</p>
+        <div class="code-block">
+{
+  name: 'sketch',
+  init() { /* initialize */ },
+  deactivate() { /* cleanup */ },
+  commands: { line(), circle(), constraint() },
+  events: ['sketch:created', 'sketch:modified'],
+  dependencies: ['viewport']
+}
+        </div>
+
+        <h3 style="margin: 25px 0 15px 0; color: #0284c7;">Workspace Concept</h3>
+        <p>8 specialized workspaces, each activating relevant modules:</p>
+        <table>
+          <tr>
+            <th>Workspace</th>
+            <th>Primary Modules</th>
+            <th>Purpose</th>
+          </tr>
+          <tr>
+            <td><strong>Design</strong></td>
+            <td>sketch, modeling, features, tree</td>
+            <td>3D part creation & parametric modeling</td>
+          </tr>
+          <tr>
+            <td><strong>Assembly</strong></td>
+            <td>assembly, joints, bom, animation</td>
+            <td>Component assembly & constraints</td>
+          </tr>
+          <tr>
+            <td><strong>Render</strong></td>
+            <td>rendering, materials, lighting, animation</td>
+            <td>High-quality visualization</td>
+          </tr>
+          <tr>
+            <td><strong>Simulation</strong></td>
+            <td>fea, dynamics, thermal, stress</td>
+            <td>Physics & stress analysis</td>
+          </tr>
+          <tr>
+            <td><strong>CAM</strong></td>
+            <td>cam-pipeline, toolpath, post-processor</td>
+            <td>Manufacturing path generation</td>
+          </tr>
+          <tr>
+            <td><strong>Drawing</strong></td>
+            <td>drawing, dxf-export, annotations</td>
+            <td>2D engineering drawings</td>
+          </tr>
+          <tr>
+            <td><strong>Animation</strong></td>
+            <td>timeline, keyframe, animation</td>
+            <td>Motion sequence creation</td>
+          </tr>
+          <tr>
+            <td><strong>Collaborate</strong></td>
+            <td>webrtc, cursors, presence, chat</td>
+            <td>Real-time multi-user editing</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== MODULE MAP ===== -->
+    <div id="modules" class="tab-content">
+      <div class="section">
+        <h2>21 Core Modules</h2>
+        <p style="margin-bottom: 20px;">Click any module to expand and see dependencies, exports, and status.</p>
+
+        <div class="module-grid">
+          <!-- Engine Modules -->
+          <div class="module-card" onclick="toggleModule(this)">
+            <div class="module-name">sketch</div>
+            <div class="module-lines">~900 lines</div>
+            <div class="module-status status-complete">✓ Complete</div>
+            <div style="font-size: 0.8em; color: #a0a0a0; margin-top: 10px; display:none; padding-top:10px; border-top: 1px solid #3e3e42;">
+              <strong>Exports:</strong> line(), circle(), rect(), arc(), constraint()<br>
+              <strong>Events:</strong> sketch:created, sketch:modified<br>
+              <strong>Deps:</strong> viewport, tree
+            </div>
+          </div>
+
+          <div class="module-card" onclick="toggleModule(this)">
+            <div class="module-name">modeling</div>
+            <div class="module-lines">~1200 lines</div>
+            <div class="module-status status-complete">✓ Complete</div>
+            <div style="font-size: 0.8em; color: #a0a0a0; margin-top: 10px; display:none; padding-top:10px; border-top: 1px solid #3e3e42;">
+              <strong>Exports:</strong> extrude(), revolve(), sweep(), loft()<br>
+              <strong>Events:</strong> model:created<br>
+              <strong>Deps:</strong> sketch, viewport, tree
+            </div>
+          </div>
+
+          <div class="module-card" onclick="toggleModule(this)">
+            <div class="module-name">features</div>
+            <div class="module-lines">~850 lines</div>
+            <div class="module-status status-complete">✓ Complete</div>
+            <div style="font-size: 0.8em; color: #a0a0a0; margin-top: 10px; display:none; padding-top:10px; border-top: 1px solid #3e3e42;">
+              <strong>Exports:</strong> fillet(), chamfer(), pattern(), mirror(), shell()<br>
+              <strong>Events:</strong> feature:applied<br>
+              <strong>Deps:</strong> modeling, viewport
+            </div>
+          </div>
+
+          <div class="module-card" onclick="toggleModule(this)">
+            <div class="module-name">assembly</div>
+            <div class="module-lines">~1100 lines</div>
+            <div class="module-status status-complete">✓ Complete</div>
+            <div style="font-size: 0.8em; color: #a0a0a0; margin-top: 10px; display:none; padding-top:10px; border-top: 1px solid #3e3e42;">
+              <strong>Exports:</strong> addComponent(), createJoint(), generateBOM()<br>
+              <strong>Events:</strong> assembly:modified<br>
+              <strong>Deps:</strong> modeling, tree, viewport
+            </div>
+          </div>
+
+          <div class="module-card" onclick="toggleModule(this)">
+            <div class="module-name">brep</div>
+            <div class="module-lines">~950 lines</div>
+            <div class="module-status status-complete">✓ Complete</div>
+            <div style="font-size: 0.8em; color: #a0a0a0; margin-top: 10px; display:none; padding-top:10px; border-top: 1px solid #3e3e42;">
+              <strong>Exports:</strong> openBRep(), booleanOp(), healGeometry()<br>
+              <strong>Events:</strong> brep:loaded<br>
+              <strong>Deps:</strong> viewport (uses OpenCascade.js WASM)
+            </div>
+          </div>
+
+          <!-- Data & I/O Modules -->
+          <div class="module-card" onclick="toggleModule(this)">
+            <div class="module-name">io-import</div>
+            <div class="module-lines">~780 lines</div>
+            <div class="module-status status-complete">✓ Complete</div>
+            <div style="font-size: 0.8em; color: #a0a0a0; margin-top: 10px; display:none; padding-top:10px; border-top: 1px solid #3e3e42;">
+              <strong>Exports:</strong> importSTEP(), importIGES(), importOBJ()<br>
+              <strong>Events:</strong> file:imported<br>
+              <strong>Deps:</strong> viewport, tree, brep
+            </div>
+          </div>
+
+          <div class="module-card" onclick="toggleModule(this)">
+            <div class="module-name">io-export</div>
+            <div class="module-lines">~720 lines</div>
+            <div class="module-status status-complete">✓ Complete</div>
+            <div style="font-size: 0.8em; color: #a0a0a0; margin-top: 10px; display:none; padding-top:10px; border-top: 1px solid #3e3e42;">
+              <strong>Exports:</strong> exportSTL(), exportSTEP(), exportGLTF(), exportPDF()<br>
+              <strong>Events:</strong> export:started, export:finished<br>
+              <strong>Deps:</strong> viewport
+            </div>
+          </div>
+
+          <div class="module-card" onclick="toggleModule(this)">
+            <div class="module-name">persistence</div>
+            <div class="module-lines">~650 lines</div>
+            <div class="module-status status-complete">✓ Complete</div>
+            <div style="font-size: 0.8em; color: #a0a0a0; margin-top: 10px; display:none; padding-top:10px; border-top: 1px solid #3e3e42;">
+              <strong>Exports:</strong> save(), load(), cloudSync()<br>
+              <strong>Events:</strong> file:saved, file:loaded<br>
+              <strong>Deps:</strong> IndexedDB, Stripe auth
+            </div>
+          </div>
+
+          <!-- Visualization -->
+          <div class="module-card" onclick="toggleModule(this)">
+            <div class="module-name">viewport</div>
+            <div class="module-lines">~1050 lines</div>
+            <div class="module-status status-complete">✓ Complete</div>
+            <div style="font-size: 0.8em; color: #a0a0a0; margin-top: 10px; display:none; padding-top:10px; border-top: 1px solid #3e3e42;">
+              <strong>Exports:</strong> render(), fitView(), showGrid()<br>
+              <strong>Events:</strong> viewport:changed<br>
+              <strong>Deps:</strong> Three.js, WebGL
+            </div>
+          </div>
+
+          <div class="module-card" onclick="toggleModule(this)">
+            <div class="module-name">rendering</div>
+            <div class="module-lines">~920 lines</div>
+            <div class="module-status status-complete">✓ Complete</div>
+            <div style="font-size: 0.8em; color: #a0a0a0; margin-top: 10px; display:none; padding-top:10px; border-top: 1px solid #3e3e42;">
+              <strong>Exports:</strong> setMaterial(), setLighting(), enableShadows()<br>
+              <strong>Events:</strong> render:quality-changed<br>
+              <strong>Deps:</strong> viewport, materials
+            </div>
+          </div>
+
+          <div class="module-card" onclick="toggleModule(this)">
+            <div class="module-name">materials</div>
+            <div class="module-lines">~680 lines</div>
+            <div class="module-status status-complete">✓ Complete</div>
+            <div style="font-size: 0.8em; color: #a0a0a0; margin-top: 10px; display:none; padding-top:10px; border-top: 1px solid #3e3e42;">
+              <strong>Exports:</strong> getMaterial(), setPBRProperties()<br>
+              <strong>Events:</strong> material:changed<br>
+              <strong>Deps:</strong> rendering
+            </div>
+          </div>
+
+          <div class="module-card" onclick="toggleModule(this)">
+            <div class="module-name">animation</div>
+            <div class="module-lines">~850 lines</div>
+            <div class="module-status status-complete">✓ Complete</div>
+            <div style="font-size: 0.8em; color: #a0a0a0; margin-top: 10px; display:none; padding-top:10px; border-top: 1px solid #3e3e42;">
+              <strong>Exports:</strong> createKeyframe(), playAnimation(), recordMotion()<br>
+              <strong>Events:</strong> animation:played<br>
+              <strong>Deps:</strong> timeline, viewport
+            </div>
+          </div>
+
+          <!-- Platform -->
+          <div class="module-card" onclick="toggleModule(this)">
+            <div class="module-name">tree</div>
+            <div class="module-lines">~720 lines</div>
+            <div class="module-status status-complete">✓ Complete</div>
+            <div style="font-size: 0.8em; color: #a0a0a0; margin-top: 10px; display:none; padding-top:10px; border-top: 1px solid #3e3e42;">
+              <strong>Exports:</strong> addNode(), deleteNode(), renameFeature()<br>
+              <strong>Events:</strong> tree:modified<br>
+              <strong>Deps:</strong> viewport
+            </div>
+          </div>
+
+          <div class="module-card" onclick="toggleModule(this)">
+            <div class="module-name">timeline</div>
+            <div class="module-lines">~640 lines</div>
+            <div class="module-status status-complete">✓ Complete</div>
+            <div style="font-size: 0.8em; color: #a0a0a0; margin-top: 10px; display:none; padding-top:10px; border-top: 1px solid #3e3e42;">
+              <strong>Exports:</strong> addKeyframe(), seekToFrame()<br>
+              <strong>Events:</strong> timeline:changed<br>
+              <strong>Deps:</strong> animation, viewport
+            </div>
+          </div>
+
+          <div class="module-card" onclick="toggleModule(this)">
+            <div class="module-name">toolbar</div>
+            <div class="module-lines">~560 lines</div>
+            <div class="module-status status-complete">✓ Complete</div>
+            <div style="font-size: 0.8em; color: #a0a0a0; margin-top: 10px; display:none; padding-top:10px; border-top: 1px solid #3e3e42;">
+              <strong>Exports:</strong> registerButton(), switchWorkspace()<br>
+              <strong>Events:</strong> toolbar:clicked<br>
+              <strong>Deps:</strong> ui
+            </div>
+          </div>
+
+          <!-- Manufacturing -->
+          <div class="module-card" onclick="toggleModule(this)">
+            <div class="module-name">cam-pipeline</div>
+            <div class="module-lines">~940 lines</div>
+            <div class="module-status status-complete">✓ Complete</div>
+            <div style="font-size: 0.8em; color: #a0a0a0; margin-top: 10px; display:none; padding-top:10px; border-top: 1px solid #3e3e42;">
+              <strong>Exports:</strong> generateToolpath(), optimizePath()<br>
+              <strong>Events:</strong> cam:complete<br>
+              <strong>Deps:</strong> modeling, viewport
+            </div>
+          </div>
+
+          <div class="module-card" onclick="toggleModule(this)">
+            <div class="module-name">drawing</div>
+            <div class="module-lines">~870 lines</div>
+            <div class="module-status status-complete">✓ Complete</div>
+            <div style="font-size: 0.8em; color: #a0a0a0; margin-top: 10px; display:none; padding-top:10px; border-top: 1px solid #3e3e42;">
+              <strong>Exports:</strong> addDimension(), addNote(), setViewport()<br>
+              <strong>Events:</strong> drawing:modified<br>
+              <strong>Deps:</strong> io-export, viewport
+            </div>
+          </div>
+
+          <div class="module-card" onclick="toggleModule(this)">
+            <div class="module-name">simulation</div>
+            <div class="module-lines">~1100 lines</div>
+            <div class="module-status status-complete">✓ Complete</div>
+            <div style="font-size: 0.8em; color: #a0a0a0; margin-top: 10px; display:none; padding-top:10px; border-top: 1px solid #3e3e42;">
+              <strong>Exports:</strong> runFEA(), analyzeThermal(), stressTest()<br>
+              <strong>Events:</strong> simulation:complete<br>
+              <strong>Deps:</strong> modeling, materials, viewport
+            </div>
+          </div>
+
+          <!-- AI & Platform -->
+          <div class="module-card" onclick="toggleModule(this)">
+            <div class="module-name">ai-copilot</div>
+            <div class="module-lines">~1050 lines</div>
+            <div class="module-status status-complete">✓ Complete</div>
+            <div style="font-size: 0.8em; color: #a0a0a0; margin-top: 10px; display:none; padding-top:10px; border-top: 1px solid #3e3e42;">
+              <strong>Exports:</strong> textToCAD(), suggestFeature(), generateDesign()<br>
+              <strong>Events:</strong> ai:suggestion, ai:design-generated<br>
+              <strong>Deps:</strong> modeling, llm-gateway
+            </div>
+          </div>
+
+          <div class="module-card" onclick="toggleModule(this)">
+            <div class="module-name">webrtc</div>
+            <div class="module-lines">~820 lines</div>
+            <div class="module-status status-complete">✓ Complete</div>
+            <div style="font-size: 0.8em; color: #a0a0a0; margin-top: 10px; display:none; padding-top:10px; border-top: 1px solid #3e3e42;">
+              <strong>Exports:</strong> startSession(), syncChanges(), broadcastCursor()<br>
+              <strong>Events:</strong> collab:joined, collab:left<br>
+              <strong>Deps:</strong> persistence
+            </div>
+          </div>
+
+          <div class="module-card" onclick="toggleModule(this)">
+            <div class="module-name">billing</div>
+            <div class="module-lines">~790 lines</div>
+            <div class="module-status status-complete">✓ Complete</div>
+            <div style="font-size: 0.8em; color: #a0a0a0; margin-top: 10px; display:none; padding-top:10px; border-top: 1px solid #3e3e42;">
+              <strong>Exports:</strong> trackUsage(), calculateCost(), processPayout()<br>
+              <strong>Events:</strong> billing:charged<br>
+              <strong>Deps:</strong> Stripe API, auth
+            </div>
+          </div>
+
+          <div class="module-card" onclick="toggleModule(this)">
+            <div class="module-name">marketplace</div>
+            <div class="module-lines">~950 lines</div>
+            <div class="module-status status-complete">✓ Complete</div>
+            <div style="font-size: 0.8em; color: #a0a0a0; margin-top: 10px; display:none; padding-top:10px; border-top: 1px solid #3e3e42;">
+              <strong>Exports:</strong> publishModel(), buyModel(), rateDesign()<br>
+              <strong>Events:</strong> marketplace:purchased<br>
+              <strong>Deps:</strong> persistence, billing
+            </div>
+          </div>
+        </div>
+
+        <div class="note">
+          <strong>Module Lifecycle:</strong> register() → init() → activate() → execute commands → deactivate() → unload()
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== DATA FLOW ===== -->
+    <div id="dataflow" class="tab-content">
+      <div class="section">
+        <h2>Data Flow Architecture</h2>
+
+        <h3 style="margin: 20px 0 15px 0; color: #0284c7;">Event-Driven Flow</h3>
+        <div class="flow-diagram">
+User Action (click, drag, keyboard)
+    ↓
+UI Layer captures event
+    ↓
+Emits: kernel.emit('action:type', {data})
+    ↓
+Active Modules listen to event
+    ↓
+Command Pipeline: exec(command, params)
+    ↓
+Module executes: geometry update, state change
+    ↓
+Emits: kernel.emit('model:changed', {delta})
+    ↓
+Subscribers update:
+  - Viewport (re-render)
+  - Tree (refresh)
+  - Timeline (update keyframes)
+  - Persistence (save)
+    ↓
+UI reflects changes
+        </div>
+
+        <h3 style="margin: 20px 0 15px 0; color: #0284c7;">Command Execution Pipeline</h3>
+        <table>
+          <tr>
+            <th>Stage</th>
+            <th>Description</th>
+            <th>Example</th>
+          </tr>
+          <tr>
+            <td>Validation</td>
+            <td>Check params, permissions, state</td>
+            <td>Is extrude depth valid? Is user Pro tier?</td>
+          </tr>
+          <tr>
+            <td>Pre-hooks</td>
+            <td>Any module can intercept</td>
+            <td>Billing module charges user</td>
+          </tr>
+          <tr>
+            <td>Execution</td>
+            <td>Module runs actual command</td>
+            <td>geometry.extrude(sketch, depth)</td>
+          </tr>
+          <tr>
+            <td>State Update</td>
+            <td>Update global + local state</td>
+            <td>tree.addNode(), model.updateBBox()</td>
+          </tr>
+          <tr>
+            <td>Undo Push</td>
+            <td>Save to undo history</td>
+            <td>history.push({cmd, params, undo})</td>
+          </tr>
+          <tr>
+            <td>Post-hooks</td>
+            <td>Modules react to change</td>
+            <td>Render viewport, update BOM</td>
+          </tr>
+          <tr>
+            <td>Sync</td>
+            <td>Broadcast if collaborative</td>
+            <td>webrtc.broadcast({delta})</td>
+          </tr>
+        </table>
+
+        <h3 style="margin: 20px 0 15px 0; color: #0284c7;">State Management</h3>
+        <p>Three layers of state:</p>
+        <ul style="margin: 10px 0 20px 20px;">
+          <li><strong>Global State:</strong> window.ccad = { model, assembly, config, auth, billing }</li>
+          <li><strong>Module State:</strong> Each module can maintain local state (sketch.constraints, cam.toolpaths)</li>
+          <li><strong>UI State:</strong> DOM attributes (data-selected, data-expanded)</li>
+        </ul>
+
+        <h3 style="margin: 20px 0 15px 0; color: #0284c7;">Persistence Layer</h3>
+        <div class="flow-diagram">
+Memory (scene graph)
+    ↓
+IndexedDB (local cache)
+    ↓
+Cloud Sync (if Pro)
+    ↓
+Version Control (collaborative)
+    ↓
+Backups (every hour)
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== INFRASTRUCTURE ===== -->
+    <div id="infrastructure" class="tab-content">
+      <div class="section">
+        <h2>Infrastructure & Deployment</h2>
+
+        <h3 style="margin: 20px 0 15px 0; color: #0284c7;">Docker Architecture (3 Services)</h3>
+        <table>
+          <tr>
+            <th>Service</th>
+            <th>Image</th>
+            <th>Port</th>
+            <th>Purpose</th>
+          </tr>
+          <tr>
+            <td><strong>cyclecad-app</strong></td>
+            <td>nginx:alpine</td>
+            <td>8080</td>
+            <td>Frontend: static assets, SPA</td>
+          </tr>
+          <tr>
+            <td><strong>cyclecad-api</strong></td>
+            <td>node:20-alpine</td>
+            <td>8787</td>
+            <td>REST API, MCP server, WebSocket</td>
+          </tr>
+          <tr>
+            <td><strong>cyclecad-worker</strong></td>
+            <td>python:3.11</td>
+            <td>8888</td>
+            <td>STEP conversion, CAM toolpath, FEA</td>
+          </tr>
+        </table>
+
+        <h3 style="margin: 20px 0 15px 0; color: #0284c7;">Data Storage</h3>
+        <ul style="margin: 10px 0 20px 20px;">
+          <li><strong>IndexedDB:</strong> Local client-side cache (models, sketches, recent files)</li>
+          <li><strong>PostgreSQL:</strong> Cloud persistence (user files, billing, marketplace)</li>
+          <li><strong>S3:</strong> Model storage (STL, STEP, GLTF exports)</li>
+          <li><strong>Redis:</strong> Session management, collaborative cursors cache</li>
+        </ul>
+
+        <h3 style="margin: 20px 0 15px 0; color: #0284c7;">Network & Real-time</h3>
+        <div class="code-block">
+REST API:
+  GET /api/models/:id
+  POST /api/models
+  PUT /api/models/:id
+  DELETE /api/models/:id
+  POST /api/export (STL, STEP, GLTF)
+  POST /api/simulate
+
+WebSocket (Real-time):
+  connection: subscribe to room
+  message: broadcast geometry delta
+  cursor: send user cursor position
+  chat: send collaboration messages
+  presence: user joined/left
+
+MCP Server:
+  cyclecad:sketch.line(p1, p2)
+  cyclecad:modeling.extrude(sketchId, depth)
+  cyclecad:export.stl(modelId)
+        </div>
+
+        <h3 style="margin: 20px 0 15px 0; color: #0284c7;">CDN & Assets</h3>
+        <ul style="margin: 10px 0 20px 20px;">
+          <li>Three.js (r170) from cdn.jsdelivr.net</li>
+          <li>OpenCascade.js (WASM) from CDN</li>
+          <li>UI icons from Font Awesome</li>
+          <li>DUI models cached in browser IndexedDB</li>
+        </ul>
+
+        <h3 style="margin: 20px 0 15px 0; color: #0284c7;">Authentication & Billing</h3>
+        <ul style="margin: 10px 0 20px 20px;">
+          <li>OAuth 2.0 (Google, GitHub)</li>
+          <li>JWT tokens stored in localStorage</li>
+          <li>Stripe integration for billing (€49/mo Pro, €299/mo Enterprise)</li>
+          <li>$CYCLE token economy for usage-based billing</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ===== API SURFACE ===== -->
+    <div id="api" class="tab-content">
+      <div class="section">
+        <h2>API Surface</h2>
+
+        <h3 style="margin: 20px 0 15px 0; color: #0284c7;">Agent API (55 Commands)</h3>
+        <table>
+          <tr>
+            <th>Namespace</th>
+            <th>Commands</th>
+            <th>Example</th>
+          </tr>
+          <tr>
+            <td><strong>shape.*</strong></td>
+            <td>cylinder, box, sphere, cone, torus, wedge, extrude, revolve</td>
+            <td>cycleCAD.execute('shape.cylinder', {d: 50, h: 80})</td>
+          </tr>
+          <tr>
+            <td><strong>feature.*</strong></td>
+            <td>fillet, chamfer, pattern, mirror, shell, draft, thread</td>
+            <td>cycleCAD.execute('feature.fillet', {radius: 5, edges: [0,1,2]})</td>
+          </tr>
+          <tr>
+            <td><strong>assembly.*</strong></td>
+            <td>addComponent, createJoint, explode, generateBOM</td>
+            <td>cycleCAD.execute('assembly.addComponent', {file: 'part.step'})</td>
+          </tr>
+          <tr>
+            <td><strong>render.*</strong></td>
+            <td>snapshot, multiview, fitToObject, setMaterial</td>
+            <td>cycleCAD.execute('render.snapshot', {width: 1920, height: 1080})</td>
+          </tr>
+          <tr>
+            <td><strong>validate.*</strong></td>
+            <td>checkInterference, estimateCost, estimateWeight, designReview</td>
+            <td>cycleCAD.execute('validate.designReview', {})</td>
+          </tr>
+          <tr>
+            <td><strong>export.*</strong></td>
+            <td>stl, step, gltf, obj, dxf, pdf</td>
+            <td>cycleCAD.execute('export.stl', {format: 'binary'})</td>
+          </tr>
+          <tr>
+            <td><strong>import.*</strong></td>
+            <td>step, iges, obj, stp, ipt, iam</td>
+            <td>cycleCAD.execute('import.step', {file: blob})</td>
+          </tr>
+          <tr>
+            <td><strong>ai.*</strong></td>
+            <td>textToCAD, identifyPart, suggestFeature, generateDesign</td>
+            <td>cycleCAD.execute('ai.textToCAD', {prompt: 'socket head bolt'})</td>
+          </tr>
+          <tr>
+            <td><strong>workspace.*</strong></td>
+            <td>switch, getActive, listWorkspaces</td>
+            <td>cycleCAD.execute('workspace.switch', {name: 'CAM'})</td>
+          </tr>
+          <tr>
+            <td><strong>file.*</strong></td>
+            <td>new, open, save, saveAs, close, export</td>
+            <td>cycleCAD.execute('file.save', {path: '/models/bracket.ccad'})</td>
+          </tr>
+        </table>
+
+        <h3 style="margin: 20px 0 15px 0; color: #0284c7;">REST Endpoints</h3>
+        <div class="code-block">
+POST /api/v1/models
+  { name, description, file }
+  Returns: { id, created_at, owner_id }
+
+GET /api/v1/models/:id
+  Returns: full model JSON
+
+PUT /api/v1/models/:id
+  { properties, geometry }
+
+DELETE /api/v1/models/:id
+
+POST /api/v1/export
+  { modelId, format: 'stl'|'step'|'gltf' }
+  Returns: download link
+
+POST /api/v1/simulate
+  { modelId, type: 'fea'|'thermal', constraints }
+  Returns: { jobId, estimatedTime }
+
+GET /api/v1/simulate/:jobId
+  Returns: { status, progress, results }
+        </div>
+
+        <h3 style="margin: 20px 0 15px 0; color: #0284c7;">MCP Server</h3>
+        <p>Exposes all 55 Agent API commands as Model Context Protocol tools.</p>
+        <div class="code-block">
+mcp-server list:
+  cyclecad:shape.cylinder
+  cyclecad:shape.box
+  cyclecad:feature.fillet
+  cyclecad:export.stl
+  ... (50+ more)
+
+Usage:
+  const client = new MCPClient('http://localhost:8787/mcp');
+  await client.call('cyclecad:shape.cylinder', {diameter: 50, height: 80});
+        </div>
+
+        <h3 style="margin: 20px 0 15px 0; color: #0284c7;">CLI Tool</h3>
+        <div class="code-block">
+$ cyclecad shape.cylinder --diameter 50 --height 80 --output part.stl
+$ cyclecad import.step --file frame.stp --output model.ccad
+$ cyclecad feature.fillet --model part.ccad --radius 5 --edges 0,1,2
+$ cyclecad export.pdf --model drawing.ccad --size A2
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TECHNOLOGY STACK ===== -->
+    <div id="tech" class="tab-content">
+      <div class="section">
+        <h2>Technology Stack</h2>
+
+        <h3 style="margin: 20px 0 15px 0; color: #0284c7;">Frontend</h3>
+        <table>
+          <tr>
+            <th>Technology</th>
+            <th>Version</th>
+            <th>Purpose</th>
+          </tr>
+          <tr>
+            <td>Three.js</td>
+            <td>r170</td>
+            <td>3D rendering, WebGL</td>
+          </tr>
+          <tr>
+            <td>HTML5 Canvas</td>
+            <td>native</td>
+            <td>2D sketch, engineering drawings</td>
+          </tr>
+          <tr>
+            <td>CSS Grid/Flex</td>
+            <td>CSS3</td>
+            <td>UI layout</td>
+          </tr>
+          <tr>
+            <td>IndexedDB</td>
+            <td>native</td>
+            <td>Local caching, offline support</td>
+          </tr>
+          <tr>
+            <td>WebGL</td>
+            <td>2.0</td>
+            <td>Graphics API</td>
+          </tr>
+          <tr>
+            <td>WebWorker</td>
+            <td>native</td>
+            <td>Background processing (CAM, simulation)</td>
+          </tr>
+          <tr>
+            <td>WebRTC</td>
+            <td>native</td>
+            <td>Real-time collaboration</td>
+          </tr>
+        </table>
+
+        <h3 style="margin: 20px 0 15px 0; color: #0284c7;">Backend</h3>
+        <table>
+          <tr>
+            <th>Technology</th>
+            <th>Purpose</th>
+          </tr>
+          <tr>
+            <td>Node.js 20</td>
+            <td>API server, MCP server</td>
+          </tr>
+          <tr>
+            <td>Express.js</td>
+            <td>HTTP routing</td>
+          </tr>
+          <tr>
+            <td>WebSocket</td>
+            <td>Real-time messaging</td>
+          </tr>
+          <tr>
+            <td>PostgreSQL</td>
+            <td>Persistent data storage</td>
+          </tr>
+          <tr>
+            <td>Redis</td>
+            <td>Session cache, pub/sub</td>
+          </tr>
+          <tr>
+            <td>Python 3.11</td>
+            <td>Worker processes (CAM, FEA, conversion)</td>
+          </tr>
+        </table>
+
+        <h3 style="margin: 20px 0 15px 0; color: #0284c7;">WASM & Kernels</h3>
+        <ul style="margin: 10px 0 20px 20px;">
+          <li><strong>OpenCascade.js</strong> – B-Rep geometry kernel (STEP, IGES, boolean operations)</li>
+          <li><strong>Emscripten</strong> – C++ → WASM compiler</li>
+          <li><strong>TinySolver</strong> – 2D constraint solving</li>
+        </ul>
+
+        <h3 style="margin: 20px 0 15px 0; color: #0284c7;">AI & LLM</h3>
+        <ul style="margin: 10px 0 20px 20px;">
+          <li><strong>Google Gemini Flash</strong> – Text-to-CAD, design review</li>
+          <li><strong>Groq Llama 3.1 8B</strong> – Local AI fallback</li>
+          <li><strong>OpenAI Vision</strong> – Part identification from images</li>
+        </ul>
+
+        <h3 style="margin: 20px 0 15px 0; color: #0284c7;">External Services</h3>
+        <ul style="margin: 10px 0 20px 20px;">
+          <li><strong>Stripe</strong> – Payment processing, subscription billing</li>
+          <li><strong>AWS S3</strong> – File storage</li>
+          <li><strong>SendGrid</strong> – Email notifications</li>
+          <li><strong>Datadog</strong> – Monitoring & logging</li>
+        </ul>
+
+        <h3 style="margin: 20px 0 15px 0; color: #0284c7;">Development Tools</h3>
+        <ul style="margin: 10px 0 20px 20px;">
+          <li><strong>Git</strong> – Version control</li>
+          <li><strong>Docker</strong> – Containerization</li>
+          <li><strong>Jest</strong> – Unit testing</li>
+          <li><strong>Playwright</strong> – E2E testing</li>
+          <li><strong>Webpack</strong> – Module bundling (optional)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchTab(event, tabName) {
+      const tabs = document.querySelectorAll('.tab-content');
+      const buttons = document.querySelectorAll('.tab-button');
+
+      tabs.forEach(tab => tab.classList.remove('active'));
+      buttons.forEach(btn => btn.classList.remove('active'));
+
+      document.getElementById(tabName).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    function toggleModule(card) {
+      const details = card.querySelector('div[style*="display:none"]');
+      if (details) {
+        const isHidden = details.style.display === 'none';
+        details.style.display = isHidden ? 'block' : 'none';
+        card.style.background = isHidden ? 'rgba(2, 132, 199, 0.15)' : 'rgba(2, 132, 199, 0.1)';
+      }
+    }
+  </script>
+</body>
+</html>

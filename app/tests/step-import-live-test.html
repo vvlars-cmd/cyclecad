@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STEP Import Live Test Suite</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #1e1e1e;
+      color: #e0e0e0;
+      overflow: hidden;
+    }
+
+    .header {
+      background: #2d2d30;
+      border-bottom: 1px solid #3e3e42;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .header h1 {
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .header-right {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      height: calc(100vh - 60px);
+      overflow: hidden;
+    }
+
+    .left-panel {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #3e3e42;
+      overflow: hidden;
+    }
+
+    .controls-section {
+      padding: 16px;
+      background: #252526;
+      border-bottom: 1px solid #3e3e42;
+      flex-shrink: 0;
+    }
+
+    .control-group {
+      margin-bottom: 16px;
+    }
+
+    .control-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .label {
+      display: block;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+      color: #cccccc;
+      font-weight: 600;
+    }
+
+    .file-picker {
+      display: flex;
+      gap: 8px;
+    }
+
+    .file-input-wrapper {
+      position: relative;
+      overflow: hidden;
+      flex: 1;
+    }
+
+    .file-input-wrapper input {
+      display: none;
+    }
+
+    .file-input-label {
+      display: block;
+      padding: 8px 12px;
+      background: #0e639c;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+
+    .file-input-label:hover {
+      background: #1177bb;
+    }
+
+    .strategy-selector {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .strategy-btn {
+      padding: 8px 12px;
+      background: #3e3e42;
+      border: 1px solid #3e3e42;
+      color: #e0e0e0;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .strategy-btn:hover {
+      background: #4e4e54;
+      border-color: #007acc;
+    }
+
+    .strategy-btn.active {
+      background: #007acc;
+      border-color: #007acc;
+      color: white;
+    }
+
+    .progress-container {
+      padding: 16px;
+      background: #252526;
+      border-bottom: 1px solid #3e3e42;
+      flex-shrink: 0;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: #3e3e42;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #007acc;
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    .progress-text {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #999;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    button {
+      padding: 8px 12px;
+      background: #0e639c;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+
+    button:hover:not(:disabled) {
+      background: #1177bb;
+    }
+
+    button:disabled {
+      background: #3e3e42;
+      color: #999;
+      cursor: not-allowed;
+    }
+
+    .danger {
+      background: #d13438;
+    }
+
+    .danger:hover:not(:disabled) {
+      background: #e81123;
+    }
+
+    .log-panel {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px;
+      background: #1e1e1e;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .log-entry {
+      padding: 4px 0;
+      border-bottom: 1px solid #2d2d30;
+    }
+
+    .log-entry:last-child {
+      border-bottom: none;
+    }
+
+    .log-time {
+      color: #858585;
+      margin-right: 8px;
+    }
+
+    .log-info {
+      color: #4fc1ff;
+    }
+
+    .log-success {
+      color: #89d185;
+    }
+
+    .log-error {
+      color: #f48771;
+    }
+
+    .log-warn {
+      color: #dcdcaa;
+    }
+
+    .right-panel {
+      display: flex;
+      flex-direction: column;
+      background: #252526;
+    }
+
+    .viewport {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #viewport {
+      width: 100%;
+      height: 100%;
+    }
+
+    .stats-panel {
+      background: #1e1e1e;
+      border-top: 1px solid #3e3e42;
+      padding: 12px 16px;
+      max-height: 200px;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      font-size: 12px;
+    }
+
+    .stat-item {
+      background: #2d2d30;
+      padding: 8px;
+      border-radius: 4px;
+      border-left: 3px solid #007acc;
+    }
+
+    .stat-label {
+      color: #999;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+
+    .stat-value {
+      color: #e0e0e0;
+      font-weight: 600;
+      font-family: 'Courier New', monospace;
+    }
+
+    .part-list {
+      max-height: 150px;
+      overflow-y: auto;
+      padding: 8px;
+      background: #1e1e1e;
+      border-top: 1px solid #3e3e42;
+    }
+
+    .part-item {
+      padding: 4px 8px;
+      font-size: 11px;
+      color: #999;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: background 0.2s;
+    }
+
+    .part-item:hover {
+      background: #2d2d30;
+      color: #e0e0e0;
+    }
+
+    .part-item.selected {
+      background: #007acc;
+      color: white;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-left: 8px;
+    }
+
+    .status-idle {
+      background: #3e3e42;
+      color: #999;
+    }
+
+    .status-loading {
+      background: #007acc;
+      color: white;
+    }
+
+    .status-success {
+      background: #89d185;
+      color: #000;
+    }
+
+    .status-error {
+      background: #d13438;
+      color: white;
+    }
+
+    .test-case {
+      background: #2d2d30;
+      padding: 8px 12px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      font-size: 12px;
+    }
+
+    .test-case-header {
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: #e0e0e0;
+    }
+
+    .test-case-desc {
+      color: #999;
+      font-size: 11px;
+      margin-bottom: 4px;
+    }
+
+    .test-case-buttons {
+      display: flex;
+      gap: 4px;
+    }
+
+    .test-case-buttons button {
+      padding: 4px 8px;
+      font-size: 11px;
+      flex: 1;
+    }
+
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #1e1e1e;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #3e3e42;
+      border-radius: 5px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #4e4e54;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>STEP Import Live Test Suite</h1>
+    <div class="header-right">
+      <span class="status-badge status-idle" id="statusBadge">Idle</span>
+      <button id="exportBtn" disabled>Export Results</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="left-panel">
+      <div class="controls-section">
+        <div class="control-group">
+          <label class="label">📁 File Input</label>
+          <div class="file-picker">
+            <div class="file-input-wrapper">
+              <input type="file" id="fileInput" accept=".step,.stp,.STEP,.STP">
+              <label class="file-input-label" for="fileInput">Choose File</label>
+            </div>
+            <button id="clearBtn">Clear</button>
+          </div>
+          <div id="fileName" style="margin-top: 8px; color: #999; font-size: 12px;">No file selected</div>
+        </div>
+
+        <div class="control-group">
+          <label class="label">🔄 Strategy</label>
+          <div class="strategy-selector">
+            <button class="strategy-btn active" data-strategy="auto">Auto Detect</button>
+            <button class="strategy-btn" data-strategy="server">Server</button>
+            <button class="strategy-btn" data-strategy="opencascade">OCC WASM</button>
+            <button class="strategy-btn" data-strategy="occt">occt-import-js</button>
+          </div>
+        </div>
+
+        <div class="progress-container hidden" id="progressContainer">
+          <label class="label">Progress</label>
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <div class="progress-text">
+            <span id="progressPercent">0%</span>
+            <span id="progressTime">0s</span>
+          </div>
+          <div class="action-buttons">
+            <button id="importBtn" disabled>Import File</button>
+            <button id="cancelBtn" class="danger hidden">Cancel</button>
+          </div>
+        </div>
+
+        <div class="progress-container hidden" id="idleContainer">
+          <div class="action-buttons">
+            <button id="importBtn2">Import File</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="log-panel" id="logPanel"></div>
+    </div>
+
+    <div class="right-panel">
+      <div class="viewport">
+        <div id="viewport"></div>
+      </div>
+
+      <div class="stats-panel" id="statsPanel">
+        <div class="stat-item">
+          <div class="stat-label">Parts</div>
+          <div class="stat-value" id="statParts">0</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Vertices</div>
+          <div class="stat-value" id="statVertices">0</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Faces</div>
+          <div class="stat-value" id="statFaces">0</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">File Size</div>
+          <div class="stat-value" id="statFileSize">0 B</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Parse Time</div>
+          <div class="stat-value" id="statParseTime">0 ms</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Strategy Used</div>
+          <div class="stat-value" id="statStrategy">—</div>
+        </div>
+      </div>
+
+      <div class="part-list" id="partList"></div>
+    </div>
+  </div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@r170/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@r170/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+    // ========== STATE ==========
+    let scene, camera, renderer, controls;
+    let selectedFile = null;
+    let isImporting = false;
+    let importStartTime = 0;
+    let currentStrategy = 'auto';
+    let importedParts = [];
+    let selectedPartIndex = -1;
+
+    // ========== INITIALIZATION ==========
+    function initViewport() {
+      const container = document.getElementById('viewport');
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x1e1e1e);
+      scene.fog = new THREE.Fog(0x1e1e1e, 1000, 10000);
+
+      camera = new THREE.PerspectiveCamera(
+        75,
+        container.clientWidth / container.clientHeight,
+        0.1,
+        10000
+      );
+      camera.position.set(500, 500, 500);
+      camera.lookAt(0, 0, 0);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFShadowShadowMap;
+      renderer.setPixelRatio(window.devicePixelRatio);
+      container.appendChild(renderer.domElement);
+
+      // Lights
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      directionalLight.position.set(500, 500, 500);
+      directionalLight.castShadow = true;
+      directionalLight.shadow.mapSize.width = 2048;
+      directionalLight.shadow.mapSize.height = 2048;
+      directionalLight.shadow.camera.far = 2000;
+      scene.add(directionalLight);
+
+      // Grid
+      const gridHelper = new THREE.GridHelper(1000, 20, 0x444444, 0x222222);
+      scene.add(gridHelper);
+
+      // Controls
+      controls = new OrbitControls(camera, renderer.domElement);
+      controls.autoRotate = false;
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+
+      // Handle resize
+      window.addEventListener('resize', () => {
+        const w = container.clientWidth;
+        const h = container.clientHeight;
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      });
+
+      animate();
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    // ========== LOGGING ==========
+    function log(message, level = 'info') {
+      const logPanel = document.getElementById('logPanel');
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+
+      const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const levelClass = `log-${level}`;
+
+      entry.innerHTML = `
+        <span class="log-time">[${time}]</span>
+        <span class="${levelClass}">${message}</span>
+      `;
+
+      logPanel.appendChild(entry);
+      logPanel.scrollTop = logPanel.scrollHeight;
+    }
+
+    // ========== PROGRESS ==========
+    function setProgress(percent, elapsed = 0) {
+      document.getElementById('progressFill').style.width = percent + '%';
+      document.getElementById('progressPercent').textContent = percent + '%';
+      document.getElementById('progressTime').textContent = elapsed + 's';
+    }
+
+    function updateStatus(status, text) {
+      const badge = document.getElementById('statusBadge');
+      badge.className = 'status-badge status-' + status;
+      badge.textContent = text.toUpperCase();
+    }
+
+    // ========== FILE HANDLING ==========
+    document.getElementById('fileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      selectedFile = file;
+      document.getElementById('fileName').textContent = `📄 ${file.name} (${formatBytes(file.size)})`;
+      log(`File selected: ${file.name}`, 'success');
+
+      document.getElementById('progressContainer').classList.remove('hidden');
+      document.getElementById('idleContainer').classList.add('hidden');
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      selectedFile = null;
+      document.getElementById('fileInput').value = '';
+      document.getElementById('fileName').textContent = 'No file selected';
+      document.getElementById('progressContainer').classList.add('hidden');
+      document.getElementById('idleContainer').classList.remove('hidden');
+      log('File cleared', 'info');
+    });
+
+    // Strategy selection
+    document.querySelectorAll('.strategy-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.strategy-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentStrategy = btn.dataset.strategy;
+        log(`Strategy selected: ${currentStrategy}`, 'info');
+      });
+    });
+
+    // ========== IMPORT ==========
+    async function importFile() {
+      if (!selectedFile) {
+        log('No file selected', 'error');
+        return;
+      }
+
+      isImporting = true;
+      importStartTime = Date.now();
+      updateStatus('loading', 'Importing');
+      document.getElementById('importBtn').disabled = true;
+      document.getElementById('cancelBtn').classList.remove('hidden');
+
+      log(`Starting import with strategy: ${currentStrategy}`, 'info');
+      log(`File size: ${formatBytes(selectedFile.size)}`, 'info');
+
+      try {
+        const strategy = currentStrategy === 'auto'
+          ? selectedFile.size > 50 * 1024 * 1024 ? 'server' : 'opencascade'
+          : currentStrategy;
+
+        log(`Using strategy: ${strategy}`, 'warn');
+
+        switch (strategy) {
+          case 'server':
+            await importViaServer();
+            break;
+          case 'opencascade':
+            await importViaOpenCascade();
+            break;
+          case 'occt':
+            await importViaOCCT();
+            break;
+        }
+
+        updateStatus('success', 'Import Complete');
+        log('Import completed successfully', 'success');
+      } catch (err) {
+        updateStatus('error', 'Import Failed');
+        log(`Error: ${err.message}`, 'error');
+      } finally {
+        isImporting = false;
+        document.getElementById('importBtn').disabled = false;
+        document.getElementById('cancelBtn').classList.add('hidden');
+      }
+    }
+
+    async function importViaServer() {
+      log('Uploading file to server (http://localhost:8787/convert)...', 'info');
+
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      const startTime = Date.now();
+      let uploadedBytes = 0;
+
+      try {
+        const xhr = new XMLHttpRequest();
+
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100);
+            setProgress(percent, Math.round((Date.now() - startTime) / 1000));
+            uploadedBytes = e.loaded;
+          }
+        });
+
+        const response = await new Promise((resolve, reject) => {
+          xhr.addEventListener('load', () => {
+            if (xhr.status === 200) {
+              resolve(xhr.response);
+            } else {
+              reject(new Error(`Server error: ${xhr.status}`));
+            }
+          });
+          xhr.addEventListener('error', () => reject(new Error('Network error')));
+          xhr.open('POST', 'http://localhost:8787/convert');
+          xhr.responseType = 'arraybuffer';
+          xhr.send(formData);
+        });
+
+        log(`Upload complete. Received ${formatBytes(response.byteLength)} GLB`, 'success');
+
+        const parseStart = Date.now();
+        const glb = new Uint8Array(response);
+        const blob = new Blob([glb], { type: 'model/gltf-binary' });
+        const url = URL.createObjectURL(blob);
+
+        const loader = new GLTFLoader();
+        const gltf = await new Promise((resolve, reject) => {
+          loader.load(url, resolve, undefined, reject);
+        });
+
+        const parseTime = Date.now() - parseStart;
+        log(`GLB loaded in ${parseTime}ms`, 'success');
+
+        // Add to scene
+        const group = gltf.scene;
+        scene.add(group);
+
+        // Fit camera
+        const box = new THREE.Box3().setFromObject(group);
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const fov = camera.fov * (Math.PI / 180);
+        let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+        cameraZ *= 1.5;
+
+        camera.position.z = cameraZ;
+        camera.lookAt(box.getCenter(new THREE.Vector3()));
+        controls.target.copy(box.getCenter(new THREE.Vector3()));
+        controls.update();
+
+        // Analyze geometry
+        analyzeGeometry(group);
+
+        const totalTime = Date.now() - startTime;
+        document.getElementById('statParseTime').textContent = totalTime + ' ms';
+        document.getElementById('statStrategy').textContent = 'Server';
+
+        setProgress(100, Math.round(totalTime / 1000));
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        throw new Error(`Server import failed: ${err.message}`);
+      }
+    }
+
+    async function importViaOpenCascade() {
+      log('Loading OpenCascade.js WASM from CDN...', 'info');
+
+      try {
+        // Load OpenCascade.js
+        const CDN_BASE = 'https://cdn.jsdelivr.net/npm/opencascade.js@2.0.0-beta.b5ff984/dist/';
+
+        // Load the JS file
+        const script = document.createElement('script');
+        script.src = CDN_BASE + 'opencascade.full.js';
+
+        const scriptLoaded = new Promise((resolve, reject) => {
+          script.onload = resolve;
+          script.onerror = reject;
+        });
+
+        document.head.appendChild(script);
+        await scriptLoaded;
+
+        log('OpenCascade.js loaded', 'success');
+
+        // Initialize OCC with locateFile
+        const oc = await new Module({
+          locateFile: (file) => CDN_BASE + file
+        });
+
+        log('WASM initialized', 'success');
+
+        // Parse STEP file
+        const arrayBuffer = await selectedFile.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+
+        const parseStart = Date.now();
+        log('Parsing STEP file...', 'info');
+
+        // Use STEPControl_Reader
+        const reader = new oc.STEPControl_Reader();
+        const status = reader.ReadFile(uint8Array);
+
+        if (status !== 0) {
+          throw new Error(`ReadFile failed with status ${status}`);
+        }
+
+        reader.TransferRoots();
+        const shape = reader.OneShape();
+
+        log('STEP parsed, tessellating...', 'info');
+
+        // Tessellate
+        oc.BRepMesh_IncrementalMesh(shape, 0.1);
+
+        // Convert to Three.js
+        const group = new THREE.Group();
+        const faces = oc.TopExp_Explorer(shape, oc.TopAbs_FACE);
+
+        let partCount = 0;
+        while (faces.More()) {
+          const face = faces.Current();
+          const triangulation = oc.BRepLProp_CLProps(face, 2, 1e-7);
+
+          // Create mesh
+          const geometry = new THREE.BufferGeometry();
+          const material = new THREE.MeshStandardMaterial({
+            color: 0x007acc,
+            metalness: 0.3,
+            roughness: 0.7
+          });
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+
+          group.add(mesh);
+          importedParts.push({ name: `Part_${partCount}`, mesh });
+          partCount++;
+
+          faces.Next();
+        }
+
+        const parseTime = Date.now() - parseStart;
+        log(`Tessellated into ${partCount} parts in ${parseTime}ms`, 'success');
+
+        scene.add(group);
+
+        // Fit camera
+        const box = new THREE.Box3().setFromObject(group);
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const fov = camera.fov * (Math.PI / 180);
+        let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+        cameraZ *= 1.5;
+
+        camera.position.z = cameraZ;
+        camera.lookAt(box.getCenter(new THREE.Vector3()));
+        controls.target.copy(box.getCenter(new THREE.Vector3()));
+        controls.update();
+
+        // Analyze
+        analyzeGeometry(group);
+
+        const totalTime = Date.now() - importStartTime;
+        document.getElementById('statParseTime').textContent = totalTime + ' ms';
+        document.getElementById('statStrategy').textContent = 'OpenCascade.js';
+
+        setProgress(100, Math.round(totalTime / 1000));
+      } catch (err) {
+        throw new Error(`OpenCascade.js import failed: ${err.message}`);
+      }
+    }
+
+    async function importViaOCCT() {
+      log('Loading occt-import-js from CDN...', 'info');
+
+      try {
+        // Load library
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/occt-import.umd.js';
+
+        const scriptLoaded = new Promise((resolve, reject) => {
+          script.onload = resolve;
+          script.onerror = reject;
+        });
+
+        document.head.appendChild(script);
+        await scriptLoaded;
+
+        log('occt-import-js loaded, starting parse...', 'success');
+
+        const parseStart = Date.now();
+        const arrayBuffer = await selectedFile.arrayBuffer();
+
+        // Create worker for parsing
+        const workerCode = `
+          self.importScripts('https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/occt-import.umd.js');
+          self.onmessage = async (e) => {
+            try {
+              const result = window.occtImport(new Uint8Array(e.data));
+              const meshes = result.meshes.map(m => ({
+                name: m.name,
+                positions: Array.from(m.attributes.position.array),
+                indices: Array.from(m.indices)
+              }));
+              self.postMessage({ success: true, meshes });
+            } catch (err) {
+              self.postMessage({ success: false, error: err.message });
+            }
+          };
+        `;
+
+        const blob = new Blob([workerCode], { type: 'application/javascript' });
+        const workerUrl = URL.createObjectURL(blob);
+        const worker = new Worker(workerUrl);
+
+        const result = await new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            worker.terminate();
+            reject(new Error('Worker timeout after 90s'));
+          }, 90000);
+
+          worker.onmessage = (e) => {
+            clearTimeout(timeout);
+            if (e.data.success) {
+              resolve(e.data.meshes);
+            } else {
+              reject(new Error(e.data.error));
+            }
+          };
+
+          worker.onerror = (err) => {
+            clearTimeout(timeout);
+            reject(err);
+          };
+
+          worker.postMessage(arrayBuffer, [arrayBuffer]);
+        });
+
+        const parseTime = Date.now() - parseStart;
+        log(`Parsed ${result.length} meshes in ${parseTime}ms`, 'success');
+
+        // Add to scene
+        const group = new THREE.Group();
+        let vertexCount = 0;
+
+        result.forEach((meshData, idx) => {
+          const geometry = new THREE.BufferGeometry();
+          geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(meshData.positions), 3));
+
+          if (meshData.indices && meshData.indices.length > 0) {
+            geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(meshData.indices), 1));
+          }
+
+          geometry.computeVertexNormals();
+          vertexCount += meshData.positions.length / 3;
+
+          const material = new THREE.MeshStandardMaterial({
+            color: Math.random() * 0xffffff,
+            metalness: 0.3,
+            roughness: 0.7
+          });
+
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+
+          group.add(mesh);
+          importedParts.push({ name: meshData.name || `Mesh_${idx}`, mesh });
+        });
+
+        log(`Total vertices: ${vertexCount}`, 'success');
+
+        scene.add(group);
+
+        // Fit camera
+        const box = new THREE.Box3().setFromObject(group);
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const fov = camera.fov * (Math.PI / 180);
+        let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+        cameraZ *= 1.5;
+
+        camera.position.z = cameraZ;
+        camera.lookAt(box.getCenter(new THREE.Vector3()));
+        controls.target.copy(box.getCenter(new THREE.Vector3()));
+        controls.update();
+
+        // Analyze
+        analyzeGeometry(group);
+
+        const totalTime = Date.now() - importStartTime;
+        document.getElementById('statParseTime').textContent = totalTime + ' ms';
+        document.getElementById('statStrategy').textContent = 'occt-import-js';
+
+        setProgress(100, Math.round(totalTime / 1000));
+
+        worker.terminate();
+        URL.revokeObjectURL(workerUrl);
+      } catch (err) {
+        throw new Error(`occt-import-js import failed: ${err.message}`);
+      }
+    }
+
+    function analyzeGeometry(group) {
+      let vertices = 0;
+      let faces = 0;
+      const partList = document.getElementById('partList');
+      partList.innerHTML = '';
+
+      group.traverse((node) => {
+        if (node.isMesh && node.geometry) {
+          const posAttr = node.geometry.attributes.position;
+          if (posAttr) vertices += posAttr.count;
+
+          if (node.geometry.index) {
+            faces += node.geometry.index.count / 3;
+          }
+
+          const name = node.name || `Mesh_${importedParts.length}`;
+          const item = document.createElement('div');
+          item.className = 'part-item';
+          item.textContent = name;
+          item.addEventListener('click', () => {
+            document.querySelectorAll('.part-item').forEach(p => p.classList.remove('selected'));
+            item.classList.add('selected');
+
+            // Highlight mesh
+            group.traverse(child => {
+              if (child.isMesh) {
+                child.material.emissive.set(0x000000);
+              }
+            });
+            node.material.emissive.set(0x00ff00);
+            selectedPartIndex = importedParts.findIndex(p => p.mesh === node);
+          });
+          partList.appendChild(item);
+        }
+      });
+
+      document.getElementById('statParts').textContent = importedParts.length;
+      document.getElementById('statVertices').textContent = vertices.toLocaleString();
+      document.getElementById('statFaces').textContent = Math.round(faces).toLocaleString();
+      document.getElementById('statFileSize').textContent = formatBytes(selectedFile.size);
+    }
+
+    // ========== UTILITIES ==========
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // ========== EXPORT ==========
+    document.getElementById('exportBtn').addEventListener('click', () => {
+      const results = {
+        file: selectedFile ? selectedFile.name : null,
+        fileSize: selectedFile ? selectedFile.size : 0,
+        strategy: document.getElementById('statStrategy').textContent,
+        parts: parseInt(document.getElementById('statParts').textContent),
+        vertices: parseInt(document.getElementById('statVertices').textContent.replace(/,/g, '')),
+        faces: parseInt(document.getElementById('statFaces').textContent.replace(/,/g, '')),
+        parseTime: document.getElementById('statParseTime').textContent,
+        timestamp: new Date().toISOString()
+      };
+
+      const json = JSON.stringify(results, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `step-import-results-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      log('Results exported', 'success');
+    });
+
+    // ========== EVENT LISTENERS ==========
+    document.getElementById('importBtn').addEventListener('click', importFile);
+    document.getElementById('importBtn2').addEventListener('click', importFile);
+
+    document.getElementById('cancelBtn').addEventListener('click', () => {
+      isImporting = false;
+      updateStatus('idle', 'Idle');
+      log('Import cancelled', 'warn');
+    });
+
+    // ========== STARTUP ==========
+    window.addEventListener('load', () => {
+      initViewport();
+      log('STEP Import Test Suite Ready', 'success');
+      log('Select a STEP file to begin testing', 'info');
+    });
+  </script>
+</body>
+</html>

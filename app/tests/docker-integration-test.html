@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>cycleCAD Docker Integration Tests</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-primary:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: #e0e0e0;
+      color: #333;
+    }
+
+    .btn-secondary:hover {
+      background: #d0d0d0;
+    }
+
+    .main {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .card h2 {
+      font-size: 18px;
+      color: #333;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .service-item {
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-left: 4px solid #e0e0e0;
+    }
+
+    .service-item.loading {
+      background: #f5f5f5;
+      border-left-color: #ffa500;
+    }
+
+    .service-item.success {
+      background: #f0f8f4;
+      border-left-color: #4caf50;
+    }
+
+    .service-item.error {
+      background: #fef5f5;
+      border-left-color: #f44336;
+    }
+
+    .service-name {
+      font-weight: 600;
+      color: #333;
+    }
+
+    .service-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-badge {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .status-badge.pending {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .status-badge.success {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .status-badge.error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .icon {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+
+    .icon.success {
+      color: #4caf50;
+    }
+
+    .icon.error {
+      color: #f44336;
+    }
+
+    .test-results {
+      margin-top: 20px;
+    }
+
+    .test-item {
+      padding: 12px;
+      margin-bottom: 8px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+    }
+
+    .test-item.pass {
+      background: #f0f8f4;
+      color: #155724;
+    }
+
+    .test-item.fail {
+      background: #fef5f5;
+      color: #721c24;
+    }
+
+    .test-item.pending {
+      background: #f5f5f5;
+      color: #666;
+    }
+
+    .test-icon {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    .test-name {
+      flex: 1;
+    }
+
+    .test-time {
+      font-size: 12px;
+      opacity: 0.7;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 15px;
+      border-radius: 4px;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #999;
+      margin-top: 5px;
+      text-transform: uppercase;
+    }
+
+    .stat-card.error .stat-value {
+      color: #f44336;
+    }
+
+    .export-section {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f5f5f5;
+      border-radius: 4px;
+    }
+
+    .export-section h3 {
+      font-size: 14px;
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    .export-buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    .export-buttons button {
+      flex: 1;
+      padding: 8px;
+      font-size: 12px;
+    }
+
+    @media (max-width: 768px) {
+      .main {
+        grid-template-columns: 1fr;
+      }
+
+      .stats {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .header-controls {
+        flex-direction: column;
+      }
+
+      button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>cycleCAD Docker Integration Tests</h1>
+      <p>Real-time monitoring of Docker services and endpoints</p>
+      <div class="header-controls">
+        <button class="btn-primary" id="runAllTests">Run All Tests</button>
+        <button class="btn-primary" id="quickCheck">Quick Health Check</button>
+        <button class="btn-secondary" id="clearResults">Clear Results</button>
+      </div>
+    </header>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-value" id="totalCount">0</div>
+        <div class="stat-label">Total Tests</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="passCount" style="color: #4caf50;">0</div>
+        <div class="stat-label">Passed</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="failCount" style="color: #f44336;">0</div>
+        <div class="stat-label">Failed</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="successRate">0%</div>
+        <div class="stat-label">Success Rate</div>
+      </div>
+    </div>
+
+    <div class="main">
+      <!-- Service Status -->
+      <div class="card">
+        <h2>
+          <span>Service Status</span>
+          <span id="overallStatus" class="status-badge pending">Checking...</span>
+        </h2>
+        <div id="serviceStatus"></div>
+      </div>
+
+      <!-- CORS & Headers -->
+      <div class="card">
+        <h2>Headers & Security</h2>
+        <div id="headersStatus"></div>
+      </div>
+
+      <!-- Endpoint Tests -->
+      <div class="card">
+        <h2>Endpoint Tests</h2>
+        <div id="endpointTests" class="test-results"></div>
+      </div>
+
+      <!-- Proxy Tests -->
+      <div class="card">
+        <h2>Proxy Routing</h2>
+        <div id="proxyTests" class="test-results"></div>
+      </div>
+
+      <!-- WebSocket Tests -->
+      <div class="card">
+        <h2>WebSocket & Real-time</h2>
+        <div id="websocketTests" class="test-results"></div>
+      </div>
+
+      <!-- STEP Converter -->
+      <div class="card">
+        <h2>STEP Converter</h2>
+        <div id="converterTests" class="test-results"></div>
+      </div>
+    </div>
+
+    <!-- Export Section -->
+    <div class="card">
+      <div class="export-section">
+        <h3>Export Results</h3>
+        <div class="export-buttons">
+          <button class="btn-secondary" id="exportJSON">Export as JSON</button>
+          <button class="btn-secondary" id="exportHTML">Export as HTML</button>
+          <button class="btn-secondary" id="copyResults">Copy to Clipboard</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Test configuration
+    const API_BASE = window.location.origin;
+    const SERVICES = {
+      main: { name: 'Main App', url: `${API_BASE}/health`, expectedStatus: 200 },
+      converter: { name: 'STEP Converter', url: `${API_BASE}:8787/health`, expectedStatus: 200 },
+      signaling: { name: 'Signaling Server', url: `${API_BASE}:8788/health`, expectedStatus: 200 },
+    };
+
+    // Test state
+    let testResults = {
+      services: {},
+      headers: {},
+      endpoints: {},
+      proxies: {},
+      websocket: {},
+      converter: {},
+      startTime: null,
+      endTime: null,
+    };
+
+    // Helper functions
+    const ui = {
+      updateServiceStatus(serviceName, status) {
+        const container = document.getElementById('serviceStatus');
+        let item = document.getElementById(`service-${serviceName}`);
+
+        if (!item) {
+          item = document.createElement('div');
+          item.id = `service-${serviceName}`;
+          item.className = 'service-item';
+          container.appendChild(item);
+        }
+
+        const statusClass = status === 'success' ? 'success' : status === 'error' ? 'error' : 'loading';
+        item.className = `service-item ${statusClass}`;
+
+        const service = SERVICES[serviceName];
+        const icon = status === 'success' ? '✓' : status === 'error' ? '✗' : '●';
+        const badge = status === 'success' ? 'success' : status === 'error' ? 'error' : 'pending';
+
+        item.innerHTML = `
+          <span class="service-name">${service.name}</span>
+          <div class="service-status">
+            <span class="status-badge ${badge}">${status}</span>
+            <div class="icon">${icon}</div>
+          </div>
+        `;
+      },
+
+      addTest(category, name, status, duration) {
+        const container = document.getElementById(`${category}Tests`) || document.getElementById('endpointTests');
+        const testItem = document.createElement('div');
+        testItem.className = `test-item ${status}`;
+
+        const icon = status === 'pass' ? '✓' : status === 'fail' ? '✗' : '●';
+        const iconClass = status === 'pass' ? 'success' : status === 'fail' ? 'error' : '';
+
+        testItem.innerHTML = `
+          <div class="test-icon" style="color: ${iconClass === 'success' ? '#4caf50' : iconClass === 'error' ? '#f44336' : '#999'}">${icon}</div>
+          <div class="test-name">${name}</div>
+          <div class="test-time">${duration}ms</div>
+        `;
+
+        container.appendChild(testItem);
+      },
+
+      updateStats() {
+        const total = Object.values(testResults).reduce((sum, cat) => {
+          if (typeof cat === 'object' && !Array.isArray(cat) && cat !== null) {
+            return sum + Object.keys(cat).length;
+          }
+          return sum;
+        }, 0);
+
+        const passed = Object.values(testResults).reduce((sum, cat) => {
+          if (typeof cat === 'object' && !Array.isArray(cat) && cat !== null) {
+            return sum + Object.values(cat).filter(r => r.status === 'pass').length;
+          }
+          return sum;
+        }, 0);
+
+        const failed = Object.values(testResults).reduce((sum, cat) => {
+          if (typeof cat === 'object' && !Array.isArray(cat) && cat !== null) {
+            return sum + Object.values(cat).filter(r => r.status === 'fail').length;
+          }
+          return sum;
+        }, 0);
+
+        document.getElementById('totalCount').textContent = total;
+        document.getElementById('passCount').textContent = passed;
+        document.getElementById('failCount').textContent = failed;
+        document.getElementById('successRate').textContent = total > 0 ? `${Math.round(passed / total * 100)}%` : '0%';
+
+        const overallStatus = failed === 0 && total > 0 ? 'success' : failed > 0 ? 'error' : 'pending';
+        const statusEl = document.getElementById('overallStatus');
+        statusEl.textContent = overallStatus.toUpperCase();
+        statusEl.className = `status-badge ${overallStatus}`;
+      },
+
+      clearResults() {
+        document.getElementById('serviceStatus').innerHTML = '';
+        document.getElementById('headersStatus').innerHTML = '';
+        document.getElementById('endpointTests').innerHTML = '';
+        document.getElementById('proxyTests').innerHTML = '';
+        document.getElementById('websocketTests').innerHTML = '';
+        document.getElementById('converterTests').innerHTML = '';
+        testResults = {
+          services: {},
+          headers: {},
+          endpoints: {},
+          proxies: {},
+          websocket: {},
+          converter: {},
+          startTime: null,
+          endTime: null,
+        };
+      },
+    };
+
+    // Test functions
+    async function testService(serviceName) {
+      ui.updateServiceStatus(serviceName, 'loading');
+      const service = SERVICES[serviceName];
+
+      try {
+        const start = performance.now();
+        const response = await fetch(service.url);
+        const duration = Math.round(performance.now() - start);
+
+        if (response.ok) {
+          const data = await response.json();
+          testResults.services[serviceName] = { status: 'pass', duration, data };
+          ui.updateServiceStatus(serviceName, 'success');
+          return { status: 'pass', duration };
+        } else {
+          testResults.services[serviceName] = { status: 'fail', duration, error: 'Status ' + response.status };
+          ui.updateServiceStatus(serviceName, 'error');
+          return { status: 'fail', duration };
+        }
+      } catch (err) {
+        testResults.services[serviceName] = { status: 'fail', duration: 0, error: err.message };
+        ui.updateServiceStatus(serviceName, 'error');
+        return { status: 'fail', duration: 0 };
+      }
+    }
+
+    async function testCORSHeaders() {
+      const start = performance.now();
+
+      try {
+        const response = await fetch(`${API_BASE}/health`, {
+          headers: { 'Origin': 'http://example.com' }
+        });
+        const duration = Math.round(performance.now() - start);
+
+        const hasCORS = response.headers.has('access-control-allow-origin');
+        const hasCOOP = response.headers.has('cross-origin-opener-policy');
+        const hasCoEP = response.headers.has('cross-origin-embedder-policy');
+
+        const status = hasCORS && hasCOOP && hasCoEP ? 'pass' : 'fail';
+        testResults.headers['cors'] = { status, duration, headers: {
+          cors: hasCORS,
+          coop: hasCOOP,
+          coep: hasCoEP,
+        }};
+
+        ui.addTest('headers', 'CORS Headers Present', status, duration);
+        return { status, duration };
+      } catch (err) {
+        testResults.headers['cors'] = { status: 'fail', duration: 0, error: err.message };
+        ui.addTest('headers', 'CORS Headers Present', 'fail', 0);
+        return { status: 'fail', duration: 0 };
+      }
+    }
+
+    async function testGzipCompression() {
+      const start = performance.now();
+
+      try {
+        const response = await fetch(`${API_BASE}/app/`, {
+          headers: { 'Accept-Encoding': 'gzip' }
+        });
+        const duration = Math.round(performance.now() - start);
+
+        const hasGzip = response.headers.get('content-encoding') === 'gzip';
+        testResults.headers['gzip'] = { status: hasGzip ? 'pass' : 'fail', duration };
+
+        ui.addTest('headers', 'Gzip Compression', hasGzip ? 'pass' : 'fail', duration);
+        return { status: hasGzip ? 'pass' : 'fail', duration };
+      } catch (err) {
+        testResults.headers['gzip'] = { status: 'fail', duration: 0, error: err.message };
+        ui.addTest('headers', 'Gzip Compression', 'fail', 0);
+        return { status: 'fail', duration: 0 };
+      }
+    }
+
+    async function testEndpoint(name, url, expectedStatus = 200) {
+      const start = performance.now();
+
+      try {
+        const response = await fetch(url);
+        const duration = Math.round(performance.now() - start);
+        const status = response.status === expectedStatus ? 'pass' : 'fail';
+        testResults.endpoints[name] = { status, duration, httpStatus: response.status };
+        ui.addTest('endpoint', name, status, duration);
+        return { status, duration };
+      } catch (err) {
+        testResults.endpoints[name] = { status: 'fail', duration: 0, error: err.message };
+        ui.addTest('endpoint', name, 'fail', 0);
+        return { status: 'fail', duration: 0 };
+      }
+    }
+
+    async function testProxyRoute(name, url) {
+      const start = performance.now();
+
+      try {
+        const response = await fetch(url);
+        const duration = Math.round(performance.now() - start);
+        const status = response.ok ? 'pass' : 'fail';
+        testResults.proxies[name] = { status, duration, httpStatus: response.status };
+        ui.addTest('proxy', name, status, duration);
+        return { status, duration };
+      } catch (err) {
+        testResults.proxies[name] = { status: 'fail', duration: 0, error: err.message };
+        ui.addTest('proxy', name, 'fail', 0);
+        return { status: 'fail', duration: 0 };
+      }
+    }
+
+    async function testWebSocket() {
+      const start = performance.now();
+
+      try {
+        const ws = new WebSocket(`ws://${window.location.host}/ws/`);
+
+        return new Promise((resolve) => {
+          const timeout = setTimeout(() => {
+            ws.close();
+            const duration = Math.round(performance.now() - start);
+            testResults.websocket['connection'] = { status: 'fail', duration, error: 'Timeout' };
+            ui.addTest('websocket', 'WebSocket Connection', 'fail', duration);
+            resolve({ status: 'fail', duration });
+          }, 5000);
+
+          ws.onopen = () => {
+            clearTimeout(timeout);
+            ws.close();
+            const duration = Math.round(performance.now() - start);
+            testResults.websocket['connection'] = { status: 'pass', duration };
+            ui.addTest('websocket', 'WebSocket Connection', 'pass', duration);
+            resolve({ status: 'pass', duration });
+          };
+
+          ws.onerror = () => {
+            clearTimeout(timeout);
+            const duration = Math.round(performance.now() - start);
+            testResults.websocket['connection'] = { status: 'fail', duration, error: 'Connection error' };
+            ui.addTest('websocket', 'WebSocket Connection', 'fail', duration);
+            resolve({ status: 'fail', duration });
+          };
+        });
+      } catch (err) {
+        testResults.websocket['connection'] = { status: 'fail', duration: 0, error: err.message };
+        ui.addTest('websocket', 'WebSocket Connection', 'fail', 0);
+        return { status: 'fail', duration: 0 };
+      }
+    }
+
+    async function testConverterEndpoint() {
+      const start = performance.now();
+
+      try {
+        const response = await fetch(`${API_BASE}:8787/health`);
+        const duration = Math.round(performance.now() - start);
+
+        if (response.ok) {
+          const data = await response.json();
+          testResults.converter['health'] = { status: 'pass', duration, data };
+          ui.addTest('converter', 'STEP Converter /health', 'pass', duration);
+          return { status: 'pass', duration };
+        } else {
+          testResults.converter['health'] = { status: 'fail', duration, error: 'Status ' + response.status };
+          ui.addTest('converter', 'STEP Converter /health', 'fail', duration);
+          return { status: 'fail', duration };
+        }
+      } catch (err) {
+        testResults.converter['health'] = { status: 'fail', duration: 0, error: err.message };
+        ui.addTest('converter', 'STEP Converter /health', 'fail', 0);
+        return { status: 'fail', duration: 0 };
+      }
+    }
+
+    // Main test runner
+    async function runAllTests() {
+      testResults.startTime = new Date();
+      ui.clearResults();
+
+      // Run service tests
+      await testService('main');
+      await testService('converter');
+      await testService('signaling');
+
+      // Run header tests
+      await testCORSHeaders();
+      await testGzipCompression();
+
+      // Run endpoint tests
+      await testEndpoint('GET /app/', `${API_BASE}/app/`, 200);
+      await testEndpoint('GET /', `${API_BASE}/`, 200);
+      await testEndpoint('GET /health', `${API_BASE}/health`, 200);
+
+      // Run proxy tests
+      await testProxyRoute('Converter via /converter/', `${API_BASE}/converter/health`);
+      await testProxyRoute('API via /api/', `${API_BASE}/api/health`);
+
+      // Run WebSocket test
+      await testWebSocket();
+
+      // Run converter tests
+      await testConverterEndpoint();
+
+      testResults.endTime = new Date();
+      ui.updateStats();
+    }
+
+    async function quickHealthCheck() {
+      testResults.startTime = new Date();
+      ui.clearResults();
+
+      await testService('main');
+      await testService('converter');
+      await testService('signaling');
+
+      testResults.endTime = new Date();
+      ui.updateStats();
+    }
+
+    // Export functions
+    function exportAsJSON() {
+      const json = JSON.stringify(testResults, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      downloadFile(blob, 'docker-tests-results.json');
+    }
+
+    function exportAsHTML() {
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <title>cycleCAD Docker Test Results</title>
+  <style>
+    body { font-family: Arial; margin: 20px; }
+    h1 { color: #667eea; }
+    .pass { background: #d4edda; padding: 10px; margin: 5px 0; border-radius: 4px; }
+    .fail { background: #f8d7da; padding: 10px; margin: 5px 0; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>cycleCAD Docker Integration Test Results</h1>
+  <p>Generated: ${new Date().toISOString()}</p>
+  <h2>Summary</h2>
+  <p>Total: ${document.getElementById('totalCount').textContent}</p>
+  <p>Passed: ${document.getElementById('passCount').textContent}</p>
+  <p>Failed: ${document.getElementById('failCount').textContent}</p>
+  <p>Success Rate: ${document.getElementById('successRate').textContent}</p>
+  <h2>Detailed Results</h2>
+  <pre>${JSON.stringify(testResults, null, 2)}</pre>
+</body>
+</html>`;
+      const blob = new Blob([html], { type: 'text/html' });
+      downloadFile(blob, 'docker-tests-results.html');
+    }
+
+    function downloadFile(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function copyToClipboard() {
+      const json = JSON.stringify(testResults, null, 2);
+      navigator.clipboard.writeText(json).then(() => {
+        alert('Results copied to clipboard!');
+      });
+    }
+
+    // Event listeners
+    document.getElementById('runAllTests').addEventListener('click', runAllTests);
+    document.getElementById('quickCheck').addEventListener('click', quickHealthCheck);
+    document.getElementById('clearResults').addEventListener('click', () => {
+      ui.clearResults();
+      ui.updateStats();
+    });
+    document.getElementById('exportJSON').addEventListener('click', exportAsJSON);
+    document.getElementById('exportHTML').addEventListener('click', exportAsHTML);
+    document.getElementById('copyResults').addEventListener('click', copyToClipboard);
+
+    // Auto-run on load
+    window.addEventListener('load', quickHealthCheck);
+  </script>
+</body>
+</html>

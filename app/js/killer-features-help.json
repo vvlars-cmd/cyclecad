@@ -1,0 +1,395 @@
+{
+  "killer_features": {
+    "ai_copilot_chat": {
+      "title": "AI Design Copilot Chat",
+      "category": "Input",
+      "shortcut": "Ctrl+K",
+      "description": "Natural language CAD commands. Convert English descriptions into 3D geometry instantly.",
+      "examples": [
+        {
+          "input": "gear 24 teeth module 2",
+          "output": "Spur gear with 24 teeth, module 2, 10mm bore"
+        },
+        {
+          "input": "bracket 80x40x5 with holes",
+          "output": "L-shaped bracket with mounting holes"
+        },
+        {
+          "input": "cylinder 50mm diameter 80 tall",
+          "output": "Parametric cylinder geometry"
+        },
+        {
+          "input": "sphere 30mm",
+          "output": "Smooth sphere with PBR material"
+        }
+      ],
+      "usage": "1. Press Ctrl+K to open copilot\n2. Type your command\n3. Press Enter to create geometry\n4. Geometry appears in viewport instantly",
+      "supported_types": [
+        "gear",
+        "bracket",
+        "cylinder",
+        "sphere",
+        "plate",
+        "washer",
+        "spacer"
+      ],
+      "tips": [
+        "Typos are OK: 'geer', 'dieameter', 'sylindr' all work",
+        "Units are always in mm",
+        "Use formulas in parameters: 'gear with bore =wall_thickness*5'",
+        "Undo with Ctrl+Z if you don't like the result"
+      ]
+    },
+    "physics_simulation": {
+      "title": "Physics Simulation",
+      "category": "Analysis",
+      "shortcut": "Ctrl+P",
+      "description": "Real-time drop testing with stress analysis. Identify where parts will fail under impact.",
+      "features": [
+        "Gravity simulation (-9.81 m/s²)",
+        "Collision detection",
+        "Stress visualization (blue-yellow-red)",
+        "60 FPS performance",
+        "Automatic material damping"
+      ],
+      "colors": {
+        "blue": "Safe (0-25% stress)",
+        "yellow": "Warning (25-50% stress)",
+        "red": "Critical (50-100% stress)"
+      },
+      "usage": "1. Press Ctrl+P to start simulation\n2. Objects fall due to gravity\n3. Watch for color changes on impact\n4. Red areas indicate failure points\n5. Optimize design to reduce red stress",
+      "tips": [
+        "Physics runs in background, doesn't block modeling",
+        "Bounce coefficient is 0.6 (60% energy rebound)",
+        "Each impact accumulates stress on meshes",
+        "Combine with Parameter Table to iterate quickly",
+        "Export stressmap as texture for analysis"
+      ]
+    },
+    "generative_design": {
+      "title": "Generative Design",
+      "category": "Optimization",
+      "shortcut": "Ctrl+G",
+      "description": "Auto-generate optimized topology with constraints. Create organic lattice structures that minimize material while maintaining stiffness.",
+      "parameters": {
+        "material_budget": {
+          "range": "10-100%",
+          "default": "50%",
+          "meaning": "Percentage of original volume to retain"
+        },
+        "iterations": {
+          "range": "1-100",
+          "default": "20",
+          "meaning": "Number of optimization cycles (higher = better but slower)"
+        }
+      },
+      "applications": [
+        "Lightweight aerospace brackets",
+        "Organic automotive parts",
+        "Heat sink designs",
+        "Lattice structures"
+      ],
+      "usage": "1. Press Ctrl+G\n2. Set material budget (e.g., 50%)\n3. Set iterations (e.g., 30)\n4. Click 'Generate Optimized Structure'\n5. Watch progress bar as algorithm runs\n6. Result is a strut-based lattice",
+      "tips": [
+        "More iterations = better results but takes longer",
+        "Lower budget = sparser, more artistic result",
+        "Export lattice as STL for 3D printing",
+        "Can layer multiple generative steps for refinement",
+        "Combine with Physics to validate optimized design"
+      ]
+    },
+    "cost_estimator": {
+      "title": "Real-time Cost Estimator",
+      "category": "Manufacturing",
+      "shortcut": "Ctrl+C",
+      "description": "Live manufacturing cost calculation for three methods: CNC, 3D printing, and injection molding.",
+      "methods": {
+        "cnc_machining": {
+          "formula": "$15/min × (volume/10), min $50",
+          "lead_time": "5-10 days",
+          "best_for": "One-offs, prototypes, small batches"
+        },
+        "3d_printing": {
+          "formula": "$0.10 per cm³, min $25",
+          "lead_time": "1-3 days",
+          "best_for": "Rapid prototyping, complex geometry"
+        },
+        "injection_molding": {
+          "formula": "($5,000 tooling + $0.05/cm³) ÷ 1,000 units",
+          "lead_time": "2-4 weeks",
+          "best_for": "High-volume (1,000+) production"
+        }
+      },
+      "usage": "1. Create or edit a part\n2. Cost estimator updates automatically\n3. See three prices in real-time\n4. Bottom shows recommended method\n5. Modify geometry and watch costs change",
+      "tips": [
+        "Always visible at top-right corner",
+        "Updates every 1 second as you model",
+        "Use for ROI analysis: 'At what volume does tooling pay off?'",
+        "Consider post-processing when estimating total cost",
+        "Material changes: titanium is ~5× steel cost"
+      ]
+    },
+    "smart_snap": {
+      "title": "Smart Snap & Auto-Dimension",
+      "category": "Assembly",
+      "shortcut": "Enabled by default",
+      "description": "Intelligent snapping recognizes design intent. Auto-detects bolt circles and linear arrays. Auto-places dimensions on drawings.",
+      "snap_threshold": "15 pixels",
+      "pattern_types": [
+        {
+          "type": "bolt_circle",
+          "detection": "3+ holes arranged in circle (variance < 5mm)",
+          "example": "8 holes on Ø80 PCD"
+        },
+        {
+          "type": "linear_array",
+          "detection": "3+ parts in evenly-spaced line",
+          "example": "5× fasteners at 25mm spacing"
+        }
+      ],
+      "usage": "1. Drag part towards another part\n2. Within 15px, snap preview appears\n3. Release to snap into place\n4. Bolt circles auto-detect during drawing generation",
+      "tips": [
+        "Snap distance is configurable: 15px default",
+        "Pattern detection is automatic, no manual input needed",
+        "Drawings auto-dimension detected patterns",
+        "Use for rapid assembly mockups",
+        "Combine with smart mate for full assembly workflow"
+      ]
+    },
+    "version_control": {
+      "title": "Version Control Visual Diff",
+      "category": "Documentation",
+      "shortcut": "None (use menu)",
+      "description": "Git-like CAD branching with visual geometry comparison. Track design iterations and rollback changes.",
+      "features": [
+        "Save versions with timestamps",
+        "Multiple branches (main, feature/*, bugfix/*)",
+        "Visual diff: green=added, red=removed, orange=modified",
+        "Restore any previous version",
+        "Feature count tracking"
+      ],
+      "workflow": "main/v1.0 → feature/optimization → main/v1.1 → feature/fixes → main/v1.2",
+      "usage": "1. Click 'Save Version' button\n2. Version appears in history with timestamp\n3. Switch branches from dropdown\n4. Click 'Show Diff' to compare last 2 versions\n5. Geometry changes highlighted with colors\n6. Click any version to restore",
+      "tips": [
+        "Save after every major milestone",
+        "Use descriptive branch names: feature/weight-opt, bugfix/hole-offset",
+        "Visual diff is instant, no git learning curve",
+        "Export version history as JSON for archival",
+        "Branching is non-destructive: always have a fallback"
+      ]
+    },
+    "parametric_table": {
+      "title": "Parametric Table",
+      "category": "Engineering",
+      "shortcut": "Ctrl+T",
+      "description": "Excel-like parameter editor with formula support. Create families of parts with one spreadsheet.",
+      "default_parameters": [
+        {
+          "name": "width",
+          "value": "100",
+          "unit": "mm"
+        },
+        {
+          "name": "height",
+          "value": "50",
+          "unit": "mm"
+        },
+        {
+          "name": "hole_diameter",
+          "value": "10",
+          "unit": "mm"
+        }
+      ],
+      "formulas": [
+        {
+          "example": "=width*2",
+          "result": "Double the width"
+        },
+        {
+          "example": "=wall_thickness*5",
+          "result": "Hole is 5× wall thickness"
+        },
+        {
+          "example": "=depth + 10",
+          "result": "Offset by 10mm"
+        }
+      ],
+      "usage": "1. Press Ctrl+T to open table\n2. Edit values directly in cells\n3. Add formulas with = prefix\n4. Press Enter to recalculate\n5. Geometry updates live in viewport\n6. Export/Import CSV for sharing",
+      "tips": [
+        "Formulas are live: change width, height auto-updates",
+        "CSV roundtrip: Export → Excel → Import",
+        "Create family of sizes: S, M, L variants",
+        "Use for design exploration: test 100 variations in 5 minutes",
+        "Parameters feed into BOM and cost estimates"
+      ]
+    },
+    "smart_assembly_mating": {
+      "title": "Smart Assembly Mating",
+      "category": "Assembly",
+      "shortcut": "Drag parts",
+      "description": "Drag-to-snap assembly with auto-detected mate types. No manual positioning needed.",
+      "mate_types": [
+        {
+          "type": "coincident",
+          "when": "General overlap",
+          "example": "Bracket on base plate"
+        },
+        {
+          "type": "concentric",
+          "when": "Both cylinder-like (aspect > 2)",
+          "example": "Shaft through bearing"
+        },
+        {
+          "type": "tangent",
+          "when": "One flat surface (aspect < 0.3)",
+          "example": "Sphere on ramp"
+        },
+        {
+          "type": "offset",
+          "when": "Parallel at distance",
+          "example": "Washers on bolt"
+        }
+      ],
+      "snap_threshold": "20 pixels",
+      "usage": "1. Click and drag part A towards part B\n2. System analyzes geometry\n3. Within 20px, snap preview shows\n4. System auto-selects mate type\n5. Release to snap and apply mate",
+      "tips": [
+        "Mate type is automatic based on geometry analysis",
+        "Snap distance is 20px (quite forgiving)",
+        "Visual preview before snapping prevents mistakes",
+        "Use for rapid assembly mockups",
+        "Undo with Ctrl+Z if snap was wrong"
+      ]
+    },
+    "manufacturing_drawings": {
+      "title": "Manufacturing Drawings Auto-Generator",
+      "category": "Output",
+      "shortcut": "Menu: File → Generate Drawing",
+      "description": "One-click ISO/ANSI engineering drawings with all technical details. Send directly to machine shop.",
+      "included_content": [
+        "Title block with document metadata",
+        "Three orthogonal views (Front, Top, Side)",
+        "Auto-placed dimensions",
+        "Geometric dimensioning & tolerancing (GD&T)",
+        "Bill of Materials table",
+        "Notes and revision history"
+      ],
+      "standards": [
+        "ISO 128 (default)",
+        "ANSI Y14.5 (optional)"
+      ],
+      "output_format": "PNG at 200 DPI (PDF-ready)",
+      "usage": "1. Complete your design in 3D\n2. Menu: File → Generate Drawing\n3. Wait 2 seconds for rendering\n4. Drawing appears in new window\n5. Click 'Download' to save PNG\n6. Send to machine shop or 3D print service",
+      "tips": [
+        "One-click: no configuration needed",
+        "Auto-dimensions: critical features highlighted",
+        "ISO standard: recognized worldwide",
+        "Export as PNG: edit in Photoshop if needed",
+        "BOM is live: changes in model → BOM auto-updates"
+      ]
+    },
+    "digital_twin_live_data": {
+      "title": "Digital Twin Live Data",
+      "category": "Monitoring",
+      "shortcut": "Menu: View → Digital Twin",
+      "description": "Real-time IoT sensor visualization on 3D model. Monitor temperature, vibration, and wear in real-time.",
+      "sensor_data": {
+        "temperature": {
+          "unit": "Celsius",
+          "color_blue": "45-50°C (safe)",
+          "color_yellow": "50-70°C (warning)",
+          "color_red": "70°C+ (critical)"
+        },
+        "vibration": {
+          "unit": "mm/s",
+          "effect": "Scale animation"
+        },
+        "wear": {
+          "unit": "Percentage (0-100%)",
+          "alert_level": "80% (schedule maintenance)"
+        }
+      },
+      "update_frequency": "100ms",
+      "usage": "1. Enable: Menu View → Digital Twin\n2. HUD appears showing live data\n3. Model colors reflect temperature\n4. Watch vibration scale animation\n5. Track wear percentage over time",
+      "tips": [
+        "Simulation mode: test with fake data (default)",
+        "Real sensors: connect via WebSocket",
+        "Color feedback is instant visual status",
+        "Export data: CSV for predictive analysis",
+        "Predictive maintenance: use wear trends to schedule service",
+        "Multi-sensor: monitor 4+ bearings simultaneously"
+      ]
+    }
+  },
+  "quick_start": {
+    "tutorial_1_minute": "Press Ctrl+K, type 'gear 24 teeth', press Enter",
+    "tutorial_5_minutes": "Create a part → Press Ctrl+P → Watch physics → Check costs",
+    "tutorial_10_minutes": "Full workflow: Copilot → Physics → Generative → Costs → Export Drawing"
+  },
+  "keyboard_shortcuts": {
+    "Ctrl+K": "AI Copilot Chat",
+    "Ctrl+P": "Physics Simulation toggle",
+    "Ctrl+G": "Generative Design",
+    "Ctrl+C": "Cost Estimator (show)",
+    "Ctrl+T": "Parameter Table",
+    "Ctrl+Z": "Undo",
+    "Ctrl+Y": "Redo",
+    "Ctrl+S": "Save document"
+  },
+  "troubleshooting": [
+    {
+      "problem": "Copilot doesn't understand my command",
+      "solution": "Use simpler language: 'gear 24 teeth' instead of 'create a gearwheel with 24 teeth and a 5mm bore'",
+      "details": "The parser looks for specific keywords (gear, bracket, cylinder) and numerical values"
+    },
+    {
+      "problem": "Physics simulation is slow",
+      "solution": "Reduce number of meshes or disable for a moment",
+      "details": "Physics runs on all objects. Hide non-essential parts to improve speed"
+    },
+    {
+      "problem": "Snap isn't working",
+      "solution": "Check that snap is enabled and parts are within 15 pixels",
+      "details": "Move your parts closer together. Snap distance is 15px by default"
+    },
+    {
+      "problem": "Drawing is missing dimensions",
+      "solution": "Ensure your part has clear geometry and no internal holes",
+      "details": "Auto-dimension works best on simple shapes. Complex cavities may not be detected"
+    },
+    {
+      "problem": "Parameter formula error",
+      "solution": "Check formula syntax: =width*2 (not =width * 2 with spaces)",
+      "details": "Formulas are JavaScript expressions. Avoid spaces around operators"
+    }
+  ],
+  "api_reference": {
+    "ai_copilot": {
+      "show": "KillerFeatures.features.aiCopilot.show()",
+      "process_command": "KillerFeatures.features.aiCopilot.processCommand('gear 24 teeth')"
+    },
+    "physics": {
+      "toggle": "KillerFeatures.features.physics.toggle()",
+      "start": "KillerFeatures.features.physics.start()",
+      "stop": "KillerFeatures.features.physics.stop()"
+    },
+    "generative": {
+      "show": "KillerFeatures.features.generative.show()",
+      "generate": "KillerFeatures.features.generative.generateTopology(0.5, 20)"
+    },
+    "parameters": {
+      "show": "KillerFeatures.features.parameterTable.show()",
+      "update": "KillerFeatures.features.parameterTable.updateParameter('width', 150)",
+      "export_csv": "KillerFeatures.features.parameterTable.exportCSV()"
+    }
+  },
+  "tips_and_tricks": [
+    "Combine AI Copilot + Generative Design to create optimized parts in 1 minute",
+    "Use Parameter Table to create a family of 10 sizes from one design",
+    "Physics + Parameter Table = rapid iteration on robust designs",
+    "Version Control branching: feature/weight-opt, feature/faster-assembly, etc.",
+    "Manufacturing Drawings export to PDF: File → Generate Drawing → Save → Print",
+    "Smart Snap works best with similar-sized parts; adjust snap distance if needed",
+    "Digital Twin: export live data to CSV, use Excel for trend analysis",
+    "Use Cost Estimator to decide: 1 part = 3D Print, 1000 parts = Injection Mold"
+  ]
+}

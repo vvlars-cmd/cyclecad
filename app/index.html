@@ -972,6 +972,12 @@
       <button class="menu-item-link" data-action="tools-generative">Generative Design</button>
       <button class="menu-item-link" data-action="tools-physics">Multi-Physics Simulation</button>
       <button class="menu-item-link" data-action="tools-parts">Smart Parts Library</button>
+      <button class="menu-item-link" data-action="tools-smart-assembly">Smart Assembly Mating</button>
+      <button class="menu-item-link" data-action="tools-digital-twin">Digital Twin</button>
+      <button class="menu-item-link" data-action="tools-machine">Machine Control (CNC/3DP)</button>
+      <button class="menu-item-link" data-action="tools-notebook">Engineering Notebook</button>
+      <button class="menu-item-link" data-action="tools-auto-assembly">Auto-Assemble Parts</button>
+      <button class="menu-item-link" data-action="tools-parametric">Parametric from Example</button>
       <div class="menu-separator"></div>
       <button class="menu-item-link" data-action="tools-settings">Settings...</button>
     </div>
@@ -1380,6 +1386,12 @@
 <script src="js/modules/generative-design.js"></script>
 <script src="js/modules/multi-physics.js"></script>
 <script src="js/modules/smart-parts.js"></script>
+<script src="js/modules/smart-assembly.js"></script>
+<script src="js/modules/digital-twin.js"></script>
+<script src="js/modules/machine-control.js"></script>
+<script src="js/modules/engineering-notebook.js"></script>
+<script src="js/modules/auto-assembly.js"></script>
+<script src="js/modules/parametric-from-example.js"></script>
 
 <script type="module">
   // ===== Three.js Imports =====
@@ -1594,6 +1606,54 @@
           showDialog('Smart Parts Library', '');
           const dlg6 = document.querySelector('.dialog-content');
           if (dlg6) { dlg6.innerHTML = ''; dlg6.appendChild(partsPanel); dlg6.style.maxHeight = '500px'; dlg6.style.overflow = 'auto'; }
+        }
+        break;
+      case 'tools-smart-assembly':
+        if (window.CycleCAD && window.CycleCAD.SmartAssembly) {
+          const saPanel = window.CycleCAD.SmartAssembly.getUI();
+          showDialog('Smart Assembly Mating', '');
+          const dlg7 = document.querySelector('.dialog-content');
+          if (dlg7) { dlg7.innerHTML = ''; dlg7.appendChild(saPanel); dlg7.style.maxHeight = '500px'; dlg7.style.overflow = 'auto'; }
+        }
+        break;
+      case 'tools-digital-twin':
+        if (window.CycleCAD && window.CycleCAD.DigitalTwin) {
+          const dtPanel = window.CycleCAD.DigitalTwin.getUI();
+          showDialog('Digital Twin — Live Data', '');
+          const dlg8 = document.querySelector('.dialog-content');
+          if (dlg8) { dlg8.innerHTML = ''; dlg8.appendChild(dtPanel); dlg8.style.maxHeight = '500px'; dlg8.style.overflow = 'auto'; }
+        }
+        break;
+      case 'tools-machine':
+        if (window.CycleCAD && window.CycleCAD.MachineControl) {
+          const mcPanel = window.CycleCAD.MachineControl.getUI();
+          showDialog('Machine Control — CNC / 3D Printer', '');
+          const dlg9 = document.querySelector('.dialog-content');
+          if (dlg9) { dlg9.innerHTML = ''; dlg9.appendChild(mcPanel); dlg9.style.maxHeight = '500px'; dlg9.style.overflow = 'auto'; }
+        }
+        break;
+      case 'tools-notebook':
+        if (window.CycleCAD && window.CycleCAD.EngineeringNotebook) {
+          const nbPanel = window.CycleCAD.EngineeringNotebook.getUI();
+          showDialog('Engineering Notebook', '');
+          const dlg10 = document.querySelector('.dialog-content');
+          if (dlg10) { dlg10.innerHTML = ''; dlg10.appendChild(nbPanel); dlg10.style.maxHeight = '500px'; dlg10.style.overflow = 'auto'; }
+        }
+        break;
+      case 'tools-auto-assembly':
+        if (window.CycleCAD && window.CycleCAD.AutoAssembly) {
+          const aaPanel = window.CycleCAD.AutoAssembly.getUI();
+          showDialog('Auto-Assemble Parts', '');
+          const dlg11 = document.querySelector('.dialog-content');
+          if (dlg11) { dlg11.innerHTML = ''; dlg11.appendChild(aaPanel); dlg11.style.maxHeight = '500px'; dlg11.style.overflow = 'auto'; }
+        }
+        break;
+      case 'tools-parametric':
+        if (window.CycleCAD && window.CycleCAD.ParametricFromExample) {
+          const pfPanel = window.CycleCAD.ParametricFromExample.getUI();
+          showDialog('Parametric from Example', '');
+          const dlg12 = document.querySelector('.dialog-content');
+          if (dlg12) { dlg12.innerHTML = ''; dlg12.appendChild(pfPanel); dlg12.style.maxHeight = '500px'; dlg12.style.overflow = 'auto'; }
         }
         break;
       default:
@@ -1936,6 +1996,42 @@
     if (window.CycleCAD && window.CycleCAD.SmartParts) {
       window.CycleCAD.SmartParts.init(scene);
       console.log('[cycleCAD] Smart Parts Library initialized');
+    }
+
+    // Initialize Smart Assembly Mating
+    if (window.CycleCAD && window.CycleCAD.SmartAssembly) {
+      window.CycleCAD.SmartAssembly.init(scene);
+      console.log('[cycleCAD] Smart Assembly Mating initialized');
+    }
+
+    // Initialize Digital Twin Live Data
+    if (window.CycleCAD && window.CycleCAD.DigitalTwin) {
+      window.CycleCAD.DigitalTwin.init(scene, camera);
+      console.log('[cycleCAD] Digital Twin Live Data initialized');
+    }
+
+    // Initialize CNC / 3D Printer Control
+    if (window.CycleCAD && window.CycleCAD.MachineControl) {
+      window.CycleCAD.MachineControl.init(scene);
+      console.log('[cycleCAD] Machine Control initialized');
+    }
+
+    // Initialize Engineering Notebook
+    if (window.CycleCAD && window.CycleCAD.EngineeringNotebook) {
+      window.CycleCAD.EngineeringNotebook.init(scene);
+      console.log('[cycleCAD] Engineering Notebook initialized');
+    }
+
+    // Initialize Auto-Assembly
+    if (window.CycleCAD && window.CycleCAD.AutoAssembly) {
+      window.CycleCAD.AutoAssembly.init(scene);
+      console.log('[cycleCAD] Auto-Assembly initialized');
+    }
+
+    // Initialize Parametric from Example
+    if (window.CycleCAD && window.CycleCAD.ParametricFromExample) {
+      window.CycleCAD.ParametricFromExample.init(scene);
+      console.log('[cycleCAD] Parametric from Example initialized');
     }
   }
 

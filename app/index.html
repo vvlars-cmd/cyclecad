@@ -1331,31 +1331,22 @@ window._dismissSplash = function(action) {
   <div style="background:#252526;border:1px solid #3c3c3c;border-radius:12px;padding:40px 48px;max-width:560px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
     <div style="font-size:36px;margin-bottom:4px;"><span style="color:#0284C7;font-weight:700;">cycle</span><span style="color:#e0e0e0;font-weight:300;">CAD</span></div>
     <div style="color:#888;font-size:13px;margin-bottom:28px;">Agent-First Parametric 3D CAD Modeler</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
       <button id="splash-sketch" style="background:#0284C7;color:#fff;border:none;border-radius:8px;padding:18px 16px;cursor:pointer;font-size:14px;font-weight:600;"><div style="font-size:24px;margin-bottom:6px;">&#9999;&#65039;</div>New Sketch<div style="font-size:11px;font-weight:400;color:rgba(255,255,255,0.7);margin-top:4px;">Start with a 2D sketch</div></button>
       <button id="splash-import" style="background:#374151;color:#fff;border:1px solid #4b5563;border-radius:8px;padding:18px 16px;cursor:pointer;font-size:14px;font-weight:600;"><div style="font-size:24px;margin-bottom:6px;">&#128194;</div>Open / Import<div style="font-size:11px;font-weight:400;color:rgba(255,255,255,0.7);margin-top:4px;">STEP, STL, Inventor, JSON</div></button>
       <button id="splash-textcad" style="background:#374151;color:#fff;border:1px solid #4b5563;border-radius:8px;padding:18px 16px;cursor:pointer;font-size:14px;font-weight:600;"><div style="font-size:24px;margin-bottom:6px;">&#129302;</div>Text-to-CAD<div style="font-size:11px;font-weight:400;color:rgba(255,255,255,0.7);margin-top:4px;">Describe a part in English</div></button>
       <button id="splash-inventor" style="background:#374151;color:#fff;border:1px solid #4b5563;border-radius:8px;padding:18px 16px;cursor:pointer;font-size:14px;font-weight:600;"><div style="font-size:24px;margin-bottom:6px;">&#127981;</div>Inventor Project<div style="font-size:11px;font-weight:400;color:rgba(255,255,255,0.7);margin-top:4px;">Load .ipj / .ipt / .iam</div></button>
     </div>
-    <button id="splash-reset" style="background:transparent;color:#ef4444;border:1px solid #ef4444;border-radius:6px;padding:8px 20px;cursor:pointer;font-size:12px;font-weight:600;margin-bottom:16px;width:100%;">&#x1F504; Hard Reset (Clear Cache + Reload)</button>
-    <div style="color:#666;font-size:11px;">v0.9.0 · 12 killer features · 46 modules · <a href="https://github.com/vvlars-cmd/cyclecad" target="_blank" style="color:#0284C7;text-decoration:none;">GitHub</a></div>
+    <div style="color:#666;font-size:11px;">12 killer features &middot; 46 modules &middot; <a href="https://github.com/vvlars-cmd/cyclecad" target="_blank" style="color:#0284C7;text-decoration:none;">GitHub</a></div>
   </div>
 </div>
 <script>
 (function() {
-  var wp = document.getElementById('welcome-panel');
-  function dismiss() { wp.style.display = 'none'; }
-  document.getElementById('splash-sketch').addEventListener('click', function() { dismiss(); });
-  document.getElementById('splash-import').addEventListener('click', function() { dismiss(); });
-  document.getElementById('splash-textcad').addEventListener('click', function() { dismiss(); });
-  document.getElementById('splash-inventor').addEventListener('click', function() { dismiss(); });
-  document.getElementById('splash-reset').addEventListener('click', function() {
-    if ('caches' in window) { caches.keys().then(function(n) { n.forEach(function(k) { caches.delete(k); }); }); }
-    if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().then(function(r) { r.forEach(function(w) { w.unregister(); }); }); }
-    try { localStorage.clear(); } catch(e) {}
-    try { sessionStorage.clear(); } catch(e) {}
-    setTimeout(function() { location.reload(true); }, 500);
-  });
+  function dismiss() { document.getElementById("welcome-panel").style.display = "none"; }
+  document.getElementById("splash-sketch").addEventListener("click", dismiss);
+  document.getElementById("splash-import").addEventListener("click", dismiss);
+  document.getElementById("splash-textcad").addEventListener("click", dismiss);
+  document.getElementById("splash-inventor").addEventListener("click", dismiss);
 })();
 </script>
 

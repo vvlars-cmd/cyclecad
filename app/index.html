@@ -1363,6 +1363,99 @@
 <div id="toast-container"></div>
 
 <script type="module">
+  // ===== Three.js Imports =====
+  import * as THREE from 'three';
+  import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+  import { GridHelper } from 'three';
+
+  // ===== Three.js Viewport Setup =====
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x2d2d30);
+
+  const viewportEl = document.getElementById('viewport-container');
+  const canvas = viewportEl.querySelector('canvas') || document.createElement('canvas');
+  if (!canvas.parentElement) viewportEl.appendChild(canvas);
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 10000);
+  camera.position.set(150, 120, 200);
+  camera.lookAt(0, 0, 0);
+
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.target.set(0, 0, 0);
+
+  // Lights
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+  scene.add(ambientLight);
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  dirLight.position.set(200, 300, 150);
+  dirLight.castShadow = true;
+  scene.add(dirLight);
+  const fillLight = new THREE.DirectionalLight(0x8899bb, 0.3);
+  fillLight.position.set(-100, 50, -100);
+  scene.add(fillLight);
+
+  // Grid
+  const grid = new THREE.GridHelper(500, 50, 0x444444, 0x333333);
+  scene.add(grid);
+
+  // Demo geometry — a sample part so viewport isn't empty
+  const boxGeo = new THREE.BoxGeometry(60, 40, 80);
+  const boxMat = new THREE.MeshStandardMaterial({ color: 0x0284C7, metalness: 0.3, roughness: 0.6 });
+  const box = new THREE.Mesh(boxGeo, boxMat);
+  box.position.y = 20;
+  box.castShadow = true;
+  box.receiveShadow = true;
+  scene.add(box);
+
+  const cylGeo = new THREE.CylinderGeometry(12, 12, 50, 32);
+  const cylMat = new THREE.MeshStandardMaterial({ color: 0x10b981, metalness: 0.4, roughness: 0.5 });
+  const cyl = new THREE.Mesh(cylGeo, cylMat);
+  cyl.position.set(0, 45, 0);
+  cyl.castShadow = true;
+  scene.add(cyl);
+
+  // Ground plane
+  const groundGeo = new THREE.PlaneGeometry(500, 500);
+  const groundMat = new THREE.ShadowMaterial({ opacity: 0.15 });
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  // Resize handler
+  function resizeViewport() {
+    const w = viewportEl.clientWidth;
+    const h = viewportEl.clientHeight;
+    if (w === 0 || h === 0) return;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+  }
+  new ResizeObserver(resizeViewport).observe(viewportEl);
+  resizeViewport();
+
+  // Animation loop
+  function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  // Expose globals for modules
+  window.THREE = THREE;
+  window._scene = scene;
+  window._camera = camera;
+  window._renderer = renderer;
+  window._controls = controls;
+
   // ===== Global State =====
   const appState = {
     currentWorkspace: 'design',

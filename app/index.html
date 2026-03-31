@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>cycleCAD - Fusion 360 Clone - Parametric 3D CAD Modeler</title>
@@ -1445,6 +1448,7 @@ window._dismissSplash = function(action) {
   import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
   import { GridHelper } from 'three';
   import { KillerFeatures } from './js/killer-features.js';
+  import { startSketch, endSketch, setTool, getSketchEntities, clearSketch, entitiesToShape } from './js/sketch.js';
 
   // ===== Three.js Viewport Setup =====
   const scene = new THREE.Scene();
@@ -1650,6 +1654,23 @@ window._dismissSplash = function(action) {
   // ===== DOM Queries =====
   const menuBar = document.getElementById('menu-bar');
   const workspaceTabs = document.querySelectorAll('.workspace-tab');
+  // Wire workspace tabs to enter/exit sketch mode
+  workspaceTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const ws = tab.getAttribute('data-workspace');
+      workspaceTabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      // Show/hide workspace-specific toolbars
+      document.querySelectorAll('.workspace-tools').forEach(t => t.style.display = 'none');
+      const wsTools = document.getElementById(ws + '-tools');
+      if (wsTools) wsTools.style.display = 'flex';
+      if (ws === 'sketch' && !appState.isSketchMode) {
+        handleMenuAction('sketch-new');
+      } else if (ws !== 'sketch' && appState.isSketchMode) {
+        handleMenuAction('sketch-finish');
+      }
+    });
+  });
   const leftPanelTabs = document.querySelectorAll('.left-panel-tab');
   const rightPanelTabs = document.querySelectorAll('.right-panel-tab');
   const viewportContainer = document.getElementById('viewport-container');
@@ -1684,8 +1705,98 @@ window._dismissSplash = function(action) {
       case 'edit-redo':
         showToast('Redo', 'success');
         break;
+      case 'sketch-new':
+        if (!appState.isSketchMode) {
+          appState.isSketchMode = true;
+          startSketch('XY', camera, controls);
+          showToast('Sketch mode — draw on XY plane', 'success');
+          // Show sketch tools, activate Sketch tab
+          var st = document.getElementById('sketch-tools');
+          if (st) st.style.display = 'flex';
+          document.querySelectorAll('.workspace-tab').forEach(t => t.classList.remove('active'));
+          var skTab = document.querySelector('[data-workspace="sketch"]');
+          if (skTab) skTab.classList.add('active');
+        }
+        break;
       case 'sketch-line':
-        if (appState.isSketchMode) showToast('Line tool active', 'success');
+        if (!appState.isSketchMode) { handleMenuAction('sketch-new'); }
+        setTool('line');
+        showToast('Line tool — click to place points', 'success');
+        break;
+      case 'sketch-rectangle':
+        if (!appState.isSketchMode) { handleMenuAction('sketch-new'); }
+        setTool('rectangle');
+        showToast('Rectangle tool — click two corners', 'success');
+        break;
+      case 'sketch-circle':
+        if (!appState.isSketchMode) { handleMenuAction('sketch-new'); }
+        setTool('circle');
+        showToast('Circle tool — click center, then radius', 'success');
+        break;
+      case 'sketch-arc':
+        if (!appState.isSketchMode) { handleMenuAction('sketch-new'); }
+        setTool('arc');
+        showToast('Arc tool — click 3 points', 'success');
+        break;
+      case 'sketch-polyline':
+        if (!appState.isSketchMode) { handleMenuAction('sketch-new'); }
+        setTool('polyline');
+        showToast('Polyline tool — click points, double-click to finish', 'success');
+        break;
+      case 'sketch-finish':
+        if (appState.isSketchMode) {
+          const entities = endSketch();
+          appState.isSketchMode = false;
+          // Hide sketch tools, back to Design tab
+          var st2 = document.getElementById('sketch-tools');
+          if (st2) st2.style.display = 'none';
+          document.querySelectorAll('.workspace-tab').forEach(t => t.classList.remove('active'));
+          var dTab = document.querySelector('[data-workspace="design"]');
+          if (dTab) dTab.classList.add('active');
+          if (entities.length > 0) {
+            // Convert sketch entities to 3D wireframe in scene
+            try {
+              const shape = entitiesToShape(entities);
+              if (shape) {
+                const mat = new THREE.LineBasicMaterial({ color: 0x00ff00 });
+                const edges = new THREE.EdgesGeometry(shape);
+                const wireframe = new THREE.LineSegments(edges, mat);
+                wireframe.name = 'Sketch' + (appState.featureTree.length + 1);
+                scene.add(wireframe);
+                appState.featureTree.push({ name: wireframe.name, type: 'Sketch', visible: true, mesh: wireframe });
+                showToast('Sketch finished — ' + entities.length + ' entities', 'success');
+              } else {
+                // Just add lines directly
+                const lineMat = new THREE.LineBasicMaterial({ color: 0x00ccff });
+                entities.forEach((ent, idx) => {
+                  if (ent.points && ent.points.length >= 2) {
+                    const pts = ent.points.map(p => new THREE.Vector3(p.x, p.y, 0));
+                    if (ent.type === 'circle' && ent.center && ent.radius) {
+                      const curve = new THREE.EllipseCurve(ent.center.x, ent.center.y, ent.radius, ent.radius, 0, Math.PI * 2, false, 0);
+                      const cPts = curve.getPoints(64).map(p => new THREE.Vector3(p.x, p.y, 0));
+                      const geo = new THREE.BufferGeometry().setFromPoints(cPts);
+                      const line = new THREE.Line(geo, lineMat);
+                      line.name = 'SketchCircle' + (idx + 1);
+                      scene.add(line);
+                    } else {
+                      const geo = new THREE.BufferGeometry().setFromPoints(pts);
+                      const line = new THREE.Line(geo, lineMat);
+                      line.name = 'SketchLine' + (idx + 1);
+                      scene.add(line);
+                    }
+                  }
+                });
+                appState.featureTree.push({ name: 'Sketch' + (appState.featureTree.length + 1), type: 'Sketch', visible: true });
+                showToast('Sketch finished — ' + entities.length + ' entities added', 'success');
+              }
+            } catch(e) {
+              console.warn('Sketch to shape error:', e);
+              showToast('Sketch finished (wireframe only)', 'warning');
+            }
+          } else {
+            showToast('Empty sketch discarded', 'warning');
+          }
+        }
         break;
       case 'solid-extrude':
         showToast('Extrude tool active', 'success');

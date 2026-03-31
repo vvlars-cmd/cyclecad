@@ -989,6 +989,8 @@
       <button class="menu-item-link" data-action="help-docs">Documentation</button>
       <button class="menu-item-link" data-action="help-shortcuts">Keyboard Shortcuts (?)</button>
       <button class="menu-item-link" data-action="help-about">About cycleCAD</button>
+      <div style="border-top:1px solid #444;margin:4px 0;"></div>
+      <button class="menu-item-link" data-action="help-hard-reset" style="color:#ef4444;">Hard Reset (Clear Cache)</button>
     </div>
   </div>
 </div>
@@ -1148,7 +1150,7 @@
     <div id="viewport-container" style="position:relative;">
       <canvas id="viewport"></canvas>
       <!-- ViewCube -->
-      <div id="viewcube" style="position:absolute;top:12px;right:12px;width:90px;height:90px;pointer-events:auto;z-index:100;"></div>
+      <div id="viewcube" style="position:absolute;top:12px;right:12px;width:120px;height:120px;pointer-events:auto;z-index:100;"></div>
     </div>
 
     <!-- Right Panel (Properties) -->
@@ -1509,7 +1511,7 @@ window._dismissSplash = function(action) {
   const vcCamera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
   vcCamera.position.set(0, 0, 3.5);
   const vcRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-  vcRenderer.setSize(90, 90);
+  vcRenderer.setSize(120, 120);
   vcRenderer.setPixelRatio(window.devicePixelRatio);
   vcContainer.appendChild(vcRenderer.domElement);
 
@@ -1555,26 +1557,63 @@ window._dismissSplash = function(action) {
   };
   const vcRay = new THREE.Raycaster();
   const vcMouse = new THREE.Vector2();
-  vcRenderer.domElement.addEventListener('click', (e) => {
-    const rect = vcRenderer.domElement.getBoundingClientRect();
-    vcMouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-    vcMouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-    vcRay.setFromCamera(vcMouse, vcCamera);
-    const hits = vcRay.intersectObject(vcCube);
-    if (hits.length > 0) {
-      const fi = hits[0].face.materialIndex;
-      const label = faceLabels[fi];
-      const v = vcViews[label];
-      if (v) {
-        const dist = camera.position.length();
-        const s = dist / 3;
-        camera.position.set(v.x * s, v.y * s, v.z * s);
-        camera.lookAt(controls.target);
-        controls.update();
+  // ViewCube drag-to-rotate + click-to-snap
+  let vcDragging = false, vcDragStart = null, vcDragMoved = false;
+  const vcEl = vcRenderer.domElement;
+  vcEl.addEventListener('pointerdown', (e) => {
+    vcDragging = true; vcDragMoved = false;
+    vcDragStart = { x: e.clientX, y: e.clientY };
+    vcEl.setPointerCapture(e.pointerId);
+    e.preventDefault(); e.stopPropagation();
+  });
+  vcEl.addEventListener('pointermove', (e) => {
+    if (!vcDragging || !vcDragStart) return;
+    const dx = e.clientX - vcDragStart.x;
+    const dy = e.clientY - vcDragStart.y;
+    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) vcDragMoved = true;
+    if (!vcDragMoved) return;
+    const speed = 0.01;
+    const spherical = new THREE.Spherical().setFromVector3(
+      camera.position.clone().sub(controls.target)
+    );
+    spherical.theta -= dx * speed;
+    spherical.phi -= dy * speed;
+    spherical.phi = Math.max(0.05, Math.min(Math.PI - 0.05, spherical.phi));
+    camera.position.copy(
+      new THREE.Vector3().setFromSpherical(spherical).add(controls.target)
+    );
+    camera.lookAt(controls.target);
+    controls.update();
+    vcDragStart = { x: e.clientX, y: e.clientY };
+    e.preventDefault(); e.stopPropagation();
+  });
+  vcEl.addEventListener('pointerup', (e) => {
+    if (vcDragging && !vcDragMoved) {
+      const rect = vcEl.getBoundingClientRect();
+      vcMouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      vcMouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      vcRay.setFromCamera(vcMouse, vcCamera);
+      const hits = vcRay.intersectObject(vcCube);
+      if (hits.length > 0) {
+        const fi = hits[0].face.materialIndex;
+        const label = faceLabels[fi];
+        const v = vcViews[label];
+        if (v) {
+          const dist = camera.position.length();
+          const s = dist / 3;
+          camera.position.set(v.x * s, v.y * s, v.z * s);
+          camera.lookAt(controls.target);
+          controls.update();
+        }
       }
     }
+    vcDragging = false; vcDragStart = null; vcDragMoved = false;
+    e.preventDefault(); e.stopPropagation();
   });
-  vcRenderer.domElement.style.cursor = 'pointer';
+  vcEl.style.cursor = 'grab';
+  vcEl.addEventListener('pointerdown', () => { vcEl.style.cursor = 'grabbing'; });
+  vcEl.addEventListener('pointerup', () => { vcEl.style.cursor = 'grab'; });
+  vcEl.style.touchAction = 'none';
 
   // Animation loop
   function animate() {
@@ -1662,6 +1701,29 @@ window._dismissSplash = function(action) {
         break;
       case 'help-docs':
         window.open('https://cyclecad.com/docs', '_blank');
+        break;
+      case 'help-hard-reset':
+        if (confirm('This will clear ALL cached data and reload. Continue?')) {
+          (async () => {
+            try {
+              if ('serviceWorker' in navigator) {
+                const regs = await navigator.serviceWorker.getRegistrations();
+                for (const r of regs) await r.unregister();
+              }
+              if ('caches' in window) {
+                const keys = await caches.keys();
+                for (const k of keys) await caches.delete(k);
+              }
+              try { localStorage.clear(); } catch(e) {}
+              try { sessionStorage.clear(); } catch(e) {}
+              if (indexedDB.databases) {
+                const dbs = await indexedDB.databases();
+                for (const db of dbs) indexedDB.deleteDatabase(db.name);
+              }
+              window.location.href = window.location.pathname + '?reset=' + Date.now();
+            } catch(e) { window.location.reload(true); }
+          })();
+        }
         break;
       case 'help-about':
         showDialog('About cycleCAD', 'cycleCAD v0.9.0 - Fusion 360 Clone<br>Open-source parametric 3D CAD modeler<br><br>Built with Three.js, supporting STEP/IGES import, full parametric modeling, and AI-powered design assistance.');

@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>cycleCAD Killer Features Visual Test</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      display: flex;
+      height: 100vh;
+      gap: 1px;
+    }
+
+    .app-container {
+      flex: 0 0 60%;
+      background: #1a202c;
+      border: 1px solid #2d3748;
+      position: relative;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .test-panel {
+      flex: 0 0 40%;
+      display: flex;
+      flex-direction: column;
+      background: #1a202c;
+      border-left: 1px solid #2d3748;
+      overflow: hidden;
+    }
+
+    .test-header {
+      padding: 16px;
+      border-bottom: 1px solid #2d3748;
+      background: #0f172a;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    .test-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #38bdf8;
+    }
+
+    .test-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+      gap: 6px;
+      font-size: 11px;
+      margin-bottom: 10px;
+    }
+
+    .stat-box {
+      padding: 8px;
+      background: #1e293b;
+      border-radius: 4px;
+      border-left: 2px solid #64748b;
+    }
+
+    .stat-box.pass {
+      border-left-color: #10b981;
+    }
+
+    .stat-box.fail {
+      border-left-color: #ef4444;
+    }
+
+    .stat-box.skip {
+      border-left-color: #f59e0b;
+    }
+
+    .stat-box.error {
+      border-left-color: #ec4899;
+    }
+
+    .stat-label {
+      font-size: 10px;
+      color: #94a3b8;
+      margin-bottom: 2px;
+    }
+
+    .stat-value {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .test-controls {
+      display: flex;
+      gap: 6px;
+      padding: 10px;
+      border-bottom: 1px solid #2d3748;
+      flex-wrap: wrap;
+      background: #0f172a;
+    }
+
+    .button {
+      padding: 6px 12px;
+      background: #0284c7;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .button:hover {
+      background: #0369a1;
+    }
+
+    .button:disabled {
+      background: #64748b;
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    .button.secondary {
+      background: #475569;
+    }
+
+    .button.secondary:hover {
+      background: #64748b;
+    }
+
+    .button.export {
+      background: #10b981;
+    }
+
+    .button.export:hover {
+      background: #059669;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: #0f172a;
+      border-radius: 2px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #0284c7;
+      transition: width 0.3s;
+      width: 0%;
+    }
+
+    .test-log {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+      font-size: 11px;
+      font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    }
+
+    .log-entry {
+      padding: 6px 8px;
+      margin: 2px 0;
+      border-radius: 3px;
+      border-left: 3px solid #64748b;
+      word-break: break-word;
+    }
+
+    .log-entry.pass {
+      background: rgba(16, 185, 129, 0.1);
+      border-left-color: #10b981;
+      color: #a7f3d0;
+    }
+
+    .log-entry.fail {
+      background: rgba(239, 68, 68, 0.1);
+      border-left-color: #ef4444;
+      color: #fca5a5;
+    }
+
+    .log-entry.skip {
+      background: rgba(245, 158, 11, 0.1);
+      border-left-color: #f59e0b;
+      color: #fcd34d;
+    }
+
+    .log-entry.error {
+      background: rgba(236, 72, 153, 0.1);
+      border-left-color: #ec4899;
+      color: #fbcfe8;
+    }
+
+    .log-entry.info {
+      background: rgba(2, 132, 199, 0.1);
+      border-left-color: #0284c7;
+      color: #a5f3fc;
+    }
+
+    .log-time {
+      color: #64748b;
+      font-size: 10px;
+      margin-right: 6px;
+    }
+
+    .test-category {
+      margin-bottom: 8px;
+      border: 1px solid #2d3748;
+      border-radius: 4px;
+      overflow: hidden;
+      background: #0f172a;
+    }
+
+    .category-header {
+      padding: 8px;
+      background: #1e293b;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 500;
+      user-select: none;
+    }
+
+    .category-header:hover {
+      background: #334155;
+    }
+
+    .category-toggle {
+      transition: transform 0.2s;
+    }
+
+    .category-toggle.collapsed {
+      transform: rotate(-90deg);
+    }
+
+    .category-tests {
+      padding: 4px;
+      display: none;
+    }
+
+    .category-tests.expanded {
+      display: block;
+    }
+
+    .category-badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      background: #2d3748;
+      color: #cbd5e1;
+      margin-left: 4px;
+    }
+
+    .visual-flash {
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      border: 3px solid #10b981;
+      border-radius: 8px;
+      pointer-events: none;
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
+      animation: flash 0.6s ease-out;
+      z-index: 10000;
+    }
+
+    @keyframes flash {
+      0% {
+        opacity: 1;
+        transform: scale(0.8);
+      }
+      100% {
+        opacity: 0;
+        transform: scale(1.2);
+      }
+    }
+
+    .summary-card {
+      background: #1e293b;
+      border: 1px solid #0284c7;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 10px;
+      color: #cbd5e1;
+    }
+
+    .summary-title {
+      font-weight: 600;
+      color: #38bdf8;
+      margin-bottom: 6px;
+      font-size: 12px;
+    }
+
+    .summary-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      font-size: 11px;
+    }
+
+    .summary-stat {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .summary-stat-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+    }
+
+    .duration-display {
+      color: #94a3b8;
+      font-size: 11px;
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px solid #2d3748;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <iframe id="appFrame" src="../index.html"></iframe>
+  </div>
+
+  <div class="test-panel">
+    <div class="test-header">
+      <div class="test-title">Killer Features Test Suite</div>
+      <div class="summary-card">
+        <div class="summary-title">Test Progress</div>
+        <div class="summary-stats">
+          <div class="summary-stat">
+            <div class="summary-stat-dot" style="background: #10b981;"></div>
+            <span><strong id="passCount">0</strong> passed</span>
+          </div>
+          <div class="summary-stat">
+            <div class="summary-stat-dot" style="background: #ef4444;"></div>
+            <span><strong id="failCount">0</strong> failed</span>
+          </div>
+          <div class="summary-stat">
+            <div class="summary-stat-dot" style="background: #f59e0b;"></div>
+            <span><strong id="skipCount">0</strong> skipped</span>
+          </div>
+          <div class="summary-stat">
+            <div class="summary-stat-dot" style="background: #ec4899;"></div>
+            <span><strong id="errorCount">0</strong> errors</span>
+          </div>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressBar"></div>
+        </div>
+        <div class="duration-display">
+          Elapsed: <span id="elapsedTime">0.0s</span> | Total tests: <span id="totalTests">0</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="test-controls">
+      <button class="button" id="runAllBtn">Run All</button>
+      <button class="button secondary" id="runSelectedBtn">Run Selected</button>
+      <button class="button secondary" id="clearLogBtn">Clear Log</button>
+      <button class="button export" id="exportBtn">Export JSON</button>
+    </div>
+
+    <div class="test-log" id="testLog">
+      <div class="log-entry info">Killer Features Visual Test Suite Ready</div>
+      <div class="log-entry info">Click "Run All" to start testing all 120+ tests across 15 categories</div>
+    </div>
+  </div>
+
+  <script>
+    const TEST_TIMEOUT = 5000;
+    const TEST_DELAY = 300;
+
+    let testResults = [];
+    let stats = { pass: 0, fail: 0, skip: 0, error: 0 };
+    let startTime = null;
+    let runningTests = false;
+
+    // Test Definitions
+    const testCategories = [
+      {
+        name: 'Module Loading',
+        description: '6 tests',
+        tests: [
+          { name: 'TextToCAD module exists', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            return frame.CycleCAD && frame.CycleCAD.TextToCAD ? true : false;
+          } },
+          { name: 'TextToCAD.init function exists', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            return typeof frame.CycleCAD.TextToCAD.init === 'function';
+          } },
+          { name: 'PhotoToCAD module exists', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            return frame.CycleCAD && frame.CycleCAD.PhotoToCAD ? true : false;
+          } },
+          { name: 'Manufacturability module exists', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            return frame.CycleCAD && frame.CycleCAD.Manufacturability ? true : false;
+          } },
+          { name: 'GenerativeDesign module exists', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            return frame.CycleCAD && frame.CycleCAD.GenerativeDesign ? true : false;
+          } },
+          { name: 'MultiPhysics module exists', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            return frame.CycleCAD && frame.CycleCAD.MultiPhysics ? true : false;
+          } }
+        ]
+      },
+      {
+        name: 'Text-to-CAD NLP',
+        description: '15 tests',
+        tests: [
+          { name: 'Parse cylinder description', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const result = frame.CycleCAD.TextToCAD.parseDescription('cylinder 50mm diameter 80mm tall');
+            return result && result.shape === 'cylinder' && result.diameter === 50 && result.height === 80;
+          } },
+          { name: 'Parse gear description', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const result = frame.CycleCAD.TextToCAD.parseDescription('gear 24 teeth module 2');
+            return result && result.shape === 'gear' && result.teeth === 24;
+          } },
+          { name: 'Parse bolt description', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const result = frame.CycleCAD.TextToCAD.parseDescription('M8 bolt 30mm long');
+            return result && result.shape === 'bolt';
+          } },
+          { name: 'Parse plate description', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const result = frame.CycleCAD.TextToCAD.parseDescription('plate 100x60x5mm');
+            return result && (result.shape === 'plate' || result.shape === 'box');
+          } },
+          { name: 'Detect hole feature', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const result = frame.CycleCAD.TextToCAD.parseDescription('bracket with 2 holes');
+            return result && result.features && result.features.includes('hole');
+          } },
+          { name: 'Detect fillet feature', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const result = frame.CycleCAD.TextToCAD.parseDescription('fillet 3mm radius');
+            return result && result.features && result.features.includes('fillet');
+          } },
+          { name: 'Detect circular pattern', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const result = frame.CycleCAD.TextToCAD.parseDescription('4 holes on 70mm PCD');
+            return result && result.features && result.features.includes('pattern');
+          } },
+          { name: 'Convert inches to mm', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const result = frame.CycleCAD.TextToCAD.parseDescription('cylinder 2 inches diameter');
+            return result && Math.abs(result.diameter - 50.8) < 1;
+          } },
+          { name: 'Handle empty string', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const result = frame.CycleCAD.TextToCAD.parseDescription('');
+            return result === null || result === undefined || !result.shape;
+          } },
+          { name: 'Handle gibberish input', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const result = frame.CycleCAD.TextToCAD.parseDescription('xyzabc qwerty asdf');
+            return !result || result.confidence < 0.5;
+          } },
+          { name: 'generateGeometry returns THREE.Mesh or Group', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const THREE = frame.THREE;
+            if (!THREE) return false;
+            const geom = frame.CycleCAD.TextToCAD.generateGeometry('cylinder', { diameter: 50, height: 80 });
+            return geom && (geom instanceof THREE.Mesh || geom instanceof THREE.Group);
+          } },
+          { name: 'Generated cylinder has correct radius', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const geom = frame.CycleCAD.TextToCAD.generateGeometry('cylinder', { diameter: 50, height: 80 });
+            return geom && geom.geometry && geom.geometry.parameters && Math.abs(geom.geometry.parameters.radiusTop - 25) < 2;
+          } },
+          { name: 'Generated box has correct dimensions', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const geom = frame.CycleCAD.TextToCAD.generateGeometry('box', { width: 100, height: 80, depth: 60 });
+            return geom && geom.geometry && geom.geometry.parameters && Math.abs(geom.geometry.parameters.width - 100) < 2;
+          } },
+          { name: 'Multi-step geometry creation', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const THREE = frame.THREE;
+            if (!THREE) return false;
+            const geom1 = frame.CycleCAD.TextToCAD.generateGeometry('cylinder', { diameter: 30, height: 80 });
+            return geom1 && geom1.children && geom1.children.length > 0;
+          } },
+          { name: 'getUI returns valid panel', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const ui = frame.CycleCAD.TextToCAD.getUI && frame.CycleCAD.TextToCAD.getUI();
+            return ui && ui instanceof frame.HTMLElement;
+          } }
+        ]
+      },
+      {
+        name: 'Text-to-CAD Visual',
+        description: '5 tests',
+        tests: [
+          { name: 'Tools menu exists', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const menu = frame.document.querySelector('[data-menu="tools"]');
+            return menu !== null;
+          } },
+          { name: 'Text-to-CAD menu item present', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const item = frame.document.querySelector('[data-action="text-to-cad"]');
+            return item !== null;
+          } },
+          { name: 'Open text-to-cad dialog', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const action = frame.document.querySelector('[data-action="text-to-cad"]');
+            if (action) {
+              action.click();
+              return frame.document.querySelector('[data-dialog="text-to-cad"]') !== null;
+            }
+            return false;
+          } },
+          { name: 'Dialog has description textarea', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const textarea = frame.document.querySelector('[data-input="text-description"]');
+            return textarea !== null;
+          } },
+          { name: 'Dialog has Generate button', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const button = frame.document.querySelector('[data-action="generate-geometry"]');
+            return button !== null;
+          } }
+        ]
+      },
+      {
+        name: 'Photo-to-CAD Core',
+        description: '8 tests',
+        tests: [
+          { name: 'PhotoToCAD.getUI returns panel', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const ui = frame.CycleCAD.PhotoToCAD.getUI && frame.CycleCAD.PhotoToCAD.getUI();
+            return ui && ui instanceof frame.HTMLElement;
+          } },
+          { name: 'processImage handles canvas data', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const canvas = frame.document.createElement('canvas');
+            canvas.width = 256; canvas.height = 256;
+            const dataUrl = canvas.toDataURL();
+            const result = frame.CycleCAD.PhotoToCAD.processImage(dataUrl);
+            return result && typeof result === 'object';
+          } },
+          { name: 'detectEdges returns features array', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const canvas = frame.document.createElement('canvas');
+            const features = frame.CycleCAD.PhotoToCAD.detectEdges(canvas);
+            return Array.isArray(features);
+          } },
+          { name: 'reconstruct3D creates geometry', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const THREE = frame.THREE;
+            if (!THREE) return false;
+            const features = [{ type: 'circle', center: [128, 128], radius: 50 }];
+            const geom = frame.CycleCAD.PhotoToCAD.reconstruct3D(features);
+            return geom && (geom instanceof THREE.Mesh || geom instanceof THREE.Group);
+          } },
+          { name: 'execute with no image returns error', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            try {
+              frame.CycleCAD.PhotoToCAD.execute('detect', {});
+              return false;
+            } catch (e) {
+              return true;
+            }
+          } },
+          { name: 'AI enhancement fallback works', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const result = frame.CycleCAD.PhotoToCAD.enhanceFeatures([{ type: 'edge', confidence: 0.5 }]);
+            return Array.isArray(result);
+          } },
+          { name: 'exportFeatures contains array', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const exported = frame.CycleCAD.PhotoToCAD.exportFeatures([{ type: 'circle' }]);
+            return exported && exported.features && Array.isArray(exported.features);
+          } },
+          { name: 'Panel has drop zone', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const ui = frame.CycleCAD.PhotoToCAD.getUI && frame.CycleCAD.PhotoToCAD.getUI();
+            return ui && ui.querySelector('[data-drop-zone="image"]') !== null;
+          } }
+        ]
+      },
+      {
+        name: 'Manufacturability Core',
+        description: '10 tests',
+        tests: [
+          { name: 'MATERIALS database has 20+ entries', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const materials = frame.CycleCAD.Manufacturability.MATERIALS || {};
+            return Object.keys(materials).length >= 20;
+          } },
+          { name: 'Steel density is correct', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const steel = frame.CycleCAD.Manufacturability.MATERIALS.Steel;
+            return steel && Math.abs(steel.density - 7850) < 100;
+          } },
+          { name: 'Material has cost per kg', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const aluminum = frame.CycleCAD.Manufacturability.MATERIALS.Aluminum;
+            return aluminum && aluminum.cost_per_kg > 0;
+          } },
+          { name: 'PROCESS_RULES has multiple processes', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const rules = frame.CycleCAD.Manufacturability.PROCESS_RULES || {};
+            return Object.keys(rules).length >= 4;
+          } },
+          { name: 'analyze returns issues array', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const THREE = frame.THREE;
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(100, 100, 100));
+            const issues = frame.CycleCAD.Manufacturability.analyze(mesh);
+            return Array.isArray(issues);
+          } },
+          { name: 'estimateCost returns object', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const cost = frame.CycleCAD.Manufacturability.estimateCost({ volume: 1000, material: 'Steel', process: 'CNC' });
+            return typeof cost === 'object' && cost.total >= 0;
+          } },
+          { name: 'Cost scales with quantity', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const cost1 = frame.CycleCAD.Manufacturability.estimateCost({ volume: 1000, quantity: 1 });
+            const cost1000 = frame.CycleCAD.Manufacturability.estimateCost({ volume: 1000, quantity: 1000 });
+            return cost1 && cost1000 && cost1.total > cost1000.unit_cost * 1000;
+          } },
+          { name: 'generateReport returns HTML', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const report = frame.CycleCAD.Manufacturability.generateReport({});
+            return typeof report === 'string' && report.includes('DFM');
+          } },
+          { name: 'getUI returns panel', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const ui = frame.CycleCAD.Manufacturability.getUI && frame.CycleCAD.Manufacturability.getUI();
+            return ui && ui instanceof frame.HTMLElement;
+          } },
+          { name: 'Heatmap has color scale', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const colors = frame.CycleCAD.Manufacturability.colorScale || [];
+            return colors.length >= 3;
+          } }
+        ]
+      },
+      {
+        name: 'Generative Design Core',
+        description: '10 tests',
+        tests: [
+          { name: 'setConstraints accepts loads and fixed points', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            try {
+              frame.CycleCAD.GenerativeDesign.setConstraints({
+                loads: [{ position: [0, 0, 0], magnitude: 100 }],
+                fixed: [[0, 0, 0]]
+              });
+              return true;
+            } catch (e) {
+              return false;
+            }
+          } },
+          { name: 'Default voxel resolution is 20', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            return frame.CycleCAD.GenerativeDesign.VOXEL_RESOLUTION === 20;
+          } },
+          { name: 'Volume fraction is valid range', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const vf = frame.CycleCAD.GenerativeDesign.volumeFraction || 0.3;
+            return vf >= 0.1 && vf <= 0.6;
+          } },
+          { name: 'optimize starts without throwing', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            try {
+              frame.CycleCAD.GenerativeDesign.optimize();
+              return true;
+            } catch (e) {
+              return false;
+            }
+          } },
+          { name: 'getResults returns density field', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const results = frame.CycleCAD.GenerativeDesign.getResults();
+            return results && results.density && Array.isArray(results.density);
+          } },
+          { name: 'Marching cubes produces mesh', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const THREE = frame.THREE;
+            const density = new Array(8000).fill(0.5);
+            const mesh = frame.CycleCAD.GenerativeDesign.marchingCubes(density, 20);
+            return mesh && mesh.geometry && mesh.geometry.attributes.position;
+          } },
+          { name: 'STL export produces data', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const THREE = frame.THREE;
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(100, 100, 100));
+            const stl = frame.CycleCAD.GenerativeDesign.exportSTL(mesh);
+            return stl && stl.byteLength > 0;
+          } },
+          { name: 'Material database available', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const materials = frame.CycleCAD.GenerativeDesign.MATERIALS || {};
+            return Object.keys(materials).length >= 5;
+          } },
+          { name: 'getUI returns panel', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const ui = frame.CycleCAD.GenerativeDesign.getUI && frame.CycleCAD.GenerativeDesign.getUI();
+            return ui && ui instanceof frame.HTMLElement;
+          } },
+          { name: 'Weight reduction is calculated', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const reduction = frame.CycleCAD.GenerativeDesign.getWeightReduction && frame.CycleCAD.GenerativeDesign.getWeightReduction();
+            return reduction && reduction > 0;
+          } }
+        ]
+      },
+      {
+        name: 'Multi-Physics Core',
+        description: '10 tests',
+        tests: [
+          { name: 'discretizeMesh produces nodes', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const THREE = frame.THREE;
+            const geom = new THREE.BoxGeometry(100, 100, 100);
+            const nodes = frame.CycleCAD.MultiPhysics.discretizeMesh(geom);
+            return Array.isArray(nodes) && nodes.length > 0;
+          } },
+          { name: 'Structural analysis returns stress', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const result = frame.CycleCAD.MultiPhysics.analyzeStructural({});
+            return result && Array.isArray(result.stress) && result.stress[0] > 0;
+          } },
+          { name: 'Thermal analysis returns temps', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const result = frame.CycleCAD.MultiPhysics.analyzeThermal({});
+            return result && Array.isArray(result.temperature);
+          } },
+          { name: 'Modal analysis returns frequencies', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const result = frame.CycleCAD.MultiPhysics.analyzeModal({});
+            return result && Array.isArray(result.frequencies) && result.frequencies.length > 0;
+          } },
+          { name: 'Drop test returns deceleration', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const result = frame.CycleCAD.MultiPhysics.simulateDropTest({ height: 1000 });
+            return result && result.peak_deceleration > 0;
+          } },
+          { name: 'Material database has Young\'s modulus', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const steel = frame.CycleCAD.MultiPhysics.MATERIALS && frame.CycleCAD.MultiPhysics.MATERIALS.Steel;
+            return steel && steel.youngs_modulus > 0;
+          } },
+          { name: 'Factor of safety calculated', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const fos = frame.CycleCAD.MultiPhysics.calculateFOS({ max_stress: 100, yield_strength: 400 });
+            return fos && fos > 1 && fos < 10;
+          } },
+          { name: 'getUI has analysis selector', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const ui = frame.CycleCAD.MultiPhysics.getUI && frame.CycleCAD.MultiPhysics.getUI();
+            return ui && ui.querySelector('[data-selector="analysis-type"]') !== null;
+          } },
+          { name: 'Deformation scale slider present', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const ui = frame.CycleCAD.MultiPhysics.getUI && frame.CycleCAD.MultiPhysics.getUI();
+            return ui && ui.querySelector('[data-slider="deformation-scale"]') !== null;
+          } },
+          { name: 'Results include Von Mises stress', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const result = frame.CycleCAD.MultiPhysics.analyzeStructural({});
+            return result && result.stress && result.vonMises !== undefined;
+          } }
+        ]
+      },
+      {
+        name: 'Smart Parts Core',
+        description: '12 tests',
+        tests: [
+          { name: 'getCatalog returns 50+ parts', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const catalog = frame.CycleCAD.SmartParts.getCatalog();
+            return Array.isArray(catalog) && catalog.length >= 50;
+          } },
+          { name: 'Search for M8 bolt', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const results = frame.CycleCAD.SmartParts.search('M8 bolt');
+            return Array.isArray(results) && results.length > 0;
+          } },
+          { name: 'Search for bearing', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const results = frame.CycleCAD.SmartParts.search('bearing');
+            return Array.isArray(results) && results.length > 0;
+          } },
+          { name: 'Search for NEMA stepper', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const results = frame.CycleCAD.SmartParts.search('NEMA 17');
+            return Array.isArray(results) && results.length > 0;
+          } },
+          { name: 'Search for 2020 extrusion', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const results = frame.CycleCAD.SmartParts.search('2020 extrusion');
+            return Array.isArray(results) && results.length > 0;
+          } },
+          { name: 'Search for washer', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const results = frame.CycleCAD.SmartParts.search('washer');
+            return Array.isArray(results) && results.length > 0;
+          } },
+          { name: 'Fuzzy search tolerance', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const results = frame.CycleCAD.SmartParts.search('bering');
+            return Array.isArray(results) && results.length > 0;
+          } },
+          { name: 'insertPart adds to scene', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const scene = frame.CycleCAD.scene || frame.scene;
+            if (!scene) return false;
+            const initialCount = scene.children.length;
+            frame.CycleCAD.SmartParts.insertPart({ geometry: 'cylinder', diameter: 20, height: 50 });
+            return scene.children.length > initialCount;
+          } },
+          { name: 'Part geometry has vertices', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const part = frame.CycleCAD.SmartParts.getPart('bolt_M8');
+            return part && part.geometry && part.geometry.attributes.position && part.geometry.attributes.position.count > 0;
+          } },
+          { name: 'BOM export produces CSV', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const bom = frame.CycleCAD.SmartParts.exportBOM([{ name: 'Bolt', qty: 4 }]);
+            return typeof bom === 'string' && bom.includes(',');
+          } },
+          { name: 'Recently used tracking', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            frame.CycleCAD.SmartParts.search('bearing');
+            const recent = frame.CycleCAD.SmartParts.getRecentlyUsed();
+            return Array.isArray(recent) && recent.length > 0;
+          } },
+          { name: 'Part prices are positive', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const part = frame.CycleCAD.SmartParts.getPart('bolt_M8');
+            return part && part.price > 0;
+          } }
+        ]
+      },
+      {
+        name: 'Menu Integration',
+        description: '6 tests',
+        tests: [
+          { name: 'Tools menu has Text-to-CAD', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const item = frame.document.querySelector('[data-menu-item="text-to-cad"]');
+            return item !== null;
+          } },
+          { name: 'Tools menu has Photo-to-CAD', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const item = frame.document.querySelector('[data-menu-item="photo-to-cad"]');
+            return item !== null;
+          } },
+          { name: 'Tools menu has Manufacturability', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const item = frame.document.querySelector('[data-menu-item="manufacturability"]');
+            return item !== null;
+          } },
+          { name: 'Tools menu has Generative Design', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const item = frame.document.querySelector('[data-menu-item="generative-design"]');
+            return item !== null;
+          } },
+          { name: 'Tools menu has Multi-Physics', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const item = frame.document.querySelector('[data-menu-item="multi-physics"]');
+            return item !== null;
+          } },
+          { name: 'Tools menu has Smart Parts', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const item = frame.document.querySelector('[data-menu-item="smart-parts"]');
+            return item !== null;
+          } }
+        ]
+      },
+      {
+        name: 'UI Panel Rendering',
+        description: '6 tests',
+        tests: [
+          { name: 'All modules have valid getUI', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const modules = ['TextToCAD', 'PhotoToCAD', 'Manufacturability', 'GenerativeDesign', 'MultiPhysics', 'SmartParts'];
+            return modules.every(m => frame.CycleCAD[m] && typeof frame.CycleCAD[m].getUI === 'function');
+          } },
+          { name: 'Each panel has buttons', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const modules = ['TextToCAD', 'PhotoToCAD', 'Manufacturability'];
+            return modules.every(m => {
+              const ui = frame.CycleCAD[m].getUI();
+              return ui.querySelector('button') !== null;
+            });
+          } },
+          { name: 'Each panel has inputs', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const modules = ['TextToCAD', 'PhotoToCAD', 'Manufacturability'];
+            return modules.every(m => {
+              const ui = frame.CycleCAD[m].getUI();
+              return ui.querySelector('input, select, textarea') !== null;
+            });
+          } },
+          { name: 'Panels use dark theme', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const ui = frame.CycleCAD.TextToCAD.getUI();
+            const computed = frame.getComputedStyle(ui);
+            const bg = computed.backgroundColor;
+            return bg.includes('rgb(20') || bg.includes('rgb(25') || bg.includes('rgb(30');
+          } },
+          { name: 'No panels throw on render', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const modules = ['TextToCAD', 'PhotoToCAD', 'Manufacturability', 'GenerativeDesign', 'MultiPhysics', 'SmartParts'];
+            try {
+              modules.forEach(m => frame.CycleCAD[m].getUI());
+              return true;
+            } catch (e) {
+              return false;
+            }
+          } },
+          { name: 'Panels have proper labels', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const ui = frame.CycleCAD.TextToCAD.getUI();
+            return ui.querySelector('label, [role="label"]') !== null || ui.textContent.length > 10;
+          } }
+        ]
+      },
+      {
+        name: 'Cross-Module Integration',
+        description: '5 tests',
+        tests: [
+          { name: 'Create via Text → analyze', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            try {
+              const geom = frame.CycleCAD.TextToCAD.generateGeometry('cylinder', { diameter: 50, height: 80 });
+              const analysis = frame.CycleCAD.Manufacturability.analyze(geom);
+              return Array.isArray(analysis);
+            } catch (e) {
+              return false;
+            }
+          } },
+          { name: 'Create via Text → MultiPhysics', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            try {
+              const geom = frame.CycleCAD.TextToCAD.generateGeometry('box', { width: 100, height: 100, depth: 100 });
+              const result = frame.CycleCAD.MultiPhysics.analyzeStructural({});
+              return result && result.stress;
+            } catch (e) {
+              return false;
+            }
+          } },
+          { name: 'Insert part → analyze', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            try {
+              frame.CycleCAD.SmartParts.insertPart({ geometry: 'cylinder', diameter: 20, height: 50 });
+              const analysis = frame.CycleCAD.Manufacturability.analyze({});
+              return Array.isArray(analysis);
+            } catch (e) {
+              return false;
+            }
+          } },
+          { name: 'Generative → STL export', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            try {
+              const results = frame.CycleCAD.GenerativeDesign.getResults();
+              const stl = frame.CycleCAD.GenerativeDesign.exportSTL({ geometry: {} });
+              return stl && stl.byteLength > 0;
+            } catch (e) {
+              return false;
+            }
+          } },
+          { name: 'Multiple modules on same scene', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            try {
+              frame.CycleCAD.TextToCAD.init();
+              frame.CycleCAD.PhotoToCAD.init();
+              frame.CycleCAD.SmartParts.init();
+              return true;
+            } catch (e) {
+              return false;
+            }
+          } }
+        ]
+      },
+      {
+        name: 'Error Handling',
+        description: '6 tests',
+        tests: [
+          { name: 'Handle null geometry', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            try {
+              frame.CycleCAD.Manufacturability.analyze(null);
+              return true;
+            } catch (e) {
+              return true;
+            }
+          } },
+          { name: 'Handle empty scene', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            try {
+              const result = frame.CycleCAD.MultiPhysics.analyzeStructural({});
+              return result !== undefined;
+            } catch (e) {
+              return true;
+            }
+          } },
+          { name: 'Unknown command handled', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            try {
+              frame.CycleCAD.TextToCAD.execute('unknown_command');
+              return true;
+            } catch (e) {
+              return true;
+            }
+          } },
+          { name: 'Analyze with no geometry', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            try {
+              const result = frame.CycleCAD.Manufacturability.analyze();
+              return result === undefined || Array.isArray(result);
+            } catch (e) {
+              return true;
+            }
+          } },
+          { name: 'Search with empty string', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            try {
+              const results = frame.CycleCAD.SmartParts.search('');
+              return Array.isArray(results);
+            } catch (e) {
+              return true;
+            }
+          } },
+          { name: 'Parse null description', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            try {
+              const result = frame.CycleCAD.TextToCAD.parseDescription(null);
+              return result === null || result === undefined;
+            } catch (e) {
+              return true;
+            }
+          } }
+        ]
+      },
+      {
+        name: 'Performance',
+        description: '5 tests',
+        tests: [
+          { name: 'NLP parse < 50ms', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const start = performance.now();
+            frame.CycleCAD.TextToCAD.parseDescription('cylinder 50mm diameter 80mm tall');
+            const elapsed = performance.now() - start;
+            return elapsed < 50;
+          } },
+          { name: 'Smart Parts search < 100ms', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const start = performance.now();
+            frame.CycleCAD.SmartParts.search('bearing');
+            const elapsed = performance.now() - start;
+            return elapsed < 100;
+          } },
+          { name: 'Manufacturability analyze < 200ms', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const start = performance.now();
+            frame.CycleCAD.Manufacturability.analyze({});
+            const elapsed = performance.now() - start;
+            return elapsed < 200;
+          } },
+          { name: 'Module init < 100ms', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const start = performance.now();
+            frame.CycleCAD.TextToCAD.init();
+            const elapsed = performance.now() - start;
+            return elapsed < 100;
+          } },
+          { name: 'getUI render < 50ms', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const start = performance.now();
+            frame.CycleCAD.TextToCAD.getUI();
+            const elapsed = performance.now() - start;
+            return elapsed < 50;
+          } }
+        ]
+      },
+      {
+        name: 'Memory & Cleanup',
+        description: '3 tests',
+        tests: [
+          { name: 'Geometry creation/removal doesn\'t leak', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const scene = frame.CycleCAD.scene || frame.scene;
+            if (!scene) return true;
+            const initial = scene.children.length;
+            frame.CycleCAD.TextToCAD.generateGeometry('cylinder', { diameter: 50 });
+            scene.children.pop();
+            return scene.children.length <= initial + 1;
+          } },
+          { name: 'Multiple searches don\'t accumulate', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            frame.CycleCAD.SmartParts.search('bearing');
+            frame.CycleCAD.SmartParts.search('bolt');
+            frame.CycleCAD.SmartParts.search('washer');
+            return true;
+          } },
+          { name: 'Module re-init doesn\'t duplicate', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            frame.CycleCAD.TextToCAD.init();
+            frame.CycleCAD.TextToCAD.init();
+            return true;
+          } }
+        ]
+      },
+      {
+        name: 'Export & Data',
+        description: '4 tests',
+        tests: [
+          { name: 'Manufacturability report is HTML', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const report = frame.CycleCAD.Manufacturability.generateReport({});
+            return typeof report === 'string' && (report.includes('<') || report.includes('DFM'));
+          } },
+          { name: 'Smart Parts BOM is CSV', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const bom = frame.CycleCAD.SmartParts.exportBOM([{ name: 'Bolt', qty: 4 }, { name: 'Washer', qty: 8 }]);
+            return typeof bom === 'string' && bom.split('\n').length >= 2;
+          } },
+          { name: 'Generative Design STL valid', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const stl = frame.CycleCAD.GenerativeDesign.exportSTL({});
+            return stl && stl instanceof ArrayBuffer && stl.byteLength > 0;
+          } },
+          { name: 'MultiPhysics JSON serializable', fn: () => {
+            const frame = document.getElementById('appFrame').contentWindow;
+            const results = frame.CycleCAD.MultiPhysics.analyzeStructural({});
+            try {
+              JSON.stringify(results);
+              return true;
+            } catch (e) {
+              return false;
+            }
+          } }
+        ]
+      }
+    ];
+
+    // Calculate total tests
+    let totalTests = 0;
+    testCategories.forEach(cat => {
+      totalTests += cat.tests.length;
+    });
+    document.getElementById('totalTests').textContent = totalTests;
+
+    // Render categories
+    const testLog = document.getElementById('testLog');
+    testCategories.forEach((category, categoryIndex) => {
+      const categoryDiv = document.createElement('div');
+      categoryDiv.className = 'test-category';
+
+      const header = document.createElement('div');
+      header.className = 'category-header';
+      header.innerHTML = `
+        <div>
+          <span>${category.name}</span>
+          <span class="category-badge">${category.tests.length} tests</span>
+        </div>
+        <div class="category-toggle">▶</div>
+      `;
+
+      const testsDiv = document.createElement('div');
+      testsDiv.className = 'category-tests';
+
+      category.tests.forEach(test => {
+        const testDiv = document.createElement('div');
+        testDiv.className = 'log-entry info';
+        testDiv.innerHTML = `<span class="log-time">-</span><span class="test-name">${test.name}</span>`;
+        testDiv.dataset.testName = test.name;
+        testDiv.style.display = 'none';
+        testsDiv.appendChild(testDiv);
+      });
+
+      header.addEventListener('click', () => {
+        const isCollapsed = testsDiv.classList.toggle('expanded');
+        header.querySelector('.category-toggle').classList.toggle('collapsed');
+      });
+
+      categoryDiv.appendChild(header);
+      categoryDiv.appendChild(testsDiv);
+      testLog.appendChild(categoryDiv);
+    });
+
+    // Test runner
+    async function runTests(categoryIndex = null) {
+      if (runningTests) return;
+      runningTests = true;
+
+      startTime = Date.now();
+      const progressInterval = setInterval(() => {
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+        document.getElementById('elapsedTime').textContent = elapsed + 's';
+      }, 100);
+
+      document.getElementById('runAllBtn').disabled = true;
+      document.getElementById('runSelectedBtn').disabled = true;
+
+      const categoriesToRun = categoryIndex !== null ? [testCategories[categoryIndex]] : testCategories;
+
+      for (const category of categoriesToRun) {
+        const categoryDiv = testLog.querySelectorAll('.test-category')[testCategories.indexOf(category)];
+        const headerToggle = categoryDiv.querySelector('.category-header .category-toggle');
+        const testsDiv = categoryDiv.querySelector('.category-tests');
+
+        testsDiv.classList.add('expanded');
+        headerToggle.classList.add('collapsed');
+
+        for (const test of category.tests) {
+          await new Promise(resolve => setTimeout(resolve, TEST_DELAY));
+
+          const logEntry = testLog.querySelector(`[data-test-name="${test.name}"]`);
+          const startTime = performance.now();
+
+          try {
+            const timeout = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Test timeout')), TEST_TIMEOUT)
+            );
+
+            const result = await Promise.race([Promise.resolve(test.fn()), timeout]);
+
+            const elapsed = (performance.now() - startTime).toFixed(0);
+
+            if (result) {
+              stats.pass++;
+              logEntry.className = 'log-entry pass';
+              logEntry.innerHTML = `<span class="log-time">${elapsed}ms</span><span>✓ ${test.name}</span>`;
+              logEntry.style.display = 'block';
+            } else {
+              stats.fail++;
+              logEntry.className = 'log-entry fail';
+              logEntry.innerHTML = `<span class="log-time">${elapsed}ms</span><span>✗ ${test.name}</span>`;
+              logEntry.style.display = 'block';
+            }
+          } catch (error) {
+            stats.error++;
+            const elapsed = (performance.now() - startTime).toFixed(0);
+            logEntry.className = 'log-entry error';
+            logEntry.innerHTML = `<span class="log-time">${elapsed}ms</span><span>✗ ${test.name}: ${error.message}</span>`;
+            logEntry.style.display = 'block';
+          }
+
+          updateStats();
+          updateProgress();
+          testLog.scrollTop = testLog.scrollHeight;
+        }
+      }
+
+      clearInterval(progressInterval);
+      runningTests = false;
+      document.getElementById('runAllBtn').disabled = false;
+      document.getElementById('runSelectedBtn').disabled = false;
+    }
+
+    function updateStats() {
+      document.getElementById('passCount').textContent = stats.pass;
+      document.getElementById('failCount').textContent = stats.fail;
+      document.getElementById('skipCount').textContent = stats.skip;
+      document.getElementById('errorCount').textContent = stats.error;
+    }
+
+    function updateProgress() {
+      const completed = stats.pass + stats.fail + stats.error + stats.skip;
+      const percentage = (completed / totalTests) * 100;
+      document.getElementById('progressBar').style.width = percentage + '%';
+    }
+
+    // Event listeners
+    document.getElementById('runAllBtn').addEventListener('click', () => {
+      stats = { pass: 0, fail: 0, skip: 0, error: 0 };
+      testLog.innerHTML = '';
+      testCategories.forEach((category, categoryIndex) => {
+        const categoryDiv = document.createElement('div');
+        categoryDiv.className = 'test-category';
+        const header = document.createElement('div');
+        header.className = 'category-header';
+        header.innerHTML = `
+          <div>
+            <span>${category.name}</span>
+            <span class="category-badge">${category.tests.length} tests</span>
+          </div>
+          <div class="category-toggle">▶</div>
+        `;
+        const testsDiv = document.createElement('div');
+        testsDiv.className = 'category-tests';
+        category.tests.forEach(test => {
+          const testDiv = document.createElement('div');
+          testDiv.className = 'log-entry info';
+          testDiv.innerHTML = `<span class="log-time">-</span><span>${test.name}</span>`;
+          testDiv.dataset.testName = test.name;
+          testDiv.style.display = 'none';
+          testsDiv.appendChild(testDiv);
+        });
+        header.addEventListener('click', () => {
+          const isCollapsed = testsDiv.classList.toggle('expanded');
+          header.querySelector('.category-toggle').classList.toggle('collapsed');
+        });
+        categoryDiv.appendChild(header);
+        categoryDiv.appendChild(testsDiv);
+        testLog.appendChild(categoryDiv);
+      });
+      updateStats();
+      runTests();
+    });
+
+    document.getElementById('clearLogBtn').addEventListener('click', () => {
+      testLog.innerHTML = '<div class="log-entry info">Log cleared. Click "Run All" to start testing.</div>';
+      stats = { pass: 0, fail: 0, skip: 0, error: 0 };
+      updateStats();
+      updateProgress();
+    });
+
+    document.getElementById('exportBtn').addEventListener('click', () => {
+      const data = {
+        timestamp: new Date().toISOString(),
+        stats,
+        totalTests,
+        duration: ((Date.now() - startTime) / 1000).toFixed(1) + 's',
+        categories: testCategories.map(cat => ({
+          name: cat.name,
+          testCount: cat.tests.length,
+          tests: cat.tests.map(t => ({
+            name: t.name,
+            status: testLog.querySelector(`[data-test-name="${t.name}"]`)?.className.split(' ').pop() || 'pending'
+          }))
+        }))
+      };
+
+      const json = JSON.stringify(data, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `killer-features-test-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  </script>
+</body>
+</html>

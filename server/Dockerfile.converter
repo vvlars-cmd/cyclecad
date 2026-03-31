@@ -1,0 +1,51 @@
+# cycleCAD STEP → GLB Converter Service
+# FastAPI server for server-side STEP/IGES import
+#
+# Build:   docker build -f server/Dockerfile.converter -t cyclecad-converter:latest .
+# Run:     docker run -p 8787:8787 --memory 4g cyclecad-converter:latest
+# Health:  curl http://localhost:8787/health
+#
+# Handles:
+# - STEP (.step, .stp) file import via CadQuery
+# - IGES (.iges, .igs) file import
+# - GLB/glTF 2.0 export
+# - Metadata extraction (parts, assemblies, properties)
+# - Large file processing (up to 500MB)
+# - Adaptive mesh deflection for performance
+
+FROM python:3.11-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libgl1 \
+    libglu1-mesa \
+    libxrender1 \
+    libxkbcommon0 \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements and install Python dependencies
+COPY server/requirements-converter.txt .
+RUN pip install --no-cache-dir -r requirements-converter.txt
+
+# Copy converter script
+COPY server/converter.py .
+
+# Create non-root user for security
+RUN useradd -m -u 1000 converter && chown -R converter:converter /app
+USER converter
+
+# Expose port
+EXPOSE 8787
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8787/health || exit 1
+
+# Start FastAPI server
+CMD ["uvicorn", "converter:app", "--host", "0.0.0.0", "--port", "8787", "--workers", "2"]

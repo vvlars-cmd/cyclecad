@@ -1,0 +1,260 @@
+{
+  "billing_help_entries": [
+    {
+      "id": "billing_pricing_overview",
+      "title": "Pricing Overview",
+      "category": "Billing",
+      "keywords": ["pricing", "tiers", "plans", "cost"],
+      "content": "cycleCAD offers three pricing tiers: Free (€0), Pro (€49/month), and Enterprise (€299/month). Free includes basic features and 3 projects. Pro adds unlimited projects, 50GB storage, and CAM operations. Enterprise adds unlimited everything, custom branding, SSO, and self-hosting.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#pricing-overview"
+    },
+    {
+      "id": "billing_free_tier",
+      "title": "Free Tier",
+      "category": "Billing",
+      "keywords": ["free", "limits", "projects", "storage"],
+      "content": "Free tier is perfect for getting started. You get 3 projects, 100 parts per project, 1 GB storage, and 20 AI requests per day. When you hit a limit, an upgrade prompt appears.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#free-tier"
+    },
+    {
+      "id": "billing_pro_upgrade",
+      "title": "Upgrading to Pro",
+      "category": "Billing",
+      "keywords": ["upgrade", "pro", "subscription", "payment"],
+      "content": "Click the Upgrade button, select Pro (€49/month or €468/year), and start your 14-day free trial. No credit card charged during trial. After 14 days, first charge of €49 is processed.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#upgrading-to-pro"
+    },
+    {
+      "id": "billing_enterprise_upgrade",
+      "title": "Upgrading to Enterprise",
+      "category": "Billing",
+      "keywords": ["enterprise", "team", "upgrade", "sso"],
+      "content": "Enterprise tier (€299/month) includes unlimited collaborators, 500GB storage, custom branding, SSO, self-hosting, and 99.9% SLA. Perfect for teams and organizations. Contact sales for volume discounts.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#upgrading-to-enterprise"
+    },
+    {
+      "id": "billing_trial_period",
+      "title": "Free Trial",
+      "category": "Billing",
+      "keywords": ["trial", "free", "14 days", "no credit card"],
+      "content": "New customers get a 14-day free trial of Pro features with no credit card required. Cancel anytime before day 15 with zero charges. If you don't cancel, first payment charged on day 15.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#trial-period"
+    },
+    {
+      "id": "billing_managing_subscription",
+      "title": "Managing Your Subscription",
+      "category": "Billing",
+      "keywords": ["subscription", "manage", "cancel", "change"],
+      "content": "Access your subscription settings from Settings > Billing & Subscription. Here you can view usage, change billing cycle (monthly/yearly), download invoices, and manage your payment method.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#managing-your-subscription"
+    },
+    {
+      "id": "billing_cancel_subscription",
+      "title": "Canceling Your Subscription",
+      "category": "Billing",
+      "keywords": ["cancel", "downgrade", "stop", "unsubscribe"],
+      "content": "To cancel, go to Settings > Billing & Subscription and click 'Cancel Subscription'. Your access continues until the end of your current billing period. You can resubscribe anytime without penalty.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#managing-your-subscription"
+    },
+    {
+      "id": "billing_usage_limits",
+      "title": "Usage Limits",
+      "category": "Billing",
+      "keywords": ["limits", "usage", "quota", "storage"],
+      "content": "Each tier has different limits. Free: 3 projects, 100 parts, 1GB storage. Pro: unlimited projects/parts, 50GB storage. Enterprise: unlimited everything. View your usage anytime in Settings > Billing.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#usage-limits"
+    },
+    {
+      "id": "billing_storage_limit",
+      "title": "Storage Limit Reached",
+      "category": "Billing",
+      "keywords": ["storage", "limit", "full", "space"],
+      "content": "When you reach your storage limit, you can't upload new files. Either delete existing files, or upgrade to a higher tier with more storage. Pro has 50GB, Enterprise has 500GB.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#usage-limits"
+    },
+    {
+      "id": "billing_ai_requests_limit",
+      "title": "AI Requests Limit",
+      "category": "Billing",
+      "keywords": ["ai", "requests", "limit", "daily"],
+      "content": "Free tier: 20 AI requests per day. Pro: 500 per day. Enterprise: unlimited. Daily counter resets at midnight UTC. After reaching daily limit, requests are queued until tomorrow or upgrade to continue immediately.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#usage-limits"
+    },
+    {
+      "id": "billing_step_import_limit",
+      "title": "STEP Import Size Limit",
+      "category": "Billing",
+      "keywords": ["step", "import", "file", "size", "limit"],
+      "content": "Free tier: max 30MB. Pro: max 500MB. Enterprise: unlimited. If file exceeds limit, import is rejected with message showing file size and upgrade suggestion.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#usage-limits"
+    },
+    {
+      "id": "billing_payment_methods",
+      "title": "Payment Methods",
+      "category": "Billing",
+      "keywords": ["payment", "card", "credit", "method"],
+      "content": "We accept Visa, Mastercard, Amex, Discover, Apple Pay, Google Pay, and bank transfers. Add or update your payment method in Settings > Billing or via Stripe Customer Portal.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#payment-methods"
+    },
+    {
+      "id": "billing_failed_payment",
+      "title": "Payment Failed",
+      "category": "Billing",
+      "keywords": ["failed", "payment", "error", "declined"],
+      "content": "If payment fails, you get a 7-day grace period to update your payment method. Reminder emails sent on days 1, 3, 5, 7. After 7 days, subscription is canceled if not resolved. Update payment in Settings > Billing.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#payment-methods"
+    },
+    {
+      "id": "billing_invoices",
+      "title": "Invoices & Receipts",
+      "category": "Billing",
+      "keywords": ["invoice", "receipt", "download", "pdf"],
+      "content": "Download invoices from Settings > Billing > Recent Invoices, or via Stripe Customer Portal. Invoices are standard business format with itemized charges, dates, and payment info. Suitable for expense reports.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#billing--invoices"
+    },
+    {
+      "id": "billing_tax",
+      "title": "Tax & VAT",
+      "category": "Billing",
+      "keywords": ["tax", "vat", "eu", "sales tax"],
+      "content": "Tax is applied based on your location. EU customers pay VAT. US customers in certain states pay sales tax. Tax is calculated and shown at checkout before final price.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#billing--invoices"
+    },
+    {
+      "id": "billing_promo_codes",
+      "title": "Promo Codes & Discounts",
+      "category": "Billing",
+      "keywords": ["promo", "code", "discount", "coupon"],
+      "content": "Apply promo codes at checkout. Common codes: STUDENT20 (students), NONPROFIT30 (nonprofits), ANNUAL20 (yearly, auto-applied). Check email or Discord for exclusive codes.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#promo-codes--discounts"
+    },
+    {
+      "id": "billing_annual_discount",
+      "title": "Annual Billing Discount",
+      "category": "Billing",
+      "keywords": ["yearly", "annual", "discount", "save"],
+      "content": "Choose yearly billing at checkout for 20% discount. Pro: €468/year (€39/month vs €49). Enterprise: €2,868/year (€239/month vs €299). Discount auto-applied, no code needed.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#promo-codes--discounts"
+    },
+    {
+      "id": "billing_change_billing_cycle",
+      "title": "Change Billing Cycle",
+      "category": "Billing",
+      "keywords": ["monthly", "yearly", "cycle", "billing", "change"],
+      "content": "Change between monthly and yearly billing anytime via Stripe Customer Portal (Settings > Billing > Manage Subscription). Changes take effect on next billing date, no mid-cycle adjustments.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#managing-your-subscription"
+    },
+    {
+      "id": "billing_export_usage",
+      "title": "Export Usage Report",
+      "category": "Billing",
+      "keywords": ["export", "usage", "report", "csv"],
+      "content": "Export your usage data as CSV from Settings > Billing > Export Usage Report. Includes all metrics, current usage, limits, and subscription status. Great for tracking or team reports.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#managing-your-subscription"
+    },
+    {
+      "id": "billing_collaborators",
+      "title": "Collaborators & Team Access",
+      "category": "Billing",
+      "keywords": ["collaborators", "team", "invite", "access"],
+      "content": "Free: no collaborators. Pro: up to 10 collaborators. Enterprise: unlimited. Invite team members from Project > Collaborators. Each person needs their own account.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#upgrading-to-pro"
+    },
+    {
+      "id": "billing_self_hosting",
+      "title": "Self-Hosting",
+      "category": "Billing",
+      "keywords": ["self-hosted", "enterprise", "docker", "private"],
+      "content": "Enterprise tier includes self-hosting option. Run cycleCAD on your own servers with Docker. Full data privacy, custom domain, and control. Contact sales@cyclecad.com for setup.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#self-hosting-enterprise"
+    },
+    {
+      "id": "billing_sso",
+      "title": "Single Sign-On (SSO)",
+      "category": "Billing",
+      "keywords": ["sso", "enterprise", "auth", "identity"],
+      "content": "Enterprise tier includes SSO. Connect your company's identity provider (Microsoft, Google, Okta) so employees sign in with company credentials. Set up via Settings > Security > SSO.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#enterprise-features"
+    },
+    {
+      "id": "billing_custom_branding",
+      "title": "Custom Branding",
+      "category": "Billing",
+      "keywords": ["branding", "logo", "domain", "white-label"],
+      "content": "Enterprise tier includes custom branding. Add your company logo, use custom domain (e.g., cad.yourcompany.com), and white-label deployment. Configure in Settings > Branding.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#enterprise-features"
+    },
+    {
+      "id": "billing_sla",
+      "title": "Service Level Agreement (SLA)",
+      "category": "Billing",
+      "keywords": ["sla", "uptime", "support", "enterprise"],
+      "content": "Pro tier offers best-effort support. Enterprise tier includes 99.9% SLA with dedicated technical support, 4-hour response time, and quarterly check-ins.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#enterprise-features"
+    },
+    {
+      "id": "billing_refund_policy",
+      "title": "Refund Policy",
+      "category": "Billing",
+      "keywords": ["refund", "money back", "policy"],
+      "content": "Pro tier includes 14-day free trial. After subscribing, subscriptions are non-refundable. You can cancel anytime to avoid future charges, but previous charges are not refunded.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#faq"
+    },
+    {
+      "id": "billing_contact_support",
+      "title": "Contact Billing Support",
+      "category": "Billing",
+      "keywords": ["support", "contact", "help", "email"],
+      "content": "For billing questions: Free/Pro: support@cyclecad.com (24-48h response). Enterprise: dedicated support email (4h response). Also available on Discord at join.discord.gg/cyclecad.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#contact-us"
+    },
+    {
+      "id": "billing_account_security",
+      "title": "Account Security",
+      "category": "Billing",
+      "keywords": ["security", "password", "2fa", "account"],
+      "content": "Keep your account secure. Use strong password, enable 2-factor authentication (Settings > Security), and never share billing info. Report suspicious activity to support immediately.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#faq"
+    },
+    {
+      "id": "billing_student_discount",
+      "title": "Student Discount",
+      "category": "Billing",
+      "keywords": ["student", "discount", "education", "university"],
+      "content": "Students get 20% off Pro with valid .edu email. Use promo code STUDENT20 at checkout. Verify education status and code will be applied automatically.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#promo-codes--discounts"
+    },
+    {
+      "id": "billing_nonprofit_discount",
+      "title": "Nonprofit Discount",
+      "category": "Billing",
+      "keywords": ["nonprofit", "discount", "ngo", "charity"],
+      "content": "Registered nonprofits get 30% off Pro. Use promo code NONPROFIT30 at checkout. Provide proof of 501(c)(3) status or equivalent.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#promo-codes--discounts"
+    },
+    {
+      "id": "billing_referral_program",
+      "title": "Referral Program",
+      "category": "Billing",
+      "keywords": ["referral", "refer", "earn", "reward"],
+      "content": "Refer a friend and earn 25% credit. Share your referral link, when they subscribe, you both get €12 credit. Use code REFERRAL25 to share.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#promo-codes--discounts"
+    },
+    {
+      "id": "billing_billing_email",
+      "title": "Change Billing Email",
+      "category": "Billing",
+      "keywords": ["email", "billing", "change", "update"],
+      "content": "Update billing email in Stripe Customer Portal (Settings > Billing > Manage Subscription > Update billing info). Future invoices sent to new address. Old invoices still available in portal.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#billing--invoices"
+    },
+    {
+      "id": "billing_data_privacy",
+      "title": "Data Privacy & GDPR",
+      "category": "Billing",
+      "keywords": ["privacy", "gdpr", "data", "compliance"],
+      "content": "Your data is secure with us. We comply with GDPR and other privacy laws. For data requests or privacy concerns, contact privacy@cyclecad.com.",
+      "learnMore": "docs/BILLING-TUTORIAL.md#self-hosting-enterprise"
+    }
+  ]
+}

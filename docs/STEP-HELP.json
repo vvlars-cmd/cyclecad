@@ -1,0 +1,481 @@
+{
+  "step-import-basic": {
+    "title": "Import a STEP File",
+    "category": "STEP Import/Export",
+    "shortcut": "Ctrl+I",
+    "description": "Load a STEP file (AP203/AP214 format) from your computer or cloud storage.",
+    "steps": [
+      "Click 'Import STEP' button in the toolbar",
+      "Select a .step or .stp file",
+      "Module automatically routes to best parser (WASM, server, or cache)",
+      "Model loads in 3D viewport with automatic fit-to-view"
+    ],
+    "tips": [
+      "Small files (<30MB) parse instantly in browser",
+      "Large files (≥50MB) automatically use server converter",
+      "Imported models are cached for faster re-import"
+    ],
+    "relatedTopics": ["import-from-url", "file-size-handling", "server-setup"]
+  },
+
+  "import-from-url": {
+    "title": "Import from URL",
+    "category": "STEP Import/Export",
+    "description": "Load a STEP file directly from a URL (cloud storage, HTTP server, etc).",
+    "steps": [
+      "Use API: cycleCAD.step.importFromURL('https://...')",
+      "Or drag STEP file from cloud provider to viewport",
+      "Supports Dropbox, Google Drive, OneDrive public links",
+      "File is downloaded and imported as if local"
+    ],
+    "example": "cycleCAD.step.importFromURL('https://storage.example.com/model.step')",
+    "relatedTopics": ["import-basic", "drag-drop"]
+  },
+
+  "file-size-handling": {
+    "title": "Understanding File Size Categories",
+    "category": "STEP Import/Export",
+    "description": "cycleCAD automatically selects the best import strategy based on file size.",
+    "details": {
+      "small": {
+        "range": "< 30 MB",
+        "strategy": "Browser WASM (occt-import-js)",
+        "time": "2-10 seconds",
+        "pros": ["Instant, no server needed", "Works offline"],
+        "cons": ["Requires browser memory"]
+      },
+      "medium": {
+        "range": "30-50 MB",
+        "strategy": "OpenCascade.js Worker",
+        "time": "15-30 seconds",
+        "pros": ["Better geometry fidelity", "Parallel processing"],
+        "cons": ["Larger WASM download"]
+      },
+      "large": {
+        "range": "50-100 MB",
+        "strategy": "Server converter (Python FastAPI)",
+        "time": "30-120 seconds",
+        "pros": ["Handles complex geometry", "No browser memory limit"],
+        "cons": ["Requires server running"]
+      },
+      "xlarge": {
+        "range": "> 100 MB",
+        "strategy": "Server with warnings",
+        "time": "2-5 minutes",
+        "pros": ["Splits large assemblies", "Memory safe"],
+        "cons": ["May need file splitting"]
+      }
+    },
+    "relatedTopics": ["server-setup", "routing-strategy"]
+  },
+
+  "routing-strategy": {
+    "title": "How Import Routing Works",
+    "category": "STEP Import/Export",
+    "description": "The module intelligently selects parser based on file size, server availability, and browser capabilities.",
+    "algorithm": [
+      "1. Check file size",
+      "2. If <30MB and Worker ready → use occt-import-js",
+      "3. Else if 30-50MB and OpenCascade ready → use OpenCascade.js",
+      "4. Else if server healthy → upload and parse server-side",
+      "5. Else fallback to browser WASM (if <50MB)",
+      "6. If all fail → show error with recovery suggestions"
+    ],
+    "tips": [
+      "Routing is automatic—no user input needed",
+      "Server health checked every 30 seconds",
+      "Worker heartbeat monitored for timeouts (90s limit)",
+      "Cache bypasses all parsing—instant load if file unchanged"
+    ],
+    "relatedTopics": ["file-size-handling", "server-setup", "troubleshooting"]
+  },
+
+  "server-setup": {
+    "title": "Setup Server Converter",
+    "category": "STEP Import/Export",
+    "description": "Deploy the FastAPI server for handling large STEP files server-side.",
+    "quickStart": {
+      "docker": "docker run -d -p 8787:8000 cyclecad/converter:latest",
+      "verify": "curl http://localhost:8787/health"
+    },
+    "steps": [
+      "Install Docker (if not already)",
+      "Pull image: docker pull cyclecad/converter:latest",
+      "Run container on port 8787",
+      "In cycleCAD, set Server URL to http://localhost:8787/convert",
+      "Import large files—they'll automatically route to server"
+    ],
+    "pythonLocal": {
+      "description": "Run directly without Docker",
+      "steps": [
+        "cd ~/cyclecad/server",
+        "pip install -r requirements.txt",
+        "uvicorn converter:app --port 8787"
+      ]
+    },
+    "cloudDeploy": {
+      "description": "Deploy to cloud (AWS, Google Cloud, DigitalOcean, etc)",
+      "platforms": [
+        "AWS ECS/Fargate",
+        "Google Cloud Run",
+        "Heroku",
+        "DigitalOcean App Platform"
+      ],
+      "memory": "4GB recommended",
+      "timeout": "5 minutes"
+    },
+    "relatedTopics": ["server-endpoints", "file-size-handling", "performance-tips"]
+  },
+
+  "server-endpoints": {
+    "title": "Server API Endpoints",
+    "category": "STEP Import/Export",
+    "description": "The converter server exposes 3 main endpoints for STEP processing.",
+    "endpoints": {
+      "convert": {
+        "method": "POST",
+        "path": "/convert",
+        "description": "Convert STEP to GLB",
+        "params": ["file (multipart)", "deflection (optional, 0.01-0.2)"],
+        "response": "GLB binary (glTF 2.0)",
+        "example": "curl -X POST http://localhost:8787/convert -F file=@model.step"
+      },
+      "metadata": {
+        "method": "POST",
+        "path": "/metadata",
+        "description": "Extract metadata without full parse",
+        "params": ["file (multipart)"],
+        "response": "JSON: part_count, assembly_count, bounding_box, parse_time_ms",
+        "example": "curl -X POST http://localhost:8787/metadata -F file=@model.step"
+      },
+      "health": {
+        "method": "GET",
+        "path": "/health",
+        "description": "Server and WASM status",
+        "response": "JSON: status, wasm_available, memory_used_mb, memory_limit_mb",
+        "example": "curl http://localhost:8787/health"
+      }
+    },
+    "relatedTopics": ["server-setup", "programmatic-import"]
+  },
+
+  "caching-strategy": {
+    "title": "GLB Caching System",
+    "category": "STEP Import/Export",
+    "description": "Imported models are cached in IndexedDB for instant re-import.",
+    "how-it-works": [
+      "1. File uploaded—module computes SHA-256 hash of first 1MB",
+      "2. Cache key: filename-filesize-hashprefix",
+      "3. Check IndexedDB for cache key",
+      "4. Hit: Load cached GLB instantly (< 100ms)",
+      "5. Miss: Parse file and save GLB to cache",
+      "6. Automatic invalidation if file changed (hash mismatch)"
+    ],
+    "benefits": [
+      "Instant reload of frequently-used models",
+      "Works offline (if cache warm)",
+      "No server load for cached files",
+      "Transparent—user doesn't manage it"
+    ],
+    "management": {
+      "clearCache": "cycleCAD.step.clearCache() or UI button",
+      "cacheSize": "Up to 50GB (browser dependent)",
+      "ttl": "24 hours (server) / permanent (browser cache)",
+      "disable": "localStorage.setItem('ev_step_cache_enabled', 'false')"
+    },
+    "relatedTopics": ["performance-tips", "server-setup"]
+  },
+
+  "adaptive-deflection": {
+    "title": "Adaptive Mesh Deflection",
+    "category": "STEP Import/Export",
+    "description": "Module automatically adjusts mesh density (deflection) based on file size.",
+    "defaults": {
+      "small": {
+        "size": "< 30 MB",
+        "deflection": 0.01,
+        "detail": "Fine detail",
+        "triangles": "~500K-1M"
+      },
+      "medium": {
+        "size": "30-50 MB",
+        "deflection": 0.02,
+        "detail": "Balanced",
+        "triangles": "~300K-500K"
+      },
+      "large": {
+        "size": "50-100 MB",
+        "deflection": 0.05,
+        "detail": "Coarse",
+        "triangles": "~100K-300K"
+      },
+      "xlarge": {
+        "size": "> 100 MB",
+        "deflection": 0.1,
+        "detail": "Very coarse",
+        "triangles": "~50K-100K"
+      }
+    },
+    "customization": [
+      "Change defaults: cycleCAD.step.state.deflectionDefaults.small = 0.005",
+      "Affects: triangle count, file size, parsing time, visual quality",
+      "Smaller deflection = more triangles = slower but more accurate",
+      "Larger deflection = fewer triangles = faster but less detail"
+    ],
+    "relatedTopics": ["performance-tips", "file-size-handling"]
+  },
+
+  "troubleshooting-memory": {
+    "title": "Troubleshooting: Memory Errors",
+    "category": "STEP Import/Export",
+    "problem": "WASM parse failed: memory limit exceeded",
+    "causes": [
+      "File too large for available browser memory (>100MB)",
+      "Complex geometry with millions of triangles",
+      "Other browser tabs consuming memory",
+      "Browser memory limit (typically 2-4GB)"
+    ],
+    "solutions": [
+      "1. Close other browser tabs to free memory",
+      "2. Use server converter instead (no browser memory limit)",
+      "3. Split assembly into smaller sub-assemblies in CAD",
+      "4. Reduce geometry detail before export",
+      "5. Increase browser memory allocation (varies by browser)"
+    ],
+    "preventive": [
+      "Always check file size before importing",
+      "Use server for files > 50MB",
+      "Optimize STEP files in CAD before export"
+    ],
+    "relatedTopics": ["file-size-handling", "server-setup", "performance-tips"]
+  },
+
+  "troubleshooting-timeout": {
+    "title": "Troubleshooting: Timeout Errors",
+    "category": "STEP Import/Export",
+    "problem": "WASM parsing timeout (90s). File too complex.",
+    "causes": [
+      "File has >3000 parts or very complex geometry",
+      "Browser WASM worker unresponsive",
+      "Network latency affecting worker communication",
+      "Corrupted geometry causing infinite loops"
+    ],
+    "solutions": [
+      "1. Use server converter (higher timeout: 5 minutes)",
+      "2. Split assembly and import parts separately",
+      "3. Open file in desktop CAD and verify it's valid",
+      "4. Reduce deflection to create coarser mesh faster",
+      "5. Check browser console for WASM errors"
+    ],
+    "debugging": [
+      "Monitor heartbeat: Worker sends 'alive' every 5s",
+      "Check timeout: 90s for WASM, 300s for server",
+      "View console logs: [StepModuleEnhanced] markers"
+    ],
+    "relatedTopics": ["server-setup", "troubleshooting-memory"]
+  },
+
+  "troubleshooting-server": {
+    "title": "Troubleshooting: Server Connection",
+    "category": "STEP Import/Export",
+    "problem": "Server converter unavailable",
+    "causes": [
+      "Server process not running",
+      "Wrong URL configured",
+      "Firewall blocking port 8787",
+      "Network connectivity issue"
+    ],
+    "solutions": [
+      "1. Check server running: curl http://localhost:8787/health",
+      "2. Verify URL in app settings: http://localhost:8787/convert",
+      "3. Check firewall: ensure port 8787 is open",
+      "4. Restart server: docker restart cyclecad-converter",
+      "5. Check server logs: docker logs cyclecad-converter"
+    ],
+    "fallback": [
+      "If server unavailable, app falls back to browser WASM",
+      "Works for files < 50MB only",
+      "Large files will show error if server down"
+    ],
+    "relatedTopics": ["server-setup", "server-endpoints"]
+  },
+
+  "troubleshooting-geometry": {
+    "title": "Troubleshooting: Invalid or Deformed Geometry",
+    "category": "STEP Import/Export",
+    "problem": "Imported geometry is invisible, deformed, or incomplete",
+    "causes": [
+      "Scale mismatch (STEP in meters, cycleCAD in mm)",
+      "Inverted face normals (backface culled)",
+      "Missing or invalid color data",
+      "Bad triangulation from deflection too coarse",
+      "Corrupted STEP file"
+    ],
+    "solutions": [
+      "1. Check scale: open in Fusion/SolidWorks to verify dimensions",
+      "2. Toggle wireframe mode to see if mesh exists",
+      "3. Rescale geometry: multiply all coords by conversion factor",
+      "4. Re-import with smaller deflection (0.01 instead of 0.05)",
+      "5. Re-save file in original CAD software",
+      "6. Try online converter: https://products.aspose.app/cad/conversion"
+    ],
+    "colorHandling": [
+      "STEP file colors stored in geometry attributes",
+      "If not transferred: manually apply materials in cycleCAD",
+      "Check if original CAD has color info before export"
+    ],
+    "relatedTopics": ["file-size-handling", "adaptive-deflection"]
+  },
+
+  "export-step": {
+    "title": "Export to STEP Format",
+    "category": "STEP Import/Export",
+    "description": "Save your cycleCAD model as a STEP file for use in other CAD software.",
+    "requirements": [
+      "B-Rep kernel module must be loaded (optional for large models)",
+      "Requires valid geometry in scene",
+      "Exports all visible parts"
+    ],
+    "steps": [
+      "1. Click 'Export STEP' button (in STEP module panel)",
+      "2. Choose filename and location",
+      "3. File saved as AP214 STEP format",
+      "4. Open in Fusion 360, SolidWorks, FreeCAD, etc"
+    ],
+    "limitations": [
+      "Assembly relationships not preserved (parts only)",
+      "Constraints and features not transferred (geometry only)",
+      "Colors may not transfer fully (depends on CAD software)",
+      "Some advanced geometry may be approximated"
+    ],
+    "tips": [
+      "B-Rep kernel provides highest fidelity export",
+      "Exported file can be re-imported for round-trip testing",
+      "Use for sharing designs or archival"
+    ],
+    "relatedTopics": ["import-basic", "brep-kernel"]
+  },
+
+  "programmatic-import": {
+    "title": "Programmatic STEP Import (API)",
+    "category": "STEP Import/Export",
+    "description": "Use JavaScript API to import STEP files in custom workflows.",
+    "basicUsage": {
+      "code": "const file = document.getElementById('input').files[0];\nawait cycleCAD.step.import(file);",
+      "description": "Import a file from file input"
+    },
+    "urlImport": {
+      "code": "await cycleCAD.step.importFromURL('https://example.com/model.step');",
+      "description": "Import from URL"
+    },
+    "eventListening": {
+      "code": "cycleCAD.on('step:importProgress', (data) => {\n  console.log(data.percent + '%: ' + data.message);\n});",
+      "description": "Listen to import progress"
+    },
+    "errorHandling": {
+      "code": "cycleCAD.on('step:importError', (data) => {\n  console.error(data.error);\n  console.log('Fix: ' + data.suggestion);\n});",
+      "description": "Handle import errors"
+    },
+    "batchImport": {
+      "code": "for (const file of files) {\n  await cycleCAD.step.import(file);\n  await new Promise(r => setTimeout(r, 500));\n}",
+      "description": "Import multiple files sequentially"
+    },
+    "relatedTopics": ["server-api", "caching-strategy"]
+  },
+
+  "best-practices": {
+    "title": "STEP Import Best Practices",
+    "category": "STEP Import/Export",
+    "optimization": [
+      "Optimize file before export: remove unused features",
+      "Merge small cosmetic parts into sub-assemblies",
+      "Reduce NURBS surface complexity in CAD",
+      "Test file in desktop CAD before importing"
+    ],
+    "performance": [
+      "Use caching for frequently-imported models",
+      "Set appropriate deflection for your use case",
+      "Import large files (>50MB) during non-peak hours",
+      "Monitor server resources if self-hosting"
+    ],
+    "workflow": [
+      "Import base model, then add details in cycleCAD",
+      "Use separate STEP files for sub-assemblies",
+      "Validate geometry after import (no invisible/deformed parts)",
+      "Export and re-import to test round-trip fidelity"
+    ],
+    "production": [
+      "Use server converter for production workflows",
+      "Monitor server health and uptime (5 nines recommended)",
+      "Configure caching and CDN for scalability",
+      "Log all imports for audit trail"
+    ],
+    "relatedTopics": ["file-size-handling", "server-setup", "caching-strategy"]
+  },
+
+  "step-versions": {
+    "title": "Supported STEP Versions",
+    "category": "STEP Import/Export",
+    "description": "cycleCAD supports AP203 and AP214 (most common). AP242 partially supported.",
+    "versions": {
+      "ap203": {
+        "name": "AP203 (1994)",
+        "aka": "STEP 1.0",
+        "support": "Full",
+        "common": "Mechanical parts, legacy CAD",
+        "examples": "SolidWorks, older Inventor"
+      },
+      "ap214": {
+        "name": "AP214 (2000)",
+        "aka": "STEP 2.0, Automotive Design",
+        "support": "Full",
+        "common": "Assemblies, modern CAD",
+        "examples": "Fusion 360, FreeCAD, recent Inventor"
+      },
+      "ap242": {
+        "name": "AP242 (2014)",
+        "aka": "STEP 3.0, Managed Data Environment",
+        "support": "Partial",
+        "common": "Complex assemblies, metadata-heavy",
+        "notes": "Geometry OK, color/metadata may be incomplete"
+      }
+    },
+    "unsupported": [
+      "IGES (convert via CAD)",
+      "STPZ (decompress first)",
+      "JT/Parasolid XT (use STEP export)",
+      "CATIA/Pro/E (use STEP export)"
+    ],
+    "conversion": [
+      "Online: https://products.aspose.app/cad/conversion",
+      "FreeCAD: Open file, File > Export As > STEP",
+      "Command-line: freecad --headless --python convert.py input.iges output.step"
+    ],
+    "relatedTopics": ["import-basic", "troubleshooting-geometry"]
+  },
+
+  "community-resources": {
+    "title": "Community & Resources",
+    "category": "STEP Import/Export",
+    "documentation": [
+      "STEP Format Spec: https://en.wikipedia.org/wiki/ISO_10303",
+      "OpenCASCADE Docs: https://dev.opencascade.org/doc",
+      "cycleCAD Tutorial: /docs/STEP-IMPORT-TUTORIAL.md"
+    ],
+    "support": [
+      "GitHub Issues: https://github.com/vvlars-cmd/cyclecad/issues",
+      "Email: support@cyclecad.com",
+      "Discord: https://discord.gg/cyclecad (coming soon)"
+    ],
+    "tools": [
+      "Online Converter: https://products.aspose.app/cad/conversion",
+      "STEP Validator: https://www.freecadweb.org",
+      "Batch Converter: https://cloudconvert.com"
+    ],
+    "examples": [
+      "Sample STEP files: https://github.com/vvlars-cmd/cyclecad/tree/main/examples",
+      "Import tutorials: https://cyclecad.com/docs",
+      "API examples: /docs/STEP-IMPORT-TUTORIAL.md#programmatic-import"
+    ]
+  }
+}

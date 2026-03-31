@@ -1,0 +1,225 @@
+# cycleCAD Complete Docker Infrastructure
+# Production-ready multi-service setup with health checks, resource limits, and logging
+#
+# Services:
+#   - cyclecad (8080) — Main web app (nginx)
+#   - converter (8787) — STEP→GLB server (FastAPI)
+#   - signaling (8788) — WebSocket signaling (Node.js)
+#   - explodeview (3000) — 3D viewer app (nginx, optional)
+#
+# Usage:
+#   docker-compose up -d              # Start all services
+#   docker-compose down               # Stop all services
+#   docker-compose logs -f            # View all logs
+#   docker-compose logs -f converter  # View specific service logs
+#   docker-compose ps                 # Status of all services
+#   docker-compose exec cyclecad sh   # Shell into service
+
+version: '3.8'
+
+services:
+  # Main cycleCAD web application
+  cyclecad:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cyclecad-app
+    ports:
+      - "8080:80"
+    depends_on:
+      converter:
+        condition: service_healthy
+      signaling:
+        condition: service_healthy
+    environment:
+      # Pass converter and signaling URLs to the app
+      - CONVERTER_URL=http://converter:8787
+      - SIGNALING_URL=ws://signaling:8788
+      - APP_VERSION=0.8.6
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - cyclecad-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Resource limits for web server
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+  # STEP/IGES → GLB converter service
+  converter:
+    build:
+      context: .
+      dockerfile: server/Dockerfile.converter
+    container_name: cyclecad-converter
+    ports:
+      - "8787:8787"
+    environment:
+      - WORKERS=2
+      - MAX_FILE_SIZE=500
+      - TIMEOUT=300
+      - LOG_LEVEL=info
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8787/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - cyclecad-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+    # High memory for STEP file processing
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 4G
+        reservations:
+          cpus: '2'
+          memory: 2G
+    # Increase timeouts for large file processing
+    # Use `ulimit` to allow large file handling
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+
+  # WebSocket signaling server for real-time collaboration
+  signaling:
+    build:
+      context: .
+      dockerfile: server/Dockerfile.signaling
+    container_name: cyclecad-signaling
+    ports:
+      - "8788:8788"
+    environment:
+      - NODE_ENV=production
+      - PORT=8788
+      - LOG_LEVEL=info
+      - MAX_CONNECTIONS=1000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8788/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+    networks:
+      - cyclecad-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+    # Moderate resources for signaling
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # Optional: ExplodeView 3D viewer alongside cycleCAD
+  explodeview:
+    image: nginx:alpine
+    container_name: explodeview-viewer
+    ports:
+      - "3000:80"
+    volumes:
+      # Mount ExplodeView from local directory (adjust path as needed)
+      - ../explodeview/docs:/usr/share/nginx/html:ro
+    environment:
+      - TZ=UTC
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+    networks:
+      - cyclecad-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    profiles:
+      - with-explodeview
+
+# Named network for service communication
+networks:
+  cyclecad-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+# Usage examples:
+#
+# 1. Start all services (without ExplodeView):
+#    docker-compose up -d
+#
+# 2. Start with ExplodeView:
+#    docker-compose --profile with-explodeview up -d
+#
+# 3. View real-time logs:
+#    docker-compose logs -f
+#
+# 4. Check service status:
+#    docker-compose ps
+#
+# 5. Execute command in service:
+#    docker-compose exec cyclecad curl http://localhost/health
+#
+# 6. Stop all services:
+#    docker-compose down
+#
+# 7. Stop and remove all volumes:
+#    docker-compose down -v
+#
+# 8. View health status:
+#    docker-compose ps  # Shows (healthy) or (unhealthy)
+#
+# 9. Restart a specific service:
+#    docker-compose restart converter
+#
+# 10. View logs for specific service:
+#     docker-compose logs -f converter --tail 100
+#
+# Environment variables for customization:
+#   CONVERTER_URL     — URL of converter service (default: http://converter:8787)
+#   SIGNALING_URL     — URL of signaling service (default: ws://signaling:8788)
+#   LOG_LEVEL         — Logging level: debug, info, warn, error (default: info)
+#   WORKERS           — Number of converter workers (default: 2)
+#   MAX_FILE_SIZE     — Max file size in MB (default: 500)
+#   TIMEOUT           — Request timeout in seconds (default: 300)

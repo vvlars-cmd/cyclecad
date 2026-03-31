@@ -1,0 +1,224 @@
+{
+  "version": "1.0.0",
+  "docker_help_entries": [
+    {
+      "id": "docker-start",
+      "title": "Start All Services",
+      "category": "basics",
+      "description": "Start cycleCAD, converter, signaling, and optional ExplodeView",
+      "commands": [
+        "docker-compose up -d",
+        "docker-compose ps"
+      ],
+      "example": "Start services in background and check status",
+      "output": "3 services running and healthy"
+    },
+    {
+      "id": "docker-stop",
+      "title": "Stop All Services",
+      "category": "basics",
+      "description": "Stop running services while preserving data",
+      "commands": [
+        "docker-compose stop",
+        "docker-compose down"
+      ],
+      "example": "Stop services (containers) vs down (containers + network)",
+      "output": "Services stopped, volumes preserved"
+    },
+    {
+      "id": "docker-logs",
+      "title": "View Service Logs",
+      "category": "monitoring",
+      "description": "Stream real-time logs from services",
+      "commands": [
+        "docker-compose logs -f",
+        "docker-compose logs -f converter",
+        "docker-compose logs --tail 50"
+      ],
+      "example": "View all logs in real-time, or filter by service",
+      "output": "Timestamped log entries from selected service(s)"
+    },
+    {
+      "id": "docker-status",
+      "title": "Check Service Status",
+      "category": "monitoring",
+      "description": "View running status and health checks",
+      "commands": [
+        "docker-compose ps",
+        "docker stats"
+      ],
+      "example": "Show health status and resource usage",
+      "output": "Table with Up/Down status and (healthy)/(unhealthy)"
+    },
+    {
+      "id": "docker-health",
+      "title": "Test Health Endpoints",
+      "category": "monitoring",
+      "description": "Verify services are responding correctly",
+      "commands": [
+        "curl http://localhost:8080/health",
+        "curl http://localhost:8787/health",
+        "curl http://localhost:8788/health"
+      ],
+      "example": "Check each service's health endpoint",
+      "output": "JSON response: {\"status\":\"ok\"}"
+    },
+    {
+      "id": "docker-exec",
+      "title": "Execute Commands in Service",
+      "category": "development",
+      "description": "Run commands inside running container",
+      "commands": [
+        "docker-compose exec cyclecad sh",
+        "docker-compose exec converter python -V",
+        "docker-compose exec signaling node -V"
+      ],
+      "example": "Open shell or run single command in service",
+      "output": "Shell prompt or command output"
+    },
+    {
+      "id": "docker-build",
+      "title": "Build or Rebuild Images",
+      "category": "development",
+      "description": "Build Docker images from Dockerfile",
+      "commands": [
+        "docker-compose build",
+        "docker-compose build --no-cache converter",
+        "docker-compose build converter"
+      ],
+      "example": "Full rebuild (all services) or specific service",
+      "output": "Built images, ready to run"
+    },
+    {
+      "id": "docker-step-convert",
+      "title": "Test STEP Conversion",
+      "category": "converter",
+      "description": "Upload STEP file and get GLB output",
+      "commands": [
+        "curl -X POST http://localhost:8787/convert -F 'file=@model.stp'"
+      ],
+      "example": "Convert a STEP file to GLB format",
+      "output": "Binary GLB file (3D model in glTF format)"
+    },
+    {
+      "id": "docker-converter-api",
+      "title": "Converter API Documentation",
+      "category": "converter",
+      "description": "View OpenAPI (Swagger) documentation for converter",
+      "commands": [
+        "open http://localhost:8787/docs"
+      ],
+      "example": "View all converter endpoints and test them",
+      "output": "Interactive Swagger UI in browser"
+    },
+    {
+      "id": "docker-restart",
+      "title": "Restart Services",
+      "category": "management",
+      "description": "Restart running services (useful after config changes)",
+      "commands": [
+        "docker-compose restart",
+        "docker-compose restart converter"
+      ],
+      "example": "Restart all services or specific one",
+      "output": "Services restarted, same containers"
+    },
+    {
+      "id": "docker-env",
+      "title": "Environment Variables",
+      "category": "configuration",
+      "description": "Configure services via .env file",
+      "commands": [
+        "cat > .env << EOF",
+        "APP_ENV=production",
+        "WORKERS=4",
+        "LOG_LEVEL=info",
+        "EOF"
+      ],
+      "example": "Create .env file with custom settings",
+      "output": ".env file loaded by docker-compose"
+    },
+    {
+      "id": "docker-volume",
+      "title": "Manage Volumes",
+      "category": "data",
+      "description": "View and manage Docker volumes (persistent data)",
+      "commands": [
+        "docker volume ls",
+        "docker volume inspect cyclecad_db-data",
+        "docker volume rm cyclecad_db-data"
+      ],
+      "example": "List all volumes, inspect one, or delete",
+      "output": "Volume metadata and mount point"
+    },
+    {
+      "id": "docker-cleanup",
+      "title": "Clean Up Unused Resources",
+      "category": "maintenance",
+      "description": "Remove dangling images, containers, and volumes",
+      "commands": [
+        "docker system prune",
+        "docker system prune -a --volumes"
+      ],
+      "example": "Free up disk space by removing unused resources",
+      "output": "Summary of deleted resources"
+    },
+    {
+      "id": "docker-logs-persistent",
+      "title": "Persistent Logging",
+      "category": "monitoring",
+      "description": "Save logs to file and view later",
+      "commands": [
+        "docker-compose logs > all-logs.txt",
+        "docker-compose logs converter > converter-logs.txt"
+      ],
+      "example": "Redirect logs to file for debugging",
+      "output": "Log file created with full output"
+    },
+    {
+      "id": "docker-profile",
+      "title": "Service Profiles (Optional Services)",
+      "category": "configuration",
+      "description": "Enable optional services like ExplodeView",
+      "commands": [
+        "docker-compose --profile with-explodeview up -d"
+      ],
+      "example": "Start cycleCAD + ExplodeView",
+      "output": "4 services running (including explodeview)"
+    },
+    {
+      "id": "docker-network",
+      "title": "Docker Network Information",
+      "category": "networking",
+      "description": "View container network connectivity",
+      "commands": [
+        "docker network ls",
+        "docker network inspect cyclecad_cyclecad-network"
+      ],
+      "example": "Check network isolation between services",
+      "output": "Network configuration and connected containers"
+    }
+  ],
+  "tips": [
+    {
+      "tip": "Use 'docker-compose up -d' in production, 'docker-compose up' in development to see logs",
+      "category": "best-practices"
+    },
+    {
+      "tip": "Always run health checks after starting: 'docker-compose ps' should show (healthy)",
+      "category": "monitoring"
+    },
+    {
+      "tip": "Set LOG_LEVEL=debug in .env for troubleshooting, use LOG_LEVEL=warn in production",
+      "category": "logging"
+    },
+    {
+      "tip": "Use 'docker-compose logs --since 30m' to view logs from last 30 minutes",
+      "category": "debugging"
+    },
+    {
+      "tip": "Scale converter with multiple instances for heavy STEP processing: add converter-2, converter-3 in docker-compose.yml",
+      "category": "performance"
+    }
+  ]
+}

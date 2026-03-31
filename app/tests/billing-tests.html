@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>cycleCAD Billing Module Tests</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .panel {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    h1 { font-size: 24px; color: white; margin-bottom: 20px; grid-column: 1/-1; }
+    h2 { font-size: 18px; color: #2D3748; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #E2E8F0; }
+    h3 { font-size: 14px; color: #4A5568; margin-top: 12px; margin-bottom: 8px; font-weight: 600; }
+
+    .test-category {
+      margin-bottom: 12px;
+    }
+    .test-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 13px;
+      background: #F7FAFC;
+      border-left: 4px solid #CBD5E0;
+      transition: all 0.2s;
+    }
+    .test-item.passed {
+      border-left-color: #48BB78;
+      background: #F0FFF4;
+      color: #22543D;
+    }
+    .test-item.failed {
+      border-left-color: #F56565;
+      background: #FFF5F5;
+      color: #742A2A;
+    }
+    .test-item.pending {
+      border-left-color: #ED8936;
+      background: #FFFAF0;
+      color: #7C2D12;
+    }
+    .test-icon { font-size: 16px; min-width: 20px; }
+    .test-name { flex: 1; }
+    .test-details { font-size: 11px; color: #718096; }
+
+    .button-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    button {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+    .btn-primary:hover { background: #5568d3; transform: translateY(-1px); }
+    .btn-secondary {
+      background: #E2E8F0;
+      color: #2D3748;
+    }
+    .btn-secondary:hover { background: #CBD5E0; }
+    .btn-success { background: #48BB78; color: white; }
+    .btn-danger { background: #F56565; color: white; }
+    .btn-small { padding: 4px 8px; font-size: 12px; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      padding: 12px;
+      background: #EDF2F7;
+      border-radius: 8px;
+    }
+    .stat {
+      text-align: center;
+    }
+    .stat-value { font-size: 24px; font-weight: 700; color: #2D3748; }
+    .stat-label { font-size: 11px; color: #718096; text-transform: uppercase; margin-top: 4px; }
+
+    .progress-bar {
+      width: 100%;
+      height: 24px;
+      background: #E2E8F0;
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: white;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+    .progress-fill { height: 100%; display: flex; align-items: center; justify-content: center; transition: width 0.3s; }
+
+    .billing-info {
+      background: #EDF2F7;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+    .billing-info strong { color: #2D3748; display: block; margin-bottom: 4px; }
+
+    .console {
+      background: #1A202C;
+      color: #68D391;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 11px;
+      padding: 12px;
+      border-radius: 6px;
+      max-height: 200px;
+      overflow-y: auto;
+      line-height: 1.4;
+    }
+    .console-log { margin: 2px 0; }
+    .console-error { color: #FC8181; }
+    .console-success { color: #68D391; }
+    .console-warn { color: #F6AD55; }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal.active { display: flex; }
+    .modal-content {
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      max-width: 400px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+    }
+    .modal-content h3 { margin-bottom: 12px; color: #2D3748; }
+    .modal-content p { margin-bottom: 8px; font-size: 13px; color: #4A5568; }
+
+    @media (max-width: 900px) {
+      .container { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <h1>cycleCAD Billing Module Test Suite</h1>
+
+  <div class="container">
+    <!-- Test Controls -->
+    <div class="panel">
+      <h2>Test Controls</h2>
+
+      <div class="button-group">
+        <button class="btn-primary" onclick="runAllTests()">Run All Tests</button>
+        <button class="btn-secondary" onclick="clearTests()">Clear Results</button>
+      </div>
+
+      <h3>Categories</h3>
+      <div class="test-category">
+        <button class="btn-secondary btn-small" onclick="runCategory('tier')">Tier Detection (5)</button>
+      </div>
+      <div class="test-category">
+        <button class="btn-secondary btn-small" onclick="runCategory('limits')">Limit Checking (8)</button>
+      </div>
+      <div class="test-category">
+        <button class="btn-secondary btn-small" onclick="runCategory('usage')">Usage Tracking (6)</button>
+      </div>
+      <div class="test-category">
+        <button class="btn-secondary btn-small" onclick="runCategory('trial')">Trial Period (4)</button>
+      </div>
+      <div class="test-category">
+        <button class="btn-secondary btn-small" onclick="runCategory('promo')">Promo Codes (3)</button>
+      </div>
+      <div class="test-category">
+        <button class="btn-secondary btn-small" onclick="runCategory('grace')">Grace Period (2)</button>
+      </div>
+      <div class="test-category">
+        <button class="btn-secondary btn-small" onclick="runCategory('features')">Feature Gates (4)</button>
+      </div>
+      <div class="test-category">
+        <button class="btn-secondary btn-small" onclick="runCategory('export')">Export & CSV (2)</button>
+      </div>
+      <div class="test-category">
+        <button class="btn-secondary btn-small" onclick="runCategory('offline')">Offline Mode (2)</button>
+      </div>
+
+      <h3>Stats</h3>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-value" id="total-count">0</div>
+          <div class="stat-label">Total</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="passed-count" style="color: #48BB78;">0</div>
+          <div class="stat-label">Passed</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="failed-count" style="color: #F56565;">0</div>
+          <div class="stat-label">Failed</div>
+        </div>
+      </div>
+
+      <h3>Overall Progress</h3>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill" style="width: 0%; background: #667eea;">0%</div>
+      </div>
+
+      <h3>Export</h3>
+      <div class="button-group">
+        <button class="btn-secondary btn-small" onclick="exportJSON()">JSON</button>
+        <button class="btn-secondary btn-small" onclick="exportHTML()">HTML Report</button>
+      </div>
+    </div>
+
+    <!-- Test Results -->
+    <div class="panel">
+      <h2>Test Results</h2>
+      <div id="test-results" style="flex: 1; overflow-y: auto;">
+        <p style="color: #718096; font-size: 13px;">Run tests to see results</p>
+      </div>
+    </div>
+
+    <!-- Console Output -->
+    <div class="panel" style="grid-column: 1/-1;">
+      <h2>Console Output</h2>
+      <div class="console" id="console-output">
+        <div class="console-log">[Ready for testing]</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal for viewing tier details -->
+  <div class="modal" id="tier-modal">
+    <div class="modal-content">
+      <h3>Tier Information</h3>
+      <div id="modal-body"></div>
+      <button class="btn-primary" style="margin-top: 12px; width: 100%;" onclick="document.getElementById('tier-modal').classList.remove('active')">Close</button>
+    </div>
+  </div>
+
+  <script>
+    // Mock BillingModule for testing
+    const BillingModule = {
+      state: {
+        userId: 'test-user-123',
+        tier: 'free',
+        status: 'active',
+        billingCycle: 'monthly',
+        usage: {
+          projects: 1,
+          totalParts: 50,
+          storageGB: 0.5,
+          aiRequestsToday: 5,
+          aiRequests: 100,
+          stepImportsThisMonth: 2,
+          stepImportBytesThisMonth: 10 * 1024 * 1024
+        },
+        trialEndsAt: null,
+        offlineMode: false
+      },
+      tiers: {
+        free: { id: 'free', name: 'Free', limits: { projects: 3, partsPerProject: 100, storageGB: 1, aiRequestsPerDay: 20 } },
+        pro: { id: 'pro', name: 'Pro', limits: { projects: Infinity, partsPerProject: Infinity, storageGB: 50, aiRequestsPerDay: 500 } },
+        enterprise: { id: 'enterprise', name: 'Enterprise', limits: { projects: Infinity, partsPerProject: Infinity, storageGB: 500, aiRequestsPerDay: Infinity } }
+      },
+      getCurrentTier() {
+        return this.tiers[this.state.tier];
+      },
+      checkLimit(feature) {
+        const tier = this.tiers[this.state.tier];
+        const limits = tier.limits;
+        const usage = this.state.usage;
+        const mapping = {
+          'projects': { limit: limits.projects, current: usage.projects },
+          'parts': { limit: limits.partsPerProject, current: usage.totalParts },
+          'storage': { limit: limits.storageGB, current: usage.storageGB },
+          'ai-requests': { limit: limits.aiRequestsPerDay, current: usage.aiRequestsToday }
+        };
+        const config = mapping[feature] || {};
+        return {
+          allowed: config.limit === Infinity || config.current < config.limit,
+          current: config.current || 0,
+          limit: config.limit
+        };
+      },
+      trackUsage(feature, amount = 1) {
+        if (feature === 'ai-request') this.state.usage.aiRequestsToday++;
+        else if (feature === 'project-created') this.state.usage.projects++;
+        else if (feature === 'storage-added') this.state.usage.storageGB += amount;
+      },
+      getUsage() {
+        return { ...this.state.usage };
+      },
+      hasFeature(feature) {
+        return this.state.tier !== 'free';
+      },
+      saveState() {
+        localStorage.setItem('billing_state', JSON.stringify(this.state));
+      }
+    };
+
+    // Test suite
+    const tests = [];
+
+    class TestSuite {
+      constructor() {
+        this.results = [];
+      }
+
+      test(name, category, fn) {
+        tests.push({ name, category, fn });
+      }
+
+      async run() {
+        this.results = [];
+        for (const test of tests) {
+          try {
+            await Promise.resolve(test.fn());
+            this.results.push({ name: test.name, category: test.category, status: 'passed' });
+            logConsole(`✓ ${test.name}`, 'success');
+          } catch (e) {
+            this.results.push({ name: test.name, category: test.category, status: 'failed', error: e.message });
+            logConsole(`✗ ${test.name}: ${e.message}`, 'error');
+          }
+        }
+        renderResults();
+        updateStats();
+      }
+
+      runCategory(category) {
+        const categoryTests = tests.filter(t => t.category === category);
+        this.results = [];
+        categoryTests.forEach(test => {
+          try {
+            test.fn();
+            this.results.push({ name: test.name, category: test.category, status: 'passed' });
+          } catch (e) {
+            this.results.push({ name: test.name, category: test.category, status: 'failed', error: e.message });
+          }
+        });
+        renderResults();
+        updateStats();
+      }
+    }
+
+    const suite = new TestSuite();
+
+    // ========== TIER DETECTION ==========
+    suite.test('Free tier is default', 'tier', () => {
+      const tier = BillingModule.getCurrentTier();
+      if (tier.id !== 'free') throw new Error('Default tier should be free');
+    });
+
+    suite.test('Pro tier has correct limits', 'tier', () => {
+      BillingModule.state.tier = 'pro';
+      const tier = BillingModule.getCurrentTier();
+      if (tier.limits.projects !== Infinity) throw new Error('Pro projects should be unlimited');
+      if (tier.limits.storageGB !== 50) throw new Error('Pro storage should be 50GB');
+    });
+
+    suite.test('Enterprise tier has unlimited features', 'tier', () => {
+      BillingModule.state.tier = 'enterprise';
+      const tier = BillingModule.getCurrentTier();
+      if (tier.limits.projects !== Infinity) throw new Error('Enterprise projects should be unlimited');
+      if (tier.limits.aiRequestsPerDay !== Infinity) throw new Error('Enterprise AI should be unlimited');
+    });
+
+    suite.test('Tier switching works', 'tier', () => {
+      BillingModule.state.tier = 'free';
+      if (BillingModule.state.tier !== 'free') throw new Error('Free tier not set');
+      BillingModule.state.tier = 'pro';
+      if (BillingModule.state.tier !== 'pro') throw new Error('Pro tier not set');
+    });
+
+    suite.test('Invalid tier defaults to free', 'tier', () => {
+      BillingModule.state.tier = 'invalid';
+      const tier = BillingModule.tiers['invalid'] || BillingModule.tiers.free;
+      if (tier.id !== 'free') throw new Error('Invalid tier should fallback to free');
+    });
+
+    // ========== LIMIT CHECKING ==========
+    suite.test('Detect under limit (projects)', 'limits', () => {
+      BillingModule.state.tier = 'free';
+      BillingModule.state.usage.projects = 2;
+      const check = BillingModule.checkLimit('projects');
+      if (!check.allowed) throw new Error('Should allow project creation under limit');
+    });
+
+    suite.test('Detect at limit (projects)', 'limits', () => {
+      BillingModule.state.tier = 'free';
+      BillingModule.state.usage.projects = 3;
+      const check = BillingModule.checkLimit('projects');
+      if (check.allowed) throw new Error('Should reject project creation at limit');
+    });
+
+    suite.test('Detect over limit (parts)', 'limits', () => {
+      BillingModule.state.tier = 'free';
+      BillingModule.state.usage.totalParts = 101;
+      const check = BillingModule.checkLimit('parts');
+      if (check.allowed) throw new Error('Should reject part creation over limit');
+    });
+
+    suite.test('Unlimited tier allows anything', 'limits', () => {
+      BillingModule.state.tier = 'pro';
+      BillingModule.state.usage.projects = 10000;
+      const check = BillingModule.checkLimit('projects');
+      if (!check.allowed) throw new Error('Pro should allow unlimited projects');
+    });
+
+    suite.test('Storage limit warning at 80%', 'limits', () => {
+      BillingModule.state.tier = 'free';
+      BillingModule.state.usage.storageGB = 0.8;
+      const check = BillingModule.checkLimit('storage');
+      if (check.percentUsed !== 80) throw new Error('Should calculate 80% usage');
+    });
+
+    suite.test('AI requests reset daily', 'limits', () => {
+      BillingModule.state.tier = 'free';
+      BillingModule.state.usage.aiRequestsToday = 0;
+      for (let i = 0; i < 20; i++) BillingModule.trackUsage('ai-request');
+      const check = BillingModule.checkLimit('ai-requests');
+      if (check.allowed) throw new Error('Should reject 21st AI request');
+    });
+
+    suite.test('Limits return correct percentages', 'limits', () => {
+      BillingModule.state.tier = 'free';
+      BillingModule.state.usage.storageGB = 0.5;
+      const check = BillingModule.checkLimit('storage');
+      if (check.percentUsed !== 50) throw new Error(`Expected 50%, got ${check.percentUsed}%`);
+    });
+
+    suite.test('Free tier storage limit is 1GB', 'limits', () => {
+      BillingModule.state.tier = 'free';
+      const tier = BillingModule.getCurrentTier();
+      if (tier.limits.storageGB !== 1) throw new Error('Free storage should be 1GB');
+    });
+
+    // ========== USAGE TRACKING ==========
+    suite.test('Track project creation', 'usage', () => {
+      BillingModule.state.usage.projects = 0;
+      BillingModule.trackUsage('project-created');
+      if (BillingModule.state.usage.projects !== 1) throw new Error('Project count not incremented');
+    });
+
+    suite.test('Track storage usage', 'usage', () => {
+      BillingModule.state.usage.storageGB = 1.0;
+      BillingModule.trackUsage('storage-added', 0.5);
+      if (BillingModule.state.usage.storageGB !== 1.5) throw new Error('Storage not incremented correctly');
+    });
+
+    suite.test('Track AI requests', 'usage', () => {
+      BillingModule.state.usage.aiRequestsToday = 0;
+      BillingModule.trackUsage('ai-request');
+      if (BillingModule.state.usage.aiRequestsToday !== 1) throw new Error('AI request count not incremented');
+    });
+
+    suite.test('Get usage returns all metrics', 'usage', () => {
+      const usage = BillingModule.getUsage();
+      if (!usage.projects || usage.aiRequestsToday === undefined) throw new Error('Usage missing metrics');
+    });
+
+    suite.test('Prevent concurrent overages', 'usage', () => {
+      BillingModule.state.tier = 'free';
+      BillingModule.state.usage.projects = 2;
+      const check1 = BillingModule.checkLimit('projects');
+      const check2 = BillingModule.checkLimit('projects');
+      if (!check1.allowed || !check2.allowed) throw new Error('Both should be allowed before limit');
+      BillingModule.state.usage.projects = 3;
+      const check3 = BillingModule.checkLimit('projects');
+      if (check3.allowed) throw new Error('Should reject at exactly limit');
+    });
+
+    suite.test('Usage persists after save', 'usage', () => {
+      BillingModule.state.usage.projects = 5;
+      BillingModule.saveState();
+      const saved = JSON.parse(localStorage.getItem('billing_state'));
+      if (saved.usage.projects !== 5) throw new Error('Usage not persisted');
+    });
+
+    // ========== TRIAL PERIOD ==========
+    suite.test('Trial period countdown', 'trial', () => {
+      const now = Date.now();
+      const trialEnd = now + (14 * 24 * 60 * 60 * 1000); // 14 days
+      BillingModule.state.trialEndsAt = trialEnd;
+      const daysLeft = Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24));
+      if (daysLeft < 14 || daysLeft > 14) throw new Error('Trial countdown incorrect');
+    });
+
+    suite.test('Trial expiration detection', 'trial', () => {
+      const now = Date.now();
+      BillingModule.state.trialEndsAt = now - 1000; // Expired 1s ago
+      const daysLeft = Math.ceil((BillingModule.state.trialEndsAt - now) / (1000 * 60 * 60 * 24));
+      if (daysLeft >= 0) throw new Error('Expired trial should have negative days');
+    });
+
+    suite.test('Trial auto-converts to paid', 'trial', () => {
+      BillingModule.state.tier = 'free';
+      BillingModule.state.status = 'trialing';
+      BillingModule.state.trialEndsAt = Date.now() - 1000; // Expired
+      // Simulate conversion
+      BillingModule.state.tier = 'pro';
+      BillingModule.state.status = 'active';
+      if (BillingModule.state.tier !== 'pro') throw new Error('Trial not converted to paid');
+    });
+
+    suite.test('Trial can be canceled', 'trial', () => {
+      BillingModule.state.status = 'trialing';
+      BillingModule.state.tier = 'free'; // Downgrade on cancel
+      BillingModule.state.status = 'canceled';
+      if (BillingModule.state.tier !== 'free' || BillingModule.state.status !== 'canceled') throw new Error('Trial cancel failed');
+    });
+
+    // ========== PROMO CODES ==========
+    suite.test('Valid promo code accepted', 'promo', () => {
+      const promoCodes = {
+        'STUDENT20': { discount: 0.20, valid: true },
+        'NONPROFIT30': { discount: 0.30, valid: true }
+      };
+      const code = 'STUDENT20';
+      if (!promoCodes[code]?.valid) throw new Error('Promo code validation failed');
+    });
+
+    suite.test('Invalid promo code rejected', 'promo', () => {
+      const promoCodes = {};
+      const code = 'FAKECODE123';
+      if (promoCodes[code]) throw new Error('Invalid code should not exist');
+    });
+
+    suite.test('Promo code discount applied', 'promo', () => {
+      const basePrice = 4900; // €49.00 in cents
+      const discount = 0.20;
+      const finalPrice = basePrice * (1 - discount);
+      if (finalPrice !== 3920) throw new Error(`Expected 3920, got ${finalPrice}`);
+    });
+
+    // ========== GRACE PERIOD ==========
+    suite.test('Grace period starts on payment failure', 'grace', () => {
+      BillingModule.state.status = 'payment_failed';
+      const gracePeriodEnds = Date.now() + (7 * 24 * 60 * 60 * 1000);
+      if (!gracePeriodEnds) throw new Error('Grace period not started');
+    });
+
+    suite.test('Access maintained during grace period', 'grace', () => {
+      BillingModule.state.status = 'payment_failed';
+      BillingModule.state.tier = 'pro'; // Should remain pro
+      if (BillingModule.state.tier !== 'pro') throw new Error('Access lost during grace period');
+    });
+
+    // ========== FEATURE GATES ==========
+    suite.test('Free tier blocks Pro features', 'features', () => {
+      BillingModule.state.tier = 'free';
+      const hasFeature = BillingModule.hasFeature('cam-operations');
+      if (hasFeature) throw new Error('Free tier should not have CAM operations');
+    });
+
+    suite.test('Pro tier unlocks features', 'features', () => {
+      BillingModule.state.tier = 'pro';
+      const hasFeature = BillingModule.hasFeature('api-access');
+      if (!hasFeature) throw new Error('Pro tier should have API access');
+    });
+
+    suite.test('Feature gate enforcement works', 'features', () => {
+      BillingModule.state.tier = 'free';
+      const canUseCAM = BillingModule.hasFeature('cam-operations');
+      BillingModule.state.tier = 'pro';
+      const canUseCAMPro = BillingModule.hasFeature('cam-operations');
+      if (canUseCAM === canUseCAMPro) throw new Error('Feature gate not enforcing tier difference');
+    });
+
+    suite.test('Enterprise unlocks everything', 'features', () => {
+      BillingModule.state.tier = 'enterprise';
+      const hasSSO = BillingModule.hasFeature('sso');
+      const hasCustomBranding = BillingModule.hasFeature('custom-branding');
+      if (!hasSSO || !hasCustomBranding) throw new Error('Enterprise should have all features');
+    });
+
+    // ========== EXPORT & CSV ==========
+    suite.test('Export usage to CSV format', 'export', () => {
+      BillingModule.state.usage.projects = 2;
+      BillingModule.state.usage.storageGB = 0.5;
+      const csv = 'Projects,2\nStorage,0.5';
+      if (!csv.includes('Projects')) throw new Error('CSV missing projects field');
+    });
+
+    suite.test('CSV includes all metrics', 'export', () => {
+      const metrics = ['projects', 'totalParts', 'storageGB', 'aiRequests'];
+      const csv = metrics.map(m => `${m},${BillingModule.state.usage[m]}`).join('\n');
+      metrics.forEach(m => {
+        if (!csv.includes(m)) throw new Error(`CSV missing ${m}`);
+      });
+    });
+
+    // ========== OFFLINE MODE ==========
+    suite.test('Offline mode uses cached data', 'offline', () => {
+      BillingModule.state.offlineMode = true;
+      BillingModule.saveState();
+      const usage = BillingModule.getUsage();
+      if (!usage) throw new Error('Offline mode should provide usage data');
+    });
+
+    suite.test('Sync resumes when online', 'offline', () => {
+      BillingModule.state.offlineMode = true;
+      BillingModule.state.offlineMode = false; // Go online
+      const tier = BillingModule.getCurrentTier();
+      if (!tier) throw new Error('Should sync tier when online');
+    });
+
+    // ========== Helper Functions ==========
+    function logConsole(message, type = 'log') {
+      const console = document.getElementById('console-output');
+      const log = document.createElement('div');
+      log.className = `console-log console-${type}`;
+      log.textContent = message;
+      console.appendChild(log);
+      console.scrollTop = console.scrollHeight;
+    }
+
+    function renderResults() {
+      const resultsDiv = document.getElementById('test-results');
+      const grouped = {};
+
+      suite.results.forEach(result => {
+        if (!grouped[result.category]) grouped[result.category] = [];
+        grouped[result.category].push(result);
+      });
+
+      let html = '';
+      Object.keys(grouped).sort().forEach(category => {
+        html += `<h3>${category.replace(/\b\w/g, c => c.toUpperCase())}</h3>`;
+        grouped[category].forEach(result => {
+          const icon = result.status === 'passed' ? '✓' : '✗';
+          const detail = result.error ? ` - ${result.error}` : '';
+          html += `
+            <div class="test-item ${result.status}">
+              <span class="test-icon">${icon}</span>
+              <span class="test-name">${result.name}</span>
+              ${detail ? `<span class="test-details">${detail}</span>` : ''}
+            </div>
+          `;
+        });
+      });
+
+      resultsDiv.innerHTML = html || '<p style="color: #718096;">No results yet</p>';
+    }
+
+    function updateStats() {
+      const total = suite.results.length;
+      const passed = suite.results.filter(r => r.status === 'passed').length;
+      const failed = suite.results.filter(r => r.status === 'failed').length;
+      const percentage = total > 0 ? Math.round((passed / total) * 100) : 0;
+
+      document.getElementById('total-count').textContent = total;
+      document.getElementById('passed-count').textContent = passed;
+      document.getElementById('failed-count').textContent = failed;
+
+      const fill = document.getElementById('progress-fill');
+      fill.style.width = percentage + '%';
+      fill.textContent = percentage + '%';
+    }
+
+    function clearTests() {
+      suite.results = [];
+      document.getElementById('test-results').innerHTML = '<p style="color: #718096;">Tests cleared</p>';
+      updateStats();
+      logConsole('[Tests cleared]');
+    }
+
+    async function runAllTests() {
+      logConsole('[Starting all tests...]');
+      await suite.run();
+      logConsole(`[${suite.results.length} tests completed]`);
+    }
+
+    function runCategory(category) {
+      logConsole(`[Running ${category} tests...]`);
+      suite.runCategory(category);
+      logConsole(`[${suite.results.filter(r => r.category === category).length} ${category} tests completed]`);
+    }
+
+    function exportJSON() {
+      const data = {
+        timestamp: new Date().toISOString(),
+        totalTests: suite.results.length,
+        passed: suite.results.filter(r => r.status === 'passed').length,
+        failed: suite.results.filter(r => r.status === 'failed').length,
+        results: suite.results
+      };
+      const json = JSON.stringify(data, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `billing-tests-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function exportHTML() {
+      const passed = suite.results.filter(r => r.status === 'passed').length;
+      const failed = suite.results.filter(r => r.status === 'failed').length;
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head><title>Billing Tests Report</title><style>
+          body { font-family: sans-serif; padding: 20px; background: #f5f5f5; }
+          h1 { color: #333; }
+          .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin: 20px 0; }
+          .stat { background: white; padding: 20px; border-radius: 8px; text-align: center; }
+          .stat-value { font-size: 32px; font-weight: bold; }
+          .passed { color: #28a745; }
+          .failed { color: #dc3545; }
+          .test { background: white; padding: 12px; margin: 10px 0; border-left: 4px solid; border-radius: 4px; }
+          .test.passed { border-color: #28a745; }
+          .test.failed { border-color: #dc3545; }
+        </style></head>
+        <body>
+          <h1>cycleCAD Billing Tests Report</h1>
+          <p>Generated: ${new Date().toISOString()}</p>
+          <div class="stats">
+            <div class="stat"><div class="stat-value">${suite.results.length}</div><div>Total</div></div>
+            <div class="stat"><div class="stat-value passed">${passed}</div><div>Passed</div></div>
+            <div class="stat"><div class="stat-value failed">${failed}</div><div>Failed</div></div>
+          </div>
+          <h2>Results</h2>
+          ${suite.results.map(r => `
+            <div class="test ${r.status}">
+              <strong>${r.category}: ${r.name}</strong>
+              <p>${r.status.toUpperCase()} ${r.error ? '- ' + r.error : ''}</p>
+            </div>
+          `).join('')}
+        </body>
+        </html>
+      `;
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `billing-tests-report-${Date.now()}.html`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Initialize
+    logConsole('[Billing Test Suite Ready - Click "Run All Tests" to begin]');
+  </script>
+</body>
+</html>

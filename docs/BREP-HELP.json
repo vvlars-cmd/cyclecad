@@ -1,0 +1,326 @@
+[
+  {
+    "id": "brep-init",
+    "title": "Initialize B-Rep Kernel",
+    "category": "Initialization",
+    "description": "Load the OpenCascade.js WASM library from CDN. This happens automatically on first geometry operation, but can be called manually to show progress.",
+    "shortcut": "",
+    "example": "await kernel.init((loaded, total, percent) => console.log(`Loading: ${percent}%`));",
+    "notes": "The WASM file is ~50MB and only loads once per browser session. First load takes 10-30 seconds depending on connection speed."
+  },
+  {
+    "id": "brep-makebox",
+    "title": "Create Box",
+    "category": "Primitives",
+    "description": "Create a rectangular box (cuboid) solid. Dimensions define width (X), height (Y), and depth (Z). Optional position offset.",
+    "shortcut": "",
+    "example": "const box = await kernel.makeBox({width: 100, height: 50, depth: 30});",
+    "notes": "Returns {id, shape} where id is the shape identifier for future operations."
+  },
+  {
+    "id": "brep-makecylinder",
+    "title": "Create Cylinder",
+    "category": "Primitives",
+    "description": "Create a circular cylinder or partial wedge. Radius and height define the shape. Optional angle creates partial cylinders (e.g., 90° wedge).",
+    "shortcut": "",
+    "example": "const cyl = await kernel.makeCylinder({radius: 15, height: 60, angle: 360});",
+    "notes": "angle=360 creates full cylinder. angle=90 creates a 90° wedge."
+  },
+  {
+    "id": "brep-makesphere",
+    "title": "Create Sphere",
+    "category": "Primitives",
+    "description": "Create a perfect sphere with given radius. Center is at origin.",
+    "shortcut": "",
+    "example": "const sphere = await kernel.makeSphere({radius: 25});",
+    "notes": "Sphere is created as a real B-Rep solid with accurate geometry."
+  },
+  {
+    "id": "brep-makecone",
+    "title": "Create Cone",
+    "category": "Primitives",
+    "description": "Create a cone or frustum (truncated cone). Specify two radii (for pointed cone, set radius2=0) and height.",
+    "shortcut": "",
+    "example": "const cone = await kernel.makeCone({radius1: 30, radius2: 0, height: 40});",
+    "notes": "radius1=30, radius2=0 creates a pointed cone. radius1=30, radius2=15 creates a frustum (truncated cone)."
+  },
+  {
+    "id": "brep-maketorus",
+    "title": "Create Torus",
+    "category": "Primitives",
+    "description": "Create a torus (donut shape). Major radius is distance from center to tube center. Minor radius is the tube radius.",
+    "shortcut": "",
+    "example": "const torus = await kernel.makeTorus({majorRadius: 40, minorRadius: 10});",
+    "notes": "majorRadius=40, minorRadius=10 creates a classic donut shape."
+  },
+  {
+    "id": "brep-extrude",
+    "title": "Extrude Shape",
+    "category": "Transformations",
+    "description": "Extrude a 2D profile (wire or face) along a vector. Specify direction (X, Y, Z components) and depth distance.",
+    "shortcut": "",
+    "example": "const extruded = await kernel.extrude({shapeId: wireId, dirX: 0, dirY: 0, dirZ: 1, depth: 50});",
+    "notes": "Direction is automatically normalized. Depth must be positive. Extrusion creates a 3D solid from 2D shape."
+  },
+  {
+    "id": "brep-revolve",
+    "title": "Revolve Shape",
+    "category": "Transformations",
+    "description": "Revolve (rotate) a 2D profile around an axis to create a 3D solid of revolution. Specify axis origin, direction, and rotation angle.",
+    "shortcut": "",
+    "example": "const revolved = await kernel.revolve({shapeId: profileId, axisX: 0, axisY: 0, axisZ: 0, dirX: 0, dirY: 0, dirZ: 1, angle: 360});",
+    "notes": "angle=360 creates complete revolution. angle=180 creates half-shape."
+  },
+  {
+    "id": "brep-sweep",
+    "title": "Sweep Profile Along Path",
+    "category": "Transformations",
+    "description": "Sweep a profile (wire) along a path (curve) to create a 3D shape. Like dragging a shape along a trajectory.",
+    "shortcut": "",
+    "example": "const swept = await kernel.sweep({profileId: circleId, pathId: curveId});",
+    "notes": "Creates organic tube-like shapes. Profile is repeated along the path with proper orientation changes."
+  },
+  {
+    "id": "brep-loft",
+    "title": "Loft Between Profiles",
+    "category": "Transformations",
+    "description": "Create a smooth surface flowing between multiple 2D profiles. Like interpolating between cross-sections.",
+    "shortcut": "",
+    "example": "const lofted = await kernel.loft({profileIds: [baseId, midId, topId], isSolid: true});",
+    "notes": "Requires at least 2 profiles. isSolid=true creates solid, isSolid=false creates shell only."
+  },
+  {
+    "id": "brep-unionfuse",
+    "title": "Union (Fuse)",
+    "category": "Boolean Operations",
+    "description": "Combine two solids into one. Merges all volume from both shapes. Uses 3-tier error recovery for robustness.",
+    "shortcut": "",
+    "example": "const combined = await kernel.booleanUnion({shapeA: box.id, shapeB: cylinder.id});",
+    "notes": "Uses standard operation first, then fuzzy tolerance, then shape healing if needed. Very robust."
+  },
+  {
+    "id": "brep-cut",
+    "title": "Cut (Boolean Difference)",
+    "category": "Boolean Operations",
+    "description": "Subtract one solid from another. Removes the volume of shapeB from shapeA. Uses 3-tier error recovery.",
+    "shortcut": "",
+    "example": "const holed = await kernel.booleanCut({shapeA: boxId, shapeB: holeId});",
+    "notes": "Most common operation for creating holes and features. Order matters: A - B is different from B - A."
+  },
+  {
+    "id": "brep-intersect",
+    "title": "Intersection (Common)",
+    "category": "Boolean Operations",
+    "description": "Keep only the overlapping volume of two solids. Creates lens-shaped regions where shapes overlap.",
+    "shortcut": "",
+    "example": "const intersection = await kernel.booleanIntersect({shapeA: sphere1Id, shapeB: sphere2Id});",
+    "notes": "Useful for analyzing overlaps and creating complex shapes from combinations."
+  },
+  {
+    "id": "brep-fillet",
+    "title": "Fillet Edges",
+    "category": "Modifiers",
+    "description": "Round edges with smooth curved surfaces (real B-Rep fillets, not approximations). Specify edge indices and radius.",
+    "shortcut": "",
+    "example": "const filleted = await kernel.fillet({shapeId: boxId, edgeIndices: [0, 1, 2, 3], radius: 5});",
+    "notes": "Real B-Rep operation using OpenCascade's MakeFillet. Much more accurate than mesh approximations. Use getEdges() to find edge indices."
+  },
+  {
+    "id": "brep-chamfer",
+    "title": "Chamfer Edges",
+    "category": "Modifiers",
+    "description": "Bevel edges with sharp 45-degree cuts. Real B-Rep operation. Specify edge indices and chamfer distance.",
+    "shortcut": "",
+    "example": "const chamfered = await kernel.chamfer({shapeId: boxId, edgeIndices: [4, 5, 6, 7], distance: 2});",
+    "notes": "Produces sharp beveled edges unlike soft fillets. Uses OpenCascade's MakeChamfer."
+  },
+  {
+    "id": "brep-shell",
+    "title": "Shell (Hollow Out)",
+    "category": "Modifiers",
+    "description": "Create a hollow shell by removing faces and adding wall thickness. Like creating a cavity or emptying out a solid.",
+    "shortcut": "",
+    "example": "const hollow = await kernel.shell({shapeId: boxId, removeFaceIndices: [0], thickness: 2});",
+    "notes": "Useful for creating hollow containers, molds, and light-weight parts. Face indices identify which faces to remove (openings)."
+  },
+  {
+    "id": "brep-mirror",
+    "title": "Mirror Shape",
+    "category": "Modifiers",
+    "description": "Reflect a shape across a plane. Specify plane origin and normal direction.",
+    "shortcut": "",
+    "example": "const mirrored = await kernel.mirror({shapeId: boxId, plane: {originX: 0, originY: 0, originZ: 0, normalX: 1, normalY: 0, normalZ: 0}});",
+    "notes": "Useful for creating symmetric parts. Normal vector points in the direction perpendicular to the mirror plane."
+  },
+  {
+    "id": "brep-getedges",
+    "title": "Get Shape Edges",
+    "category": "Topology",
+    "description": "Extract all edges from a shape with their indices. Needed to target specific edges for fillet/chamfer operations.",
+    "shortcut": "",
+    "example": "const edges = await kernel.getEdges(boxId); console.log(`Box has ${edges.length} edges`);",
+    "notes": "Returns array of edge objects with index property. Use indices in fillet/chamfer operations."
+  },
+  {
+    "id": "brep-getfaces",
+    "title": "Get Shape Faces",
+    "category": "Topology",
+    "description": "Extract all faces from a shape with their indices. Useful for analyzing structure and targeting faces for operations.",
+    "shortcut": "",
+    "example": "const faces = await kernel.getFaces(boxId); console.log(`Box has ${faces.length} faces`);",
+    "notes": "Returns array of face objects with index property. Helps understand shape topology."
+  },
+  {
+    "id": "brep-shapetomesh",
+    "title": "Convert to Three.js Mesh",
+    "category": "Visualization",
+    "description": "Tessellate a B-Rep shape into THREE.BufferGeometry for WebGL rendering. Configurable deflection for quality/speed tradeoff.",
+    "shortcut": "",
+    "example": "const geometry = await kernel.shapeToMesh(boxId, 0.1); const mesh = new THREE.Mesh(geometry, material); scene.add(mesh);",
+    "notes": "linearDeflection=0.01 for high quality, 0.1 for medium, 1.0 for low quality (faster rendering)."
+  },
+  {
+    "id": "brep-massproperties",
+    "title": "Get Mass Properties",
+    "category": "Analysis",
+    "description": "Compute volume, surface area, mass (with density), center of gravity, and moments of inertia for structural analysis.",
+    "shortcut": "",
+    "example": "const props = await kernel.getMassProperties({shapeId: boxId, density: 2.7}); console.log(`Weight: ${props.mass} g`);",
+    "notes": "Density in g/cm³. Common values: steel 7.85, aluminum 2.7, plastic 1.2. Returns accurate mass properties for engineering."
+  },
+  {
+    "id": "brep-boundingbox",
+    "title": "Get Bounding Box",
+    "category": "Analysis",
+    "description": "Get the extents (min/max coordinates) and dimensions of a shape's bounding box.",
+    "shortcut": "",
+    "example": "const bbox = await kernel.getBoundingBox(boxId); console.log(`Width: ${bbox.width}, Height: ${bbox.height}, Depth: ${bbox.depth}`);",
+    "notes": "Returns minX, minY, minZ, maxX, maxY, maxZ, width, height, depth. Useful for fitting shapes in space or collision detection."
+  },
+  {
+    "id": "brep-exportstep",
+    "title": "Export to STEP",
+    "category": "File I/O",
+    "description": "Export one or more shapes to STEP format (ISO 10303-21) for interchange with other CAD software.",
+    "shortcut": "",
+    "example": "const stepData = await kernel.exportSTEP([boxId], {fileName: 'mybox.stp', writeAscii: false});",
+    "notes": "Binary format is smaller and faster. ASCII format is human-readable. Compatible with all major CAD systems."
+  },
+  {
+    "id": "brep-importstep",
+    "title": "Import from STEP",
+    "category": "File I/O",
+    "description": "Import shapes from STEP format files. Reads AP203 and AP214 STEP variants.",
+    "shortcut": "",
+    "example": "const imported = await kernel.importSTEP(stepDataBuffer); console.log('Imported shape:', imported.id);",
+    "notes": "Accepts ArrayBuffer or Uint8Array. Returns imported shape ID for use in subsequent operations."
+  },
+  {
+    "id": "brep-getshapeinfo",
+    "title": "Get Shape Metadata",
+    "category": "Utility",
+    "description": "Retrieve cached metadata about a shape (name, color, bounding box, etc.)",
+    "shortcut": "",
+    "example": "const info = kernel.getShapeInfo(boxId); console.log(info.name, info.color);",
+    "notes": "Returns null if shape not found. Useful for debugging and tracking shape properties."
+  },
+  {
+    "id": "brep-deleteshape",
+    "title": "Delete Shape from Cache",
+    "category": "Utility",
+    "description": "Remove a shape from memory to free resources. All subsequent operations using this shape ID will fail.",
+    "shortcut": "",
+    "example": "kernel.deleteShape(boxId);",
+    "notes": "Use in long sessions to manage memory. WARNING: invalidates the shape ID permanently."
+  },
+  {
+    "id": "brep-clearcache",
+    "title": "Clear All Cached Shapes",
+    "category": "Utility",
+    "description": "Remove all shapes from memory at once. WARNING: invalidates all shape IDs.",
+    "shortcut": "",
+    "example": "kernel.clearCache();",
+    "notes": "Use only when you're certain you're done with all shapes. Frees all memory but invalidates all shape IDs."
+  },
+  {
+    "id": "brep-cachestats",
+    "title": "Get Cache Statistics",
+    "category": "Utility",
+    "description": "Query the number of cached shapes and approximate memory usage.",
+    "shortcut": "",
+    "example": "const stats = kernel.getCacheStats(); console.log(`Cached shapes: ${stats.shapeCount}`);",
+    "notes": "Useful for monitoring memory usage in long modeling sessions."
+  },
+  {
+    "id": "brep-error-recovery",
+    "title": "Boolean Operation Error Recovery",
+    "category": "Advanced",
+    "description": "Understand how boolean operations handle failures automatically with 3-tier recovery: standard → fuzzy tolerance → shape healing.",
+    "shortcut": "",
+    "example": "try { const result = await kernel.booleanCut({...}); } catch (err) { console.error(err.diagnostic); }",
+    "notes": "Errors include detailed diagnostics showing which recovery tier failed. Most operations succeed without user intervention."
+  },
+  {
+    "id": "brep-deflection-tuning",
+    "title": "Mesh Deflection Tuning",
+    "category": "Performance",
+    "description": "Understand linearDeflection parameter: smaller values = finer mesh (slower), larger values = coarser mesh (faster).",
+    "shortcut": "",
+    "example": "await kernel.shapeToMesh(shapeId, 0.01);  // Fine (0.01mm) await kernel.shapeToMesh(shapeId, 1.0);   // Coarse (1.0mm)",
+    "notes": "0.01mm for 3D printing, 0.1mm for visualization, 1.0mm for quick preview."
+  },
+  {
+    "id": "brep-materials",
+    "title": "Common Material Densities",
+    "category": "Reference",
+    "description": "Quick reference for material densities (g/cm³) used in mass property calculations.",
+    "shortcut": "",
+    "example": "// Steel: 7.85, Aluminum: 2.7, Titanium: 4.5, Plastic (ABS): 1.04, Copper: 8.96, Brass: 8.5",
+    "notes": "Use these values with getMassProperties(). Densities vary by alloy; these are typical values."
+  },
+  {
+    "id": "brep-edge-indices",
+    "title": "Understanding Edge Indices",
+    "category": "Reference",
+    "description": "Edge indices are returned by getEdges() in order of extraction. For a box, typically: edges 0-3 are top, 4-7 are vertical, 8-11 are bottom.",
+    "shortcut": "",
+    "example": "const edges = await kernel.getEdges(boxId); // Use edges.map(e => e.index) to get all indices",
+    "notes": "Order depends on how OpenCascade extracts edges. Use getEdges() to determine actual indices for your shape."
+  },
+  {
+    "id": "brep-shape-ids",
+    "title": "Shape ID Format",
+    "category": "Reference",
+    "description": "All shapes have IDs in format 'shape_N' where N is auto-incrementing. IDs are returned from every operation.",
+    "shortcut": "",
+    "example": "shape_0, shape_1, shape_2, ...",
+    "notes": "IDs are valid only while shape is cached. After deleteShape() or clearCache(), IDs become invalid."
+  },
+  {
+    "id": "brep-workflow-example",
+    "title": "Complete Modeling Workflow",
+    "category": "Examples",
+    "description": "Example: Create bracket with holes → fillet edges → analyze weight → export to STEP.",
+    "shortcut": "",
+    "example": "const plate = await kernel.makeBox({width: 100, height: 50, depth: 10}); const hole = await kernel.makeCylinder({radius: 5, height: 15}); let bracket = await kernel.booleanCut({shapeA: plate.id, shapeB: hole.id}); bracket = await kernel.fillet({shapeId: bracket.id, edgeIndices: [0, 1, 2, 3], radius: 2}); const props = await kernel.getMassProperties({shapeId: bracket.id, density: 2.7}); console.log('Weight:', props.mass, 'g'); const stepData = await kernel.exportSTEP([bracket.id]);",
+    "notes": "This is a real-world example. Adapt for your specific design."
+  },
+  {
+    "id": "brep-promise-all",
+    "title": "Parallel Operations with Promise.all",
+    "category": "Performance",
+    "description": "Create multiple shapes in parallel instead of sequentially to save time.",
+    "shortcut": "",
+    "example": "const [box, cyl, sphere] = await Promise.all([ kernel.makeBox({width: 100, height: 50, depth: 30}), kernel.makeCylinder({radius: 15, height: 60}), kernel.makeSphere({radius: 25}) ]);",
+    "notes": "Much faster than awaiting each operation sequentially. Recommended for batch operations."
+  },
+  {
+    "id": "brep-wasm-loading",
+    "title": "WASM Loading and Caching",
+    "category": "Technical",
+    "description": "Understand how WASM loads: lazy on first operation, cached in IndexedDB, reused across sessions.",
+    "shortcut": "",
+    "example": "// First call: downloads and initializes await kernel.init(); // Subsequent calls: instant (cached)",
+    "notes": "First load takes 10-30s. Subsequent loads are instant. Uses ~50MB of browser cache."
+  }
+]

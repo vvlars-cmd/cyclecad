@@ -1,0 +1,228 @@
+{
+  "collaboration": {
+    "overview": {
+      "title": "Real-Time Collaboration",
+      "description": "Work together with team members on the same 3D model in real time. See cursors, selections, and edits instantly.",
+      "category": "collaboration"
+    },
+    "create_session": {
+      "title": "Create Collaboration Session",
+      "description": "Start a new collaborative design session. Share the room ID with team members to invite them.",
+      "usage": "Click Tools → Collaborate → Create Session, enter a name, and share the generated room ID.",
+      "shortcuts": "Ctrl+Alt+Shift+C",
+      "category": "collaboration",
+      "relatedTopics": ["join_session", "share_room"]
+    },
+    "join_session": {
+      "title": "Join Collaboration Session",
+      "description": "Join an existing collaborative session using the room ID provided by the host.",
+      "usage": "Click Tools → Collaborate → Join Session, enter the room ID and your name.",
+      "shortcuts": "Ctrl+Alt+Shift+J",
+      "category": "collaboration",
+      "relatedTopics": ["create_session", "user_list"]
+    },
+    "share_room": {
+      "title": "Share Room Link",
+      "description": "Generate a shareable link to invite others to your collaboration session. Can optionally password-protect the room.",
+      "usage": "In collaboration panel, click 'Share' to copy the link or set a password.",
+      "tips": ["Password-protected rooms are more secure for sensitive projects", "Share links expire after 24 hours for security"],
+      "category": "collaboration",
+      "relatedTopics": ["create_session", "room_security"]
+    },
+    "room_security": {
+      "title": "Room Security & Passwords",
+      "description": "Protect your collaboration room with a password. Only users with the correct password can join.",
+      "usage": "When creating a room, check 'Require Password' and enter a secure password.",
+      "tips": ["Use strong passwords (min 8 characters, mixed case, numbers)", "Change password if room is compromised", "Public rooms have no password"],
+      "category": "collaboration",
+      "relatedTopics": ["create_session", "share_room"]
+    },
+    "user_list": {
+      "title": "Collaboration User List",
+      "description": "See all users in the current session with their status, color, and active selections.",
+      "usage": "The user list appears in the right panel during a collaboration session. Green dot = online, yellow = idle, red = offline.",
+      "tips": ["Hover over a user to highlight their selection", "Right-click to kick user or change permissions"],
+      "category": "collaboration",
+      "relatedTopics": ["cursor_sharing", "selection_sharing"]
+    },
+    "cursor_sharing": {
+      "title": "Cursor Sharing",
+      "description": "See where each team member is looking with live cursor positions. Cursor updates are throttled (10x/sec) for performance.",
+      "usage": "Move your mouse in the 3D viewport. Other users will see a cursor indicator with your name and color.",
+      "tips": ["Cursor color is unique per user for easy identification", "Turn off in Settings for privacy"],
+      "category": "collaboration",
+      "relatedTopics": ["user_list", "selection_sharing"]
+    },
+    "selection_sharing": {
+      "title": "Selection Sharing",
+      "description": "When you select a part, all team members see it highlighted in your color. Know what others are working on.",
+      "usage": "Click on a part in the 3D view. Other users see the selection with your user color.",
+      "tips": ["Multi-select with Ctrl+Click", "Selection updates are instant (no throttling)", "Helps avoid conflicting edits"],
+      "category": "collaboration",
+      "relatedTopics": ["cursor_sharing", "user_list"]
+    },
+    "live_chat": {
+      "title": "Collaboration Chat",
+      "description": "Send instant messages to your team without leaving the app. Chat history is saved for the session.",
+      "usage": "Type in the chat box at the bottom right and press Enter to send.",
+      "shortcuts": "Ctrl+Shift+M to focus chat",
+      "tips": ["Messages are shown with timestamp and user color", "Chat history is saved for 50 most recent messages"],
+      "category": "collaboration",
+      "relatedTopics": ["comments", "mentions"]
+    },
+    "mentions": {
+      "title": "Mentions in Chat",
+      "description": "Mention a specific team member using @ symbol to get their attention.",
+      "usage": "Type @username in chat. Mentioned user gets a notification even if minimized.",
+      "tips": ["@everyone mentions all users in room", "Mentions show in bold red text"],
+      "category": "collaboration",
+      "relatedTopics": ["live_chat", "notifications"]
+    },
+    "comments": {
+      "title": "Part Comments",
+      "description": "Add comments to specific parts for design reviews and feedback.",
+      "usage": "Right-click on a part → Add Comment. Comments are visible to all team members.",
+      "shortcuts": "Ctrl+Shift+N",
+      "tips": ["Comments are pinned to parts and appear when part is selected", "Resolve comments when discussion is done"],
+      "category": "collaboration",
+      "relatedTopics": ["live_chat", "design_review"]
+    },
+    "design_review": {
+      "title": "Collaborative Design Review",
+      "description": "Review a design together in real time. All changes are tracked and can be undone.",
+      "usage": "Enable 'Design Review Mode' in Tools → Collaborate. Changes are logged for review.",
+      "tips": ["All changes are reversible", "Review history shows who made each change and when", "Approve or reject changes from other users"],
+      "category": "collaboration",
+      "relatedTopics": ["comments", "history"]
+    },
+    "operation_sync": {
+      "title": "Operation Synchronization",
+      "description": "All geometry operations (extrude, fillet, chamfer, etc.) are synchronized in real time across all clients.",
+      "usage": "Perform an operation (e.g., extrude). Other users see it applied immediately to their view.",
+      "tips": ["Operations are logged in order for consistency", "Offline operations queue and sync when reconnected"],
+      "category": "collaboration",
+      "relatedTopics": ["conflict_resolution", "offline_mode"]
+    },
+    "conflict_resolution": {
+      "title": "Conflict Resolution",
+      "description": "When two users edit the same part simultaneously, conflicts are resolved using Last-Writer-Wins (LWW) or CRDT algorithm.",
+      "usage": "If conflict occurs, app will notify you. Accept or reject the conflicting change.",
+      "tips": ["Geometry operations use CRDT (order-preserved)", "Property changes use LWW (latest timestamp wins)", "Use chat to discuss conflicting changes"],
+      "category": "collaboration",
+      "relatedTopics": ["operation_sync", "history"]
+    },
+    "offline_mode": {
+      "title": "Offline Collaboration",
+      "description": "Work offline and sync changes when reconnected. Operations queue automatically.",
+      "usage": "Keep using the app normally when offline. Connection will restore and sync automatically.",
+      "tips": ["Offline queue can hold up to 1000 operations", "Sync happens automatically on reconnect", "No data is lost"],
+      "category": "collaboration",
+      "relatedTopics": ["operation_sync", "connection_status"]
+    },
+    "connection_status": {
+      "title": "Connection Status",
+      "description": "Monitor your collaboration server connection. Status bar shows connection state.",
+      "usage": "Look at top-right corner: 🟢 Connected, 🟡 Reconnecting, 🔴 Disconnected.",
+      "tips": ["'Reconnecting' state lasts up to 30 seconds before showing disconnected", "All changes made offline will sync when connected"],
+      "category": "collaboration",
+      "relatedTopics": ["offline_mode", "troubleshooting"]
+    },
+    "history": {
+      "title": "Collaboration History",
+      "description": "View all operations performed in the session with timestamps and user info.",
+      "usage": "Click Tools → Collaborate → View History. See a timeline of all changes.",
+      "shortcuts": "Ctrl+H",
+      "tips": ["Click on any operation to revert to that point", "History includes who made each change", "Export history as JSON for documentation"],
+      "category": "collaboration",
+      "relatedTopics": ["undo_redo", "timestamps"]
+    },
+    "undo_redo": {
+      "title": "Undo/Redo in Collaboration",
+      "description": "Undo and redo work in collaborative sessions. Your changes don't affect others unless they conflict.",
+      "usage": "Ctrl+Z to undo, Ctrl+Y to redo. Other users see your undo/redo as operations.",
+      "tips": ["Undoing remote operations may cause conflicts", "Use chat to coordinate before undoing large changes"],
+      "category": "collaboration",
+      "relatedTopics": ["history", "conflict_resolution"]
+    },
+    "permissions": {
+      "title": "Collaboration Permissions",
+      "description": "Control what team members can do in your session. Permissions include edit, view, comment.",
+      "usage": "Host can set permissions per user. Right-click user in list → Change Permissions.",
+      "tips": ["Viewer: read-only access (no edits)", "Commenter: can suggest changes via comments", "Editor: full edit access"],
+      "category": "collaboration",
+      "relatedTopics": ["user_list", "create_session"]
+    },
+    "notifications": {
+      "title": "Collaboration Notifications",
+      "description": "Get notified when users join/leave, when mentioned in chat, or on important changes.",
+      "usage": "Notifications appear in bottom-right corner. Click to dismiss or act.",
+      "tips": ["Mute notifications in Settings → Notifications", "Sound alerts only when tab is not focused"],
+      "category": "collaboration",
+      "relatedTopics": ["mentions", "user_list"]
+    },
+    "export_session": {
+      "title": "Export Collaboration Session",
+      "description": "Save the entire session including geometry, history, and chat as a file.",
+      "usage": "Tools → Collaborate → Export Session. Choose format (JSON, ZIP, PDF).",
+      "tips": ["JSON export includes full operation history for replay", "ZIP includes geometry and chat log", "PDF is human-readable documentation"],
+      "category": "collaboration",
+      "relatedTopics": ["history", "save_model"]
+    },
+    "webrtc": {
+      "title": "Peer-to-Peer (P2P) Data Transfer",
+      "description": "After initial signaling, direct P2P connections reduce latency. No data passes through server.",
+      "usage": "Automatic. Once WebRTC connects (within 5s), P2P data channel is established.",
+      "tips": ["P2P is faster and reduces server load", "Falls back to WebSocket if P2P not available", "Works through most firewalls via STUN/TURN"],
+      "category": "collaboration",
+      "relatedTopics": ["connection_status", "latency"]
+    },
+    "latency": {
+      "title": "Latency & Performance",
+      "description": "Monitor latency (ping time) to collaboration server. High latency may cause lag.",
+      "usage": "Status bar shows latency in ms. <50ms is excellent, <200ms is good.",
+      "tips": ["Latency is shown in parentheses: (47ms)", "High latency affects cursor sharing more than geometry ops", "Switch servers geographically closer if consistently high"],
+      "category": "collaboration",
+      "relatedTopics": ["connection_status", "troubleshooting"]
+    },
+    "troubleshooting": {
+      "title": "Collaboration Troubleshooting",
+      "description": "Common issues and solutions for collaboration features.",
+      "usage": "See detailed troubleshooting guide in Help → Troubleshooting → Collaboration.",
+      "tips": ["Check internet connection first", "Clear browser cache if issues persist", "Restart app if stuck in reconnecting state"],
+      "category": "collaboration",
+      "relatedTopics": ["connection_status", "offline_mode"]
+    },
+    "bandwidth_limits": {
+      "title": "Bandwidth & Data Usage",
+      "description": "Collaboration uses minimal bandwidth. Typical usage is 1-5 MB per hour.",
+      "usage": "Cursor updates: 10 updates/sec × 100 bytes = 1 KB/sec max",
+      "tips": ["Operations are binary-encoded for efficiency", "Chat is text-only, minimal bandwidth", "Video/file sharing uses separate channels"],
+      "category": "collaboration",
+      "relatedTopics": ["performance", "connection_status"]
+    },
+    "performance": {
+      "title": "Performance in Collaboration",
+      "description": "Collaboration is optimized for performance. Even with 10 users, FPS remains high.",
+      "usage": "Monitor FPS counter (Ctrl+Shift+F). Should stay >30 FPS even with multiple collaborators.",
+      "tips": ["Turn off cursor sharing if FPS drops below 30", "Use view filters to reduce geometry on screen", "Close unused panels to save GPU memory"],
+      "category": "collaboration",
+      "relatedTopics": ["bandwidth_limits", "latency"]
+    },
+    "data_privacy": {
+      "title": "Data Privacy in Collaboration",
+      "description": "All data is encrypted in transit (wss://) and at rest on server.",
+      "usage": "Use HTTPS URL for secure transport. Server uses TLS 1.2+.",
+      "tips": ["Use password-protected rooms for sensitive projects", "Don't share room ID publicly", "Data is deleted 30 days after session ends"],
+      "category": "collaboration",
+      "relatedTopics": ["room_security", "data_encryption"]
+    },
+    "data_encryption": {
+      "title": "Data Encryption",
+      "description": "All collaboration data is encrypted in transit and at rest.",
+      "usage": "Automatic. Uses AES-256 for at-rest, TLS 1.2+ for in-transit.",
+      "tips": ["End-to-end encryption available for premium users", "Server does not store encryption keys"],
+      "category": "collaboration",
+      "relatedTopics": ["data_privacy", "room_security"]
+    }
+  }
+}

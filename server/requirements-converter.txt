@@ -1,0 +1,29 @@
+# cycleCAD STEP Converter Service Requirements
+# Python 3.11+ packages for STEP/IGES file import and GLB export
+
+# Web framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+pydantic==2.5.0
+
+# CAD processing
+cadquery==2.4.0
+OCP==7.7.2.dev0
+
+# STEP/IGES parsing
+pythonocc-core==7.7.2
+
+# 3D model export
+trimesh==3.24.2
+pygltflib==1.15.2
+
+# Geometry and mesh processing
+numpy==1.26.2
+scipy==1.11.4
+
+# Logging and monitoring
+python-json-logger==2.0.7
+
+# Environment and configuration
+python-dotenv==1.0.0

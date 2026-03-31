@@ -1,0 +1,228 @@
+{
+  "pwa_help_entries": [
+    {
+      "id": "pwa_install",
+      "category": "PWA",
+      "title": "Install cycleCAD as an App",
+      "tags": ["install", "app", "pwa", "offline"],
+      "content": "Install cycleCAD directly to your device for quick access and offline support. Look for the install prompt (usually top-right of browser). Click 'Install' to add cycleCAD to your home screen or application menu. No separate download needed.",
+      "shortcuts": ["Ctrl+Shift+I"],
+      "images": ["install-prompt.png"]
+    },
+    {
+      "id": "pwa_offline",
+      "category": "PWA",
+      "title": "Work Offline",
+      "tags": ["offline", "work", "no internet", "connectivity"],
+      "content": "cycleCAD works completely offline. Design, sketch, create features, and export without internet. Your work is automatically saved locally. When you reconnect, changes sync automatically to the cloud.",
+      "examples": [
+        "Create sketches and 3D features offline",
+        "Export to STL, OBJ, DXF without internet",
+        "Changes automatically sync when reconnected",
+        "No data loss - all work stored locally"
+      ],
+      "seeAlso": ["offline_mode", "background_sync", "offline_storage"]
+    },
+    {
+      "id": "pwa_offline_banner",
+      "category": "PWA",
+      "title": "Offline Mode Indicator",
+      "tags": ["offline", "indicator", "status", "connection"],
+      "content": "A red banner appears at the top of the app when you're offline. This shows you're in offline mode. Your changes are being saved locally and will sync automatically when you reconnect.",
+      "notes": [
+        "Banner is informational only",
+        "Work continues normally offline",
+        "No manual action needed"
+      ]
+    },
+    {
+      "id": "pwa_cache",
+      "category": "PWA",
+      "title": "Manage Cache & Storage",
+      "tags": ["cache", "storage", "clear", "disk"],
+      "content": "cycleCAD caches files and models locally for offline access. Check your cache size and clear old files from Settings → Offline & Cache. Cache automatically manages itself using LRU (least-recently-used) eviction when full.",
+      "actions": [
+        "Settings → Offline & Cache",
+        "View current cache size",
+        "Clear cache with one click",
+        "Persistent storage option"
+      ]
+    },
+    {
+      "id": "pwa_background_sync",
+      "category": "PWA",
+      "title": "Automatic Background Sync",
+      "tags": ["sync", "offline", "auto", "cloud"],
+      "content": "When you go offline, your changes are queued locally. As soon as you reconnect to the internet, they automatically upload to the cloud. You'll see a sync progress notification.",
+      "notes": [
+        "No manual sync needed",
+        "Operations sync in order",
+        "Failed ops retry automatically",
+        "Works even if you close the app"
+      ]
+    },
+    {
+      "id": "pwa_sync_status",
+      "category": "PWA",
+      "title": "Check Sync Status",
+      "tags": ["sync", "progress", "status", "operations"],
+      "content": "When syncing offline changes, a progress notification appears showing 'Syncing 3/5 operations...'. This updates in real-time. Once all operations sync, you'll see 'All changes synced!'",
+      "seeAlso": ["pwa_background_sync"]
+    },
+    {
+      "id": "pwa_storage_quota",
+      "category": "PWA",
+      "title": "Storage Quota & Limits",
+      "tags": ["storage", "quota", "disk", "limit"],
+      "content": "Browsers limit storage per domain. cycleCAD typically has 50-100+ MB available. If you exceed the limit, oldest cached files are automatically deleted. You can also request persistent storage in Settings.",
+      "limits": {
+        "Chrome": "50% of available disk (min 100 MB)",
+        "Firefox": "10% of device storage",
+        "Safari_Desktop": "50 MB per domain",
+        "Safari_iOS": "50 MB per app"
+      }
+    },
+    {
+      "id": "pwa_persistent_storage",
+      "category": "PWA",
+      "title": "Request Persistent Storage",
+      "tags": ["storage", "persistent", "permissions"],
+      "content": "By default, browser cache can be cleared automatically. Request persistent storage to prevent this. Go to Settings → Offline & Cache → 'Keep Storage' and allow the permission. Your data won't be auto-cleared.",
+      "warning": "Browser might still clear storage if device is low on disk space"
+    },
+    {
+      "id": "pwa_file_handling",
+      "category": "PWA",
+      "title": "Open Files Directly in cycleCAD",
+      "tags": ["files", "open", "drag drop", "import"],
+      "content": "Right-click STEP, STL, or OBJ files in File Explorer/Finder and select 'Open With cycleCAD'. Or drag files directly onto the cycleCAD window. Files open in the import dialog automatically.",
+      "supported_types": [".step", ".stp", ".stl", ".obj", ".glb", ".gltf"],
+      "platforms": ["Windows", "macOS", "Linux"]
+    },
+    {
+      "id": "pwa_share_target",
+      "category": "PWA",
+      "title": "Share Files to cycleCAD",
+      "tags": ["share", "files", "integration", "os"],
+      "content": "Windows 11+ and Android support sharing files to apps. Right-click a file → Share → cycleCAD to open it directly. iOS uses 'Share Sheet' → More → cycleCAD.",
+      "availability": ["Windows 11+", "Android", "iOS 14+"]
+    },
+    {
+      "id": "pwa_update_prompt",
+      "category": "PWA",
+      "title": "Update cycleCAD",
+      "tags": ["update", "new version", "upgrade"],
+      "content": "When a new version is available, a blue notification appears: 'Update available'. Click 'Update Now' to reload with the latest features. Updates happen automatically in the background.",
+      "notes": [
+        "No app store needed",
+        "Updates are usually <5 MB",
+        "Work is saved before updating"
+      ]
+    },
+    {
+      "id": "pwa_install_prompt",
+      "category": "PWA",
+      "title": "Install Prompt",
+      "tags": ["install", "app", "home screen", "standalone"],
+      "content": "cycleCAD shows an 'Add to Home Screen' prompt on first visit. Click 'Install' to add the app shortcut. You can dismiss this and install manually anytime from the browser menu.",
+      "manual_install": [
+        "Browser menu (⋮)",
+        "Click 'Install app' or 'Add to home screen'",
+        "Choose name and icon",
+        "Confirm"
+      ]
+    },
+    {
+      "id": "pwa_offline_available_projects",
+      "category": "PWA",
+      "title": "View Offline Projects",
+      "tags": ["offline", "projects", "available", "cache"],
+      "content": "When offline, visit the offline page to see all projects cached locally. Click a project to open it. Projects are automatically cached when you work on them online.",
+      "url": "/app/offline.html"
+    },
+    {
+      "id": "pwa_clear_cache",
+      "category": "PWA",
+      "title": "Clear All Cached Data",
+      "tags": ["cache", "clear", "delete", "storage"],
+      "content": "Go to Settings → Offline & Cache → 'Clear Cache'. This removes all cached models and temporary files but keeps your projects. You can still work offline with cached projects.",
+      "warning": "This frees up disk space but may slow initial load times"
+    },
+    {
+      "id": "pwa_offline_no_internet",
+      "category": "PWA",
+      "title": "Features Requiring Internet",
+      "tags": ["offline", "internet", "features", "limitations"],
+      "content": "Most cycleCAD features work offline. Features that require internet: STEP import/export (cloud conversion), AI analysis, cloud sync, model marketplace, and AI chatbot.",
+      "online_required": [
+        "STEP file import/export",
+        "AI design review",
+        "Cloud project sync",
+        "Share links",
+        "Model marketplace",
+        "AI copilot"
+      ],
+      "offline_available": [
+        "Full 3D modeling",
+        "Sketching and constraints",
+        "Feature operations",
+        "Export to STL/OBJ/DXF",
+        "Assembly creation",
+        "Auto-save locally"
+      ]
+    },
+    {
+      "id": "pwa_offline_sync_queue",
+      "category": "PWA",
+      "title": "Offline Operation Queue",
+      "tags": ["offline", "queue", "sync", "operations"],
+      "content": "When offline, your operations are queued locally. Each operation shows 'Queued - will sync online'. When you reconnect, they automatically upload in order with retry logic for reliability.",
+      "behavior": [
+        "Operations stored in IndexedDB",
+        "Survives app restart/crash",
+        "Syncs in creation order",
+        "Retries failed ops automatically",
+        "Progress shown during sync"
+      ]
+    },
+    {
+      "id": "pwa_storage_check",
+      "category": "PWA",
+      "title": "Check Storage Usage",
+      "tags": ["storage", "quota", "usage", "disk"],
+      "content": "Settings → Offline & Cache shows your cache size and remaining quota. Example: 'Cache: 245 MB / 250 GB available'. This updates in real-time.",
+      "where": "Settings panel → Offline & Cache section"
+    },
+    {
+      "id": "pwa_browser_compatibility",
+      "category": "PWA",
+      "title": "Browser Compatibility",
+      "tags": ["browser", "support", "compatibility", "os"],
+      "content": "cycleCAD PWA works best in Chrome, Edge, and Opera. Firefox has partial support. Safari has limited offline and file handling. All browsers require HTTPS and modern JavaScript support.",
+      "support_matrix": {
+        "Chrome": "✓ Full",
+        "Edge": "✓ Full",
+        "Opera": "✓ Full",
+        "Firefox": "~ Partial",
+        "Safari": "~ Limited"
+      }
+    },
+    {
+      "id": "pwa_manual_sync",
+      "category": "PWA",
+      "title": "Manually Trigger Sync",
+      "tags": ["sync", "manual", "operations", "offline"],
+      "content": "cycleCAD syncs automatically when you reconnect. To manually sync: Settings → Offline & Cache → 'Sync Now'. Useful if auto-sync hangs or you want to ensure sync completes.",
+      "steps": [
+        "Go online",
+        "Settings → Offline & Cache",
+        "Click 'Sync Now'",
+        "Watch progress bar",
+        "Notification when done"
+      ]
+    }
+  ],
+  "pwa_help_categories": {
+    "PWA": "Progressive Web App features, offline mode, installation, caching, and synchronization"
+  }
+}

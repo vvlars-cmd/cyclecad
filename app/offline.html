@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0284C7">
+  <title>Offline — cycleCAD</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .offline-container {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 40px;
+      max-width: 600px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .offline-icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 30px;
+      background: linear-gradient(135deg, #0284C7 0%, #0369a1 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      box-shadow: 0 8px 24px rgba(2, 132, 199, 0.3);
+    }
+
+    h1 {
+      font-size: 32px;
+      margin-bottom: 12px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .status-text {
+      font-size: 18px;
+      color: #e5e7eb;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #9ca3af;
+      margin-bottom: 40px;
+      line-height: 1.6;
+    }
+
+    .offline-tips {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 30px;
+      text-align: left;
+    }
+
+    .tips-title {
+      font-weight: 600;
+      color: #0284C7;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
+    }
+
+    .tip-item {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+      font-size: 14px;
+      color: #d1d5db;
+      align-items: flex-start;
+    }
+
+    .tip-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .tip-icon {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+      background: rgba(2, 132, 199, 0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #0284C7;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .cached-projects {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 30px;
+      text-align: left;
+    }
+
+    .projects-title {
+      font-weight: 600;
+      color: #0284C7;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
+    }
+
+    .project-list {
+      list-style: none;
+    }
+
+    .project-item {
+      padding: 12px;
+      background: rgba(2, 132, 199, 0.1);
+      border: 1px solid rgba(2, 132, 199, 0.2);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .project-item:hover {
+      background: rgba(2, 132, 199, 0.15);
+      border-color: rgba(2, 132, 199, 0.3);
+    }
+
+    .project-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .project-name {
+      font-weight: 500;
+      color: #fff;
+      font-size: 14px;
+    }
+
+    .project-date {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    .project-arrow {
+      color: #0284C7;
+      font-size: 16px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 20px 0;
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #0284C7 0%, #0369a1 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(2, 132, 199, 0.4);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: #e5e7eb;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-top-color: #0284C7;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .status-badge {
+      display: inline-block;
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      margin-top: 12px;
+    }
+
+    .connection-indicator {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 8px;
+      font-size: 12px;
+      color: #fca5a5;
+      font-weight: 500;
+    }
+
+    .indicator-dot {
+      width: 8px;
+      height: 8px;
+      background: #ef4444;
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    @media (max-width: 640px) {
+      .offline-container {
+        padding: 30px 20px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .status-text {
+        font-size: 16px;
+      }
+
+      .offline-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 32px;
+        margin-bottom: 20px;
+      }
+
+      .button-group {
+        flex-direction: column;
+      }
+
+      .btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="connection-indicator">
+    <div class="indicator-dot"></div>
+    <span>Offline Mode</span>
+  </div>
+
+  <div class="offline-container">
+    <div class="offline-icon">🔌</div>
+
+    <h1>You're Offline</h1>
+
+    <p class="status-text">
+      cycleCAD is ready to work without internet
+    </p>
+
+    <p class="subtitle">
+      You can continue working on cached projects. Your changes will automatically sync when you reconnect.
+    </p>
+
+    <div class="cached-projects">
+      <div class="projects-title">📦 Available Offline</div>
+      <ul class="project-list" id="project-list">
+        <li class="empty-state">
+          No cached projects. Create one online first, then work offline.
+        </li>
+      </ul>
+    </div>
+
+    <div class="offline-tips">
+      <div class="tips-title">✓ What You Can Do Offline</div>
+      <div class="tip-item">
+        <div class="tip-icon">✓</div>
+        <div>
+          <strong>Create & Edit</strong> — Full modeling, sketching, and operations work offline
+        </div>
+      </div>
+      <div class="tip-item">
+        <div class="tip-icon">✓</div>
+        <div>
+          <strong>Export & View</strong> — Export to STL, OBJ, DXF, and view your projects
+        </div>
+      </div>
+      <div class="tip-item">
+        <div class="tip-icon">✓</div>
+        <div>
+          <strong>Auto-Save</strong> — All work is saved locally in your browser
+        </div>
+      </div>
+      <div class="tip-item">
+        <div class="tip-icon">✓</div>
+        <div>
+          <strong>Auto-Sync</strong> — Changes sync automatically when you come back online
+        </div>
+      </div>
+      <div class="tip-item">
+        <div class="tip-icon">✓</div>
+        <div>
+          <strong>No Data Loss</strong> — Everything is stored securely in your browser
+        </div>
+      </div>
+    </div>
+
+    <div class="button-group">
+      <button class="btn btn-primary" onclick="retryConnection()">
+        <span id="retry-icon">⟲</span>
+        <span id="retry-text">Check Connection</span>
+      </button>
+      <button class="btn btn-secondary" onclick="goToApp()">
+        Continue Offline
+      </button>
+    </div>
+
+    <div class="status-badge">
+      Checking connection <span style="display: inline-block; animation: spin 0.8s linear infinite;">⟳</span>
+    </div>
+  </div>
+
+  <script>
+    let retrying = false;
+
+    async function retryConnection() {
+      if (retrying) return;
+      retrying = true;
+
+      const btn = document.querySelector('.btn-primary');
+      const icon = document.getElementById('retry-icon');
+      const text = document.getElementById('retry-text');
+
+      icon.innerHTML = '<span class="spinner"></span>';
+      text.textContent = 'Checking...';
+      btn.disabled = true;
+
+      try {
+        // Try to fetch something from the server
+        const response = await fetch('/app/index.html', { method: 'HEAD' });
+
+        if (response.ok) {
+          // Connected!
+          icon.innerHTML = '✓';
+          text.textContent = 'Connected!';
+          setTimeout(() => {
+            window.location.replace('/app/');
+          }, 1000);
+          return;
+        }
+      } catch (err) {
+        // Still offline
+      }
+
+      // Still offline
+      icon.innerHTML = '⟲';
+      text.textContent = 'Check Connection';
+      btn.disabled = false;
+      retrying = false;
+
+      alert('Still offline. Please check your internet connection.');
+    }
+
+    function goToApp() {
+      window.location.replace('/app/');
+    }
+
+    // Load cached projects from IndexedDB
+    async function loadCachedProjects() {
+      try {
+        const db = await new Promise((resolve, reject) => {
+          const req = indexedDB.open('cyclecad', 1);
+          req.onerror = () => reject(req.error);
+          req.onsuccess = () => resolve(req.result);
+        });
+
+        const tx = db.transaction('projects', 'readonly');
+        const projects = await new Promise((resolve, reject) => {
+          const req = tx.objectStore('projects').getAll();
+          req.onerror = () => reject(req.error);
+          req.onsuccess = () => resolve(req.result);
+        });
+
+        const list = document.getElementById('project-list');
+        list.innerHTML = '';
+
+        if (projects.length === 0) {
+          list.innerHTML = '<li class="empty-state">No cached projects available offline.</li>';
+          return;
+        }
+
+        projects.forEach((project) => {
+          const item = document.createElement('li');
+          item.className = 'project-item';
+          item.onclick = () => {
+            // Navigate with project ID
+            window.location.href = `/app/?project=${project.id}`;
+          };
+
+          const date = new Date(project.lastModified || project.created);
+          const dateStr = date.toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+          item.innerHTML = `
+            <div>
+              <div class="project-name">${project.name || 'Untitled Project'}</div>
+              <div class="project-date">Modified ${dateStr}</div>
+            </div>
+            <div class="project-arrow">→</div>
+          `;
+
+          list.appendChild(item);
+        });
+
+      } catch (err) {
+        console.error('Failed to load cached projects:', err);
+      }
+    }
+
+    // Check connection periodically
+    function checkConnectionPeriodically() {
+      setInterval(async () => {
+        try {
+          const response = await fetch('/app/manifest.json', { method: 'HEAD' });
+          if (response.ok) {
+            // Connected! Redirect to app
+            window.location.replace('/app/');
+          }
+        } catch (err) {
+          // Still offline, do nothing
+        }
+      }, 5000);
+    }
+
+    // Initialize on load
+    window.addEventListener('load', () => {
+      loadCachedProjects();
+      checkConnectionPeriodically();
+    });
+
+    // Also check on online event
+    window.addEventListener('online', () => {
+      window.location.replace('/app/');
+    });
+  </script>
+</body>
+</html>

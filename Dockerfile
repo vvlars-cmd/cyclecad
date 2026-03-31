@@ -1,69 +1,47 @@
 # cycleCAD — Agent-First OS for Manufacturing
-# Serves the landing page + app via nginx
+# Production-ready Dockerfile for cyclecad.com
 #
-# Build:  docker build -t cyclecad .
-# Run:    docker run -p 3000:80 cyclecad
-# Open:   http://localhost:3000 (landing) / http://localhost:3000/app/ (CAD app)
+# Build:   docker build -t cyclecad:latest .
+# Tag:     docker tag cyclecad:latest cyclecad:v0.8.6
+# Run:     docker run -p 8080:80 --name cyclecad cyclecad:latest
+# Health:  curl http://localhost:8080/health
+#
+# Features:
+# - Gzip compression (JS, CSS, JSON, WASM, SVG)
+# - CORS headers (all origins, GET/POST/OPTIONS)
+# - COOP/COEP headers (SharedArrayBuffer for Web Workers)
+# - Aggressive caching (1 year for static assets)
+# - Security headers (CSP, X-Frame-Options, X-Content-Type-Options)
+# - SPA fallback (all routes → index.html except /api/ & /health)
+# - Max upload size: 500MB (for STEP file imports)
+# - Health check endpoint: GET /health
 
 FROM nginx:alpine
 
-# Copy landing page
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+# Copy landing page + assets
 COPY index.html /usr/share/nginx/html/
 COPY screenshot.png /usr/share/nginx/html/
-COPY competitive-analysis.html /usr/share/nginx/html/
-COPY architecture.html /usr/share/nginx/html/
+COPY CNAME /usr/share/nginx/html/
 
-# Copy app
+# Copy all reference HTML files
+COPY competitive-analysis.html /usr/share/nginx/html/ 2>/dev/null || true
+COPY architecture.html /usr/share/nginx/html/ 2>/dev/null || true
+
+# Copy CAD app (all JS modules, assets, etc.)
 COPY app/ /usr/share/nginx/html/app/
 
-# Copy docs if they exist
-COPY docs/ /usr/share/nginx/html/docs/
+# Copy documentation
+COPY docs/ /usr/share/nginx/html/docs/ 2>/dev/null || true
 
-# Custom nginx config
-RUN cat > /etc/nginx/conf.d/default.conf << 'NGINX'
-server {
-    listen 80;
-    server_name _;
-    root /usr/share/nginx/html;
-    index index.html;
+# Copy example Inventor project files (optional, for demos)
+COPY example/ /usr/share/nginx/html/example/ 2>/dev/null || true
 
-    # Enable gzip
-    gzip on;
-    gzip_types text/plain text/css application/javascript application/json model/gltf-binary;
-    gzip_min_length 1000;
-
-    # CORS
-    add_header Access-Control-Allow-Origin *;
-    add_header Access-Control-Allow-Methods "GET, POST, OPTIONS";
-
-    # Cross-Origin headers for SharedArrayBuffer
-    add_header Cross-Origin-Opener-Policy same-origin;
-    add_header Cross-Origin-Embedder-Policy require-corp;
-
-    # Cache
-    location ~* \.(js|css|png|jpg|svg|woff2|glb|stl|pptx)$ {
-        expires 7d;
-        add_header Cache-Control "public, immutable";
-    }
-
-    # SPA fallback for app
-    location /app/ {
-        try_files $uri $uri/ /app/index.html;
-    }
-
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-
-    # Health check
-    location /health {
-        return 200 '{"status":"ok","app":"cyclecad"}';
-        add_header Content-Type application/json;
-    }
-}
-NGINX
+# Copy our production nginx config
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
-
-HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-    CMD wget -q -O /dev/null http://localhost:80/health || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost/health || exit 1

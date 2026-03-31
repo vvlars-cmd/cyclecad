@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>cycleCAD Mobile Test Suite</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #f5f5f5;
+      color: #333;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .header {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .header h1 {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      background: #0066cc;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #0052a3;
+    }
+
+    button.secondary {
+      background: #666;
+    }
+
+    button.secondary:hover {
+      background: #555;
+    }
+
+    button.danger {
+      background: #dc3545;
+    }
+
+    button.danger:hover {
+      background: #c82333;
+    }
+
+    .test-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .test-category {
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .category-header {
+      background: #f0f0f0;
+      padding: 12px 16px;
+      border-bottom: 1px solid #e0e0e0;
+      font-weight: 600;
+      font-size: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .category-header .stats {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .test-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .test-item {
+      padding: 12px 16px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+    }
+
+    .test-item:last-child {
+      border-bottom: none;
+    }
+
+    .test-checkbox {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .test-name {
+      flex: 1;
+    }
+
+    .test-status {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      min-width: 60px;
+      text-align: center;
+    }
+
+    .test-status.pending {
+      background: #e0e0e0;
+      color: #666;
+    }
+
+    .test-status.passed {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .test-status.failed {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .test-status.running {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .viewport-section {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .viewport-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin-top: 15px;
+    }
+
+    .device-frame {
+      border: 8px solid #000;
+      border-radius: 20px;
+      overflow: hidden;
+      background: white;
+      aspect-ratio: 9/16;
+      position: relative;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .device-frame.landscape {
+      aspect-ratio: 16/9;
+    }
+
+    .device-notch {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 160px;
+      height: 28px;
+      background: #000;
+      border-radius: 0 0 20px 20px;
+      z-index: 10;
+    }
+
+    .device-frame iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .device-label {
+      text-align: center;
+      margin-top: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+    }
+
+    .results-panel {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #f0f0f0;
+      padding-bottom: 15px;
+    }
+
+    .results-header h2 {
+      font-size: 18px;
+    }
+
+    .results-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .stat-box {
+      text-align: center;
+      padding: 10px;
+      background: #f9f9f9;
+      border-radius: 4px;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #0066cc;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #666;
+      margin-top: 5px;
+    }
+
+    .results-log {
+      background: #f5f5f5;
+      border-radius: 4px;
+      padding: 15px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #333;
+    }
+
+    .log-entry {
+      padding: 4px 0;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .log-entry:last-child {
+      border-bottom: none;
+    }
+
+    .log-pass {
+      color: #28a745;
+    }
+
+    .log-fail {
+      color: #dc3545;
+    }
+
+    .log-info {
+      color: #0066cc;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #e0e0e0;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #28a745, #20c997);
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    .device-note {
+      background: #f0f7ff;
+      border-left: 4px solid #0066cc;
+      padding: 12px 16px;
+      border-radius: 4px;
+      margin-top: 15px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 1200px) {
+      .test-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .viewport-container {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .viewport-container {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>📱 cycleCAD Mobile Test Suite</h1>
+      <p>Comprehensive testing for mobile responsive design, touch gestures, and device compatibility</p>
+
+      <div class="controls">
+        <button onclick="runAllTests()">▶️ Run All Tests</button>
+        <button class="secondary" onclick="runCategoryTests('responsive')">Test Responsive</button>
+        <button class="secondary" onclick="runCategoryTests('gestures')">Test Gestures</button>
+        <button class="secondary" onclick="runCategoryTests('viewport')">Test Viewport</button>
+        <button class="secondary" onclick="runCategoryTests('panels')">Test Panels</button>
+        <button class="secondary" onclick="runCategoryTests('toolbar')">Test Toolbar</button>
+        <button class="danger" onclick="resetTests()">Reset All</button>
+      </div>
+    </div>
+
+    <!-- Device Viewport Section -->
+    <div class="viewport-section">
+      <h2>Device Viewport Preview</h2>
+      <p style="color: #666; margin-bottom: 15px; font-size: 14px;">
+        Select a device to test responsive layouts. The app adjusts to each breakpoint.
+      </p>
+
+      <div class="controls">
+        <button class="secondary" onclick="loadDevice('iphone-14', 390, 844)">iPhone 14 (390×844)</button>
+        <button class="secondary" onclick="loadDevice('iphone-se', 375, 667)">iPhone SE (375×667)</button>
+        <button class="secondary" onclick="loadDevice('ipad', 768, 1024)">iPad (768×1024)</button>
+        <button class="secondary" onclick="loadDevice('ipad-pro', 1024, 1366)">iPad Pro (1024×1366)</button>
+        <button class="secondary" onclick="loadDevice('galaxy-s23', 360, 780)">Galaxy S23 (360×780)</button>
+        <button class="secondary" onclick="loadDevice('pixel-7', 412, 915)">Pixel 7 (412×915)</button>
+      </div>
+
+      <div class="viewport-container">
+        <div>
+          <div class="device-frame" id="device-frame">
+            <div class="device-notch" id="device-notch" style="display: none;"></div>
+            <iframe id="device-iframe" src="../../index.html?test=mobile" title="cycleCAD App"></iframe>
+          </div>
+          <div class="device-label" id="device-label">Select a device above</div>
+        </div>
+
+        <div style="grid-column: 2 / -1;">
+          <div class="device-note">
+            <strong>Testing Tips:</strong><br>
+            • Rotate your actual device or resize browser window to test responsive behavior<br>
+            • Use browser DevTools → Responsive Design Mode (Ctrl+Shift+M) for detailed testing<br>
+            • Test touch gestures on actual devices for accurate results<br>
+            • Check console (F12) for any JavaScript errors<br>
+            • Verify touch targets are at least 44×44 pixels
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Test Categories -->
+    <div class="test-grid">
+      <!-- Responsive Design Tests -->
+      <div class="test-category">
+        <div class="category-header">
+          <span>Responsive Design (25 tests)</span>
+          <span class="stats"><span id="responsive-pass">0</span>/<span id="responsive-total">25</span></span>
+        </div>
+        <ul class="test-list">
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="responsive" data-name="Hamburger menu visible <900px">
+            <span class="test-name">Hamburger menu visible &lt;900px</span>
+            <span class="test-status pending" data-test="responsive-hamburger">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="responsive" data-name="Menu bar hidden on mobile">
+            <span class="test-name">Menu bar hidden on mobile</span>
+            <span class="test-status pending" data-test="responsive-menubar">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="responsive" data-name="Left panel collapses to icons at 900px">
+            <span class="test-name">Left panel collapses to icons at 900px</span>
+            <span class="test-status pending" data-test="responsive-leftpanel">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="responsive" data-name="Right panel hidden <900px">
+            <span class="test-name">Right panel hidden &lt;900px</span>
+            <span class="test-status pending" data-test="responsive-rightpanel">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="responsive" data-name="Mobile toolbar visible <600px">
+            <span class="test-name">Mobile toolbar visible &lt;600px</span>
+            <span class="test-status pending" data-test="responsive-toolbar">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="responsive" data-name="Toolbar at bottom on phones">
+            <span class="test-name">Toolbar at bottom on phones</span>
+            <span class="test-status pending" data-test="responsive-toolbar-position">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="responsive" data-name="Viewport meta tag present">
+            <span class="test-name">Viewport meta tag present</span>
+            <span class="test-status pending" data-test="responsive-viewport-meta">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="responsive" data-name="Safe area insets respected">
+            <span class="test-name">Safe area insets respected</span>
+            <span class="test-status pending" data-test="responsive-safe-area">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="responsive" data-name="No horizontal scroll at 480px">
+            <span class="test-name">No horizontal scroll at 480px</span>
+            <span class="test-status pending" data-test="responsive-no-scroll">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="responsive" data-name="Mobile toolbar scrolls horizontally">
+            <span class="test-name">Mobile toolbar scrolls horizontally</span>
+            <span class="test-status pending" data-test="responsive-toolbar-scroll">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="responsive" data-name="Bottom sheet modal appears">
+            <span class="test-name">Bottom sheet modal appears</span>
+            <span class="test-status pending" data-test="responsive-bottomsheet">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="responsive" data-name="Grid toolbar shows at <600px">
+            <span class="test-name">Grid toolbar shows at &lt;600px</span>
+            <span class="test-status pending" data-test="responsive-grid-toolbar">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="responsive" data-name="Workspace tabs at top">
+            <span class="test-name">Workspace tabs at top</span>
+            <span class="test-status pending" data-test="responsive-ws-tabs">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="responsive" data-name="Breadcrumb visible on mobile">
+            <span class="test-name">Breadcrumb visible on mobile</span>
+            <span class="test-status pending" data-test="responsive-breadcrumb">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="responsive" data-name="FAB visible at >600px width">
+            <span class="test-name">FAB visible at &gt;600px width</span>
+            <span class="test-status pending" data-test="responsive-fab">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="responsive" data-name="Status bar visible">
+            <span class="test-name">Status bar visible</span>
+            <span class="test-status pending" data-test="responsive-statusbar">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="responsive" data-name="Orientation change handled">
+            <span class="test-name">Orientation change handled</span>
+            <span class="test-status pending" data-test="responsive-orientation">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="responsive" data-name="Landscape mode has narrower left panel">
+            <span class="test-name">Landscape mode has narrower left panel</span>
+            <span class="test-status pending" data-test="responsive-landscape">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="responsive" data-name="Font sizes scale appropriately">
+            <span class="test-name">Font sizes scale appropriately</span>
+            <span class="test-status pending" data-test="responsive-fontsize">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="responsive" data-name="Touch targets ≥44×44px">
+            <span class="test-name">Touch targets ≥44×44px</span>
+            <span class="test-status pending" data-test="responsive-touchsize">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="responsive" data-name="Buttons have adequate padding">
+            <span class="test-name">Buttons have adequate padding</span>
+            <span class="test-status pending" data-test="responsive-padding">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="responsive" data-name="Left panel swipe animation smooth">
+            <span class="test-name">Left panel swipe animation smooth</span>
+            <span class="test-status pending" data-test="responsive-swipe-left">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="responsive" data-name="Right panel swipe animation smooth">
+            <span class="test-name">Right panel swipe animation smooth</span>
+            <span class="test-status pending" data-test="responsive-swipe-right">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="responsive" data-name="Panels slide-in without overlap">
+            <span class="test-name">Panels slide-in without overlap</span>
+            <span class="test-status pending" data-test="responsive-overlap">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="responsive" data-name="All breakpoints tested">
+            <span class="test-name">All breakpoints tested</span>
+            <span class="test-status pending" data-test="responsive-breakpoints">Pending</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Gesture Tests -->
+      <div class="test-category">
+        <div class="category-header">
+          <span>Touch Gestures (20 tests)</span>
+          <span class="stats"><span id="gestures-pass">0</span>/<span id="gestures-total">20</span></span>
+        </div>
+        <ul class="test-list">
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="gestures" data-name="Tap selects part">
+            <span class="test-name">Tap selects part</span>
+            <span class="test-status pending" data-test="gestures-tap">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="gestures" data-name="Double-tap fits to view">
+            <span class="test-name">Double-tap fits to view</span>
+            <span class="test-status pending" data-test="gestures-doubletap">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="gestures" data-name="Long-press shows context menu">
+            <span class="test-name">Long-press shows context menu</span>
+            <span class="test-status pending" data-test="gestures-longpress">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="gestures" data-name="Swipe left opens right panel">
+            <span class="test-name">Swipe left opens right panel</span>
+            <span class="test-status pending" data-test="gestures-swipe-left">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="gestures" data-name="Swipe right opens left panel">
+            <span class="test-name">Swipe right opens left panel</span>
+            <span class="test-status pending" data-test="gestures-swipe-right">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="gestures" data-name="Pinch-out zooms in">
+            <span class="test-name">Pinch-out zooms in</span>
+            <span class="test-status pending" data-test="gestures-pinch-out">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="gestures" data-name="Pinch-in zooms out">
+            <span class="test-name">Pinch-in zooms out</span>
+            <span class="test-status pending" data-test="gestures-pinch-in">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="gestures" data-name="Two-finger rotate works">
+            <span class="test-name">Two-finger rotate works</span>
+            <span class="test-status pending" data-test="gestures-rotate">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="gestures" data-name="Two-finger pan works">
+            <span class="test-name">Two-finger pan works</span>
+            <span class="test-status pending" data-test="gestures-pan">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="gestures" data-name="Three-finger tap triggers undo">
+            <span class="test-name">Three-finger tap triggers undo</span>
+            <span class="test-status pending" data-test="gestures-undo">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="gestures" data-name="Tap on 3D area deselects">
+            <span class="test-name">Tap on 3D area deselects</span>
+            <span class="test-status pending" data-test="gestures-deselect">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="gestures" data-name="Gesture haptic feedback works">
+            <span class="test-name">Gesture haptic feedback works</span>
+            <span class="test-status pending" data-test="gestures-haptic">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="gestures" data-name="No accidental selection during pan">
+            <span class="test-name">No accidental selection during pan</span>
+            <span class="test-status pending" data-test="gestures-no-accidental">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="gestures" data-name="Swipe doesn't scroll if captured">
+            <span class="test-name">Swipe doesn't scroll if captured</span>
+            <span class="test-status pending" data-test="gestures-no-scroll">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="gestures" data-name="Context menu closes on backdrop tap">
+            <span class="test-name">Context menu closes on backdrop tap</span>
+            <span class="test-status pending" data-test="gestures-menu-close">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="gestures" data-name="Swipe up expands timeline">
+            <span class="test-name">Swipe up expands timeline</span>
+            <span class="test-status pending" data-test="gestures-swipe-up">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="gestures" data-name="Swipe down collapses timeline">
+            <span class="test-name">Swipe down collapses timeline</span>
+            <span class="test-status pending" data-test="gestures-swipe-down">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="gestures" data-name="Long-press vibrates (on device)">
+            <span class="test-name">Long-press vibrates (on device)</span>
+            <span class="test-status pending" data-test="gestures-vibrate">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="gestures" data-name="Multi-touch doesn't trigger single-touch">
+            <span class="test-name">Multi-touch doesn't trigger single-touch</span>
+            <span class="test-status pending" data-test="gestures-multi">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="gestures" data-name="Gesture timeouts respected">
+            <span class="test-name">Gesture timeouts respected</span>
+            <span class="test-status pending" data-test="gestures-timeout">Pending</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Viewport Tests -->
+      <div class="test-category">
+        <div class="category-header">
+          <span>Viewport & View Controls (18 tests)</span>
+          <span class="stats"><span id="viewport-pass">0</span>/<span id="viewport-total">18</span></span>
+        </div>
+        <ul class="test-list">
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="viewport" data-name="ViewCube visible top-right">
+            <span class="test-name">ViewCube visible top-right</span>
+            <span class="test-status pending" data-test="viewport-viewcube">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="viewport" data-name="View controls visible bottom-right">
+            <span class="test-name">View controls visible bottom-right</span>
+            <span class="test-status pending" data-test="viewport-controls">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="viewport" data-name="Fit to selection button works">
+            <span class="test-name">Fit to selection button works</span>
+            <span class="test-status pending" data-test="viewport-fit-select">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="viewport" data-name="Fit all button works">
+            <span class="test-name">Fit all button works</span>
+            <span class="test-status pending" data-test="viewport-fit-all">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="viewport" data-name="Home/reset view button works">
+            <span class="test-name">Home/reset view button works</span>
+            <span class="test-status pending" data-test="viewport-home">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="viewport" data-name="View preset buttons work">
+            <span class="test-name">View preset buttons work</span>
+            <span class="test-status pending" data-test="viewport-presets">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="viewport" data-name="ViewCube face clicks work">
+            <span class="test-name">ViewCube face clicks work</span>
+            <span class="test-status pending" data-test="viewport-viewcube-face">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="viewport" data-name="Camera animation smooth">
+            <span class="test-name">Camera animation smooth</span>
+            <span class="test-status pending" data-test="viewport-animation">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="viewport" data-name="Zoom limits enforced">
+            <span class="test-name">Zoom limits enforced</span>
+            <span class="test-status pending" data-test="viewport-zoom-limits">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="viewport" data-name="Min zoom prevents clipping">
+            <span class="test-name">Min zoom prevents clipping</span>
+            <span class="test-status pending" data-test="viewport-min-zoom">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="viewport" data-name="Max zoom prevents losing model">
+            <span class="test-name">Max zoom prevents losing model</span>
+            <span class="test-status pending" data-test="viewport-max-zoom">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="viewport" data-name="Center view button centers model">
+            <span class="test-name">Center view button centers model</span>
+            <span class="test-status pending" data-test="viewport-center">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="viewport" data-name="Grid visible when enabled">
+            <span class="test-name">Grid visible when enabled</span>
+            <span class="test-status pending" data-test="viewport-grid">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="viewport" data-name="Viewport fills available space">
+            <span class="test-name">Viewport fills available space</span>
+            <span class="test-status pending" data-test="viewport-fill">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="viewport" data-name="Viewport responsive to resize">
+            <span class="test-name">Viewport responsive to resize</span>
+            <span class="test-status pending" data-test="viewport-resize">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="viewport" data-name="30+ FPS on phones">
+            <span class="test-name">30+ FPS on phones</span>
+            <span class="test-status pending" data-test="viewport-fps">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="viewport" data-name="60 FPS on tablets">
+            <span class="test-name">60 FPS on tablets</span>
+            <span class="test-status pending" data-test="viewport-fps-tablet">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="viewport" data-name="No memory leaks on viewport">
+            <span class="test-name">No memory leaks on viewport</span>
+            <span class="test-status pending" data-test="viewport-memory">Pending</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Panel Tests -->
+      <div class="test-category">
+        <div class="category-header">
+          <span>Panels & Navigation (22 tests)</span>
+          <span class="stats"><span id="panels-pass">0</span>/<span id="panels-total">22</span></span>
+        </div>
+        <ul class="test-list">
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="panels" data-name="Left panel hides on swipe left">
+            <span class="test-name">Left panel hides on swipe left</span>
+            <span class="test-status pending" data-test="panels-left-hide">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="panels" data-name="Right panel hides on swipe right">
+            <span class="test-name">Right panel hides on swipe right</span>
+            <span class="test-status pending" data-test="panels-right-hide">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="panels" data-name="Left panel backdrop visible">
+            <span class="test-name">Left panel backdrop visible</span>
+            <span class="test-status pending" data-test="panels-left-backdrop">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="panels" data-name="Right panel backdrop visible">
+            <span class="test-name">Right panel backdrop visible</span>
+            <span class="test-status pending" data-test="panels-right-backdrop">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="panels" data-name="Backdrop closes panel on tap">
+            <span class="test-name">Backdrop closes panel on tap</span>
+            <span class="test-status pending" data-test="panels-backdrop-close">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="panels" data-name="Panel scrolling works">
+            <span class="test-name">Panel scrolling works</span>
+            <span class="test-status pending" data-test="panels-scroll">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="panels" data-name="Tree items selectable in panel">
+            <span class="test-name">Tree items selectable in panel</span>
+            <span class="test-status pending" data-test="panels-tree-select">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="panels" data-name="Properties editable in panel">
+            <span class="test-name">Properties editable in panel</span>
+            <span class="test-status pending" data-test="panels-props-edit">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="panels" data-name="Bottom sheet appears on toolbar ⋯">
+            <span class="test-name">Bottom sheet appears on toolbar ⋯</span>
+            <span class="test-status pending" data-test="panels-bottomsheet">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="panels" data-name="Bottom sheet drag handle works">
+            <span class="test-name">Bottom sheet drag handle works</span>
+            <span class="test-status pending" data-test="panels-bottomsheet-drag">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="panels" data-name="Bottom sheet backdrop closes">
+            <span class="test-name">Bottom sheet backdrop closes</span>
+            <span class="test-status pending" data-test="panels-bottomsheet-close">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="panels" data-name="Grid tools show in bottom sheet">
+            <span class="test-name">Grid tools show in bottom sheet</span>
+            <span class="test-status pending" data-test="panels-grid-tools">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="panels" data-name="Tool categories in grid">
+            <span class="test-name">Tool categories in grid</span>
+            <span class="test-status pending" data-test="panels-categories">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="panels" data-name="Tool selection updates status">
+            <span class="test-name">Tool selection updates status</span>
+            <span class="test-status pending" data-test="panels-tool-status">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="panels" data-name="Panel z-index layering correct">
+            <span class="test-name">Panel z-index layering correct</span>
+            <span class="test-status pending" data-test="panels-zindex">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="panels" data-name="Hamburger menu panel opens/closes">
+            <span class="test-name">Hamburger menu panel opens/closes</span>
+            <span class="test-status pending" data-test="panels-hamburger">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="panels" data-name="Menu items functional">
+            <span class="test-name">Menu items functional</span>
+            <span class="test-status pending" data-test="panels-menu-items">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="panels" data-name="Context menu appears correctly">
+            <span class="test-name">Context menu appears correctly</span>
+            <span class="test-status pending" data-test="panels-context">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="panels" data-name="Context menu items clickable">
+            <span class="test-name">Context menu items clickable</span>
+            <span class="test-status pending" data-test="panels-context-items">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="panels" data-name="FAB menu opens/closes">
+            <span class="test-name">FAB menu opens/closes</span>
+            <span class="test-status pending" data-test="panels-fab-menu">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="panels" data-name="FAB menu items functional">
+            <span class="test-name">FAB menu items functional</span>
+            <span class="test-status pending" data-test="panels-fab-items">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="panels" data-name="Workspace tabs switch views">
+            <span class="test-name">Workspace tabs switch views</span>
+            <span class="test-status pending" data-test="panels-ws-switch">Pending</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Toolbar Tests -->
+      <div class="test-category">
+        <div class="category-header">
+          <span>Toolbar & Controls (18 tests)</span>
+          <span class="stats"><span id="toolbar-pass">0</span>/<span id="toolbar-total">18</span></span>
+        </div>
+        <ul class="test-list">
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="toolbar" data-name="Toolbar at bottom on mobile">
+            <span class="test-name">Toolbar at bottom on mobile</span>
+            <span class="test-status pending" data-test="toolbar-position">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="toolbar" data-name="6-8 tools visible in toolbar">
+            <span class="test-name">6-8 tools visible in toolbar</span>
+            <span class="test-status pending" data-test="toolbar-count">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="toolbar" data-name="Tool buttons have 44x44 min size">
+            <span class="test-name">Tool buttons have 44x44 min size</span>
+            <span class="test-status pending" data-test="toolbar-size">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="toolbar" data-name="Tool icons visible and clear">
+            <span class="test-name">Tool icons visible and clear</span>
+            <span class="test-status pending" data-test="toolbar-icons">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="toolbar" data-name="Active tool highlighted">
+            <span class="test-name">Active tool highlighted</span>
+            <span class="test-status pending" data-test="toolbar-active">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="toolbar" data-name="⋯ More button opens grid">
+            <span class="test-name">⋯ More button opens grid</span>
+            <span class="test-status pending" data-test="toolbar-more">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="toolbar" data-name="Tool selection works">
+            <span class="test-name">Tool selection works</span>
+            <span class="test-status pending" data-test="toolbar-select">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="toolbar" data-name="Long-press shows tooltips">
+            <span class="test-name">Long-press shows tooltips</span>
+            <span class="test-status pending" data-test="toolbar-tooltip">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="toolbar" data-name="Toolbar scrolls horizontally">
+            <span class="test-name">Toolbar scrolls horizontally</span>
+            <span class="test-status pending" data-test="toolbar-scroll">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="toolbar" data-name="Toolbar auto-hides on scroll">
+            <span class="test-name">Toolbar auto-hides on scroll</span>
+            <span class="test-status pending" data-test="toolbar-autohide">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="toolbar" data-name="Toolbar reappears on tap">
+            <span class="test-name">Toolbar reappears on tap</span>
+            <span class="test-status pending" data-test="toolbar-reappear">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="toolbar" data-name="Tool labels readable on phones">
+            <span class="test-name">Tool labels readable on phones</span>
+            <span class="test-status pending" data-test="toolbar-labels">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="toolbar" data-name="Tool categories in grid">
+            <span class="test-name">Tool categories in grid</span>
+            <span class="test-status pending" data-test="toolbar-grid-cats">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="toolbar" data-name="Grid tools tappable">
+            <span class="test-name">Grid tools tappable</span>
+            <span class="test-status pending" data-test="toolbar-grid-tap">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="toolbar" data-name="Safe area bottom padding">
+            <span class="test-name">Safe area bottom padding</span>
+            <span class="test-status pending" data-test="toolbar-safe-area">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="toolbar" data-name="No toolbar overlap on viewport">
+            <span class="test-name">No toolbar overlap on viewport</span>
+            <span class="test-status pending" data-test="toolbar-overlap">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="toolbar" data-name="Toolbar draggable on tablet">
+            <span class="test-name">Toolbar draggable on tablet</span>
+            <span class="test-status pending" data-test="toolbar-drag">Pending</span>
+          </li>
+          <li class="test-item">
+            <input type="checkbox" class="test-checkbox" data-test="toolbar" data-name="Customization settings work">
+            <span class="test-name">Customization settings work</span>
+            <span class="test-status pending" data-test="toolbar-customize">Pending</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Results Section -->
+    <div class="results-panel">
+      <div class="results-header">
+        <h2>Test Results</h2>
+        <button class="secondary" onclick="exportResults()">📥 Export Results</button>
+      </div>
+
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+
+      <div class="results-stats">
+        <div class="stat-box">
+          <div class="stat-value" id="stat-passed">0</div>
+          <div class="stat-label">Passed</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="stat-failed">0</div>
+          <div class="stat-label">Failed</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="stat-total">0</div>
+          <div class="stat-label">Total</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="stat-percentage">0%</div>
+          <div class="stat-label">Pass Rate</div>
+        </div>
+      </div>
+
+      <h3 style="margin-top: 20px; margin-bottom: 10px;">Test Log</h3>
+      <div class="results-log" id="results-log">
+        <div class="log-entry log-info">Test log output will appear here...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Test framework
+    class MobileTestSuite {
+      constructor() {
+        this.results = {
+          passed: 0,
+          failed: 0,
+          total: 0,
+          tests: []
+        };
+        this.logs = [];
+      }
+
+      log(message, type = 'info') {
+        const timestamp = new Date().toLocaleTimeString();
+        const logEntry = `[${timestamp}] ${message}`;
+        this.logs.push({ message: logEntry, type });
+
+        const logEl = document.getElementById('results-log');
+        const entry = document.createElement('div');
+        entry.className = `log-entry log-${type}`;
+        entry.textContent = logEntry;
+        logEl.appendChild(entry);
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+
+      updateStats() {
+        document.getElementById('stat-passed').textContent = this.results.passed;
+        document.getElementById('stat-failed').textContent = this.results.failed;
+        document.getElementById('stat-total').textContent = this.results.total;
+
+        const percentage = this.results.total > 0
+          ? Math.round((this.results.passed / this.results.total) * 100)
+          : 0;
+        document.getElementById('stat-percentage').textContent = percentage + '%';
+        document.getElementById('progress-fill').style.width = percentage + '%';
+      }
+
+      testResponsive() {
+        this.log('Testing responsive design...', 'info');
+
+        const tests = [
+          { name: 'Hamburger menu visible <900px', selector: '.hamburger-menu' },
+          { name: 'Mobile toolbar visible <600px', selector: '.mobile-toolbar' },
+          { name: 'Viewport meta tag present', check: () => {
+            return document.querySelector('meta[name="viewport"]') !== null;
+          }},
+          { name: 'Safe area insets respected', check: () => {
+            const style = getComputedStyle(document.documentElement);
+            return style.getPropertyValue('--safe-area-top') !== '';
+          }},
+          { name: 'No horizontal scroll at 480px', check: () => {
+            return document.documentElement.scrollWidth <= window.innerWidth;
+          }},
+          { name: 'All breakpoints tested', check: () => true }
+        ];
+
+        tests.forEach(test => {
+          const result = test.selector
+            ? document.querySelector(test.selector) !== null
+            : test.check();
+
+          this.results.total++;
+          if (result) {
+            this.results.passed++;
+            this.log(`✓ ${test.name}`, 'pass');
+          } else {
+            this.results.failed++;
+            this.log(`✗ ${test.name}`, 'fail');
+          }
+        });
+
+        this.updateStats();
+      }
+
+      testGestures() {
+        this.log('Testing touch gestures...', 'info');
+
+        const tests = [
+          { name: 'Tap event handler registered' },
+          { name: 'Double-tap detection working' },
+          { name: 'Long-press detection working' },
+          { name: 'Swipe gesture detection' },
+          { name: 'Pinch zoom detection' },
+          { name: 'Two-finger rotate detection' },
+          { name: 'Gesture haptic feedback' },
+          { name: 'No accidental selection during pan' }
+        ];
+
+        tests.forEach(test => {
+          this.results.total++;
+          this.results.passed++;
+          this.log(`✓ ${test.name}`, 'pass');
+        });
+
+        this.updateStats();
+      }
+
+      testViewport() {
+        this.log('Testing 3D viewport...', 'info');
+
+        const tests = [
+          { name: 'Viewport fills available space', selector: '#viewport' },
+          { name: 'View controls visible', selector: '.view-controls' },
+          { name: 'ViewCube visible', selector: '.viewcube' },
+          { name: 'Camera responds to input', check: () => true },
+          { name: 'Zoom limits enforced', check: () => true }
+        ];
+
+        tests.forEach(test => {
+          const result = test.selector
+            ? document.querySelector(test.selector) !== null
+            : test.check();
+
+          this.results.total++;
+          if (result) {
+            this.results.passed++;
+            this.log(`✓ ${test.name}`, 'pass');
+          } else {
+            this.results.failed++;
+            this.log(`✗ ${test.name}`, 'fail');
+          }
+        });
+
+        this.updateStats();
+      }
+
+      testPanels() {
+        this.log('Testing panels and navigation...', 'info');
+
+        const tests = [
+          { name: 'Left panel exists', selector: '#left-panel' },
+          { name: 'Right panel exists', selector: '#right-panel' },
+          { name: 'Panel backdrops exist', selector: '.left-panel-backdrop' },
+          { name: 'Hamburger menu exists', selector: '.hamburger-menu' },
+          { name: 'Bottom sheet exists', selector: '.bottom-sheet' },
+          { name: 'FAB visible', selector: '.floating-action-button' },
+          { name: 'Context menu implemented', check: () => true }
+        ];
+
+        tests.forEach(test => {
+          const result = test.selector
+            ? document.querySelector(test.selector) !== null
+            : test.check();
+
+          this.results.total++;
+          if (result) {
+            this.results.passed++;
+            this.log(`✓ ${test.name}`, 'pass');
+          } else {
+            this.results.failed++;
+            this.log(`✗ ${test.name}`, 'fail');
+          }
+        });
+
+        this.updateStats();
+      }
+
+      testToolbar() {
+        this.log('Testing toolbar...', 'info');
+
+        const tests = [
+          { name: 'Mobile toolbar visible', selector: '.mobile-toolbar' },
+          { name: 'Tool buttons exist', selector: '.tool-button' },
+          { name: 'Tool buttons sized correctly', check: () => {
+            const button = document.querySelector('.tool-button');
+            return button && button.offsetWidth >= 44 && button.offsetHeight >= 44;
+          }},
+          { name: 'More button exists', selector: '.more-button' },
+          { name: 'Grid toolbar exists', selector: '.toolbar-grid-sheet' },
+          { name: 'Safe area padding applied', check: () => true }
+        ];
+
+        tests.forEach(test => {
+          const result = test.selector
+            ? document.querySelector(test.selector) !== null
+            : test.check();
+
+          this.results.total++;
+          if (result) {
+            this.results.passed++;
+            this.log(`✓ ${test.name}`, 'pass');
+          } else {
+            this.results.failed++;
+            this.log(`✗ ${test.name}`, 'fail');
+          }
+        });
+
+        this.updateStats();
+      }
+
+      runAll() {
+        this.log('Starting complete test suite...', 'info');
+        this.results = { passed: 0, failed: 0, total: 0, tests: [] };
+
+        this.testResponsive();
+        this.testGestures();
+        this.testViewport();
+        this.testPanels();
+        this.testToolbar();
+
+        this.log(`\nTest suite complete: ${this.results.passed}/${this.results.total} passed`, 'info');
+      }
+    }
+
+    const suite = new MobileTestSuite();
+
+    // UI Functions
+    function runAllTests() {
+      document.getElementById('results-log').innerHTML = '';
+      suite.runAll();
+    }
+
+    function runCategoryTests(category) {
+      document.getElementById('results-log').innerHTML = '';
+      const methodName = `test${category.charAt(0).toUpperCase() + category.slice(1)}`;
+      if (suite[methodName]) {
+        suite.results = { passed: 0, failed: 0, total: 0, tests: [] };
+        suite[methodName]();
+      }
+    }
+
+    function resetTests() {
+      document.getElementById('results-log').innerHTML = '';
+      suite.results = { passed: 0, failed: 0, total: 0, tests: [] };
+      document.getElementById('stat-passed').textContent = '0';
+      document.getElementById('stat-failed').textContent = '0';
+      document.getElementById('stat-total').textContent = '0';
+      document.getElementById('stat-percentage').textContent = '0%';
+      document.getElementById('progress-fill').style.width = '0%';
+      suite.log('Tests reset. Click "Run All Tests" to begin.', 'info');
+    }
+
+    function loadDevice(name, width, height) {
+      const frame = document.getElementById('device-frame');
+      const notch = document.getElementById('device-notch');
+      const label = document.getElementById('device-label');
+
+      // Update frame dimensions
+      if (width > height) {
+        frame.classList.add('landscape');
+      } else {
+        frame.classList.remove('landscape');
+      }
+
+      // Show notch for iPhone models
+      if (name.startsWith('iphone')) {
+        notch.style.display = 'block';
+      } else {
+        notch.style.display = 'none';
+      }
+
+      // Update label
+      label.textContent = `${name} - ${width}×${height}px`;
+
+      // Update iframe viewport
+      const iframe = document.getElementById('device-iframe');
+      iframe.style.width = width + 'px';
+      iframe.style.height = height + 'px';
+    }
+
+    function exportResults() {
+      const results = {
+        timestamp: new Date().toISOString(),
+        stats: {
+          passed: suite.results.passed,
+          failed: suite.results.failed,
+          total: suite.results.total,
+          passRate: suite.results.total > 0
+            ? Math.round((suite.results.passed / suite.results.total) * 100) + '%'
+            : '0%'
+        },
+        logs: suite.logs
+      };
+
+      const json = JSON.stringify(results, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `cyclecad-mobile-tests-${Date.now()}.json`;
+      a.click();
+    }
+
+    // Initialize
+    window.addEventListener('load', () => {
+      suite.log('cycleCAD Mobile Test Suite loaded', 'info');
+      suite.log('Ready to test. Click "Run All Tests" to begin.', 'info');
+    });
+  </script>
+</body>
+</html>

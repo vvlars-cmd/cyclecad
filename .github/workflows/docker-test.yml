@@ -1,0 +1,321 @@
+name: Docker E2E Tests & Publish
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'Dockerfile'
+      - 'nginx.conf'
+      - 'docker-compose.yml'
+      - 'server/**'
+      - 'app/**'
+      - '.github/workflows/docker-test.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'Dockerfile'
+      - 'nginx.conf'
+      - 'docker-compose.yml'
+      - 'server/**'
+      - 'app/**'
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: cyclecad
+
+jobs:
+  # ============================================================================
+  # Build and Test Docker Images
+  # ============================================================================
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      # Build all Docker images
+      - name: Build Docker images
+        run: |
+          docker-compose build --no-cache
+          docker images | grep cyclecad
+        env:
+          DOCKER_BUILDKIT: 1
+
+      # Start services and wait for health
+      - name: Start Docker services
+        run: |
+          docker-compose up -d
+          echo "Waiting for services to be ready..."
+          sleep 10
+          docker-compose ps
+
+      # Wait for health checks
+      - name: Wait for services to become healthy
+        run: |
+          for i in {1..30}; do
+            if docker-compose ps | grep -q "(healthy)"; then
+              echo "Service became healthy at attempt $i"
+              break
+            fi
+            echo "Attempt $i: Waiting for health checks..."
+            sleep 2
+          done
+          docker-compose ps
+
+      # Check service logs if startup failed
+      - name: Check service logs on failure
+        if: failure()
+        run: |
+          echo "=== cycleCAD logs ==="
+          docker-compose logs cyclecad || true
+          echo "=== Converter logs ==="
+          docker-compose logs converter || true
+          echo "=== Signaling logs ==="
+          docker-compose logs signaling || true
+
+      # Run E2E tests
+      - name: Run Docker E2E tests
+        run: |
+          chmod +x tests/docker-tests.sh
+          bash tests/docker-tests.sh
+        continue-on-error: false
+
+      # Test individual service health
+      - name: Test service health endpoints
+        run: |
+          echo "Testing cycleCAD health..."
+          curl -v http://localhost:8080/health || true
+          echo ""
+          echo "Testing Converter health..."
+          curl -v http://localhost:8787/health || true
+          echo ""
+          echo "Testing Signaling health..."
+          curl -v http://localhost:8788/health || true
+        continue-on-error: true
+
+      # Test specific endpoints
+      - name: Test application endpoints
+        run: |
+          echo "Testing landing page..."
+          curl -sI http://localhost:8080/ | head -5
+          echo ""
+          echo "Testing CAD app..."
+          curl -sI http://localhost:8080/app/ | head -5
+          echo ""
+          echo "Testing Converter API docs..."
+          curl -sI http://localhost:8787/docs | head -5
+        continue-on-error: true
+
+      # Collect service logs for debugging
+      - name: Collect service logs
+        if: always()
+        run: |
+          mkdir -p test-logs
+          docker-compose logs > test-logs/all-services.log
+          docker-compose logs cyclecad > test-logs/cyclecad.log
+          docker-compose logs converter > test-logs/converter.log
+          docker-compose logs signaling > test-logs/signaling.log
+
+      # Upload logs as artifacts
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: docker-test-logs
+          path: test-logs/
+          retention-days: 7
+
+      # Cleanup
+      - name: Cleanup Docker services
+        if: always()
+        run: |
+          docker-compose down -v
+          docker system prune -f
+
+      # Report test status
+      - name: Report test results
+        if: always()
+        run: |
+          echo "Build Status: ${{ job.status }}"
+          echo "Run ID: ${{ github.run_id }}"
+          echo "Commit: ${{ github.sha }}"
+
+  # ============================================================================
+  # Publish to Docker Registry
+  # ============================================================================
+  publish:
+    needs: build-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+        continue-on-error: true  # Skip if credentials not set
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=v0.8.6
+
+      # Build and push main image
+      - name: Build and push main image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+        continue-on-error: true  # Skip if not authenticated
+
+      # Build and push converter image
+      - name: Build and push converter image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./server/Dockerfile.converter
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/cyclecad-converter:latest
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/cyclecad-converter:${{ github.sha }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+        continue-on-error: true
+
+      # Build and push signaling image
+      - name: Build and push signaling image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./server/Dockerfile.signaling
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/cyclecad-signaling:latest
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/cyclecad-signaling:${{ github.sha }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+        continue-on-error: true
+
+  # ============================================================================
+  # Deployment (Optional - requires credentials)
+  # ============================================================================
+  deploy:
+    needs: publish
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to VPS (if credentials available)
+        run: |
+          if [ -n "${{ secrets.DEPLOY_KEY }}" ]; then
+            echo "Deploy key available, would deploy to production"
+            # Example deployment (requires ssh key setup):
+            # mkdir -p ~/.ssh
+            # echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/deploy_key
+            # chmod 600 ~/.ssh/deploy_key
+            # ssh -i ~/.ssh/deploy_key ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << EOF
+            # cd /home/deploy/cyclecad
+            # docker-compose pull
+            # docker-compose up -d
+            # EOF
+          else
+            echo "No deploy credentials configured"
+          fi
+        continue-on-error: true
+
+      - name: Report deployment
+        run: |
+          echo "Deployment Status: Check VPS if credentials are configured"
+          echo "Images available at: docker.io/${{ github.repository_owner }}/cyclecad:latest"
+
+  # ============================================================================
+  # Notifications
+  # ============================================================================
+  notify:
+    if: always()
+    needs: [build-and-test, publish]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check overall status
+        run: |
+          BUILD_STATUS=${{ needs.build-and-test.result }}
+          PUBLISH_STATUS=${{ needs.publish.result }}
+
+          echo "Build Status: $BUILD_STATUS"
+          echo "Publish Status: $PUBLISH_STATUS"
+
+          if [ "$BUILD_STATUS" = "failure" ]; then
+            echo "Build failed!"
+            exit 1
+          fi
+
+      - name: Notify via Webhook (if configured)
+        if: failure()
+        run: |
+          if [ -n "${{ secrets.WEBHOOK_URL }}" ]; then
+            curl -X POST ${{ secrets.WEBHOOK_URL }} \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"status\": \"failed\",
+                \"repository\": \"${{ github.repository }}\",
+                \"commit\": \"${{ github.sha }}\",
+                \"ref\": \"${{ github.ref }}\",
+                \"author\": \"${{ github.actor }}\"
+              }"
+          fi
+        continue-on-error: true

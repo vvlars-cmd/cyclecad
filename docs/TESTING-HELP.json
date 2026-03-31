@@ -1,0 +1,182 @@
+{
+  "testingHelpEntries": [
+    {
+      "id": "test-agent-overview",
+      "title": "Test Agent Overview",
+      "category": "testing",
+      "description": "The cycleCAD test agent v3 is a visual testing framework that runs 200+ automated tests across the entire UI. It runs in your browser with a split-screen layout showing the app on the left and test results on the right.",
+      "keywords": ["test", "agent", "automation", "testing"],
+      "relatedFeatures": ["test-agent-v3", "test-runner"]
+    },
+    {
+      "id": "running-tests-interactive",
+      "title": "Running Tests Interactively",
+      "category": "testing",
+      "description": "To run tests interactively: 1) Open app/tests/test-agent-v3.html in Chrome, 2) Wait for app to load in the left iframe, 3) Click 'Run All Tests' button. Watch live as tests execute with green flashes indicating tested elements. Results take 60-90 seconds to complete.",
+      "keywords": ["run", "tests", "interactive", "browser"],
+      "relatedFeatures": ["test-agent-v3"]
+    },
+    {
+      "id": "running-tests-headless",
+      "title": "Running Tests Headless (CLI)",
+      "category": "testing",
+      "description": "To run tests from command line: node test-runner.js app/tests/test-agent-v3.html --output results.json. This runs Chrome headless without a GUI, useful for CI/CD pipelines. Results are saved as JSON for automated reporting.",
+      "keywords": ["headless", "cli", "automation", "npm", "node"],
+      "relatedFeatures": ["test-runner", "ci-cd"]
+    },
+    {
+      "id": "test-categories",
+      "title": "Test Categories",
+      "category": "testing",
+      "description": "Tests are organized into 25+ categories: Workspace (8 tests), Toolbar (50+ tests), Panels (10 tests), Keyboard Shortcuts (15 tests), 3D Operations (15 tests), Agent API (8 tests), Error Handling (10 tests), and more. Each category focuses on a specific feature area.",
+      "keywords": ["categories", "organization", "groups", "structure"],
+      "relatedFeatures": ["test-agent-v3"]
+    },
+    {
+      "id": "test-results-json",
+      "title": "Understanding JSON Results",
+      "category": "testing",
+      "description": "Test results are exported as JSON with structure: { timestamp, summary: { total, passed, failed, skipped }, results: [ { test, status, info } ] }. Each test result includes name, pass/fail status, and timing (milliseconds). Use for CI/CD integration and trend analysis.",
+      "keywords": ["json", "export", "results", "format"],
+      "relatedFeatures": ["test-runner", "test-reporter"]
+    },
+    {
+      "id": "test-results-html",
+      "title": "Generating HTML Reports",
+      "category": "testing",
+      "description": "Convert JSON test results to an HTML report using test-reporter.js. This generates a styled report showing pass/fail rate, failed test details, timing stats, and trend charts. Great for sharing with stakeholders.",
+      "keywords": ["html", "report", "reporter", "visualization"],
+      "relatedFeatures": ["test-reporter"]
+    },
+    {
+      "id": "adding-new-tests",
+      "title": "Adding New Tests",
+      "category": "testing",
+      "description": "Edit app/tests/test-agent-v3.html and add to the defineTests() method. Use this.addCategory() for new test groups. Available methods: clickInApp(selector), checkElementExists(selector), testKeyboard(key), checkOperationExists(name), checkAgentAPI(), toggleWireframe(), toggleGrid().",
+      "keywords": ["add", "create", "new", "extend"],
+      "relatedFeatures": ["test-agent-v3"]
+    },
+    {
+      "id": "test-methods",
+      "title": "Test Methods Reference",
+      "category": "testing",
+      "description": "Key test methods: clickInApp(sel) - click element in app, checkElementExists(sel) - verify element exists, testKeyboard(key) - send keyboard event, checkOperationExists(name) - check function in window, checkAgentAPI() - verify API loaded, toggleWireframe() - toggle display. All return Promises.",
+      "keywords": ["methods", "api", "reference", "functions"],
+      "relatedFeatures": ["test-agent-v3"]
+    },
+    {
+      "id": "test-naming",
+      "title": "Test Naming Conventions",
+      "category": "testing",
+      "description": "Use action verbs ('Click', 'Toggle', 'Verify'), be specific ('Extrude button visible' not 'Button works'), include context ('Sketch line tool'), avoid vague names and technical jargon. Names appear in test results, so clarity matters.",
+      "keywords": ["naming", "conventions", "best-practices", "guidelines"],
+      "relatedFeatures": ["test-agent-v3"]
+    },
+    {
+      "id": "test-isolation",
+      "title": "Test Isolation",
+      "category": "testing",
+      "description": "Each test should be independent and not rely on previous test state. Reset UI state at end of test if needed (e.g., press Escape to close panels). Use timeout delays to let UI settle between actions. Ensures reliable results when tests run in any order.",
+      "keywords": ["isolation", "independence", "state", "cleanup"],
+      "relatedFeatures": ["test-agent-v3"]
+    },
+    {
+      "id": "test-coverage",
+      "title": "Test Coverage Tracking",
+      "category": "testing",
+      "description": "Track test coverage by component. Target 95%+ for core features, 80%+ for advanced features. View current coverage in TESTING-GUIDE.md Coverage section. Add new tests to close gaps in untested features. Use this to prioritize testing effort.",
+      "keywords": ["coverage", "gaps", "tracking", "metrics"],
+      "relatedFeatures": ["test-agent-v3"]
+    },
+    {
+      "id": "debugging-failed-tests",
+      "title": "Debugging Failed Tests",
+      "category": "testing",
+      "description": "Common failures: 'Element not found' = wrong ID or missing element, test hangs = app didn't load or froze, no flash = element outside viewport. Debug by opening DevTools (F12), switching to iframe console, and running manual tests. Check app console for JS errors.",
+      "keywords": ["debug", "failed", "error", "troubleshooting"],
+      "relatedFeatures": ["test-agent-v3"]
+    },
+    {
+      "id": "performance-benchmarking",
+      "title": "Performance Benchmarking",
+      "category": "testing",
+      "description": "Test agent tracks timing for each test in milliseconds. Performance targets: UI clicks <200ms, panel opens <500ms, operations <2000ms. If a test takes >2x longer than expected, investigate for console errors or dependency changes.",
+      "keywords": ["performance", "benchmark", "timing", "metrics"],
+      "relatedFeatures": ["test-agent-v3"]
+    },
+    {
+      "id": "ci-cd-integration",
+      "title": "CI/CD Integration",
+      "category": "testing",
+      "description": "Add test suite to GitHub Actions via .github/workflows/test.yml. Run tests on push and PR with: node test-runner.js app/tests/test-agent-v3.html --output results.json. Upload results as artifacts. Fail workflow if tests fail to enforce quality gate.",
+      "keywords": ["ci", "cd", "github", "actions", "pipeline"],
+      "relatedFeatures": ["test-runner"]
+    },
+    {
+      "id": "test-maintenance",
+      "title": "Test Maintenance",
+      "category": "testing",
+      "description": "Keep tests updated when UI changes: rename selectors if IDs change, remove tests for deleted features, add tests for new features. Commit updated test files with UI changes. Run full test suite after each major change to catch regressions early.",
+      "keywords": ["maintenance", "update", "refactor", "delete"],
+      "relatedFeatures": ["test-agent-v3"]
+    },
+    {
+      "id": "exporting-test-results",
+      "title": "Exporting Test Results",
+      "category": "testing",
+      "description": "Click 'Export Results' button in test agent to download test-results-{timestamp}.json. Contains full test summary and per-test results with status and timing. Use for reports, trend analysis, and CI/CD automation.",
+      "keywords": ["export", "download", "json", "save"],
+      "relatedFeatures": ["test-agent-v3"]
+    },
+    {
+      "id": "test-agent-ui",
+      "title": "Test Agent UI Layout",
+      "category": "testing",
+      "description": "Test agent layout: left 70% shows embedded app iframe, right 30% shows test runner. Top right shows pass/fail stats, progress bar, control buttons (Run All, Clear Log, Export). Below shows scrolling test log with color-coded results (green=pass, red=fail, blue=running).",
+      "keywords": ["ui", "layout", "interface", "design"],
+      "relatedFeatures": ["test-agent-v3"]
+    },
+    {
+      "id": "false-positives-prevention",
+      "title": "Preventing False Positives",
+      "category": "testing",
+      "description": "Don't just verify element exists - verify it works. Add assertions that check actual behavior outcomes. Include timing delays to let UI settle. Example: verify panel appears AND has content, not just that button exists. Catch broken features before they ship.",
+      "keywords": ["false", "positive", "assertion", "verification"],
+      "relatedFeatures": ["test-agent-v3"]
+    },
+    {
+      "id": "visual-debugging",
+      "title": "Visual Debugging",
+      "category": "testing",
+      "description": "Green flash = element found and clicked. No flash = element not found or not visible. Test stalls = UI didn't respond or is loading. To debug: pause test, manually reproduce steps, check console for errors (Cmd+Option+J on Mac, Ctrl+Shift+J on Windows), check if 3D scene crashed.",
+      "keywords": ["visual", "debug", "flash", "highlight"],
+      "relatedFeatures": ["test-agent-v3"]
+    },
+    {
+      "id": "explodeview-test-agent",
+      "title": "ExplodeView Test Agent v2",
+      "category": "testing",
+      "description": "Similar to cycleCAD test agent, ExplodeView has its own test-agent-v2.html at docs/demo/test-agent-v2.html. Tests 15+ categories with 150+ tests covering View/Analyze/Create/Export/AI/Settings tabs, shortcuts, panels, context menus, selection, language support. Run same way as cycleCAD tests.",
+      "keywords": ["explodeview", "test", "agent", "v2"],
+      "relatedFeatures": ["test-agent-v2", "explodeview"]
+    },
+    {
+      "id": "test-troubleshooting",
+      "title": "Troubleshooting Test Failures",
+      "category": "testing",
+      "description": "Test agent won't start: check console errors, verify app loaded in iframe, reload page. Tests hang: check app console for errors (F12), reload test agent. Elements not found: verify button IDs match selectors, check if elements are hidden, scroll to make visible. Fix root cause, not test.",
+      "keywords": ["troubleshoot", "problem", "error", "help"],
+      "relatedFeatures": ["test-agent-v3"]
+    }
+  ],
+  "categories": [
+    {
+      "name": "testing",
+      "label": "Testing & QA",
+      "description": "Visual test agents, test runner, CI/CD integration, debugging",
+      "icon": "test-tube"
+    }
+  ],
+  "version": "1.0",
+  "lastUpdated": "2026-03-31"
+}

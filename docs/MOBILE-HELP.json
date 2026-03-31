@@ -1,0 +1,243 @@
+{
+  "mobileHelp": [
+    {
+      "id": "mobile_getting_started",
+      "title": "Getting Started on Mobile",
+      "category": "basics",
+      "description": "First steps for using cycleCAD on your phone or tablet",
+      "content": "1. Navigate to cyclecad.com/app on your device\n2. Allow any permission requests\n3. App will download on first load (~50MB)\n4. Start creating or importing designs\n\nThe app auto-saves every 30 seconds."
+    },
+    {
+      "id": "mobile_gestures_tap",
+      "title": "Tap Gesture",
+      "category": "gestures",
+      "description": "Quick touch and release for selecting and activating",
+      "content": "Tap is the primary touch interaction:\n• Tap 3D part: Select and show details\n• Tap button: Activate function\n• Tap tree item: Expand/collapse or select\n• Tap viewport: Deselect current part\n\nTap once = single action\nTap twice quickly = double-tap"
+    },
+    {
+      "id": "mobile_gestures_doubletap",
+      "title": "Double-Tap Gesture",
+      "category": "gestures",
+      "description": "Quick double-tap to zoom or focus",
+      "content": "Double-tap functionality:\n• Double-tap part: Fit part to viewport\n• Double-tap empty area: Fit all parts to view\n• Double-tap toolbar button: Show tool options\n\nDouble-tap is great for quickly centering your view on what you're working on."
+    },
+    {
+      "id": "mobile_gestures_longpress",
+      "title": "Long-Press (Context Menu)",
+      "category": "gestures",
+      "description": "Press and hold for 500ms to open context menu",
+      "content": "Long-press shows advanced options:\n• Long-press part: Hide, isolate, move, delete, export\n• Long-press tree item: Suppress, rename, delete\n• Long-press toolbar button: Show keyboard shortcut\n\nA haptic vibration indicates long-press registered.\nContext menu appears from bottom of screen."
+    },
+    {
+      "id": "mobile_gestures_swipe",
+      "title": "Swipe Gesture",
+      "category": "gestures",
+      "description": "Drag and release to navigate panels",
+      "content": "Swipe opens/closes panels:\n• Swipe right: Open left model tree panel\n• Swipe left: Open right properties panel\n• Swipe up: Expand timeline or bottom sheet\n• Swipe down: Collapse timeline or close sheet\n\nUse swipes to quickly navigate between panels."
+    },
+    {
+      "id": "mobile_gestures_pinch",
+      "title": "Pinch-to-Zoom",
+      "category": "gestures",
+      "description": "Two-finger pinch gesture for zooming viewport",
+      "content": "Use two fingers to zoom:\n• Spread apart: Zoom in\n• Pinch together: Zoom out\n• Works smoothly with momentum\n\nCan pinch on either viewport or sketch canvas.\nZoom has min/max limits to prevent going too close or far."
+    },
+    {
+      "id": "mobile_gestures_rotate",
+      "title": "Two-Finger Rotate",
+      "category": "gestures",
+      "description": "Rotate viewport with two-finger twist gesture",
+      "content": "Two-finger rotation:\n• Place two fingers on screen\n• Rotate clockwise: Rotates view clockwise\n• Rotate counter-clockwise: Rotates view counter-clockwise\n\nIndependent from pinch-zoom. Can pinch and rotate simultaneously."
+    },
+    {
+      "id": "mobile_gestures_pan",
+      "title": "Two-Finger Pan",
+      "category": "gestures",
+      "description": "Move viewport without rotating",
+      "content": "Pan the view with two fingers:\n• Place two fingers on viewport\n• Drag together in any direction\n• Moves view left/right/up/down\n\nUseful for repositioning without rotating.\nEquivalent to right-click drag on desktop."
+    },
+    {
+      "id": "mobile_gestures_undo",
+      "title": "Three-Finger Tap Undo",
+      "category": "gestures",
+      "description": "Quick undo without accessing menu",
+      "content": "Three-finger gesture shortcuts:\n• Three-finger tap: Undo (Ctrl+Z)\n• Four-finger tap: Redo (Ctrl+Y)\n\nNo menu needed - just tap with three or four fingers on viewport.\nUseful for quick undo during modeling."
+    },
+    {
+      "id": "mobile_ui_portrait",
+      "title": "Portrait Mode Layout",
+      "category": "ui",
+      "description": "Single-panel layout optimized for phone portrait",
+      "content": "Portrait phone layout (<480px):\n\nHeader (44px): Menu button + title\n\n3D Viewport: Main work area, full screen\n\nBottom Toolbar (44px): 6-8 most-used tools + \"More\" button\n\nSwipe left/right to open side panels.\nLandscape mode recommended for detailed work."
+    },
+    {
+      "id": "mobile_ui_landscape",
+      "title": "Landscape Mode Layout",
+      "category": "ui",
+      "description": "Wider layout for phones in landscape orientation",
+      "content": "Landscape phone layout (480-600px):\n\nHeader: Menu + title\n\nLayout:\n• Left sidebar (60px): Collapsed tree panel\n• Center: 3D Viewport (main area)\n• Right sidebar (if open): Properties panel\n\nBottom toolbar with tools.\n\nBetter for detailed work - use landscape for sketching."
+    },
+    {
+      "id": "mobile_ui_tablet",
+      "title": "Tablet Layout",
+      "category": "ui",
+      "description": "Multi-column layout for tablets with more space",
+      "content": "Tablet layout (600px+):\n\nMore screen space allows:\n• Left panel (200px): Full model tree visible\n• Center: 3D Viewport\n• Right panel (280px): Properties always visible\n• Top toolbar: Full buttons with labels\n• Bottom: Status bar\n\nOptimal for CAD work - tablets recommended for serious modeling."
+    },
+    {
+      "id": "mobile_panels_tree",
+      "title": "Left Model Tree Panel",
+      "category": "panels",
+      "description": "Navigate and manage your model's feature tree",
+      "content": "Model tree shows:\n• All features in order created\n• Expand/collapse folder structure\n• Current selected feature highlighted\n\nActions:\n• Tap feature: Select and highlight in 3D\n• Long-press: Suppress, rename, delete, show/hide\n• Drag to reorder: Reorganize features\n\nOpening: Swipe right or tap model tree icon"
+    },
+    {
+      "id": "mobile_panels_properties",
+      "title": "Right Properties Panel",
+      "category": "panels",
+      "description": "View and edit properties of selected part or feature",
+      "content": "Properties panel shows:\n• Selected part/feature name\n• Dimensions and parameters\n• Material and appearance settings\n• Constraints and relationships\n\nActions:\n• Tap to edit values inline\n• Change material/color\n• Adjust dimensions with sliders\n• See real-time 3D updates\n\nOpening: Swipe left or tap properties icon"
+    },
+    {
+      "id": "mobile_sketch_basics",
+      "title": "Creating Sketches on Mobile",
+      "category": "modeling",
+      "description": "Drawing 2D sketches on phone or tablet",
+      "content": "Sketch workflow:\n1. Tap ✏️ Sketch button in toolbar\n2. Select face or plane in 3D\n3. Sketch canvas appears as overlay\n4. Draw with line/rectangle/circle tools\n5. Add constraints for precision\n6. Tap ✓ Done to finish\n\nTip: Use landscape mode for sketching.\nLarger screen = easier drawing."
+    },
+    {
+      "id": "mobile_sketch_drawing",
+      "title": "Drawing on Sketch Canvas",
+      "category": "modeling",
+      "description": "Using sketch tools to create geometry",
+      "content": "Basic sketch tools:\n• ✏️ Line: Tap points to draw connected lines\n• ⬜ Rectangle: Tap corner 1, then corner 2\n• ⭕ Circle: Tap center, then radius point\n• ⌒ Arc: Tap start, arc point, then end\n\nMore tools in bottom sheet (⋯ More):\n• Polyline, Bezier, Ellipse, Point, etc.\n\nTip: Grid snapping is automatic. Points snap to grid and endpoints."
+    },
+    {
+      "id": "mobile_sketch_constraints",
+      "title": "Constraints in Sketches",
+      "category": "modeling",
+      "description": "Add dimensional and geometric constraints",
+      "content": "Constraints ensure precision:\n• Distance: Fixed length or radius\n• Angle: Between lines\n• Horizontal/Vertical: Lines aligned to axes\n• Parallel/Perpendicular: Line relationships\n• Equal: Same length or radius\n• Tangent: Curves touching smoothly\n• Fixed: Points locked in place\n\nAdd constraint:\n1. Tap 📐 Constraint button\n2. Select constraint type\n3. Select geometry\n4. Enter value if needed"
+    },
+    {
+      "id": "mobile_viewport_rotate",
+      "title": "Rotating the 3D View",
+      "category": "viewport",
+      "description": "Rotate model with touch gestures",
+      "content": "Rotation methods:\n• Single-finger drag: Smooth orbit around model\n• Two-finger rotate: Free rotation around all axes\n• ViewCube tap: Snap to preset orientations\n• Momentum: Drag and release for coasting rotation\n\nTip: Single-finger drag is smoothest for general rotation.\nTwo-finger rotate useful when you need specific angle."
+    },
+    {
+      "id": "mobile_viewport_zoom",
+      "title": "Zooming In and Out",
+      "category": "viewport",
+      "description": "Zoom the viewport with pinch gesture",
+      "content": "Zoom methods:\n• Pinch apart: Zoom in\n• Pinch together: Zoom out\n• Double-tap part: Fit to view\n• Double-tap empty: Fit all to view\n• Mouse wheel: If using external mouse/trackpad\n\nZoom limits prevent:\n• Going too close (clipping inside model)\n• Going too far (losing model)\n\nSmooth with momentum scrolling."
+    },
+    {
+      "id": "mobile_viewport_pan",
+      "title": "Panning the Viewport",
+      "category": "viewport",
+      "description": "Move view without rotating",
+      "content": "Pan methods:\n• Two-finger drag: Move view left/right/up/down\n• Hold and drag: Continuous panning\n\nPan is useful for:\n• Repositioning without changing view angle\n• Moving off-center parts into view\n• Fine-tuning view after rotation\n\nDifferent from single-finger drag (which rotates)."
+    },
+    {
+      "id": "mobile_toolbar_bottom",
+      "title": "Bottom Toolbar (Mobile)",
+      "category": "toolbar",
+      "description": "Quick access to most-used tools on phones",
+      "content": "Bottom toolbar (44px bar at bottom):\n• Shows 6-8 most frequent tools\n• Icons optimized for touch\n• Tap tool to activate\n• Long-press tool for shortcuts\n\nDefault tools:\n✏️ Sketch, 🧊 Solid, 📐 Measure, 👁️ View, ⚙️ Settings, ⋯ More\n\nTap ⋯ More for full tool grid in bottom sheet."
+    },
+    {
+      "id": "mobile_toolbar_customization",
+      "title": "Customizing Toolbar",
+      "category": "toolbar",
+      "description": "Reorder and configure which tools appear in toolbar",
+      "content": "Customize toolbar in Settings:\n1. Tap ⚙️ Settings\n2. Select \"Toolbar\" tab\n3. Drag tools to reorder\n4. Tap + to add tools\n5. Tap - to remove tools\n\nCustomization is saved locally.\nDifferent layouts can be saved for different tasks."
+    },
+    {
+      "id": "mobile_export_step",
+      "title": "Exporting STEP Files",
+      "category": "import_export",
+      "description": "Save work as STEP format for other CAD software",
+      "content": "Export STEP:\n1. Tap 💾 Export in toolbar\n2. Select \"STEP (.stp)\" format\n3. Choose save location (cloud, local, email)\n4. Confirm export\n5. File downloads in background\n\nSTEP format:\n• Universal CAD format\n• Preserves 3D geometry\n• Usable in Fusion 360, SolidWorks, FreeCAD, etc.\n• Recommended for sharing designs"
+    },
+    {
+      "id": "mobile_export_stl",
+      "title": "Exporting STL for 3D Printing",
+      "category": "import_export",
+      "description": "Save model in STL format for 3D printing",
+      "content": "Export STL:\n1. Tap 💾 Export in toolbar\n2. Select \"STL (.stl)\" format\n3. Choose ASCII or Binary (binary smaller)\n4. Save location\n5. Send to 3D printer or slicing software\n\nSTL format:\n• Standard for 3D printing\n• Mesh-based (not parametric)\n• Works with all slicers (Cura, PrusaSlicer, etc.)\n• Can't be edited after export"
+    },
+    {
+      "id": "mobile_performance_battery",
+      "title": "Saving Battery on Mobile",
+      "category": "performance",
+      "description": "Tips for reducing battery drain on phones",
+      "content": "Battery optimization:\n• Reduce graphics quality: Settings → Graphics → Low\n• Disable auto-save: Settings → Auto-save → Off\n• Turn off shadows: Settings → Shadows → Off\n• Close other apps\n• Reduce screen brightness\n• Work in landscape (less frequent redraw)\n• Hide unused parts\n\nOn older devices, Low quality = 40% less battery drain."
+    },
+    {
+      "id": "mobile_performance_fps",
+      "title": "Improving Frame Rate",
+      "category": "performance",
+      "description": "Speed up viewport rendering",
+      "content": "Frame rate optimization:\n• Reduce graphics quality: Settings → Low\n• Disable shadows and reflections\n• Hide complex parts not being edited\n• Restart app if sluggish\n• Close other browser tabs\n• Update browser to latest version\n• Reduce model detail (delete construction geometry)\n\nTarget: 30+ FPS smooth, 60 FPS ideal on tablets."
+    },
+    {
+      "id": "mobile_orientation_landscape",
+      "title": "Using Landscape Mode",
+      "category": "workflow",
+      "description": "Best practices for landscape orientation",
+      "content": "Landscape mode advantages:\n• Wider viewport for detailed work\n• More space for sidebar panels\n• Better for sketching and precision\n• Easier to see larger models\n\nRecommendations:\n• Use landscape for any detailed modeling\n• Use portrait for quick viewing only\n• Rotate device for task-specific layout\n• Landscape is essential for sketching\n\nAuto-rotation enabled by default."
+    },
+    {
+      "id": "mobile_offline_access",
+      "title": "Working Offline",
+      "category": "workflow",
+      "description": "Using cycleCAD without internet connection",
+      "content": "Offline capabilities:\n• Create and edit designs fully offline\n• Auto-save works without network\n• Import/export files locally\n• All features available\n• Work saved to device storage\n\nOnline features (require connection):\n• Cloud save/sync (Pro only)\n• AI features (chat, vision)\n• Import from cloud storage\n• Share links\n\nPerfect for airplane, remote site, or unreliable network."
+    },
+    {
+      "id": "mobile_accessibility",
+      "title": "Accessibility Features",
+      "category": "settings",
+      "description": "Making cycleCAD easier to use with disabilities",
+      "content": "Accessibility options:\n• Text scaling: Larger text for readability\n• High contrast: Dark/light mode\n• Haptic feedback: Vibration on actions\n• Voice input: Say commands (with microphone)\n• Screen reader support: Works with NVDA, JAWS\n• Touch target size: Minimum 44x44px enforced\n\nAccessibility settings in: Settings → Accessibility"
+    },
+    {
+      "id": "mobile_troubleshoot_touch",
+      "title": "Touch Not Responding",
+      "category": "troubleshooting",
+      "description": "Fix unresponsive touch on mobile device",
+      "content": "If touch not working:\n1. Clean screen: Remove dust/oil (most common issue)\n2. Restart app: Close completely and reopen\n3. Hard refresh: Cmd+Shift+R (Mac) or Ctrl+Shift+R\n4. Restart device: Full power cycle\n5. Check for browser updates\n6. Try different app area: Tap in center of viewport\n7. Clear cache: Settings → Clear Cache\n\nIf still not working, post on GitHub issues."
+    },
+    {
+      "id": "mobile_troubleshoot_import",
+      "title": "Import Fails",
+      "category": "troubleshooting",
+      "description": "Fix STEP or other file import errors",
+      "content": "If import fails:\n1. Check file size: Must be under 100MB\n2. Verify format: Must be valid STEP (.stp or .step)\n3. Test file: Try different STEP file\n4. Clear cache: Settings → Clear Cache\n5. Restart app\n6. Try different browser (Chrome if using Safari)\n7. Check network: Ensure stable connection\n\nFor files >100MB:\n• Use desktop version of cycleCAD\n• Split assembly into sub-assemblies\n• Reduce part count by removing details"
+    },
+    {
+      "id": "mobile_support_help",
+      "title": "Getting Help",
+      "category": "support",
+      "description": "How to get support and report issues",
+      "content": "Getting help:\n• In-app help: Tap ? button or Settings → Help\n• Mobile tutorial: See MOBILE-TUTORIAL.md\n• GitHub issues: Report bugs at github.com/vvlars-cmd/cyclecad\n• Email support: support@cyclecad.com (coming soon)\n• Chat with AI: Use in-app chat for quick answers\n\nWhen reporting bugs, include:\n• Device model and OS version\n• Browser and version\n• Steps to reproduce\n• Screenshot or video if possible"
+    }
+  ],
+  "categories": {
+    "basics": "Getting Started",
+    "gestures": "Touch Gestures",
+    "ui": "User Interface",
+    "panels": "Panels & Navigation",
+    "modeling": "Modeling & Sketching",
+    "viewport": "3D Viewport",
+    "toolbar": "Toolbar",
+    "import_export": "Import & Export",
+    "performance": "Performance & Battery",
+    "workflow": "Workflow Tips",
+    "settings": "Settings & Accessibility",
+    "troubleshooting": "Troubleshooting",
+    "support": "Support & Feedback"
+  }
+}

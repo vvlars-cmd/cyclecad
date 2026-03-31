@@ -212,7 +212,7 @@
     if (/add|with|plus/.test(lower)) return 'add';
     if (/(fillet|chamfer|pattern|shell|subtract|cut)/.test(lower)) return 'modify';
     if (/combine|merge|join|union/.test(lower)) return 'combine';
-    if /(array|repeat|pattern)/.test(lower)) return 'pattern';
+    if (/(array|repeat|pattern)/.test(lower)) return 'pattern';
     if (/export|save|output/.test(lower)) return 'export';
     return 'create';
   }

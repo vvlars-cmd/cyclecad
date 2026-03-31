@@ -1337,11 +1337,15 @@
         <div style="font-size:11px;font-weight:400;color:rgba(255,255,255,0.7);margin-top:4px;">Load .ipj / .ipt / .iam</div>
       </button>
     </div>
-    <div style="color:#666;font-size:11px;">v0.9.0 &middot; 12 killer features &middot; 46 modules &middot; <a href="https://github.com/vvlars-cmd/cyclecad" target="_blank" style="color:#0284C7;text-decoration:none;">GitHub</a></div>
+    <div style="color:#666;font-size:11px;"><span id="splash-version">v0.9.0</span> &middot; 12 killer features &middot; 46 modules &middot; <a href="https://github.com/vvlars-cmd/cyclecad" target="_blank" style="color:#0284C7;text-decoration:none;">GitHub</a></div>
   </div>
 </div>
 <script>
 window._dismissSplash = function(action) {
+  // Update splash version from status bar
+  var sv = document.getElementById('splash-version');
+  var sb = document.querySelector('[class*="status"]');
+  if (sv && sb) { var m = sb.textContent.match(/v[\d.]+/); if (m) sv.textContent = m[0]; }
   document.getElementById('welcome-panel').style.display = 'none';
   if (action === 'sketch') {
     // Will be handled by module script once loaded

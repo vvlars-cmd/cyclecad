@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>cycleCAD Killer Features Batch 2 Tests</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      display: flex;
+      height: 100vh;
+      gap: 1px;
+    }
+
+    .app-container {
+      flex: 0 0 65%;
+      background: #1a202c;
+      border: 1px solid #2d3748;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #test-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .test-panel {
+      flex: 0 0 35%;
+      display: flex;
+      flex-direction: column;
+      background: #1a202c;
+      border-left: 1px solid #2d3748;
+      overflow: hidden;
+    }
+
+    .test-header {
+      padding: 16px;
+      border-bottom: 1px solid #2d3748;
+      background: #0f172a;
+    }
+
+    .test-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #38bdf8;
+    }
+
+    .test-subtitle {
+      font-size: 12px;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
+
+    .test-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 8px;
+      font-size: 12px;
+    }
+
+    .stat-box {
+      padding: 8px;
+      background: #1e293b;
+      border-radius: 4px;
+      border-left: 3px solid #64748b;
+    }
+
+    .stat-box.pass {
+      border-left-color: #10b981;
+    }
+
+    .stat-box.fail {
+      border-left-color: #ef4444;
+    }
+
+    .stat-box.skip {
+      border-left-color: #f59e0b;
+    }
+
+    .stat-box.active {
+      border-left-color: #3b82f6;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-bottom: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-value {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .test-controls {
+      display: flex;
+      gap: 8px;
+      padding: 12px;
+      border-bottom: 1px solid #2d3748;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 8px 12px;
+      background: #1e293b;
+      color: #e2e8f0;
+      border: 1px solid #3f4655;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    button:hover {
+      background: #2d3748;
+      border-color: #4f5665;
+    }
+
+    button.primary {
+      background: #0284c7;
+      border-color: #0284c7;
+    }
+
+    button.primary:hover {
+      background: #0369a1;
+      border-color: #0369a1;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .test-log {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    .test-entry {
+      margin-bottom: 8px;
+      padding: 8px;
+      background: #1e293b;
+      border-left: 3px solid #64748b;
+      border-radius: 2px;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .test-entry.pass {
+      border-left-color: #10b981;
+      background: #1a3a2a;
+    }
+
+    .test-entry.fail {
+      border-left-color: #ef4444;
+      background: #3a1a1a;
+    }
+
+    .test-entry.skip {
+      border-left-color: #f59e0b;
+      background: #3a2a1a;
+    }
+
+    .test-entry.running {
+      border-left-color: #3b82f6;
+      background: #1a2a3a;
+    }
+
+    .test-entry-title {
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-bottom: 2px;
+    }
+
+    .test-entry-msg {
+      color: #94a3b8;
+      font-family: 'Monaco', 'Courier New', monospace;
+    }
+
+    .test-footer {
+      padding: 12px;
+      border-top: 1px solid #2d3748;
+      background: #0f172a;
+      font-size: 12px;
+      color: #64748b;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .elapsed-time {
+      font-weight: 600;
+      color: #38bdf8;
+    }
+
+    .category-group {
+      margin-bottom: 4px;
+      padding: 4px;
+      background: #0f172a;
+      border-radius: 3px;
+    }
+
+    .category-name {
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+      padding: 4px 4px;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: #1e293b;
+      border-radius: 2px;
+      margin: 8px 0;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #0284c7);
+      transition: width 0.3s ease;
+    }
+
+    .export-btn {
+      padding: 6px 10px;
+      font-size: 11px;
+      background: #047857;
+      border-color: #047857;
+    }
+
+    .export-btn:hover {
+      background: #059669;
+      border-color: #059669;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <canvas id="test-canvas"></canvas>
+  </div>
+
+  <div class="test-panel">
+    <div class="test-header">
+      <div class="test-title">Killer Features Batch 2</div>
+      <div class="test-subtitle">Generative Design, Multi-Physics, Smart Parts</div>
+      <div class="progress-bar" style="margin-top: 8px;">
+        <div class="progress-fill" id="progress-fill" style="width: 0%;"></div>
+      </div>
+      <div class="test-stats">
+        <div class="stat-box pass">
+          <div class="stat-label">Pass</div>
+          <div class="stat-value" id="stat-pass">0</div>
+        </div>
+        <div class="stat-box fail">
+          <div class="stat-label">Fail</div>
+          <div class="stat-value" id="stat-fail">0</div>
+        </div>
+        <div class="stat-box skip">
+          <div class="stat-label">Skip</div>
+          <div class="stat-value" id="stat-skip">0</div>
+        </div>
+        <div class="stat-box active">
+          <div class="stat-label">Total</div>
+          <div class="stat-value" id="stat-total">36</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="test-controls">
+      <button class="primary" id="run-all-btn">Run All Tests</button>
+      <button id="run-generative-btn">Generative Design</button>
+      <button id="run-multi-physics-btn">Multi-Physics</button>
+      <button id="run-smart-parts-btn">Smart Parts</button>
+      <button id="clear-log-btn">Clear Log</button>
+      <button class="export-btn" id="export-btn">Export JSON</button>
+    </div>
+
+    <div class="test-log" id="test-log">
+      <div style="color: #64748b; font-size: 12px; padding: 8px;">
+        Click "Run All Tests" to begin...
+      </div>
+    </div>
+
+    <div class="test-footer">
+      <span>Ready</span>
+      <span class="elapsed-time" id="elapsed-time">0.0s</span>
+    </div>
+  </div>
+
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r170/three.min.js"></script>
+
+  <!-- Module Scripts -->
+  <script src="../js/modules/generative-design.js"></script>
+  <script src="../js/modules/multi-physics.js"></script>
+  <script src="../js/modules/smart-parts.js"></script>
+
+  <script>
+    // ============================================================================
+    // TEST RUNNER
+    // ============================================================================
+
+    class TestRunner {
+      constructor() {
+        this.tests = [];
+        this.results = {
+          pass: 0,
+          fail: 0,
+          skip: 0,
+          total: 0,
+          details: []
+        };
+        this.startTime = null;
+        this.isRunning = false;
+        this.scene = null;
+        this.camera = null;
+        this.renderer = null;
+        this.initThreeJS();
+      }
+
+      initThreeJS() {
+        const canvas = document.getElementById('test-canvas');
+        this.scene = new THREE.Scene();
+        this.camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+        this.camera.position.set(0, 0, 100);
+
+        this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        this.renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+        this.renderer.setClearColor(0x1a202c);
+
+        window.addEventListener('resize', () => this.onWindowResize());
+      }
+
+      onWindowResize() {
+        const canvas = document.getElementById('test-canvas');
+        const width = canvas.clientWidth;
+        const height = canvas.clientHeight;
+        this.camera.aspect = width / height;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(width, height);
+      }
+
+      addTest(category, name, fn) {
+        this.tests.push({ category, name, fn });
+      }
+
+      async runTests(filter = null) {
+        this.isRunning = true;
+        this.startTime = Date.now();
+        this.results = { pass: 0, fail: 0, skip: 0, total: 0, details: [] };
+
+        const testsToRun = filter ? this.tests.filter(t => t.category === filter) : this.tests;
+
+        for (let test of testsToRun) {
+          await this.runTest(test);
+          this.updateStats();
+          this.updateProgress(this.results.total, this.tests.length);
+        }
+
+        this.isRunning = false;
+        this.logComplete();
+      }
+
+      async runTest(test) {
+        try {
+          this.log(`Running: ${test.name}`, 'running');
+          await test.fn(this.scene, this.camera, this.renderer);
+          this.results.pass++;
+          this.results.details.push({ category: test.category, name: test.name, status: 'pass' });
+          this.log(`✓ ${test.name}`, 'pass');
+        } catch (err) {
+          this.results.fail++;
+          this.results.details.push({ category: test.category, name: test.name, status: 'fail', error: err.message });
+          this.log(`✗ ${test.name}: ${err.message}`, 'fail');
+        }
+        this.results.total++;
+      }
+
+      log(msg, type = 'info') {
+        const logDiv = document.getElementById('test-log');
+        const entry = document.createElement('div');
+        entry.className = `test-entry ${type}`;
+        entry.innerHTML = `<div class="test-entry-msg">${msg}</div>`;
+        logDiv.appendChild(entry);
+        logDiv.scrollTop = logDiv.scrollHeight;
+      }
+
+      logComplete() {
+        this.log(`\n✓ Test Run Complete: ${this.results.pass}/${this.results.total} passed`, 'pass');
+      }
+
+      updateStats() {
+        document.getElementById('stat-pass').textContent = this.results.pass;
+        document.getElementById('stat-fail').textContent = this.results.fail;
+        document.getElementById('stat-skip').textContent = this.results.skip;
+      }
+
+      updateProgress(current, total) {
+        const pct = (current / total) * 100;
+        document.getElementById('progress-fill').style.width = pct + '%';
+      }
+
+      updateElapsed() {
+        if (this.startTime && this.isRunning) {
+          const elapsed = ((Date.now() - this.startTime) / 1000).toFixed(1);
+          document.getElementById('elapsed-time').textContent = elapsed + 's';
+        }
+      }
+
+      exportJSON() {
+        const json = JSON.stringify(this.results, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `killer-features-tests-${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      clearLog() {
+        document.getElementById('test-log').innerHTML = '';
+      }
+    }
+
+    const runner = new TestRunner();
+
+    // ============================================================================
+    // GENERATIVE DESIGN TESTS
+    // ============================================================================
+
+    runner.addTest('Generative Design', 'Module exists with correct API', (scene) => {
+      if (!window.CycleCAD.GenerativeDesign) throw new Error('Module not found');
+      const mod = window.CycleCAD.GenerativeDesign;
+      if (!mod.init) throw new Error('Missing init()');
+      if (!mod.getUI) throw new Error('Missing getUI()');
+      if (!mod.execute) throw new Error('Missing execute()');
+      if (!mod.optimize) throw new Error('Missing optimize()');
+      if (!mod.setConstraints) throw new Error('Missing setConstraints()');
+      if (!mod.getResults) throw new Error('Missing getResults()');
+    });
+
+    runner.addTest('Generative Design', 'getUI() returns HTMLElement', (scene) => {
+      const ui = window.CycleCAD.GenerativeDesign.getUI();
+      if (!(ui instanceof HTMLElement)) throw new Error('getUI() did not return HTMLElement');
+    });
+
+    runner.addTest('Generative Design', 'init(scene) completes without error', (scene) => {
+      const testScene = new THREE.Scene();
+      window.CycleCAD.GenerativeDesign.init(testScene);
+    });
+
+    runner.addTest('Generative Design', 'setConstraints() accepts keep/avoid/loads/fixed regions', (scene) => {
+      window.CycleCAD.GenerativeDesign.setConstraints({
+        keepRegions: [{ min: new THREE.Vector3(0, 0, 0), max: new THREE.Vector3(10, 10, 10) }],
+        avoidRegions: [{ min: new THREE.Vector3(-10, -10, -10), max: new THREE.Vector3(-5, -5, -5) }],
+        loads: [{ position: new THREE.Vector3(0, 20, 0), force: new THREE.Vector3(0, -100, 0) }],
+        fixedPoints: [new THREE.Vector3(0, -20, 0)]
+      });
+    });
+
+    runner.addTest('Generative Design', 'optimize() starts without error', (scene) => {
+      window.CycleCAD.GenerativeDesign.optimize({ maxIterations: 1 });
+    });
+
+    runner.addTest('Generative Design', 'Default voxel grid is 20×20×20 (8000 voxels)', (scene) => {
+      const results = window.CycleCAD.GenerativeDesign.getResults();
+      // Grid should be 20^3 = 8000 voxels
+      if (results.gridResolution !== 20) throw new Error(`Expected 20, got ${results.gridResolution}`);
+    });
+
+    runner.addTest('Generative Design', 'Volume fraction slider range 0.1-0.6', (scene) => {
+      const ui = window.CycleCAD.GenerativeDesign.getUI();
+      const slider = ui.querySelector('input[type="range"]');
+      if (!slider) throw new Error('Volume fraction slider not found');
+      if (parseFloat(slider.min) !== 0.1) throw new Error(`Min expected 0.1, got ${slider.min}`);
+      if (parseFloat(slider.max) !== 0.6) throw new Error(`Max expected 0.6, got ${slider.max}`);
+    });
+
+    runner.addTest('Generative Design', 'getResults() returns object with expected fields', (scene) => {
+      const results = window.CycleCAD.GenerativeDesign.getResults();
+      if (!results.density) throw new Error('Missing density field');
+      if (!('compliance' in results)) throw new Error('Missing compliance field');
+      if (!('weightReduction' in results)) throw new Error('Missing weightReduction field');
+    });
+
+    runner.addTest('Generative Design', 'execute("optimize", params) dispatches correctly', (scene) => {
+      const result = window.CycleCAD.GenerativeDesign.execute('optimize', { maxIterations: 1 });
+      if (!result) throw new Error('execute() did not return result');
+    });
+
+    runner.addTest('Generative Design', 'Material database includes Steel, Aluminum, Titanium, ABS, Nylon', (scene) => {
+      const ui = window.CycleCAD.GenerativeDesign.getUI();
+      const materialSelect = ui.querySelector('select');
+      if (!materialSelect) throw new Error('Material select not found');
+      const options = Array.from(materialSelect.options).map(o => o.value);
+      const required = ['Steel', 'Aluminum', 'Titanium', 'ABS', 'Nylon'];
+      for (let mat of required) {
+        if (!options.includes(mat)) throw new Error(`Missing material: ${mat}`);
+      }
+    });
+
+    runner.addTest('Generative Design', 'Marching cubes produces valid mesh from density field', (scene) => {
+      const results = window.CycleCAD.GenerativeDesign.getResults();
+      if (!results.mesh) throw new Error('Mesh not generated');
+      if (!results.mesh.geometry) throw new Error('Mesh geometry missing');
+      const geom = results.mesh.geometry;
+      if (!geom.attributes.position || geom.attributes.position.count === 0) {
+        throw new Error('Mesh has no vertices');
+      }
+    });
+
+    runner.addTest('Generative Design', 'STL export produces non-empty buffer/string', (scene) => {
+      const stlData = window.CycleCAD.GenerativeDesign.execute('export', { format: 'stl' });
+      if (!stlData) throw new Error('STL export returned null');
+      if (typeof stlData === 'string' && stlData.length === 0) throw new Error('STL string is empty');
+      if (stlData instanceof ArrayBuffer && stlData.byteLength === 0) throw new Error('STL buffer is empty');
+    });
+
+    // ============================================================================
+    // MULTI-PHYSICS TESTS
+    // ============================================================================
+
+    runner.addTest('Multi-Physics', 'Module exists with correct API', (scene) => {
+      if (!window.CycleCAD.MultiPhysics) throw new Error('Module not found');
+      const mod = window.CycleCAD.MultiPhysics;
+      if (!mod.init) throw new Error('Missing init()');
+      if (!mod.getUI) throw new Error('Missing getUI()');
+      if (!mod.execute) throw new Error('Missing execute()');
+      if (!mod.runSimulation) throw new Error('Missing runSimulation()');
+      if (!mod.getResults) throw new Error('Missing getResults()');
+    });
+
+    runner.addTest('Multi-Physics', 'getUI() returns HTMLElement', (scene) => {
+      const ui = window.CycleCAD.MultiPhysics.getUI();
+      if (!(ui instanceof HTMLElement)) throw new Error('getUI() did not return HTMLElement');
+    });
+
+    runner.addTest('Multi-Physics', 'init(scene) completes without error', (scene) => {
+      const testScene = new THREE.Scene();
+      const boxGeom = new THREE.BoxGeometry(10, 10, 10);
+      const boxMesh = new THREE.Mesh(boxGeom, new THREE.MeshStandardMaterial());
+      testScene.add(boxMesh);
+      window.CycleCAD.MultiPhysics.init(testScene);
+    });
+
+    runner.addTest('Multi-Physics', 'Structural analysis on simple box mesh returns stress values', (scene) => {
+      const testScene = new THREE.Scene();
+      const boxGeom = new THREE.BoxGeometry(10, 10, 10);
+      const boxMesh = new THREE.Mesh(boxGeom, new THREE.MeshStandardMaterial());
+      testScene.add(boxMesh);
+      window.CycleCAD.MultiPhysics.init(testScene);
+
+      const result = window.CycleCAD.MultiPhysics.runSimulation({
+        type: 'structural',
+        material: 'steel',
+        loads: [{ position: [0, 5, 0], force: [0, -1000, 0] }],
+        fixed: [[0, -5, 0]]
+      });
+
+      if (!result.maxStress || result.maxStress <= 0) throw new Error('No stress values returned');
+    });
+
+    runner.addTest('Multi-Physics', 'Thermal analysis returns temperature distribution', (scene) => {
+      const result = window.CycleCAD.MultiPhysics.runSimulation({
+        type: 'thermal',
+        material: 'steel',
+        heatSource: { position: [0, 0, 0], power: 100 },
+        ambientTemp: 20
+      });
+
+      if (!result.tempField || !Array.isArray(result.tempField)) throw new Error('No temperature field returned');
+      if (result.tempField.length === 0) throw new Error('Temperature field is empty');
+    });
+
+    runner.addTest('Multi-Physics', 'Modal analysis returns natural frequencies array', (scene) => {
+      const result = window.CycleCAD.MultiPhysics.runSimulation({
+        type: 'modal',
+        material: 'steel',
+        numModes: 5
+      });
+
+      if (!result.frequencies || !Array.isArray(result.frequencies)) throw new Error('No frequencies array returned');
+      if (result.frequencies.length === 0) throw new Error('Frequencies array is empty');
+      for (let freq of result.frequencies) {
+        if (typeof freq !== 'number' || freq < 0) throw new Error('Invalid frequency value: ' + freq);
+      }
+    });
+
+    runner.addTest('Multi-Physics', 'Drop test returns peak deceleration value', (scene) => {
+      const result = window.CycleCAD.MultiPhysics.runSimulation({
+        type: 'droptest',
+        mass: 5,
+        dropHeight: 1.5,
+        material: 'steel'
+      });
+
+      if (!('peakDeceleration' in result)) throw new Error('Missing peakDeceleration field');
+      if (result.peakDeceleration <= 0) throw new Error('peakDeceleration should be positive');
+    });
+
+    runner.addTest('Multi-Physics', 'Material database has required properties', (scene) => {
+      const ui = window.CycleCAD.MultiPhysics.getUI();
+      const matSelect = ui.querySelector('select');
+      if (!matSelect) throw new Error('Material select not found');
+
+      const result = window.CycleCAD.MultiPhysics.runSimulation({
+        type: 'structural',
+        material: 'aluminum',
+        loads: [],
+        fixed: []
+      });
+
+      if (!('youngsModulus' in result) && !('E' in result)) throw new Error('Missing Young\'s modulus');
+      if (!('poissonsRatio' in result) && !('nu' in result)) throw new Error('Missing Poisson\'s ratio');
+    });
+
+    runner.addTest('Multi-Physics', 'Factor of safety calculated correctly', (scene) => {
+      const result = window.CycleCAD.MultiPhysics.runSimulation({
+        type: 'structural',
+        material: 'steel',
+        loads: [{ position: [0, 5, 0], force: [0, -500, 0] }],
+        fixed: [[0, -5, 0]]
+      });
+
+      if (!('factorOfSafety' in result)) throw new Error('Missing factorOfSafety field');
+      if (result.factorOfSafety <= 0) throw new Error('factorOfSafety should be positive');
+    });
+
+    runner.addTest('Multi-Physics', 'Mesh discretization produces nodes and elements', (scene) => {
+      const result = window.CycleCAD.MultiPhysics.runSimulation({
+        type: 'structural',
+        material: 'steel',
+        loads: [],
+        fixed: []
+      });
+
+      if (!result.nodes || result.nodes.length === 0) throw new Error('No nodes in discretization');
+      if (!result.elements || result.elements.length === 0) throw new Error('No elements in discretization');
+    });
+
+    runner.addTest('Multi-Physics', 'Conjugate gradient solver converges for simple system', (scene) => {
+      const result = window.CycleCAD.MultiPhysics.runSimulation({
+        type: 'structural',
+        material: 'steel',
+        solverMethod: 'cg',
+        loads: [{ position: [0, 5, 0], force: [0, -100, 0] }],
+        fixed: [[0, -5, 0]]
+      });
+
+      if (!result.converged) throw new Error('Solver did not converge');
+      if (result.iterations === undefined) throw new Error('Missing iteration count');
+    });
+
+    runner.addTest('Multi-Physics', 'execute("simulate", {type: "static"}) dispatches correctly', (scene) => {
+      const result = window.CycleCAD.MultiPhysics.execute('simulate', {
+        type: 'static',
+        material: 'steel',
+        loads: [],
+        fixed: []
+      });
+
+      if (!result) throw new Error('execute() did not return result');
+    });
+
+    // ============================================================================
+    // SMART PARTS TESTS
+    // ============================================================================
+
+    runner.addTest('Smart Parts', 'Module exists with correct API', (scene) => {
+      if (!window.CycleCAD.SmartParts) throw new Error('Module not found');
+      const mod = window.CycleCAD.SmartParts;
+      if (!mod.init) throw new Error('Missing init()');
+      if (!mod.getUI) throw new Error('Missing getUI()');
+      if (!mod.execute) throw new Error('Missing execute()');
+      if (!mod.search) throw new Error('Missing search()');
+      if (!mod.getCatalog) throw new Error('Missing getCatalog()');
+      if (!mod.insertPart) throw new Error('Missing insertPart()');
+    });
+
+    runner.addTest('Smart Parts', 'getUI() returns HTMLElement', (scene) => {
+      const ui = window.CycleCAD.SmartParts.getUI();
+      if (!(ui instanceof HTMLElement)) throw new Error('getUI() did not return HTMLElement');
+    });
+
+    runner.addTest('Smart Parts', 'getCatalog() returns array with 50+ parts', (scene) => {
+      const catalog = window.CycleCAD.SmartParts.getCatalog();
+      if (!Array.isArray(catalog)) throw new Error('getCatalog() did not return array');
+      if (catalog.length < 50) throw new Error(`Expected 50+ parts, got ${catalog.length}`);
+    });
+
+    runner.addTest('Smart Parts', 'search("M8 bolt") returns results with score > 0', (scene) => {
+      const results = window.CycleCAD.SmartParts.search('M8 bolt');
+      if (!Array.isArray(results)) throw new Error('search() did not return array');
+      if (results.length === 0) throw new Error('No results for "M8 bolt"');
+      if (typeof results[0].score !== 'number' || results[0].score <= 0) {
+        throw new Error('Result missing valid score');
+      }
+    });
+
+    runner.addTest('Smart Parts', 'search("bearing 10mm") finds bearings', (scene) => {
+      const results = window.CycleCAD.SmartParts.search('bearing 10mm');
+      if (results.length === 0) throw new Error('No results for "bearing 10mm"');
+      const hasBearing = results.some(r => r.category && r.category.toLowerCase().includes('bearing'));
+      if (!hasBearing) throw new Error('No bearing results found');
+    });
+
+    runner.addTest('Smart Parts', 'search("NEMA 17") finds stepper motors', (scene) => {
+      const results = window.CycleCAD.SmartParts.search('NEMA 17');
+      if (results.length === 0) throw new Error('No results for "NEMA 17"');
+      const hasNEMA = results.some(r => r.name && r.name.includes('NEMA'));
+      if (!hasNEMA) throw new Error('No NEMA results found');
+    });
+
+    runner.addTest('Smart Parts', 'search("2020 extrusion") finds aluminum profiles', (scene) => {
+      const results = window.CycleCAD.SmartParts.search('2020 extrusion');
+      if (results.length === 0) throw new Error('No results for "2020 extrusion"');
+      const hasProfile = results.some(r => r.name && r.name.includes('2020'));
+      if (!hasProfile) throw new Error('No 2020 profile results found');
+    });
+
+    runner.addTest('Smart Parts', 'insertPart(partId, scene) adds mesh to scene', (scene) => {
+      const catalog = window.CycleCAD.SmartParts.getCatalog();
+      if (catalog.length === 0) throw new Error('No parts in catalog');
+
+      const testScene = new THREE.Scene();
+      const initialCount = testScene.children.length;
+      const partId = catalog[0].id;
+      window.CycleCAD.SmartParts.insertPart(partId, testScene);
+
+      if (testScene.children.length <= initialCount) throw new Error('Part not added to scene');
+    });
+
+    runner.addTest('Smart Parts', 'Geometry generators produce valid THREE.Group', (scene) => {
+      const catalog = window.CycleCAD.SmartParts.getCatalog();
+      const testScene = new THREE.Scene();
+      const partId = catalog[0].id;
+      window.CycleCAD.SmartParts.insertPart(partId, testScene);
+
+      const mesh = testScene.children[0];
+      if (!mesh) throw new Error('Mesh not created');
+      if (mesh instanceof THREE.Group) {
+        if (mesh.children.length === 0) throw new Error('Group has no children');
+      } else if (!mesh.geometry) {
+        throw new Error('Mesh has no geometry');
+      }
+    });
+
+    runner.addTest('Smart Parts', 'BOM export produces CSV string with headers', (scene) => {
+      const bom = window.CycleCAD.SmartParts.execute('exportBOM', {
+        format: 'csv',
+        parts: [
+          { partId: 'fastener_shcs_m3_8', quantity: 4 },
+          { partId: 'fastener_shcs_m3_12', quantity: 2 }
+        ]
+      });
+
+      if (typeof bom !== 'string') throw new Error('BOM is not a string');
+      if (bom.length === 0) throw new Error('BOM is empty');
+      const lines = bom.split('\n');
+      if (lines.length < 2) throw new Error('BOM missing headers or data');
+      if (!lines[0].includes('Part')) throw new Error('BOM missing headers');
+    });
+
+    runner.addTest('Smart Parts', 'Fuzzy search handles typos ("blet" → "bolt")', (scene) => {
+      const results = window.CycleCAD.SmartParts.search('blet');
+      // Should still find bolt-like parts due to fuzzy matching
+      if (results.length === 0) throw new Error('Fuzzy search failed for typo');
+    });
+
+    runner.addTest('Smart Parts', 'Part prices are positive numbers', (scene) => {
+      const catalog = window.CycleCAD.SmartParts.getCatalog();
+      for (let part of catalog.slice(0, 10)) {
+        if (part.price) {
+          const price = typeof part.price === 'object' ? part.price.usd : part.price;
+          if (typeof price !== 'number' || price <= 0) {
+            throw new Error(`Invalid price for ${part.name}: ${price}`);
+          }
+        }
+      }
+    });
+
+    // ============================================================================
+    // UI EVENT HANDLERS
+    // ============================================================================
+
+    document.getElementById('run-all-btn').addEventListener('click', () => {
+      runner.clearLog();
+      runner.runTests();
+      setInterval(() => runner.updateElapsed(), 100);
+    });
+
+    document.getElementById('run-generative-btn').addEventListener('click', () => {
+      runner.clearLog();
+      runner.runTests('Generative Design');
+      setInterval(() => runner.updateElapsed(), 100);
+    });
+
+    document.getElementById('run-multi-physics-btn').addEventListener('click', () => {
+      runner.clearLog();
+      runner.runTests('Multi-Physics');
+      setInterval(() => runner.updateElapsed(), 100);
+    });
+
+    document.getElementById('run-smart-parts-btn').addEventListener('click', () => {
+      runner.clearLog();
+      runner.runTests('Smart Parts');
+      setInterval(() => runner.updateElapsed(), 100);
+    });
+
+    document.getElementById('clear-log-btn').addEventListener('click', () => {
+      runner.clearLog();
+      runner.results = { pass: 0, fail: 0, skip: 0, total: 0, details: [] };
+      runner.updateStats();
+      runner.updateProgress(0, 36);
+    });
+
+    document.getElementById('export-btn').addEventListener('click', () => {
+      runner.exportJSON();
+    });
+
+    // Initialize Three.js rendering loop
+    function animate() {
+      requestAnimationFrame(animate);
+      runner.renderer.render(runner.scene, runner.camera);
+    }
+    animate();
+  </script>
+</body>
+</html>

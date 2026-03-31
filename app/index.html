@@ -969,6 +969,9 @@
       <button class="menu-item-link" data-action="tools-text-to-cad">Text-to-CAD (AI)</button>
       <button class="menu-item-link" data-action="tools-photo-to-cad">Photo-to-CAD</button>
       <button class="menu-item-link" data-action="tools-dfm">Manufacturability Check</button>
+      <button class="menu-item-link" data-action="tools-generative">Generative Design</button>
+      <button class="menu-item-link" data-action="tools-physics">Multi-Physics Simulation</button>
+      <button class="menu-item-link" data-action="tools-parts">Smart Parts Library</button>
       <div class="menu-separator"></div>
       <button class="menu-item-link" data-action="tools-settings">Settings...</button>
     </div>
@@ -1374,6 +1377,9 @@
 <script src="js/modules/text-to-cad.js"></script>
 <script src="js/modules/photo-to-cad.js"></script>
 <script src="js/modules/manufacturability.js"></script>
+<script src="js/modules/generative-design.js"></script>
+<script src="js/modules/multi-physics.js"></script>
+<script src="js/modules/smart-parts.js"></script>
 
 <script type="module">
   // ===== Three.js Imports =====
@@ -1564,6 +1570,30 @@
           showDialog('Manufacturability Check', '');
           const dlg3 = document.querySelector('.dialog-content');
           if (dlg3) { dlg3.innerHTML = ''; dlg3.appendChild(dfmPanel); dlg3.style.maxHeight = '500px'; dlg3.style.overflow = 'auto'; }
+        }
+        break;
+      case 'tools-generative':
+        if (window.CycleCAD && window.CycleCAD.GenerativeDesign) {
+          const genPanel = window.CycleCAD.GenerativeDesign.getUI();
+          showDialog('Generative Design', '');
+          const dlg4 = document.querySelector('.dialog-content');
+          if (dlg4) { dlg4.innerHTML = ''; dlg4.appendChild(genPanel); dlg4.style.maxHeight = '500px'; dlg4.style.overflow = 'auto'; }
+        }
+        break;
+      case 'tools-physics':
+        if (window.CycleCAD && window.CycleCAD.MultiPhysics) {
+          const physPanel = window.CycleCAD.MultiPhysics.getUI();
+          showDialog('Multi-Physics Simulation', '');
+          const dlg5 = document.querySelector('.dialog-content');
+          if (dlg5) { dlg5.innerHTML = ''; dlg5.appendChild(physPanel); dlg5.style.maxHeight = '500px'; dlg5.style.overflow = 'auto'; }
+        }
+        break;
+      case 'tools-parts':
+        if (window.CycleCAD && window.CycleCAD.SmartParts) {
+          const partsPanel = window.CycleCAD.SmartParts.getUI();
+          showDialog('Smart Parts Library', '');
+          const dlg6 = document.querySelector('.dialog-content');
+          if (dlg6) { dlg6.innerHTML = ''; dlg6.appendChild(partsPanel); dlg6.style.maxHeight = '500px'; dlg6.style.overflow = 'auto'; }
         }
         break;
       default:
@@ -1888,6 +1918,24 @@
     if (window.CycleCAD && window.CycleCAD.Manufacturability) {
       window.CycleCAD.Manufacturability.init(scene);
       console.log('[cycleCAD] Manufacturability (DFM) module initialized');
+    }
+
+    // Initialize Generative Design module
+    if (window.CycleCAD && window.CycleCAD.GenerativeDesign) {
+      window.CycleCAD.GenerativeDesign.init(scene);
+      console.log('[cycleCAD] Generative Design module initialized');
+    }
+
+    // Initialize Multi-Physics module
+    if (window.CycleCAD && window.CycleCAD.MultiPhysics) {
+      window.CycleCAD.MultiPhysics.init(scene);
+      console.log('[cycleCAD] Multi-Physics simulation module initialized');
+    }
+
+    // Initialize Smart Parts Library
+    if (window.CycleCAD && window.CycleCAD.SmartParts) {
+      window.CycleCAD.SmartParts.init(scene);
+      console.log('[cycleCAD] Smart Parts Library initialized');
     }
   }
 

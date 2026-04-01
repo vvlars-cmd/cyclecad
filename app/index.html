@@ -1448,7 +1448,7 @@ window._dismissSplash = function(action) {
   import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
   import { GridHelper } from 'three';
   import { KillerFeatures } from './js/killer-features.js';
-  import { startSketch, endSketch, setTool, getSketchEntities, clearSketch, entitiesToShape } from './js/sketch.js';
+  import { startSketch, endSketch, setTool, getEntities, clearSketch, entitiesToGeometry } from './js/sketch.js';
 
   // ===== Three.js Viewport Setup =====
   const scene = new THREE.Scene();
@@ -1756,7 +1756,7 @@ window._dismissSplash = function(action) {
           if (entities.length > 0) {
             // Convert sketch entities to 3D wireframe in scene
             try {
-              const shape = entitiesToShape(entities);
+              const shape = entitiesToGeometry(entities);
               if (shape) {
                 const mat = new THREE.LineBasicMaterial({ color: 0x00ff00 });
                 const edges = new THREE.EdgesGeometry(shape);

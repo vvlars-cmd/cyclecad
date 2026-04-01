@@ -953,5 +953,169 @@ rm -f ~/explodeview/.git/index.lock ~/explodeview/.git/HEAD.lock && cd ~/explode
 - [ ] Build Photo-to-CAD Reverse Engineering
 - [ ] Build Instant Manufacturability Feedback
 
+## Session 2026-04-01 — Critical Bug Fixes + Sketch Wiring + cycleWASH Prospects
+
+### Problem Evolution (Chronological)
+1. **cycleWASH prospect spreadsheet** — Built `cycleWASH-NRW-Prospects.xlsx` with 36 leads (bike shops/rentals in NRW), email templates (DE+EN), follow-up tracker. Created with openpyxl, 3 sheets, color-coded priorities.
+2. **TextToCAD syntax error** — `app/js/modules/text-to-cad.js` line 215 had missing `(` after `if` in regex test. Fixed, pushed.
+3. **Splash screen missing** — App launched showing demo geometry (blue box + green cylinder) instead of welcome splash. Built splash with 4 buttons (New Sketch, Open/Import, Text-to-CAD, Inventor Project).
+4. **Splash buttons not responding (3 attempts)** — Root cause: `<script type="module">` creates its own scope. Functions inside cannot be called from inline HTML `onclick`. Solution: regular `<script>` IIFE with `addEventListener` on `id`-based buttons.
+5. **VM mount is copy-on-write** — CRITICAL LESSON: Files edited via Edit tool exist only in VM overlay, NOT on user's Mac. `git status` on Mac shows "nothing to commit". Only reliable delivery: `write_clipboard` → user pastes in Terminal.
+6. **Dialog selectors wrong** — All 12 Tools menu handlers used `.dialog-content` (doesn't exist). Correct selector: `#dialog-body`. Fixed via clipboard Python command.
+7. **Demo geometry removal** — Removed hardcoded `BoxGeometry(60,40,80)` + `CylinderGeometry(20,20,60)`.
+8. **ViewCube click-only** — Only had click-to-snap-to-face. Added drag-to-rotate with pointer events (pointerdown/pointermove/pointerup), spherical coordinate rotation of main camera. Enlarged 90px → 120px.
+9. **Hard Reset button missing** — Added to Help menu (red text). Clears Service Workers, Cache API, localStorage, sessionStorage, IndexedDB. Works in Safari/Chrome/Firefox.
+10. **GitHub Pages CDN cache** — All fixes deployed to GitHub but Pages CDN served stale version. Added `<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">` to prevent future caching.
+11. **Sketch tools not wired** — Sketch menu items (Line/Circle/Rectangle/Arc/Polyline) existed in UI but `handleMenuAction` only showed toasts. `sketch.js` module was never imported. Wired all tools with auto-enter sketch mode on XY plane.
+12. **CRITICAL: Wrong import names killed entire module** — Imported `entitiesToShape` and `getSketchEntities` from `sketch.js`, but actual exports are `entitiesToGeometry` and `getEntities`. This silently crashed the ENTIRE `<script type="module">` block — meaning NO app logic worked (no buttons, no menus, no ViewCube, nothing). Fixed import names.
+
+### Key Technical Discoveries
+
+**ES Module Silent Failures:**
+When an `import { wrongName } from './module.js'` fails, the entire `<script type="module">` block dies silently — NO console error in Chrome. The page renders HTML/CSS normally but zero JS functionality works. Diagnosis: check `window._scene` (set by module script) — if undefined, module crashed.
+
+**How to diagnose:**
+```javascript
+// Dynamic import catches the real error
+import('./js/sketch.js').then(m => console.log(Object.keys(m))).catch(e => console.error(e));
+```
+
+**sketch.js actual exports (v0.9.0):**
+`canvasToWorld, clearSketch, endSketch, entitiesToGeometry, getEntities, setGridSize, setSnapEnabled, setTool, startSketch, undo, worldToCanvas`
+
+**VM ↔ Mac File Delivery:**
+- Edit tool → VM overlay only (Mac never sees changes)
+- `write_clipboard` → user pastes in Terminal → changes on Mac → git push works
+- Always use Python heredoc scripts for complex multi-line fixes
+- Pattern: `cd ~/cyclecad && python3 << 'PYEOF'\n...\nPYEOF\n&& git add ... && git commit ... && git push`
+
+**GitHub Pages Cache:**
+- Raw GitHub (`raw.githubusercontent.com`) updates instantly
+- GitHub Pages CDN (`cyclecad.com`) can lag 5-10 minutes
+- Cache-busting: `?bust=timestamp` in URL forces fresh fetch
+- Meta tags help browser cache but NOT CDN cache
+- Check source of truth: `https://raw.githubusercontent.com/vvlars-cmd/cyclecad/main/app/index.html`
+
+### What Was Built/Fixed This Session
+
+| File | Action | What |
+|------|--------|------|
+| `cycleWASH-NRW-Prospects.xlsx` | NEW | 36 prospects, email templates DE+EN, follow-up tracker |
+| `app/js/modules/text-to-cad.js` | FIXED | Missing `(` after `if` on line 215 |
+| `app/index.html` | MAJOR | Splash screen, sketch wiring, ViewCube drag, Hard Reset, no-cache meta, dialog selector fixes, demo geometry removal |
+| `app/js/sketch.js` | EXISTING | Now imported and wired to menu actions |
+
+### index.html Changes Detail
+
+**Sketch module import (line ~1447):**
+```javascript
+import { startSketch, endSketch, setTool, getEntities, clearSketch, entitiesToGeometry } from './js/sketch.js';
+```
+
+**Sketch menu actions wired (in handleMenuAction switch):**
+- `sketch-new` → `startSketch('XY', camera, controls)`, shows sketch tools toolbar, activates Sketch tab
+- `sketch-line` → auto-enters sketch mode + `setTool('line')`
+- `sketch-circle` → auto-enters sketch mode + `setTool('circle')`
+- `sketch-rectangle` → auto-enters sketch mode + `setTool('rectangle')`
+- `sketch-arc` → auto-enters sketch mode + `setTool('arc')`
+- `sketch-polyline` → auto-enters sketch mode + `setTool('polyline')`
+- `sketch-finish` → `endSketch()`, converts entities to Three.js wireframe, adds to feature tree
+
+**ViewCube (line ~1558):**
+- Pointer events for drag-to-rotate (uses THREE.Spherical for orbit)
+- Click-to-snap still works (detects drag vs click via `vcDragMoved` flag)
+- 120px size, grab/grabbing cursors, `touchAction: none` for Safari
+
+**Hard Reset (Help menu):**
+- `data-action="help-hard-reset"` with `style="color:#ef4444"`
+- Handler clears: Service Workers, Cache API, localStorage, sessionStorage, IndexedDB
+- Reloads with `?reset=timestamp` cache buster
+
+**Workspace tab wiring:**
+- Clicking "Sketch" tab auto-enters sketch mode
+- Clicking any other tab auto-finishes sketch and returns to that workspace
+
+### Bugs Still Present (Known Issues)
+
+1. **Version badge hardcoded** — Status bar shows `v0.9.0` but npm is at different version. Need to dynamically read from package.json or update on each publish.
+2. **Sketch drawing untested end-to-end** — Import fix just pushed. Need to verify: click Circle → click center in viewport → drag radius → see circle drawn on 2D canvas overlay.
+3. **ViewCube not visible sometimes** — The 120px ViewCube renders in top-right of `#viewport-container`. If the container has wrong dimensions or the renderer size doesn't match, it may not show.
+4. **Three.js scene renders black/empty** — No demo geometry anymore. Until user draws something, viewport shows only grid lines (which may be hard to see on dark background).
+5. **Safari private window caching** — Even with no-cache meta tags, Safari aggressively caches. Users must use `?bust=xxx` or Cmd+Shift+R.
+
+### Git State
+- All changes committed and pushed to `main` branch
+- Latest commits:
+  - "Fix sketch.js import names (entitiesToShape->entitiesToGeometry)" ← **PENDING USER RUN** (clipboard copied)
+  - "Wire sketch tools (line/circle/rect/arc) + no-cache meta tags"
+  - "Fix ViewCube drag rotation + add Hard Reset button to Help menu"
+  - Various splash screen fixes
+
+### npm State
+- **cyclecad**: Last published unknown version. User needs to run `cd ~/cyclecad && npm version patch && npm publish`
+- **explodeview**: v1.0.18 bumped locally
+
+### Collaboration Pattern Refinements (This Session)
+
+| Pattern | Detail |
+|---------|--------|
+| **Clipboard delivery** | ALL code changes must go via `write_clipboard` → user pastes in Terminal. VM edits NEVER reach Mac. |
+| **Python heredoc scripts** | Best format for complex fixes: `python3 << 'PYEOF'\n...\nPYEOF` avoids quoting issues |
+| **Always verify on GitHub raw** | Before blaming "fix didn't work", check `raw.githubusercontent.com` to confirm push succeeded |
+| **Module import debugging** | Wrong import names silently kill entire module. Always verify with `import('./file.js').then(m => Object.keys(m))` |
+| **Cache frustration** | User gets frustrated when fixes are pushed but browser shows old version. Always provide cache-busting URL |
+| **Short messages = action needed** | "npm" = run npm publish. "done" = command was pasted and run. Don't ask, just provide the command. |
+| **User tests in Safari private** | Sachin tests in Safari private window. This has the most aggressive caching. Always consider Safari. |
+
+### Critical Architecture Notes
+
+**app/index.html structure:**
+```
+<head> — meta tags, CSS styles
+<div id="menu-bar"> — File/Edit/Sketch/Solid/Surface/Assembly/Drawing/Render/Animation/Inspect/Tools/Help menus
+<div id="container"> — Main layout
+  <div id="viewport-container"> — Three.js canvas + ViewCube
+  <div id="left-panel"> — Model tree / Assembly / Search tabs
+  <div id="right-panel"> — Properties / Parameters / Material tabs
+<div id="welcome-panel"> — Splash screen (z-index: 9999)
+<script> IIFE — Splash button wiring (MUST be regular script, NOT module)
+<div id="dialog-overlay"> — Modal dialogs (z-index: 10000)
+<script type="module"> — ALL app logic:
+  - Three.js imports + scene setup
+  - sketch.js import
+  - killer-features.js import
+  - Camera, renderer, lights, grid
+  - ViewCube (separate scene + renderer)
+  - Animation loop
+  - handleMenuAction() switch — ALL menu/toolbar actions
+  - Workspace tab switching
+  - Keyboard shortcuts
+  - Event delegation for menu/toolbar clicks
+```
+
+**z-index hierarchy:**
+- `dialog-overlay`: 10000
+- `welcome-panel`: 9999
+- `toast-container`: 9999
+- ViewCube: 100
+- Sketch canvas: 30
+
+### Pending Tasks (Updated 2026-04-01)
+- [ ] **IMMEDIATE**: User needs to paste clipboard command fixing import names (entitiesToShape→entitiesToGeometry)
+- [ ] npm publish (user runs `cd ~/cyclecad && npm version patch && npm publish`)
+- [ ] Verify sketch circle drawing works end-to-end after import fix
+- [ ] Test ViewCube drag in Safari
+- [ ] Test Hard Reset button in Safari
+- [ ] Update version badge to read dynamically from package.json
+- [ ] Wire splash "New Sketch" button to actually trigger sketch-new action (currently only dismisses)
+- [ ] Wire splash "Open/Import" button to trigger file-import action
+- [ ] Wire splash "Text-to-CAD" button to trigger text-to-cad dialog
+- [ ] Wire splash "Inventor Project" button to trigger inventor import
+- [ ] ExplodeView route redirects push
+- [ ] Run test agents in Chrome and fix failures
+- [ ] Test STEP import with OpenCascade.js WASM
+- [ ] Build Text-to-CAD with Live Preview
+- [ ] Build Photo-to-CAD Reverse Engineering
+
 # currentDate
-Today's date is 2026-03-31.
+Today's date is 2026-04-01.

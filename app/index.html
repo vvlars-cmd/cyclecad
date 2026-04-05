@@ -962,6 +962,47 @@
     </div>
   </div>
 
+  <div class="menu-item" style="color:#00ccff;">
+    ExplodeView
+    <div class="menu-dropdown" style="min-width:220px;">
+      <button class="menu-item-link" data-action="ev-load-model">Load Model (STL/OBJ/glTF/STEP)</button>
+      <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="ev-explode">Explode / Collapse</button>
+      <button class="menu-item-link" data-action="ev-section-cut">Section Cut (X/Y/Z)</button>
+      <button class="menu-item-link" data-action="ev-assembly-tree">Assembly Tree</button>
+      <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="ev-measure-distance">Measure Distance</button>
+      <button class="menu-item-link" data-action="ev-measure-angle">Measure Angle</button>
+      <button class="menu-item-link" data-action="ev-measure-volume">Measure Volume</button>
+      <button class="menu-item-link" data-action="ev-measure-area">Measure Surface Area</button>
+      <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="ev-wall-thickness">Wall Thickness Analysis</button>
+      <button class="menu-item-link" data-action="ev-draft-angle">Draft Angle Analysis</button>
+      <button class="menu-item-link" data-action="ev-interference">Interference Check</button>
+      <button class="menu-item-link" data-action="ev-mass-properties">Mass Properties / CoG</button>
+      <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="ev-bom">Bill of Materials (BOM)</button>
+      <button class="menu-item-link" data-action="ev-annotations">Add Annotation</button>
+      <button class="menu-item-link" data-action="ev-gdt">GD&T Annotation</button>
+      <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="ev-wireframe">Toggle Wireframe</button>
+      <button class="menu-item-link" data-action="ev-transparency">Toggle Transparency</button>
+      <button class="menu-item-link" data-action="ev-xray">Toggle X-Ray</button>
+      <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="ev-screenshot">Screenshot (2x Retina)</button>
+      <button class="menu-item-link" data-action="ev-export-stl">Export Part as STL</button>
+      <button class="menu-item-link" data-action="ev-export-obj">Export Scene as OBJ</button>
+      <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="ev-ai-analyze">AI Model Analysis</button>
+      <button class="menu-item-link" data-action="ev-ai-narrator">AI Part Narrator</button>
+      <button class="menu-item-link" data-action="ev-assembly-anim">Animated Assembly Guide</button>
+      <button class="menu-item-link" data-action="ev-search">Smart Part Search</button>
+      <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="ev-ar-mode">AR Mode (WebXR)</button>
+      <button class="menu-item-link" data-action="ev-language">Language (EN/DE/FR/ES/IT/PT)</button>
+    </div>
+  </div>
+
   <div class="menu-item">
     Tools
     <div class="menu-dropdown">
@@ -1016,6 +1057,7 @@
     <button class="workspace-tab" data-workspace="manufacture">Manufacture</button>
     <button class="workspace-tab" data-workspace="render">Render</button>
     <button class="workspace-tab" data-workspace="animation">Animation</button>
+    <button class="workspace-tab" data-workspace="explodeview" style="color:#00ccff;">ExplodeView</button>
 
     <div class="toolbar-divider"></div>
 
@@ -1051,6 +1093,23 @@
       <button class="toolbar-icon-btn" title="Add Joint" data-action="assembly-joint">🔗</button>
       <button class="toolbar-icon-btn" title="Contact Set" data-action="assembly-contact">👥</button>
       <button class="toolbar-icon-btn" title="Explode" data-action="assembly-explode">💥</button>
+    </div>
+
+    <!-- ExplodeView Workspace Tools -->
+    <div id="explodeview-tools" class="workspace-tools" style="display: none;">
+      <button class="toolbar-icon-btn" title="Load Model" data-action="ev-load-model">📂</button>
+      <button class="toolbar-icon-btn" title="Explode" data-action="ev-explode">💥</button>
+      <button class="toolbar-icon-btn" title="Section Cut" data-action="ev-section-cut">✂</button>
+      <button class="toolbar-icon-btn" title="Measure" data-action="ev-measure-distance">📏</button>
+      <button class="toolbar-icon-btn" title="Wall Thickness" data-action="ev-wall-thickness">🧱</button>
+      <button class="toolbar-icon-btn" title="Mass Properties" data-action="ev-mass-properties">⚖</button>
+      <button class="toolbar-icon-btn" title="BOM" data-action="ev-bom">📊</button>
+      <button class="toolbar-icon-btn" title="Annotate" data-action="ev-annotations">📌</button>
+      <button class="toolbar-icon-btn" title="Wireframe" data-action="ev-wireframe">🔲</button>
+      <button class="toolbar-icon-btn" title="X-Ray" data-action="ev-xray">👁</button>
+      <button class="toolbar-icon-btn" title="Screenshot" data-action="ev-screenshot">📸</button>
+      <button class="toolbar-icon-btn" title="AI Analyze" data-action="ev-ai-analyze">🤖</button>
+      <button class="toolbar-icon-btn" title="Search Parts" data-action="ev-search">🔍</button>
     </div>
 
     <!-- Drawing Workspace Tools -->
@@ -1501,6 +1560,7 @@ window._dismissSplash = function(action) {
   import { KillerFeatures } from './js/killer-features.js';
   import { startSketch, endSketch, setTool, getEntities, clearSketch, entitiesToGeometry } from './js/sketch.js';
   import { initViewerMode } from './js/viewer-mode.js';
+  import { initExplodeView } from './js/explodeview-full.js';
 
   // ===== Three.js Viewport Setup =====
   const scene = new THREE.Scene();
@@ -2003,6 +2063,237 @@ window._dismissSplash = function(action) {
           if (dbExp) { dbExp.innerHTML = ''; dbExp.appendChild(window.CycleCAD.SCADExport.getUI()); dbExp.style.maxHeight = '600px'; dbExp.style.overflow = 'auto'; }
         } else { showToast('SCADExport module not loaded', 'error'); }
         break;
+      // ===== ExplodeView Menu Actions =====
+      case 'ev-load-model': {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.stl,.obj,.gltf,.glb,.step,.stp';
+        input.addEventListener('change', async (e) => {
+          if (e.target.files[0] && window.app.explodeView) {
+            showToast('Loading ' + e.target.files[0].name + '...', 'info');
+            const ext = e.target.files[0].name.split('.').pop().toLowerCase();
+            if (ext === 'step' || ext === 'stp') {
+              await window.app.explodeView.loadSTEP(e.target.files[0]);
+            } else {
+              await window.app.explodeView.loadModel(e.target.files[0]);
+            }
+            showToast('Model loaded', 'success');
+          }
+        });
+        input.click();
+        break;
+      }
+      case 'ev-explode': {
+        showDialog('Explode / Collapse', `
+          <div style="padding:16px;">
+            <label style="display:block;margin-bottom:8px;font-weight:bold;">Explode Amount</label>
+            <input type="range" id="ev-explode-range" min="0" max="100" value="0" style="width:100%;accent-color:#00ccff;">
+            <div id="ev-explode-val" style="text-align:center;margin-top:8px;font-size:18px;color:#00ccff;">0%</div>
+          </div>
+        `);
+        const slider = document.getElementById('ev-explode-range');
+        const val = document.getElementById('ev-explode-val');
+        if (slider && window.app.explodeView) {
+          slider.addEventListener('input', (e) => {
+            const pct = parseInt(e.target.value);
+            window.app.explodeView.explodeParts(pct / 100);
+            val.textContent = pct + '%';
+          });
+        }
+        break;
+      }
+      case 'ev-section-cut': {
+        showDialog('Section Cut', `
+          <div style="padding:16px;">
+            <div style="display:flex;gap:8px;margin-bottom:12px;">
+              <button id="ev-sec-x" style="flex:1;padding:8px;background:#374151;color:#fff;border:none;border-radius:4px;cursor:pointer;">X Axis</button>
+              <button id="ev-sec-y" style="flex:1;padding:8px;background:#374151;color:#fff;border:none;border-radius:4px;cursor:pointer;">Y Axis</button>
+              <button id="ev-sec-z" style="flex:1;padding:8px;background:#374151;color:#fff;border:none;border-radius:4px;cursor:pointer;">Z Axis</button>
+            </div>
+            <input type="range" id="ev-sec-pos" min="-200" max="200" value="0" style="width:100%;accent-color:#00ccff;">
+            <button id="ev-sec-off" style="margin-top:12px;padding:8px 16px;background:#ef4444;color:#fff;border:none;border-radius:4px;cursor:pointer;">Disable Section Cut</button>
+          </div>
+        `);
+        let activeAxis = null;
+        ['x','y','z'].forEach(axis => {
+          const btn = document.getElementById('ev-sec-' + axis);
+          if (btn && window.app.explodeView) {
+            btn.addEventListener('click', () => {
+              activeAxis = axis;
+              window.app.explodeView.setSectionCut(axis, 0, true);
+              ['x','y','z'].forEach(a => { document.getElementById('ev-sec-' + a).style.background = a === axis ? '#00ccff' : '#374151'; });
+            });
+          }
+        });
+        const posSlider = document.getElementById('ev-sec-pos');
+        if (posSlider && window.app.explodeView) {
+          posSlider.addEventListener('input', (e) => {
+            if (activeAxis) window.app.explodeView.setSectionCut(activeAxis, parseInt(e.target.value), true);
+          });
+        }
+        const offBtn = document.getElementById('ev-sec-off');
+        if (offBtn && window.app.explodeView) {
+          offBtn.addEventListener('click', () => {
+            ['x','y','z'].forEach(a => window.app.explodeView.setSectionCut(a, 0, false));
+            ['x','y','z'].forEach(a => { document.getElementById('ev-sec-' + a).style.background = '#374151'; });
+            activeAxis = null;
+          });
+        }
+        break;
+      }
+      case 'ev-assembly-tree':
+        if (window.app.explodeView) {
+          const tree = window.app.explodeView.getAssemblyTree();
+          showDialog('Assembly Tree', `<pre style="padding:16px;max-height:400px;overflow:auto;font-size:12px;color:#e0e0e0;">${tree ? JSON.stringify(tree, null, 2) : 'No assembly loaded. Load a model first.'}</pre>`);
+        }
+        break;
+      case 'ev-measure-distance':
+        showToast('Click two points in the viewport to measure distance', 'info');
+        if (window.app.explodeView) window.app.explodeView.startMeasureMode('distance');
+        break;
+      case 'ev-measure-angle':
+        showToast('Click three points (start, center, end) to measure angle', 'info');
+        if (window.app.explodeView) window.app.explodeView.startMeasureMode('angle');
+        break;
+      case 'ev-measure-volume':
+        if (window.app.explodeView) {
+          const vol = window.app.explodeView.computeVolumeOfSelected();
+          showDialog('Volume', `<div style="padding:16px;font-size:16px;color:#00ccff;">${vol != null ? vol.toFixed(2) + ' mm³' : 'Select a part first'}</div>`);
+        }
+        break;
+      case 'ev-measure-area':
+        if (window.app.explodeView) {
+          const area = window.app.explodeView.computeAreaOfSelected();
+          showDialog('Surface Area', `<div style="padding:16px;font-size:16px;color:#00ccff;">${area != null ? area.toFixed(2) + ' mm²' : 'Select a part first'}</div>`);
+        }
+        break;
+      case 'ev-wall-thickness':
+        showToast('Analyzing wall thickness...', 'info');
+        if (window.app.explodeView) window.app.explodeView.analyzeWallThicknessOfSelected();
+        break;
+      case 'ev-draft-angle':
+        showToast('Analyzing draft angles...', 'info');
+        if (window.app.explodeView) window.app.explodeView.analyzeDraftAngleOfSelected();
+        break;
+      case 'ev-interference':
+        if (window.app.explodeView) {
+          const results = window.app.explodeView.checkInterference();
+          showDialog('Interference Check', `<div style="padding:16px;color:#e0e0e0;">${results.length > 0 ? results.map(r => `<div style="margin:4px 0;padding:8px;background:#2d2d30;border-radius:4px;border-left:3px solid #ef4444;">${r}</div>`).join('') : '<div style="color:#10b981;">No interference detected</div>'}</div>`);
+        }
+        break;
+      case 'ev-mass-properties':
+        if (window.app.explodeView) {
+          const props = window.app.explodeView.getMassProperties();
+          showDialog('Mass Properties', `<div style="padding:16px;font-family:monospace;font-size:13px;color:#e0e0e0;line-height:1.8;">
+            <div>Total Mass: <span style="color:#00ccff;">${props.totalMass.toFixed(2)} kg</span></div>
+            <div>Center of Gravity: <span style="color:#00ccff;">(${props.cog.x.toFixed(1)}, ${props.cog.y.toFixed(1)}, ${props.cog.z.toFixed(1)})</span></div>
+            <div>Total Parts: <span style="color:#00ccff;">${props.partCount}</span></div>
+          </div>`);
+        }
+        break;
+      case 'ev-bom':
+        if (window.app.explodeView) {
+          window.app.explodeView.exportBOMcsv();
+          showToast('BOM exported as CSV', 'success');
+        }
+        break;
+      case 'ev-annotations':
+        showToast('Click a point on the model to add an annotation', 'info');
+        if (window.app.explodeView) window.app.explodeView.startAnnotationMode();
+        break;
+      case 'ev-gdt':
+        showToast('Click a surface to add GD&T annotation', 'info');
+        if (window.app.explodeView) window.app.explodeView.startGDTMode();
+        break;
+      case 'ev-wireframe':
+        if (window.app.explodeView) {
+          window.app.explodeView.toggleWireframe();
+          showToast('Wireframe toggled', 'success');
+        }
+        break;
+      case 'ev-transparency':
+        if (window.app.explodeView) {
+          window.app.explodeView.toggleTransparency();
+          showToast('Transparency toggled', 'success');
+        }
+        break;
+      case 'ev-xray':
+        if (window.app.explodeView) {
+          window.app.explodeView.toggleXray();
+          showToast('X-Ray mode toggled', 'success');
+        }
+        break;
+      case 'ev-screenshot':
+        if (window.app.explodeView) {
+          window.app.explodeView.captureScreenshot();
+          showToast('Screenshot saved', 'success');
+        }
+        break;
+      case 'ev-export-stl':
+        if (window.app.explodeView) {
+          window.app.explodeView.exportSTLSelected();
+          showToast('STL exported', 'success');
+        }
+        break;
+      case 'ev-export-obj':
+        if (window.app.explodeView) {
+          window.app.explodeView.exportOBJ();
+          showToast('OBJ exported', 'success');
+        }
+        break;
+      case 'ev-ai-analyze':
+        showToast('AI analyzing model...', 'info');
+        if (window.app.explodeView) {
+          const analysis = await window.app.explodeView.aiAnalyzeModel();
+          showDialog('AI Model Analysis', `<div style="padding:16px;color:#e0e0e0;line-height:1.6;max-height:400px;overflow:auto;">${analysis}</div>`);
+        }
+        break;
+      case 'ev-ai-narrator':
+        showToast('Select a part, then AI will describe its function', 'info');
+        if (window.app.explodeView) {
+          const narration = await window.app.explodeView.aiNarrateSelected();
+          if (narration) showDialog('AI Part Narrator', `<div style="padding:16px;color:#e0e0e0;line-height:1.6;">${narration}</div>`);
+        }
+        break;
+      case 'ev-assembly-anim':
+        if (window.app.explodeView) {
+          window.app.explodeView.playAssemblyAnimation();
+          showToast('Playing assembly animation...', 'info');
+        }
+        break;
+      case 'ev-search': {
+        showDialog('Smart Part Search', `
+          <div style="padding:16px;">
+            <input type="text" id="ev-search-input" placeholder="Search parts (e.g. 'bolt', 'plate', 'shaft')..." style="width:100%;padding:10px;background:#1e1e1e;border:1px solid #3e3e42;color:#e0e0e0;border-radius:4px;font-size:14px;">
+            <div id="ev-search-results" style="margin-top:12px;max-height:300px;overflow:auto;"></div>
+          </div>
+        `);
+        const searchInput = document.getElementById('ev-search-input');
+        if (searchInput && window.app.explodeView) {
+          searchInput.addEventListener('input', (e) => {
+            const results = window.app.explodeView.searchParts(e.target.value);
+            const container = document.getElementById('ev-search-results');
+            container.innerHTML = results.map(r => `<div style="padding:6px 10px;margin:4px 0;background:#2d2d30;border-radius:4px;cursor:pointer;color:#e0e0e0;" onclick="window.app.explodeView.highlightPart('${r.uuid}')">${r.name}</div>`).join('') || '<div style="color:#666;">No matches</div>';
+          });
+        }
+        break;
+      }
+      case 'ev-ar-mode':
+        if (window.app.explodeView) {
+          window.app.explodeView.enterARMode();
+        }
+        break;
+      case 'ev-language': {
+        showDialog('Language', `
+          <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            ${['en:English','de:Deutsch','fr:Français','es:Español','it:Italiano','pt:Português'].map(l => {
+              const [code, name] = l.split(':');
+              return `<button onclick="window.app.explodeView && window.app.explodeView.setLanguage('${code}'); document.getElementById('dialog-overlay').style.display='none';" style="padding:12px;background:#2d2d30;border:1px solid #3e3e42;color:#e0e0e0;border-radius:4px;cursor:pointer;font-size:14px;">${name}</button>`;
+            }).join('')}
+          </div>
+        `);
+        break;
+      }
       default:
         showToast(`${action}`, 'success');
     }
@@ -2537,6 +2828,21 @@ window._dismissSplash = function(action) {
 
     // Expose viewer API globally
     window.app.viewerMode = viewerAPI;
+
+    // ===== ExplodeView FULL Integration (40+ tools) =====
+    let evAPI = null;
+    try {
+      evAPI = initExplodeView({
+        getScene: () => scene,
+        getCamera: () => camera,
+        getRenderer: () => renderer,
+        getControls: () => controls
+      });
+      window.app.explodeView = evAPI;
+      console.log('[cycleCAD] ExplodeView Full initialized — 40+ tools ready');
+    } catch(e) {
+      console.warn('[cycleCAD] ExplodeView Full init failed:', e);
+    }
   }
 
   // ===== Export Global Functions =====

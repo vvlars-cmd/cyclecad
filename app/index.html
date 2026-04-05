@@ -982,6 +982,11 @@
       <button class="menu-item-link" data-action="tools-auto-assembly">Auto-Assemble Parts</button>
       <button class="menu-item-link" data-action="tools-parametric">Parametric from Example</button>
       <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="tools-image-to-cad">Image-to-CAD (AI Vision)</button>
+      <button class="menu-item-link" data-action="tools-openscad">OpenSCAD Editor</button>
+      <button class="menu-item-link" data-action="tools-param-sliders">Parametric Sliders</button>
+      <button class="menu-item-link" data-action="tools-scad-export">SCAD Export / Import</button>
+      <div class="menu-separator"></div>
       <button class="menu-item-link" data-action="tools-settings">Settings...</button>
     </div>
   </div>
@@ -1336,13 +1341,15 @@ window._dismissSplash = function(action) {
   <div style="background:#252526;border:1px solid #3c3c3c;border-radius:12px;padding:40px 48px;max-width:560px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
     <div style="font-size:36px;margin-bottom:4px;"><span style="color:#0284C7;font-weight:700;">cycle</span><span style="color:#e0e0e0;font-weight:300;">CAD</span></div>
     <div style="color:#888;font-size:13px;margin-bottom:28px;">Agent-First Parametric 3D CAD Modeler</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
-      <button id="splash-sketch" style="background:#0284C7;color:#fff;border:none;border-radius:8px;padding:18px 16px;cursor:pointer;font-size:14px;font-weight:600;"><div style="font-size:24px;margin-bottom:6px;">&#9999;&#65039;</div>New Sketch<div style="font-size:11px;font-weight:400;color:rgba(255,255,255,0.7);margin-top:4px;">Start with a 2D sketch</div></button>
-      <button id="splash-import" style="background:#374151;color:#fff;border:1px solid #4b5563;border-radius:8px;padding:18px 16px;cursor:pointer;font-size:14px;font-weight:600;"><div style="font-size:24px;margin-bottom:6px;">&#128194;</div>Open / Import<div style="font-size:11px;font-weight:400;color:rgba(255,255,255,0.7);margin-top:4px;">STEP, STL, Inventor, JSON</div></button>
-      <button id="splash-textcad" style="background:#374151;color:#fff;border:1px solid #4b5563;border-radius:8px;padding:18px 16px;cursor:pointer;font-size:14px;font-weight:600;"><div style="font-size:24px;margin-bottom:6px;">&#129302;</div>Text-to-CAD<div style="font-size:11px;font-weight:400;color:rgba(255,255,255,0.7);margin-top:4px;">Describe a part in English</div></button>
-      <button id="splash-inventor" style="background:#374151;color:#fff;border:1px solid #4b5563;border-radius:8px;padding:18px 16px;cursor:pointer;font-size:14px;font-weight:600;"><div style="font-size:24px;margin-bottom:6px;">&#127981;</div>Inventor Project<div style="font-size:11px;font-weight:400;color:rgba(255,255,255,0.7);margin-top:4px;">Load .ipj / .ipt / .iam</div></button>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;">
+      <button id="splash-sketch" style="background:#0284C7;color:#fff;border:none;border-radius:8px;padding:16px 12px;cursor:pointer;font-size:13px;font-weight:600;"><div style="font-size:22px;margin-bottom:4px;">&#9999;&#65039;</div>New Sketch<div style="font-size:10px;font-weight:400;color:rgba(255,255,255,0.7);margin-top:3px;">2D sketch</div></button>
+      <button id="splash-textcad" style="background:#374151;color:#fff;border:1px solid #4b5563;border-radius:8px;padding:16px 12px;cursor:pointer;font-size:13px;font-weight:600;"><div style="font-size:22px;margin-bottom:4px;">&#129302;</div>Text-to-CAD<div style="font-size:10px;font-weight:400;color:rgba(255,255,255,0.7);margin-top:3px;">Describe in English</div></button>
+      <button id="splash-imagecad" style="background:#374151;color:#fff;border:1px solid #10b981;border-radius:8px;padding:16px 12px;cursor:pointer;font-size:13px;font-weight:600;"><div style="font-size:22px;margin-bottom:4px;">&#128247;</div>Image-to-CAD<div style="font-size:10px;font-weight:400;color:rgba(255,255,255,0.7);margin-top:3px;">Photo or sketch</div></button>
+      <button id="splash-import" style="background:#374151;color:#fff;border:1px solid #4b5563;border-radius:8px;padding:16px 12px;cursor:pointer;font-size:13px;font-weight:600;"><div style="font-size:22px;margin-bottom:4px;">&#128194;</div>Open / Import<div style="font-size:10px;font-weight:400;color:rgba(255,255,255,0.7);margin-top:3px;">STEP, STL, SCAD</div></button>
+      <button id="splash-openscad" style="background:#374151;color:#fff;border:1px solid #f59e0b;border-radius:8px;padding:16px 12px;cursor:pointer;font-size:13px;font-weight:600;"><div style="font-size:22px;margin-bottom:4px;">&#128187;</div>OpenSCAD<div style="font-size:10px;font-weight:400;color:rgba(255,255,255,0.7);margin-top:3px;">Code editor + WASM</div></button>
+      <button id="splash-inventor" style="background:#374151;color:#fff;border:1px solid #4b5563;border-radius:8px;padding:16px 12px;cursor:pointer;font-size:13px;font-weight:600;"><div style="font-size:22px;margin-bottom:4px;">&#127981;</div>Inventor Project<div style="font-size:10px;font-weight:400;color:rgba(255,255,255,0.7);margin-top:3px;">.ipj / .ipt / .iam</div></button>
     </div>
-    <div style="color:#666;font-size:11px;">12 killer features &middot; 46 modules &middot; <a href="https://github.com/vvlars-cmd/cyclecad" target="_blank" style="color:#0284C7;text-decoration:none;">GitHub</a></div>
+    <div style="color:#666;font-size:11px;">16 killer features &middot; 50 modules &middot; <a href="https://github.com/vvlars-cmd/cyclecad" target="_blank" style="color:#0284C7;text-decoration:none;">GitHub</a></div>
   </div>
 </div>
 <script>
@@ -1350,7 +1357,9 @@ window._dismissSplash = function(action) {
   function dismiss() { document.getElementById("welcome-panel").style.display = "none"; }
   document.getElementById("splash-sketch").addEventListener("click", dismiss);
   document.getElementById("splash-import").addEventListener("click", dismiss);
-  document.getElementById("splash-textcad").addEventListener("click", dismiss);
+  document.getElementById("splash-textcad").addEventListener("click", function() { dismiss(); setTimeout(() => { if (window.app) window.app.handleMenuAction('tools-text-to-cad'); }, 100); });
+  document.getElementById("splash-imagecad").addEventListener("click", function() { dismiss(); setTimeout(() => { if (window.app) window.app.handleMenuAction('tools-image-to-cad'); }, 100); });
+  document.getElementById("splash-openscad").addEventListener("click", function() { dismiss(); setTimeout(() => { if (window.app) window.app.handleMenuAction('tools-openscad'); }, 100); });
   document.getElementById("splash-inventor").addEventListener("click", dismiss);
 })();
 </script>
@@ -1441,6 +1450,12 @@ window._dismissSplash = function(action) {
 <script src="js/modules/engineering-notebook.js"></script>
 <script src="js/modules/auto-assembly.js"></script>
 <script src="js/modules/parametric-from-example.js"></script>
+
+<!-- CADAM-Beating Modules -->
+<script src="js/modules/image-to-cad.js"></script>
+<script src="js/modules/openscad-engine.js"></script>
+<script src="js/modules/parametric-sliders.js"></script>
+<script src="js/modules/scad-export.js"></script>
 
 <script type="module">
   // ===== Three.js Imports =====
@@ -1923,6 +1938,34 @@ window._dismissSplash = function(action) {
           if (db12) { db12.innerHTML = ''; db12.appendChild(window.CycleCAD.ParametricFromExample.getUI()); db12.style.maxHeight = '500px'; db12.style.overflow = 'auto'; }
         } else { showToast('ParametricFromExample module not loaded', 'error'); }
         break;
+      case 'tools-image-to-cad':
+        if (window.CycleCAD && window.CycleCAD.ImageToCAD) {
+          showDialog('Image-to-CAD (AI Vision)', '');
+          const dbImg = document.getElementById('dialog-body');
+          if (dbImg) { dbImg.innerHTML = ''; dbImg.appendChild(window.CycleCAD.ImageToCAD.getUI()); dbImg.style.maxHeight = '600px'; dbImg.style.overflow = 'auto'; }
+        } else { showToast('ImageToCAD module not loaded', 'error'); }
+        break;
+      case 'tools-openscad':
+        if (window.CycleCAD && window.CycleCAD.OpenSCADEngine) {
+          showDialog('OpenSCAD Editor', '');
+          const dbScad = document.getElementById('dialog-body');
+          if (dbScad) { dbScad.innerHTML = ''; dbScad.appendChild(window.CycleCAD.OpenSCADEngine.getUI()); dbScad.style.maxHeight = '600px'; dbScad.style.overflow = 'auto'; }
+        } else { showToast('OpenSCADEngine module not loaded', 'error'); }
+        break;
+      case 'tools-param-sliders':
+        if (window.CycleCAD && window.CycleCAD.ParametricSliders) {
+          showDialog('Parametric Sliders', '');
+          const dbSlider = document.getElementById('dialog-body');
+          if (dbSlider) { dbSlider.innerHTML = ''; dbSlider.appendChild(window.CycleCAD.ParametricSliders.getUI()); dbSlider.style.maxHeight = '600px'; dbSlider.style.overflow = 'auto'; }
+        } else { showToast('ParametricSliders module not loaded', 'error'); }
+        break;
+      case 'tools-scad-export':
+        if (window.CycleCAD && window.CycleCAD.SCADExport) {
+          showDialog('SCAD Export / Import', '');
+          const dbExp = document.getElementById('dialog-body');
+          if (dbExp) { dbExp.innerHTML = ''; dbExp.appendChild(window.CycleCAD.SCADExport.getUI()); dbExp.style.maxHeight = '600px'; dbExp.style.overflow = 'auto'; }
+        } else { showToast('SCADExport module not loaded', 'error'); }
+        break;
       default:
         showToast(`${action}`, 'success');
     }
@@ -2312,6 +2355,32 @@ window._dismissSplash = function(action) {
     if (window.CycleCAD && window.CycleCAD.ParametricFromExample) {
       window.CycleCAD.ParametricFromExample.init(scene);
       console.log('[cycleCAD] Parametric from Example initialized');
+    }
+
+    // ===== CADAM-Beating Modules =====
+
+    // Initialize Image-to-CAD (AI Vision)
+    if (window.CycleCAD && window.CycleCAD.ImageToCAD) {
+      window.CycleCAD.ImageToCAD.init(scene, renderer, camera);
+      console.log('[cycleCAD] Image-to-CAD (AI Vision) initialized');
+    }
+
+    // Initialize OpenSCAD Engine
+    if (window.CycleCAD && window.CycleCAD.OpenSCADEngine) {
+      window.CycleCAD.OpenSCADEngine.init(scene, renderer);
+      console.log('[cycleCAD] OpenSCAD Engine initialized');
+    }
+
+    // Initialize Parametric Sliders
+    if (window.CycleCAD && window.CycleCAD.ParametricSliders) {
+      window.CycleCAD.ParametricSliders.init(scene, renderer);
+      console.log('[cycleCAD] Parametric Sliders initialized');
+    }
+
+    // Initialize SCAD Export/Import
+    if (window.CycleCAD && window.CycleCAD.SCADExport) {
+      window.CycleCAD.SCADExport.init(scene, camera);
+      console.log('[cycleCAD] SCAD Export/Import initialized');
     }
   }
 

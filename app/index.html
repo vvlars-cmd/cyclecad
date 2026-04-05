@@ -1159,6 +1159,42 @@
       <canvas id="viewport"></canvas>
       <!-- ViewCube -->
       <div id="viewcube" style="position:absolute;top:12px;right:12px;width:120px;height:120px;pointer-events:auto;z-index:100;"></div>
+      <!-- Viewer Mode Toggle -->
+      <button id="btn-viewer-mode-toggle" style="position:absolute;top:12px;left:12px;z-index:100;background:#0284C7;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.4);display:flex;align-items:center;gap:6px;" title="Toggle Viewer Mode (ExplodeView)">
+        <span style="font-size:16px;">&#128065;</span> Viewer Mode
+      </button>
+      <!-- Viewer Mode Control Panel (hidden by default) -->
+      <div id="viewer-panel" style="display:none;position:absolute;bottom:12px;left:12px;right:12px;z-index:90;background:rgba(30,30,30,0.95);border:1px solid #3e3e42;border-radius:8px;padding:12px 16px;box-shadow:0 4px 16px rgba(0,0,0,0.5);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <span style="font-weight:600;font-size:13px;color:#e0e0e0;">ExplodeView Controls</span>
+          <div style="display:flex;gap:6px;">
+            <button id="viewer-load-file" style="background:#10b981;color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:600;">Load File</button>
+            <button id="viewer-export-bom" style="background:#0284C7;color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:600;">Export BOM</button>
+            <button id="viewer-screenshot" style="background:#6366f1;color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:600;">Screenshot</button>
+          </div>
+        </div>
+        <!-- Explode Slider -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <span style="font-size:11px;color:#a0a0a0;min-width:50px;">Explode:</span>
+          <input id="viewer-explode-slider" type="range" min="0" max="100" value="0" style="flex:1;accent-color:#0284C7;height:6px;">
+          <span id="viewer-explode-value" style="font-size:11px;color:#e0e0e0;min-width:30px;">0%</span>
+        </div>
+        <!-- Section Cut -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+          <span style="font-size:11px;color:#a0a0a0;min-width:50px;">Section:</span>
+          <button id="viewer-section-x" style="background:#374151;color:#ef4444;border:1px solid #4b5563;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;font-weight:600;">X</button>
+          <button id="viewer-section-y" style="background:#374151;color:#10b981;border:1px solid #4b5563;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;font-weight:600;">Y</button>
+          <button id="viewer-section-z" style="background:#374151;color:#3b82f6;border:1px solid #4b5563;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;font-weight:600;">Z</button>
+          <button id="viewer-section-off" style="background:#374151;color:#a0a0a0;border:1px solid #4b5563;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;">Off</button>
+          <input id="viewer-section-slider" type="range" min="-100" max="100" value="0" style="flex:1;accent-color:#f59e0b;height:6px;">
+        </div>
+        <!-- Part Info -->
+        <div id="viewer-part-info" style="font-size:11px;color:#888;margin-top:4px;">
+          <span id="viewer-parts-count">No model loaded</span> · <span id="viewer-selected-part">Select a part to inspect</span>
+        </div>
+        <!-- Hidden file input -->
+        <input type="file" id="viewer-file-input" accept=".stl,.obj,.gltf,.glb,.step,.stp" style="display:none;" multiple>
+      </div>
     </div>
 
     <!-- Right Panel (Properties) -->
@@ -1464,6 +1500,7 @@ window._dismissSplash = function(action) {
   import { GridHelper } from 'three';
   import { KillerFeatures } from './js/killer-features.js';
   import { startSketch, endSketch, setTool, getEntities, clearSketch, entitiesToGeometry } from './js/sketch.js';
+  import { initViewerMode } from './js/viewer-mode.js';
 
   // ===== Three.js Viewport Setup =====
   const scene = new THREE.Scene();
@@ -2382,6 +2419,124 @@ window._dismissSplash = function(action) {
       window.CycleCAD.SCADExport.init(scene, camera);
       console.log('[cycleCAD] SCAD Export/Import initialized');
     }
+
+    // ===== ExplodeView / Viewer Mode =====
+    let viewerAPI = null;
+    try {
+      viewerAPI = initViewerMode({
+        getScene: () => scene,
+        getCamera: () => camera,
+        getRenderer: () => renderer,
+        getControls: () => controls
+      });
+      console.log('[cycleCAD] ExplodeView Viewer Mode initialized');
+    } catch(e) {
+      console.warn('[cycleCAD] Viewer Mode init failed:', e);
+    }
+
+    // Viewer Mode toggle button
+    const vmToggle = document.getElementById('btn-viewer-mode-toggle');
+    const vmPanel = document.getElementById('viewer-panel');
+    let viewerActive = false;
+
+    if (vmToggle) {
+      vmToggle.addEventListener('click', () => {
+        viewerActive = !viewerActive;
+        if (viewerAPI) viewerAPI.toggleViewerMode(viewerActive);
+        vmPanel.style.display = viewerActive ? 'block' : 'none';
+        vmToggle.style.background = viewerActive ? '#f59e0b' : '#0284C7';
+        vmToggle.innerHTML = viewerActive
+          ? '<span style="font-size:16px;">&#9998;</span> Edit Mode'
+          : '<span style="font-size:16px;">&#128065;</span> Viewer Mode';
+        showToast(viewerActive ? 'Viewer Mode — Load a file to inspect' : 'Edit Mode', 'success');
+      });
+    }
+
+    // Explode slider
+    const explodeSlider = document.getElementById('viewer-explode-slider');
+    const explodeValue = document.getElementById('viewer-explode-value');
+    if (explodeSlider && viewerAPI) {
+      explodeSlider.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value) / 100;
+        viewerAPI.explodeParts(val);
+        explodeValue.textContent = e.target.value + '%';
+      });
+    }
+
+    // Section cut buttons
+    ['x','y','z'].forEach(axis => {
+      const btn = document.getElementById('viewer-section-' + axis);
+      if (btn && viewerAPI) {
+        btn.addEventListener('click', () => {
+          viewerAPI.setSectionCut(axis, parseInt(document.getElementById('viewer-section-slider').value));
+          btn.style.background = '#0284C7';
+          ['x','y','z'].filter(a => a !== axis).forEach(a => {
+            document.getElementById('viewer-section-' + a).style.background = '#374151';
+          });
+        });
+      }
+    });
+    const sectionOff = document.getElementById('viewer-section-off');
+    if (sectionOff && viewerAPI) {
+      sectionOff.addEventListener('click', () => {
+        viewerAPI.setSectionCut(null);
+        ['x','y','z'].forEach(a => {
+          document.getElementById('viewer-section-' + a).style.background = '#374151';
+        });
+      });
+    }
+    const sectionSlider = document.getElementById('viewer-section-slider');
+    if (sectionSlider && viewerAPI) {
+      sectionSlider.addEventListener('input', (e) => {
+        const activeBtn = ['x','y','z'].find(a => document.getElementById('viewer-section-' + a).style.background === 'rgb(2, 132, 199)');
+        if (activeBtn) viewerAPI.setSectionCut(activeBtn, parseInt(e.target.value));
+      });
+    }
+
+    // Load file button
+    const loadFileBtn = document.getElementById('viewer-load-file');
+    const fileInput = document.getElementById('viewer-file-input');
+    if (loadFileBtn && fileInput && viewerAPI) {
+      loadFileBtn.addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', async (e) => {
+        const files = Array.from(e.target.files);
+        for (const file of files) {
+          showToast('Loading ' + file.name + '...', 'info');
+          const url = URL.createObjectURL(file);
+          await viewerAPI.loadFile(url, file.name);
+        }
+        const state = viewerAPI.getViewerState();
+        document.getElementById('viewer-parts-count').textContent = state.allParts.length + ' parts loaded';
+        showToast(files.length + ' file(s) loaded', 'success');
+        fileInput.value = '';
+      });
+    }
+
+    // Export BOM button
+    const bomBtn = document.getElementById('viewer-export-bom');
+    if (bomBtn && viewerAPI) {
+      bomBtn.addEventListener('click', () => {
+        viewerAPI.exportBOM();
+        showToast('BOM exported as CSV', 'success');
+      });
+    }
+
+    // Screenshot button
+    const ssBtn = document.getElementById('viewer-screenshot');
+    if (ssBtn) {
+      ssBtn.addEventListener('click', () => {
+        renderer.render(scene, camera);
+        const dataURL = renderer.domElement.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = dataURL;
+        a.download = 'cyclecad-viewer-screenshot.png';
+        a.click();
+        showToast('Screenshot saved', 'success');
+      });
+    }
+
+    // Expose viewer API globally
+    window.app.viewerMode = viewerAPI;
   }
 
   // ===== Export Global Functions =====

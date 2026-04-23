@@ -346,6 +346,70 @@
     }
     return miniExecute(step);
   }
+  function matchTemplate(prompt){
+    const p = (prompt||'').toLowerCase();
+    // Raspberry Pi 4B case
+    if (/raspberry\s*pi|\brpi\b|pi\s*4/.test(p) && /case|enclosure|housing|box/.test(p)) {
+      const hasUSB = /usb/.test(p), hasHDMI = /hdmi/.test(p), hasEth = /ethernet|lan|rj-?45/.test(p), hasPosts = /mount|post|stud|boss/.test(p);
+      const plan = [
+        {method:'sketch.start', params:{plane:'XY'}, note:'base sketch'},
+        {method:'sketch.rect', params:{width:89, height:60}, note:'case footprint 89x60'},
+        {method:'ops.extrude', params:{depth:14, position:[0,0,0]}, note:'case body'}
+      ];
+      if (hasPosts) {
+        [[-38.75,14,-26],[38.75,14,-26],[-38.75,14,26],[38.75,14,26]].forEach((pos,i) => {
+          plan.push({method:'sketch.start', params:{plane:'XY'}});
+          plan.push({method:'sketch.circle', params:{radius:2.5}});
+          plan.push({method:'ops.extrude', params:{depth:4, position:pos}, note:'mounting post '+(i+1)+'/4'});
+        });
+      }
+      if (hasUSB) plan.push({method:'ops.hole', params:{position:[44.5,7,-10], width:15, height:6, depth:10}, note:'USB cutout'});
+      if (hasHDMI) plan.push({method:'ops.hole', params:{position:[44.5,4,10], width:12, height:4, depth:10}, note:'HDMI cutout'});
+      if (hasEth) plan.push({method:'ops.hole', params:{position:[-44.5,7,0], width:17, height:14, depth:10}, note:'Ethernet cutout'});
+      plan.push({method:'view.set', params:{view:'iso'}});
+      plan.push({method:'view.fit', params:{}});
+      return plan;
+    }
+    // Hex nut
+    const nutM = p.match(/\bm(\d+)\b.*?(?:hex\s*)?nut|(?:hex\s*)?nut.*?\bm(\d+)\b/);
+    if (nutM) {
+      const size = parseInt(nutM[1]||nutM[2]);
+      const across = {3:5.5, 4:7, 5:8, 6:10, 8:13, 10:17, 12:19}[size] || size*1.7;
+      const thick = {3:2.4, 4:3.2, 5:4, 6:5, 8:6.8, 10:8.4, 12:10.8}[size] || size*0.85;
+      return [
+        {method:'sketch.start', params:{plane:'XY'}},
+        {method:'sketch.circle', params:{radius: across/2}},
+        {method:'ops.extrude', params:{depth: thick, position:[0,0,0]}, note:'M'+size+' nut body ('+across+'mm across)'},
+        {method:'ops.hole', params:{position:[0, thick, 0], radius: size/2, depth: thick+2}, note:'threaded hole M'+size},
+        {method:'view.set', params:{view:'iso'}},
+        {method:'view.fit', params:{}}
+      ];
+    }
+    // L-bracket with holes
+    if (/l-?bracket|mounting\s*bracket|angle\s*bracket/.test(p)) {
+      const lenM = p.match(/(\d+)\s*mm/);
+      const length = lenM ? parseInt(lenM[1]) : 100;
+      const countM = p.match(/(\d+)\s*holes?/);
+      const count = countM ? parseInt(countM[1]) : 4;
+      const spreadM = p.match(/(\d+)\s*mm\s*centers?|on\s*(\d+)/);
+      const spread = spreadM ? parseInt(spreadM[1]||spreadM[2]) : Math.max(20, length-20);
+      const plan = [
+        {method:'sketch.start', params:{plane:'XY'}},
+        {method:'sketch.rect', params:{width: length, height: 60}},
+        {method:'ops.extrude', params:{depth:5, position:[0,0,0]}, note:length+'mm L-bracket plate'}
+      ];
+      const half = spread/2;
+      for (let i = 0; i < count; i++) {
+        const x = (count===4) ? (i%2===0?-half:half) : (i - (count-1)/2) * (spread/(count-1));
+        const z = (count===4) ? (i<2?-20:20) : 0;
+        plan.push({method:'ops.hole', params:{position:[x,3,z], radius:2.5, depth:6}, note:'hole '+(i+1)+'/'+count});
+      }
+      plan.push({method:'view.set', params:{view:'iso'}});
+      plan.push({method:'view.fit', params:{}});
+      return plan;
+    }
+    return null;
+  }
   async function run(){
     if (S.running) { log('Already running', 'fail'); return; }
     const prompt = (S.els.prompt?.value || '').trim();
@@ -365,12 +429,19 @@
     progress(5, 'Planning...');
     log('Planning with '+m.label+'...', 'info');
     let plan;
+    const tpl = matchTemplate(effectivePrompt);
+    if (tpl) {
+      log('Matched built-in template ('+tpl.length+' steps). Skipping LLM.', 'pass');
+      plan = tpl;
+    }
     try {
-      const raw = await callLLM(modelId, effectivePrompt);
-      plan = parseJson(raw);
-      if (!Array.isArray(plan)) throw new Error('Plan is not an array');
-      setLastWorkingModel(modelId);
-      log('Got '+plan.length+'-step plan. Executing...', 'pass');
+      if (!plan) {
+        const raw = await callLLM(modelId, effectivePrompt);
+        plan = parseJson(raw);
+        if (!Array.isArray(plan)) throw new Error('Plan is not an array');
+        setLastWorkingModel(modelId);
+        log('Got '+plan.length+'-step plan. Executing...', 'pass');
+      }
     } catch(e) {
       showActionableError(e, m.provider);
       S.running = false; progress(0, 'Failed'); return;

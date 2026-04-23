@@ -116,7 +116,11 @@ class APIServer extends EventEmitter {
         );
       }
 
-      const result = handler.call(this, cmd.params || {});
+      const handlerFn = (typeof handler === 'function') ? handler : handler.handler;
+      if (typeof handlerFn !== 'function') {
+        return this._err(`Handler for "${cmd.method}" is not callable`);
+      }
+      const result = handlerFn.call(this, cmd.params || {});
       const elapsed = Math.round(performance.now() - start);
 
       // Log command

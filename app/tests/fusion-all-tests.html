@@ -475,31 +475,50 @@
         const iframe = document.createElement('iframe');
         iframe.style.display = 'none';
         iframe.src = suite.path;
-        iframe.onload = () => {
-          setTimeout(() => {
-            try {
-              const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-              const passCount = iframeDoc.getElementById('passCount')?.textContent || '0';
-              const failCount = iframeDoc.getElementById('failCount')?.textContent || '0';
-              const skipCount = iframeDoc.getElementById('skipCount')?.textContent || '0';
-
-              results.suites[suite.name].pass = parseInt(passCount);
-              results.suites[suite.name].fail = parseInt(failCount);
-              results.suites[suite.name].skip = parseInt(skipCount);
-
-              updateSuiteStats(idx);
-              card.classList.remove('running');
-              card.classList.add('completed');
-
-              document.body.removeChild(iframe);
-              resolve();
-            } catch (e) {
-              console.error('Error reading iframe results:', e);
-              card.classList.remove('running');
-              card.classList.add('failed');
-              resolve();
+        iframe.onload = async () => {
+          try {
+            const iframeWin = iframe.contentWindow;
+            const iframeDoc = iframe.contentDocument || iframeWin.document;
+            // Trigger the sub-suite's own Run All
+            if (typeof iframeWin.runAllTests === 'function') {
+              await iframeWin.runAllTests();
+            } else {
+              const runBtn = Array.from(iframeDoc.querySelectorAll('button')).find(b => /run all/i.test(b.textContent));
+              if (runBtn) runBtn.click();
             }
-          }, 100);
+            // Poll until counts stabilize (max 30s)
+            const deadline = Date.now() + 30000;
+            let last = '';
+            while (Date.now() < deadline) {
+              await new Promise(r => setTimeout(r, 500));
+              const p = iframeDoc.getElementById('passCount')?.textContent || '0';
+              const f = iframeDoc.getElementById('failCount')?.textContent || '0';
+              const s = iframeDoc.getElementById('skipCount')?.textContent || '0';
+              const cur = `${p}/${f}/${s}`;
+              if (cur === last && cur !== '0/0/0') break;
+              last = cur;
+            }
+
+            const passCount = iframeDoc.getElementById('passCount')?.textContent || '0';
+            const failCount = iframeDoc.getElementById('failCount')?.textContent || '0';
+            const skipCount = iframeDoc.getElementById('skipCount')?.textContent || '0';
+
+            results.suites[suite.name].pass = parseInt(passCount);
+            results.suites[suite.name].fail = parseInt(failCount);
+            results.suites[suite.name].skip = parseInt(skipCount);
+
+            updateSuiteStats(idx);
+            card.classList.remove('running');
+            card.classList.add('completed');
+
+            document.body.removeChild(iframe);
+            resolve();
+          } catch (e) {
+            console.error('Error reading iframe results:', e);
+            card.classList.remove('running');
+            card.classList.add('failed');
+            resolve();
+          }
         };
         document.body.appendChild(iframe);
       });

@@ -66,13 +66,20 @@ window.CycleCAD.GenerativeDesign = (() => {
   let camera = null;
   let renderer = null;
 
+  // Lazy init — THREE may not be global yet when this IIFE runs
+  const T = () => window.THREE;
   let designSpace = {
-    bounds: { min: new THREE.Vector3(-50, -50, -50), max: new THREE.Vector3(50, 50, 50) },
+    bounds: null, // initialized on first use via initDesignSpace()
     keepRegions: [],
     avoidRegions: [],
     loads: [],
     fixedPoints: []
   };
+  function ensureBounds() {
+    if (!designSpace.bounds && window.THREE) {
+      designSpace.bounds = { min: new window.THREE.Vector3(-50, -50, -50), max: new window.THREE.Vector3(50, 50, 50) };
+    }
+  }
 
   let optimizationState = {
     voxelGrid: null,     // NxNxNx1 density array
@@ -98,8 +105,12 @@ window.CycleCAD.GenerativeDesign = (() => {
 
   let material = 'Steel';
   let visualizationMesh = null;
-  let visualizationGroup = new THREE.Group();
-  let constraintVisuals = new THREE.Group();
+  let visualizationGroup = null;
+  let constraintVisuals = null;
+  function ensureGroups() {
+    if (!visualizationGroup && window.THREE) visualizationGroup = new window.THREE.Group();
+    if (!constraintVisuals && window.THREE) constraintVisuals = new window.THREE.Group();
+  }
 
   // ========== DESIGN SPACE MANAGEMENT ==========
 

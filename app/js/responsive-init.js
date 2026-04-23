@@ -35,14 +35,14 @@ class ResponsiveInit {
     const userAgent = navigator.userAgent;
 
     // Detect touch capability
-    this.isTouch = () => {
+    this.isTouch = (() => {
       try {
         document.createEvent('TouchEvent');
         return true;
       } catch (e) {
         return false;
       }
-    }() || navigator.maxTouchPoints > 0;
+    })() || navigator.maxTouchPoints > 0;
 
     // Categorize by screen size
     if (width < 600) {

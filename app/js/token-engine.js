@@ -98,11 +98,11 @@
   // State
   // ============================================================================
 
+  let userTier = loadTier();
   let balance = loadBalance();
   let ledger = loadLedger();
   let cache = loadCache();
   let escrow = loadEscrow();
-  let userTier = loadTier();
   let monthStart = loadMonthStart();
   let escrowCounter = loadEscrowCounter();
   let eventListeners = {};

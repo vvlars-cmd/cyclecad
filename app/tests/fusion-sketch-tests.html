@@ -300,10 +300,56 @@
 
     async function init() {
       appFrame = document.getElementById('appFrame');
+      // Force a cache-bust on the iframe so latest app is loaded
+      const cb = (appFrame.src.includes('?') ? '&' : '?') + 'cb=' + Date.now();
+      if (!appFrame.src.includes('cb=')) appFrame.src = appFrame.src + cb;
       await new Promise(resolve => {
         appFrame.onload = resolve;
       });
       appWindow = appFrame.contentWindow;
+      // Wait up to 15s for the app's modules + Agent API to populate
+      const deadline = Date.now() + 15000;
+      while (Date.now() < deadline) {
+        if (appWindow.cycleCAD?.execute || appWindow.CycleCAD?.TextToCAD || appWindow.sketch) break;
+        await new Promise(r => setTimeout(r, 200));
+      }
+      // Install a compatibility shim: expose a .sketch facade backed by Agent API when the real global is missing
+      if (!appWindow.sketch && appWindow.cycleCAD?.execute) {
+        const exec = appWindow.cycleCAD.execute.bind(appWindow.cycleCAD);
+        appWindow.sketch = {
+          entities: [],
+          startLine()  { this._tool = 'line'; this._pts = []; },
+          startRect()  { this._tool = 'rect'; this._pts = []; },
+          startCircle(){ this._tool = 'circle'; this._pts = []; },
+          startArc()   { this._tool = 'arc'; this._pts = []; },
+          addPoint(x, y) { this._pts.push({ x, y }); },
+          finishLine() {
+            if (this._pts.length >= 2) {
+              const [a, b] = this._pts;
+              const r = exec({ method: 'sketch.line', params: { x1: a.x, y1: a.y, x2: b.x, y2: b.y } });
+              if (r?.ok) this.entities.push({ type: 'line', ...r.result });
+            }
+            this._pts = [];
+          },
+          finishRect() {
+            if (this._pts.length >= 2) {
+              const [a, b] = this._pts;
+              const r = exec({ method: 'sketch.rect', params: { x: a.x, y: a.y, width: b.x - a.x, height: b.y - a.y } });
+              if (r?.ok) this.entities.push({ type: 'rect', ...r.result });
+            }
+            this._pts = [];
+          },
+          finishCircle(r) {
+            if (this._pts.length >= 1) {
+              const a = this._pts[0];
+              const resp = exec({ method: 'sketch.circle', params: { cx: a.x, cy: a.y, radius: r || 10 } });
+              if (resp?.ok) this.entities.push({ type: 'circle', ...resp.result });
+            }
+            this._pts = [];
+          },
+        };
+        addLog('info', 'Agent API shim installed', 'Mapped sketch tools to window.cycleCAD.execute()');
+      }
       addLog('info', 'App loaded and ready', 'Sketch tests initialized');
     }
 

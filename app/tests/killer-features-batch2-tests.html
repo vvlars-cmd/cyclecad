@@ -803,16 +803,36 @@
     // UI EVENT HANDLERS
     // ============================================================================
 
-    document.getElementById('run-all-btn').addEventListener('click', () => {
-      runner.clearLog();
-      runner.runTests();
-      setInterval(() => runner.updateElapsed(), 100);
+    // Track elapsed-time interval so we don't stack multiple on repeat clicks
+    let _elapsedInterval = null;
+    function _startElapsed() {
+      if (_elapsedInterval) clearInterval(_elapsedInterval);
+      _elapsedInterval = setInterval(() => runner.updateElapsed(), 100);
+    }
+
+    document.getElementById('run-all-btn').addEventListener('click', async () => {
+      try {
+        runner.clearLog();
+        _startElapsed();
+        await runner.runTests();
+      } catch (e) {
+        runner.log(`✗ Fatal: ${e.message}`, 'fail');
+        console.error('runTests threw:', e);
+      } finally {
+        if (_elapsedInterval) { clearInterval(_elapsedInterval); _elapsedInterval = null; }
+      }
     });
 
-    document.getElementById('run-generative-btn').addEventListener('click', () => {
-      runner.clearLog();
-      runner.runTests('Generative Design');
-      setInterval(() => runner.updateElapsed(), 100);
+    document.getElementById('run-generative-btn').addEventListener('click', async () => {
+      try {
+        runner.clearLog();
+        _startElapsed();
+        await runner.runTests('Generative Design');
+      } catch (e) {
+        runner.log(`✗ Fatal: ${e.message}`, 'fail');
+      } finally {
+        if (_elapsedInterval) { clearInterval(_elapsedInterval); _elapsedInterval = null; }
+      }
     });
 
     document.getElementById('run-multi-physics-btn').addEventListener('click', () => {

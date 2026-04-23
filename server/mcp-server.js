@@ -16,16 +16,6 @@
 const readline = require('readline');
 const http = require('http');
 
-// Try to load WebSocket, but make it optional
-let WebSocket = null;
-try {
-  WebSocket = require('ws');
-} catch (e) {
-  if (config && config.debug) {
-    console.error('[MCP] WebSocket module not available, using HTTP only');
-  }
-}
-
 // =============================================================================
 // Configuration
 // =============================================================================
@@ -36,6 +26,16 @@ const config = {
   timeout: 30000,
   debug: process.env.DEBUG_MCP === '1'
 };
+
+// Try to load WebSocket, but make it optional
+let WebSocket = null;
+try {
+  WebSocket = require('ws');
+} catch (e) {
+  if (config.debug) {
+    console.error('[MCP] WebSocket module not available, using HTTP only');
+  }
+}
 
 // =============================================================================
 // MCP Protocol Implementation

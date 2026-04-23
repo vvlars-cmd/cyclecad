@@ -771,6 +771,22 @@
       clearMeshes();
       updateStats();
 
+      // Ensure kernel is fully initialized before running any tests.
+      // The initial init() may still be loading the WASM, or may have failed.
+      if (!kernel || !kernel.isReady?.() ) {
+        addLog('Waiting for B-Rep kernel to initialize...', 'info');
+        try {
+          if (!kernel) kernel = new BRepKernel();
+          await kernel.init?.((loaded, total, percent) => {
+            document.getElementById('viewportInfo').textContent = `Loading WASM: ${percent}%`;
+          });
+        } catch (e) {
+          addLog('Kernel init failed: ' + e.message, 'fail');
+          isRunning = false;
+          return;
+        }
+      }
+
       addLog('Starting test suite...', 'info');
 
       let totalTests = 0;

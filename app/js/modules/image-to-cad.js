@@ -28,7 +28,7 @@
     sliderHistory: [],
     historyIndex: -1,
     currentModelGroup: null,
-    meshGroup: new THREE.Group(),
+    meshGroup: null, // lazy-initialized when THREE is available
     debugCanvas: null,
     conversionHistory: [],
   };

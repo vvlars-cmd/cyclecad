@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<base href="/app/">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -1530,37 +1529,37 @@ window._dismissSplash = function(action) {
 <div id="toast-container"></div>
 
 <!-- Token Engine & Marketplace Scripts (IIFE-based) -->
-<script src="js/token-engine.js"></script>
-<script type="module" src="js/marketplace.js"></script>
+<script src="/app/js/token-engine.js"></script>
+<script type="module" src="/app/js/marketplace.js"></script>
 
 <!-- Killer Feature Modules -->
-<script src="js/modules/text-to-cad.js"></script>
-<script src="js/modules/photo-to-cad.js"></script>
-<script src="js/modules/manufacturability.js"></script>
-<script src="js/modules/generative-design.js"></script>
-<script src="js/modules/multi-physics.js"></script>
-<script src="js/modules/smart-parts.js"></script>
-<script src="js/modules/smart-assembly.js"></script>
-<script src="js/modules/digital-twin.js"></script>
-<script src="js/modules/machine-control.js"></script>
-<script src="js/modules/engineering-notebook.js"></script>
-<script src="js/modules/auto-assembly.js"></script>
-<script src="js/modules/parametric-from-example.js"></script>
+<script src="/app/js/modules/text-to-cad.js"></script>
+<script src="/app/js/modules/photo-to-cad.js"></script>
+<script src="/app/js/modules/manufacturability.js"></script>
+<script src="/app/js/modules/generative-design.js"></script>
+<script src="/app/js/modules/multi-physics.js"></script>
+<script src="/app/js/modules/smart-parts.js"></script>
+<script src="/app/js/modules/smart-assembly.js"></script>
+<script src="/app/js/modules/digital-twin.js"></script>
+<script src="/app/js/modules/machine-control.js"></script>
+<script src="/app/js/modules/engineering-notebook.js"></script>
+<script src="/app/js/modules/auto-assembly.js"></script>
+<script src="/app/js/modules/parametric-from-example.js"></script>
 
 <!-- CADAM-Beating Modules -->
-<script src="js/modules/image-to-cad.js"></script>
-<script src="js/modules/openscad-engine.js"></script>
-<script src="js/modules/parametric-sliders.js"></script>
-<script src="js/modules/scad-export.js"></script>
+<script src="/app/js/modules/image-to-cad.js"></script>
+<script src="/app/js/modules/openscad-engine.js"></script>
+<script src="/app/js/modules/parametric-sliders.js"></script>
+<script src="/app/js/modules/scad-export.js"></script>
 
 <script type="module">
   // ===== Three.js Imports =====
   import * as THREE from 'three';
   import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-  import { KillerFeatures } from './js/killer-features.js';
-  import { startSketch, endSketch, setTool, getEntities, clearSketch, entitiesToGeometry } from './js/sketch.js';
-  import { initViewerMode } from './js/viewer-mode.js';
-  import { initExplodeView } from './js/explodeview-full.js';
+  import { KillerFeatures } from '/app/js/killer-features.js';
+  import { startSketch, endSketch, setTool, getEntities, clearSketch, entitiesToGeometry } from '/app/js/sketch.js';
+  import { initViewerMode } from '/app/js/viewer-mode.js';
+  import { initExplodeView } from '/app/js/explodeview-full.js';
 
   // ===== Three.js Viewport Setup =====
   const scene = new THREE.Scene();

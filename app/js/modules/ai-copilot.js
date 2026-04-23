@@ -129,10 +129,26 @@
   }
   function parseJson(text){
     let t = (text||'').trim();
-    t = t.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '');
-    const s = t.indexOf('['); const e = t.lastIndexOf(']');
-    if (s >= 0 && e > s) t = t.slice(s, e+1);
-    return JSON.parse(t);
+    t = t.replace(/```(?:json)?/gi, '').trim();
+    const start = t.indexOf('[');
+    if (start < 0) throw new Error('No JSON array found in: '+t.slice(0,120));
+    let depth = 0, inStr = false, esc = false, end = -1;
+    for (let i = start; i < t.length; i++) {
+      const ch = t[i];
+      if (esc) { esc = false; continue; }
+      if (ch === '\\') { esc = true; continue; }
+      if (ch === '"') { inStr = !inStr; continue; }
+      if (inStr) continue;
+      if (ch === '[') depth++;
+      else if (ch === ']') { depth--; if (depth === 0) { end = i; break; } }
+    }
+    if (end < 0) throw new Error('Unclosed JSON array');
+    t = t.slice(start, end+1);
+    try { return JSON.parse(t); }
+    catch(e) {
+      const t2 = t.replace(/,(\s*[\]}])/g, '$1');
+      return JSON.parse(t2);
+    }
   }
   async function runStep(step){
     if (window.cycleCAD && typeof window.cycleCAD.execute === 'function') {
@@ -144,6 +160,11 @@
     if (S.running) { log('Already running', 'fail'); return; }
     const prompt = (S.els.prompt?.value || '').trim();
     if (!prompt) { log('Enter a prompt first', 'fail'); return; }
+    const quotedGoals = (prompt.match(/"[^"]{10,}"/g) || []).length;
+    if (quotedGoals >= 2) {
+      log('Detected '+quotedGoals+' goals in one prompt. Use ONE goal at a time.', 'fail');
+      return;
+    }
     const modelId = S.els.model?.value;
     const m = MODELS[modelId];
     if (!getKeys()[m.keyField]) { log('Missing '+m.keyField+' key — click the key icon', 'fail'); return; }

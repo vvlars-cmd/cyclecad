@@ -130,6 +130,9 @@
     .menu-item:hover .menu-dropdown {
       display: flex;
     }
+    .menu-item.open .menu-dropdown { display: flex !important; }
+    .menu-dropdown { padding-top: 2px; margin-top: -2px; }
+    .menu-item.open { background: var(--bg-tertiary); }
 
     .menu-item-link {
       padding: 8px 16px;

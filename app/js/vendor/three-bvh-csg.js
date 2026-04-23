@@ -1,5 +1,5 @@
 import { BufferAttribute, Vector3, Ray, Vector2, Vector4, Mesh, Matrix4, Line3, Plane, Triangle, DoubleSide, Matrix3, BufferGeometry, Group, Color, MeshPhongMaterial, MathUtils, LineSegments, LineBasicMaterial, InstancedMesh, SphereGeometry, MeshBasicMaterial } from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
-import { MeshBVH, ExtendedTriangle } from 'three-mesh-bvh';
+import { MeshBVH, ExtendedTriangle } from 'https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.7.8/build/index.module.js';
 
 const HASH_WIDTH = 1e-6;
 const HASH_HALF_WIDTH = HASH_WIDTH * 0.5;

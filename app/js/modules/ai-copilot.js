@@ -198,7 +198,7 @@
   const miniState = { currentSketch: null, lastMesh: null, group: null };
   function miniReset(){
     if (miniState.group && window._scene) window._scene.remove(miniState.group);
-    miniState.currentSketch = null; miniState.lastMesh = null; miniState.group = null;
+    miniState.currentSketch = null; miniState.lastMesh = null; miniState.group = null; miniState.body = null;
   }
   function miniEnsureGroup(){
     if (!miniState.group) {
@@ -223,22 +223,24 @@
       return _csgLib;
     } catch(e) { console.warn('[Copilot] CSG load failed:', e.message); return null; }
   }
-  async function subtractFromLast(cutMesh){
+  async function subtractFromBody(cutMesh){
+    const target = miniState.body || miniState.lastMesh;
     const csg = await loadCSG();
-    if (!csg || !miniState.lastMesh) { miniState.group.add(cutMesh); return; }
+    if (!csg || !target) { miniState.group.add(cutMesh); return; }
     try {
-      miniState.lastMesh.updateMatrixWorld(true);
+      target.updateMatrixWorld(true);
       cutMesh.updateMatrixWorld(true);
       const THREE = window.THREE;
-      const brA = new csg.Brush(miniState.lastMesh.geometry.clone(), miniState.lastMesh.material);
-      brA.position.copy(miniState.lastMesh.position); brA.quaternion.copy(miniState.lastMesh.quaternion); brA.scale.copy(miniState.lastMesh.scale); brA.updateMatrixWorld(true);
+      const brA = new csg.Brush(target.geometry.clone(), target.material);
+      brA.position.copy(target.position); brA.quaternion.copy(target.quaternion); brA.scale.copy(target.scale); brA.updateMatrixWorld(true);
       const brB = new csg.Brush(cutMesh.geometry.clone(), cutMesh.material);
       brB.position.copy(cutMesh.position); brB.quaternion.copy(cutMesh.quaternion); brB.scale.copy(cutMesh.scale); brB.updateMatrixWorld(true);
       const res = _csgEv.evaluate(brA, brB, csg.SUBTRACTION);
-      res.material = miniState.lastMesh.material;
-      miniState.group.remove(miniState.lastMesh);
+      res.material = target.material;
+      miniState.group.remove(target);
       miniState.group.add(res);
       miniState.lastMesh = res;
+      miniState.body = res;
     } catch(e) {
       console.warn('[Copilot] CSG subtract failed, visual fallback:', e.message);
       miniState.group.add(cutMesh);
@@ -255,7 +257,8 @@
     if (method === 'ops.extrude') {
       const d = params.depth||params.height||params.distance||20;
       const sk = miniState.currentSketch || {};
-      const pos = sk.origin || [0,0,0];
+      const explicitPos = (Array.isArray(params.position)||params.x!==undefined) ? getPos(params) : null;
+      const pos = explicitPos || sk.origin || [0,0,0];
       let g;
       if (sk.shape==='rect')         g = new THREE.BoxGeometry(sk.width, d, sk.height);
       else if (sk.shape==='circle')  g = new THREE.CylinderGeometry(sk.radius, sk.radius, d, 48);
@@ -265,8 +268,8 @@
       const mesh = new THREE.Mesh(g, mat); mesh.castShadow = true;
       mesh.position.set(pos[0]||0, (pos[1]||0) + d/2, pos[2]||0);
       miniEnsureGroup();
-      if (isSubtract) { await subtractFromLast(mesh); }
-      else { miniState.group.add(mesh); miniState.lastMesh = mesh; }
+      if (isSubtract) { await subtractFromBody(mesh); }
+      else { miniState.group.add(mesh); miniState.lastMesh = mesh; if (!miniState.body) miniState.body = mesh; }
       miniState.currentSketch = null;
       return {ok:true};
     }
@@ -291,7 +294,7 @@
       const cutMesh = new THREE.Mesh(g, new THREE.MeshStandardMaterial({color:0x000000}));
       cutMesh.position.set(pos[0]||0, (pos[1]||0) + d/2 - 0.5, pos[2]||0);
       miniEnsureGroup();
-      await subtractFromLast(cutMesh);
+      await subtractFromBody(cutMesh);
       return {ok:true};
     }
     if (method === 'ops.pattern') {

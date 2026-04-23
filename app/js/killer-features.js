@@ -57,11 +57,11 @@ export const KillerFeatures = {
   registerKeyboardShortcuts() {
     document.addEventListener('keydown', (e) => {
       if (e.ctrlKey || e.metaKey) {
-        if (e.key === 'k') { e.preventDefault(); this.features.aiCopilot?.show(); }
-        if (e.key === 'p') { e.preventDefault(); this.features.physics?.toggle(); }
-        if (e.key === 'g') { e.preventDefault(); this.features.generative?.show(); }
-        if (e.key === 'c') { e.preventDefault(); this.features.costEstimator?.show(); }
-        if (e.key === 't') { e.preventDefault(); this.features.parameterTable?.show(); }
+        if (e.key === 'k' && e.shiftKey) { e.preventDefault(); this.features.aiCopilot?.show(); }
+        if (e.key === 'p' && e.shiftKey) { e.preventDefault(); this.features.physics?.toggle(); }
+        if (e.key === 'g' && e.shiftKey) { e.preventDefault(); this.features.generative?.show(); }
+        if (e.key === 'c' && e.shiftKey) { e.preventDefault(); this.features.costEstimator?.toggle(); }
+        if (e.key === 't' && e.shiftKey) { e.preventDefault(); this.features.parameterTable?.show(); }
       }
     });
   },
@@ -122,6 +122,7 @@ export const KillerFeatures = {
         `;
 
         document.body.appendChild(panel);
+        document.getElementById('kf-cost-close')?.addEventListener('click', () => estimator.hide());
 
         document.getElementById('kf-copilot-close').addEventListener('click', () => {
           panel.remove();
@@ -609,6 +610,17 @@ export const KillerFeatures = {
     const estimator = {
       show() {
         this.createPanel();
+        const p = document.getElementById('kf-cost-panel');
+        if (p) p.style.display = 'block';
+      },
+      hide() {
+        const p = document.getElementById('kf-cost-panel');
+        if (p) p.style.display = 'none';
+      },
+      toggle() {
+        const p = document.getElementById('kf-cost-panel');
+        if (p && p.style.display !== 'none') this.hide();
+        else this.show();
       },
 
       createPanel() {
@@ -624,7 +636,7 @@ export const KillerFeatures = {
         `;
 
         panel.innerHTML = `
-          <h3 style="margin: 0 0 16px 0; font-size: 16px;">Manufacturing Cost</h3>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="margin: 0; font-size: 16px;">Manufacturing Cost</h3><button id="kf-cost-close" style="background:rgba(0,0,0,0.2);border:0;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:18px;line-height:1">x</button></div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
             <div style="background: rgba(0,0,0,0.15); padding: 12px; border-radius: 8px; text-align: center;">

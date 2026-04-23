@@ -511,6 +511,86 @@
       plan.push({method:'view.fit', params:{}});
       return plan;
     }
+    // Spur gear (simplified — cylinder disc at OD with center bore)
+    const gearM = p.match(/\bspur\s*gear\b|\bgear\b/);
+    if (gearM) {
+      const modM = p.match(/module\s*(\d+(?:\.\d+)?)|\bm\s*=?\s*(\d+(?:\.\d+)?)\b/);
+      const teethM = p.match(/(\d+)\s*(?:teeth|tooth)|z\s*=?\s*(\d+)/);
+      const mod = modM ? parseFloat(modM[1]||modM[2]) : 2;
+      const teeth = teethM ? parseInt(teethM[1]||teethM[2]) : 20;
+      const widthM = p.match(/(\d+)\s*mm\s*(?:wide|width|face)/);
+      const width = widthM ? parseInt(widthM[1]) : 10;
+      const boreM = p.match(/(\d+)\s*mm\s*bore|bore\s*(\d+)/);
+      const bore = boreM ? parseInt(boreM[1]||boreM[2]) : 8;
+      const pitchDia = mod * teeth;
+      const outsideDia = mod * (teeth + 2);
+      return [
+        {method:'sketch.start', params:{plane:'XY'}},
+        {method:'sketch.circle', params:{radius: outsideDia/2}},
+        {method:'ops.extrude', params:{depth: width, position:[0,0,0]}, note:'spur gear blank — m='+mod+', Z='+teeth+', pitch Ø'+pitchDia+', OD Ø'+outsideDia+' (add involute teeth via Sketch tab polyline)'},
+        {method:'ops.hole', params:{position:[0, width/2, 0], radius: bore/2, depth: width+2}, note:'center bore Ø'+bore},
+        {method:'view.set', params:{view:'iso'}},
+        {method:'view.fit', params:{}}
+      ];
+    }
+    // Pulley (V-belt, simplified — disc with center bore, groove noted)
+    const pulleyM = p.match(/\bpulley\b|\bv-?belt\s*pulley\b|\btiming\s*pulley\b/);
+    if (pulleyM) {
+      const odM = p.match(/(\d+)\s*mm/);
+      const od = odM ? parseInt(odM[1]) : 80;
+      const boreM = p.match(/(\d+)\s*mm\s*bore|bore\s*(\d+)/);
+      const bore = boreM ? parseInt(boreM[1]||boreM[2]) : 12;
+      const widthM = p.match(/(\d+)\s*mm\s*(?:wide|width)/);
+      const width = widthM ? parseInt(widthM[1]) : 20;
+      return [
+        {method:'sketch.start', params:{plane:'XY'}},
+        {method:'sketch.circle', params:{radius: od/2}},
+        {method:'ops.extrude', params:{depth: width, position:[0,0,0]}, note:'pulley blank Ø'+od+'x'+width+' (add V-groove via revolve in Solid tab)'},
+        {method:'ops.hole', params:{position:[0, width/2, 0], radius: bore/2, depth: width+2}, note:'center bore Ø'+bore},
+        {method:'view.set', params:{view:'iso'}},
+        {method:'view.fit', params:{}}
+      ];
+    }
+    // Shaft (simple cylinder or stepped if "stepped" keyword)
+    const shaftM = p.match(/\bshaft\b|\baxle\b|\bspindle\b/);
+    if (shaftM) {
+      // Explicit diameter keywords first
+      const diaM = p.match(/(\d+)\s*mm\s*(?:dia|diameter)|Ø\s*(\d+)|ø\s*(\d+)/);
+      // Explicit length keywords
+      const lenM = p.match(/(\d+)\s*mm\s*(?:long|length|tall)/);
+      // Fallback: if both missing, heuristic from bare Nmm values (smaller=dia, larger=length)
+      const allMm = (p.match(/(\d+)\s*mm/g) || []).map(s => parseInt(s)).filter(n => n > 0);
+      let dia, len;
+      if (diaM) dia = parseInt(diaM[1]||diaM[2]||diaM[3]);
+      if (lenM) len = parseInt(lenM[1]);
+      if (!dia && !len && allMm.length === 2) { dia = Math.min(allMm[0], allMm[1]); len = Math.max(allMm[0], allMm[1]); }
+      else if (!dia && allMm.length >= 1) dia = allMm[0];
+      else if (!len && allMm.length >= 2) len = allMm[1];
+      dia = dia || 20; len = len || 100;
+      const stepped = /\bstepped\b|\bstep\b|\b2[- ]?step\b/.test(p);
+      if (stepped) {
+        const dia2 = Math.max(6, dia - 4);
+        const len1 = Math.round(len * 0.6);
+        const len2 = len - len1;
+        return [
+          {method:'sketch.start', params:{plane:'XY'}},
+          {method:'sketch.circle', params:{radius: dia/2}},
+          {method:'ops.extrude', params:{depth: len1, position:[0,0,0]}, note:'stepped shaft main Ø'+dia+' x '+len1+'mm'},
+          {method:'sketch.start', params:{plane:'XY'}},
+          {method:'sketch.circle', params:{radius: dia2/2}},
+          {method:'ops.extrude', params:{depth: len2, position:[0,len1,0]}, note:'stepped shaft reduced Ø'+dia2+' x '+len2+'mm'},
+          {method:'view.set', params:{view:'iso'}},
+          {method:'view.fit', params:{}}
+        ];
+      }
+      return [
+        {method:'sketch.start', params:{plane:'XY'}},
+        {method:'sketch.circle', params:{radius: dia/2}},
+        {method:'ops.extrude', params:{depth: len, position:[0,0,0]}, note:'shaft Ø'+dia+' x '+len+'mm'},
+        {method:'view.set', params:{view:'iso'}},
+        {method:'view.fit', params:{}}
+      ];
+    }
     return null;
   }
   async function run(){

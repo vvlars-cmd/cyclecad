@@ -15,11 +15,14 @@
     ],
     "tips": [
       "Double-click to create a closed line returning to start point",
-      "Hold Shift to constrain to 45° angles",
+      "Hold Shift to constrain to 45\u00b0 angles",
       "Use grid snapping for precise placement",
       "Lines automatically snap to endpoints, midpoints, centers"
     ],
-    "related": ["sketch-rectangle", "sketch-polyline"]
+    "related": [
+      "sketch-rectangle",
+      "sketch-polyline"
+    ]
   },
   {
     "id": "sketch-rectangle",
@@ -40,7 +43,10 @@
       "Corners snap to grid for perfect alignment",
       "Edit dimensions afterward in properties panel for precise sizing"
     ],
-    "related": ["sketch-line", "constraint-coincident"]
+    "related": [
+      "sketch-line",
+      "constraint-coincident"
+    ]
   },
   {
     "id": "sketch-circle",
@@ -61,7 +67,10 @@
       "Create multiple circles in one session",
       "Circles snap to existing geometry"
     ],
-    "related": ["sketch-arc", "constraint-concentric"]
+    "related": [
+      "sketch-arc",
+      "constraint-concentric"
+    ]
   },
   {
     "id": "sketch-arc",
@@ -82,7 +91,10 @@
       "Tangent arcs connect smoothly to adjacent lines",
       "Press A twice to toggle between arc modes"
     ],
-    "related": ["sketch-circle", "sketch-polyline"]
+    "related": [
+      "sketch-circle",
+      "sketch-polyline"
+    ]
   },
   {
     "id": "sketch-polyline",
@@ -104,7 +116,10 @@
       "Double-clicking last point on start point closes shape",
       "Useful for creating complex profiles rapidly"
     ],
-    "related": ["sketch-line", "sketch-arc"]
+    "related": [
+      "sketch-line",
+      "sketch-arc"
+    ]
   },
   {
     "id": "sketch-spline",
@@ -125,7 +140,10 @@
       "Splines can be constrained like lines",
       "Edit spline by selecting and dragging control points"
     ],
-    "related": ["sketch-line", "sketch-polyline"]
+    "related": [
+      "sketch-line",
+      "sketch-polyline"
+    ]
   },
   {
     "id": "sketch-text",
@@ -147,7 +165,9 @@
       "Can be rotated and moved like other sketch elements",
       "Essential for labeling features in engineering drawings"
     ],
-    "related": ["drawing-text"]
+    "related": [
+      "drawing-text"
+    ]
   },
   {
     "id": "constraint-coincident",
@@ -167,7 +187,10 @@
       "Reduces degrees of freedom by 1",
       "Use to connect geometry pieces"
     ],
-    "related": ["constraint-distance", "constraint-horizontal"]
+    "related": [
+      "constraint-distance",
+      "constraint-horizontal"
+    ]
   },
   {
     "id": "constraint-horizontal",
@@ -187,7 +210,10 @@
       "Over-constraint makes line horizontal AND violates other constraints",
       "Complementary to Vertical constraint"
     ],
-    "related": ["constraint-vertical", "constraint-parallel"]
+    "related": [
+      "constraint-vertical",
+      "constraint-parallel"
+    ]
   },
   {
     "id": "constraint-vertical",
@@ -207,7 +233,10 @@
       "Complementary to Horizontal constraint",
       "Essential for rectangular profiles"
     ],
-    "related": ["constraint-horizontal", "constraint-perpendicular"]
+    "related": [
+      "constraint-horizontal",
+      "constraint-perpendicular"
+    ]
   },
   {
     "id": "constraint-perpendicular",
@@ -215,7 +244,7 @@
     "category": "Sketch Constraints",
     "workspace": "Sketch",
     "shortcut": "Pe",
-    "description": "Forces two line segments to meet at exactly 90° angle",
+    "description": "Forces two line segments to meet at exactly 90\u00b0 angle",
     "steps": [
       "Select two line segments",
       "Press Pe or click Perpendicular",
@@ -223,11 +252,14 @@
     ],
     "tips": [
       "Works on any pair of lines, connected or not",
-      "Will move lines to create 90° angle if needed",
+      "Will move lines to create 90\u00b0 angle if needed",
       "Essential for rectangular geometry",
       "Reduces degrees of freedom by 1"
     ],
-    "related": ["constraint-parallel", "constraint-angle"]
+    "related": [
+      "constraint-parallel",
+      "constraint-angle"
+    ]
   },
   {
     "id": "constraint-parallel",
@@ -247,7 +279,10 @@
       "Useful for symmetric geometry",
       "Can apply to multiple lines in one operation"
     ],
-    "related": ["constraint-perpendicular", "constraint-symmetric"]
+    "related": [
+      "constraint-perpendicular",
+      "constraint-symmetric"
+    ]
   },
   {
     "id": "constraint-tangent",
@@ -267,7 +302,10 @@
       "Works with splines and other curves",
       "Two arcs can be tangent to each other"
     ],
-    "related": ["sketch-arc", "sketch-spline"]
+    "related": [
+      "sketch-arc",
+      "sketch-spline"
+    ]
   },
   {
     "id": "constraint-equal",
@@ -287,7 +325,10 @@
       "Useful for symmetric patterns",
       "Can apply to multiple objects at once"
     ],
-    "related": ["constraint-symmetric", "constraint-concentric"]
+    "related": [
+      "constraint-symmetric",
+      "constraint-concentric"
+    ]
   },
   {
     "id": "constraint-fixed",
@@ -307,7 +348,10 @@
       "Lock only essential reference geometry",
       "Can lock individual coordinates (X or Y only)"
     ],
-    "related": ["constraint-concentric", "constraint-distance"]
+    "related": [
+      "constraint-concentric",
+      "constraint-distance"
+    ]
   },
   {
     "id": "constraint-concentric",
@@ -327,7 +371,10 @@
       "Works with circles, arcs, and ellipses",
       "Reduces degrees of freedom by 2"
     ],
-    "related": ["constraint-equal", "constraint-distance"]
+    "related": [
+      "constraint-equal",
+      "constraint-distance"
+    ]
   },
   {
     "id": "constraint-symmetric",
@@ -347,7 +394,10 @@
       "Essential for symmetric part design",
       "Automatically maintains reflection"
     ],
-    "related": ["constraint-parallel", "constraint-equal"]
+    "related": [
+      "constraint-parallel",
+      "constraint-equal"
+    ]
   },
   {
     "id": "constraint-distance",
@@ -368,7 +418,10 @@
       "Negative distance inverts direction",
       "Can constrain distance from origin (0,0)"
     ],
-    "related": ["constraint-angle", "constraint-horizontal"]
+    "related": [
+      "constraint-angle",
+      "constraint-horizontal"
+    ]
   },
   {
     "id": "constraint-angle",
@@ -385,11 +438,14 @@
     ],
     "tips": [
       "Angle measured counter-clockwise from first to second line",
-      "Valid range: 0° to 360°",
+      "Valid range: 0\u00b0 to 360\u00b0",
       "Useful for precise angular relationships",
       "Essential for gear teeth, draft angles"
     ],
-    "related": ["constraint-perpendicular", "constraint-distance"]
+    "related": [
+      "constraint-perpendicular",
+      "constraint-distance"
+    ]
   },
   {
     "id": "solid-extrude",
@@ -412,7 +468,10 @@
       "Can apply taper angle for draft",
       "Negative distance extrudes opposite direction"
     ],
-    "related": ["solid-revolve", "solid-sweep"]
+    "related": [
+      "solid-revolve",
+      "solid-sweep"
+    ]
   },
   {
     "id": "solid-revolve",
@@ -427,16 +486,19 @@
       "Press R or click Revolve",
       "Select sketch profile",
       "Select axis line (auto-detects centerline if exists)",
-      "Set rotation angle (default 360° for full revolution)",
+      "Set rotation angle (default 360\u00b0 for full revolution)",
       "Click OK"
     ],
     "tips": [
       "Axis MUST be separate line, not part of profile",
       "Profile must be on one side of axis only",
-      "Full 360° creates complete rotationally symmetric part",
+      "Full 360\u00b0 creates complete rotationally symmetric part",
       "Partial angle creates sectors (e.g., pie-shaped features)"
     ],
-    "related": ["solid-extrude", "solid-sweep"]
+    "related": [
+      "solid-extrude",
+      "solid-sweep"
+    ]
   },
   {
     "id": "solid-sweep",
@@ -461,7 +523,10 @@
       "Scale along path: profile grows/shrinks following path",
       "Path must be continuous (no branches)"
     ],
-    "related": ["solid-extrude", "solid-loft"]
+    "related": [
+      "solid-extrude",
+      "solid-loft"
+    ]
   },
   {
     "id": "solid-loft",
@@ -484,7 +549,10 @@
       "Can loft point to circle (cone), circle to rectangle, etc.",
       "Order of selection matters"
     ],
-    "related": ["solid-sweep", "surface-filled"]
+    "related": [
+      "solid-sweep",
+      "surface-filled"
+    ]
   },
   {
     "id": "solid-fillet",
@@ -506,7 +574,10 @@
       "Radius must be smaller than adjacent geometry",
       "Variable radius: set different radii for different edges"
     ],
-    "related": ["solid-chamfer", "solid-shell"]
+    "related": [
+      "solid-chamfer",
+      "solid-shell"
+    ]
   },
   {
     "id": "solid-chamfer",
@@ -528,7 +599,10 @@
       "Angle + distance for angled chamfer",
       "Useful for deburring and functional design"
     ],
-    "related": ["solid-fillet", "solid-draft"]
+    "related": [
+      "solid-fillet",
+      "solid-draft"
+    ]
   },
   {
     "id": "solid-shell",
@@ -550,7 +624,10 @@
       "Wall thickness applies to all remaining faces",
       "Useful for containers, enclosures, thin-wall parts"
     ],
-    "related": ["solid-fillet", "surface-thicken"]
+    "related": [
+      "solid-fillet",
+      "surface-thicken"
+    ]
   },
   {
     "id": "solid-draft",
@@ -564,7 +641,7 @@
       "Press Dr or click Draft",
       "Select faces to draft",
       "Set draft plane (reference plane for direction)",
-      "Set draft angle (typically 5-10°)",
+      "Set draft angle (typically 5-10\u00b0)",
       "Click OK"
     ],
     "tips": [
@@ -573,7 +650,10 @@
       "Essential for injection molding and casting",
       "Pull direction must be consistent"
     ],
-    "related": ["solid-shell", "solid-fillet"]
+    "related": [
+      "solid-shell",
+      "solid-fillet"
+    ]
   },
   {
     "id": "pattern-rectangular",
@@ -597,7 +677,10 @@
       "Can pattern holes, bosses, slots, etc.",
       "All instances synchronized (edit original, all update)"
     ],
-    "related": ["pattern-circular", "pattern-mirror"]
+    "related": [
+      "pattern-circular",
+      "pattern-mirror"
+    ]
   },
   {
     "id": "pattern-circular",
@@ -612,16 +695,19 @@
       "Select feature to pattern",
       "Select axis (or default to Z-axis)",
       "Set count (total instances including original)",
-      "Set angle (360° for full circle, less for partial)",
+      "Set angle (360\u00b0 for full circle, less for partial)",
       "Click OK"
     ],
     "tips": [
       "Count includes original feature",
       "Equal spacing around circle",
-      "Angle less than 360° creates partial arrays",
+      "Angle less than 360\u00b0 creates partial arrays",
       "Useful for bolt holes, impellers, gear teeth"
     ],
-    "related": ["pattern-rectangular", "pattern-mirror"]
+    "related": [
+      "pattern-rectangular",
+      "pattern-mirror"
+    ]
   },
   {
     "id": "pattern-mirror",
@@ -643,7 +729,10 @@
       "Mirrored feature stays linked to original",
       "Edit original, mirror updates automatically"
     ],
-    "related": ["pattern-rectangular", "pattern-circular"]
+    "related": [
+      "pattern-rectangular",
+      "pattern-circular"
+    ]
   },
   {
     "id": "boolean-union",
@@ -665,7 +754,10 @@
       "Order of selection doesn't matter",
       "Can union 3+ bodies in one operation"
     ],
-    "related": ["boolean-cut", "boolean-intersect"]
+    "related": [
+      "boolean-cut",
+      "boolean-intersect"
+    ]
   },
   {
     "id": "boolean-cut",
@@ -687,7 +779,10 @@
       "Order of selection matters (first = target, second = tool)",
       "Can use complex shapes as cutting tools"
     ],
-    "related": ["boolean-union", "boolean-intersect"]
+    "related": [
+      "boolean-union",
+      "boolean-intersect"
+    ]
   },
   {
     "id": "boolean-intersect",
@@ -709,7 +804,10 @@
       "Useful for finding common geometry",
       "Less commonly used than Union and Cut"
     ],
-    "related": ["boolean-union", "boolean-cut"]
+    "related": [
+      "boolean-union",
+      "boolean-cut"
+    ]
   },
   {
     "id": "assembly-insert",
@@ -730,7 +828,10 @@
       "Subsequent components should be constrained with joints",
       "Components remain editable in assembly context"
     ],
-    "related": ["assembly-rigid-joint", "assembly-revolute-joint"]
+    "related": [
+      "assembly-rigid-joint",
+      "assembly-revolute-joint"
+    ]
   },
   {
     "id": "assembly-rigid-joint",
@@ -751,7 +852,10 @@
       "Often used for sub-assemblies",
       "Simplest joint type"
     ],
-    "related": ["assembly-revolute-joint", "assembly-slider-joint"]
+    "related": [
+      "assembly-revolute-joint",
+      "assembly-slider-joint"
+    ]
   },
   {
     "id": "assembly-revolute-joint",
@@ -769,11 +873,14 @@
     ],
     "tips": [
       "Components rotate relative to each other",
-      "Can specify angle limits (e.g., 0-90°)",
+      "Can specify angle limits (e.g., 0-90\u00b0)",
       "Can set friction/damping for motion study",
       "Useful for doors, levers, wheels"
     ],
-    "related": ["assembly-slider-joint", "assembly-ball-joint"]
+    "related": [
+      "assembly-slider-joint",
+      "assembly-ball-joint"
+    ]
   },
   {
     "id": "assembly-slider-joint",
@@ -795,7 +902,10 @@
       "Useful for pistons, drawer slides",
       "Axis must be defined by edge or constructed line"
     ],
-    "related": ["assembly-revolute-joint", "assembly-ball-joint"]
+    "related": [
+      "assembly-revolute-joint",
+      "assembly-ball-joint"
+    ]
   },
   {
     "id": "assembly-ball-joint",
@@ -817,7 +927,10 @@
       "Useful for robotic joints, universal joints",
       "Reduces degrees of freedom by 3"
     ],
-    "related": ["assembly-revolute-joint", "assembly-planar-joint"]
+    "related": [
+      "assembly-revolute-joint",
+      "assembly-planar-joint"
+    ]
   },
   {
     "id": "assembly-planar-joint",
@@ -838,7 +951,10 @@
       "Can add additional constraints for more restriction",
       "Like placing book on table"
     ],
-    "related": ["assembly-cylinder-joint", "assembly-revolute-joint"]
+    "related": [
+      "assembly-cylinder-joint",
+      "assembly-revolute-joint"
+    ]
   },
   {
     "id": "assembly-cylinder-joint",
@@ -859,7 +975,10 @@
       "Reduces degrees of freedom by 4",
       "Useful for rotating + moving parts"
     ],
-    "related": ["assembly-slider-joint", "assembly-revolute-joint"]
+    "related": [
+      "assembly-slider-joint",
+      "assembly-revolute-joint"
+    ]
   },
   {
     "id": "assembly-explode",
@@ -881,7 +1000,10 @@
       "Multiple explosion states can be saved",
       "Reset to assembled state anytime"
     ],
-    "related": ["assembly-insert", "assembly-rigid-joint"]
+    "related": [
+      "assembly-insert",
+      "assembly-rigid-joint"
+    ]
   },
   {
     "id": "assembly-collision",
@@ -903,7 +1025,10 @@
       "Can create clearance report",
       "Run before exporting design"
     ],
-    "related": ["assembly-insert", "assembly-rigid-joint"]
+    "related": [
+      "assembly-insert",
+      "assembly-rigid-joint"
+    ]
   },
   {
     "id": "cam-setup",
@@ -925,7 +1050,10 @@
       "Multiple setups can be created for different operations",
       "Setup defines anchor point and orientation"
     ],
-    "related": ["cam-tool-library", "cam-contour"]
+    "related": [
+      "cam-tool-library",
+      "cam-contour"
+    ]
   },
   {
     "id": "cam-tool-library",
@@ -948,7 +1076,10 @@
       "Feeds/speeds can be customized",
       "Tool material affects recommendations"
     ],
-    "related": ["cam-setup", "cam-contour"]
+    "related": [
+      "cam-setup",
+      "cam-contour"
+    ]
   },
   {
     "id": "cam-contour",
@@ -971,7 +1102,10 @@
       "Climb milling = faster but more vibration",
       "Conventional = safer but slower"
     ],
-    "related": ["cam-pocket", "cam-drill"]
+    "related": [
+      "cam-pocket",
+      "cam-drill"
+    ]
   },
   {
     "id": "cam-pocket",
@@ -994,7 +1128,10 @@
       "Tool diameter affects sharp corners",
       "Can use ball mill for smooth contours"
     ],
-    "related": ["cam-contour", "cam-drill"]
+    "related": [
+      "cam-contour",
+      "cam-drill"
+    ]
   },
   {
     "id": "cam-drill",
@@ -1016,7 +1153,10 @@
       "Rapid traverse above part, plunge to depth",
       "G-code output includes M03 spindle start"
     ],
-    "related": ["cam-contour", "cam-pocket"]
+    "related": [
+      "cam-contour",
+      "cam-pocket"
+    ]
   },
   {
     "id": "cam-roughing",
@@ -1039,7 +1179,10 @@
       "Large step-over reduces time",
       "Heavier machine loads than finishing"
     ],
-    "related": ["cam-finishing", "cam-contour"]
+    "related": [
+      "cam-finishing",
+      "cam-contour"
+    ]
   },
   {
     "id": "cam-finishing",
@@ -1062,7 +1205,10 @@
       "Ball mill = better for complex organic shapes",
       "Endmill = better for faceted geometry"
     ],
-    "related": ["cam-roughing", "cam-contour"]
+    "related": [
+      "cam-roughing",
+      "cam-contour"
+    ]
   },
   {
     "id": "cam-gcode",
@@ -1084,7 +1230,10 @@
       "Verify code before running on machine",
       "Safe Z height critical (prevent collisions)"
     ],
-    "related": ["cam-setup", "cam-preview"]
+    "related": [
+      "cam-setup",
+      "cam-preview"
+    ]
   },
   {
     "id": "cam-preview",
@@ -1106,7 +1255,10 @@
       "Detects collisions with clamps/fixtures",
       "Slow down animation for detail inspection"
     ],
-    "related": ["cam-gcode", "cam-roughing"]
+    "related": [
+      "cam-gcode",
+      "cam-roughing"
+    ]
   },
   {
     "id": "drawing-new",
@@ -1127,7 +1279,10 @@
       "Title block can be added",
       "Drawing views are live-linked to 3D model"
     ],
-    "related": ["drawing-orthographic", "drawing-title-block"]
+    "related": [
+      "drawing-orthographic",
+      "drawing-title-block"
+    ]
   },
   {
     "id": "drawing-orthographic",
@@ -1149,7 +1304,10 @@
       "Standard arrangement: front center, top above, right side right",
       "Hidden lines can be shown/hidden per view"
     ],
-    "related": ["drawing-section", "drawing-detail"]
+    "related": [
+      "drawing-section",
+      "drawing-detail"
+    ]
   },
   {
     "id": "drawing-section",
@@ -1171,7 +1329,10 @@
       "Can offset section plane for complex internal details",
       "Half-section shows interior on one side"
     ],
-    "related": ["drawing-orthographic", "drawing-detail"]
+    "related": [
+      "drawing-orthographic",
+      "drawing-detail"
+    ]
   },
   {
     "id": "drawing-detail",
@@ -1193,7 +1354,10 @@
       "Shows hidden details clearly",
       "Typically 2-5x magnification"
     ],
-    "related": ["drawing-orthographic", "drawing-section"]
+    "related": [
+      "drawing-orthographic",
+      "drawing-section"
+    ]
   },
   {
     "id": "drawing-dimensions",
@@ -1215,7 +1379,10 @@
       "Manual cleanup usually needed (delete redundant dimensions)",
       "Critical dimensions highlighted"
     ],
-    "related": ["drawing-manual-dimension", "drawing-gdt"]
+    "related": [
+      "drawing-manual-dimension",
+      "drawing-gdt"
+    ]
   },
   {
     "id": "drawing-manual-dimension",
@@ -1237,7 +1404,10 @@
       "Dimension text can be edited",
       "Font size and style can be customized"
     ],
-    "related": ["drawing-gdt", "drawing-text"]
+    "related": [
+      "drawing-gdt",
+      "drawing-text"
+    ]
   },
   {
     "id": "drawing-gdt",
@@ -1260,7 +1430,10 @@
       "Datums establish reference axes/planes",
       "Position tolerance controls hole location (crucial for assembly)"
     ],
-    "related": ["drawing-manual-dimension", "drawing-text"]
+    "related": [
+      "drawing-manual-dimension",
+      "drawing-text"
+    ]
   },
   {
     "id": "drawing-text",
@@ -1281,7 +1454,10 @@
       "Can add box/border around text",
       "Useful for manufacturing notes, material specs"
     ],
-    "related": ["drawing-manual-dimension", "drawing-gdt"]
+    "related": [
+      "drawing-manual-dimension",
+      "drawing-gdt"
+    ]
   },
   {
     "id": "drawing-title-block",
@@ -1302,7 +1478,10 @@
       "Custom templates can be saved and reused",
       "Professional appearance essential for production drawings"
     ],
-    "related": ["drawing-new", "drawing-orthographic"]
+    "related": [
+      "drawing-new",
+      "drawing-orthographic"
+    ]
   },
   {
     "id": "render-material",
@@ -1324,7 +1503,10 @@
       "Can preview in real-time viewport",
       "Multiple materials on one part possible"
     ],
-    "related": ["render-studio-lighting", "render-environment"]
+    "related": [
+      "render-studio-lighting",
+      "render-environment"
+    ]
   },
   {
     "id": "render-studio-lighting",
@@ -1342,12 +1524,15 @@
       "Click OK"
     ],
     "tips": [
-      "Key light typically 45° above, 45° to side",
+      "Key light typically 45\u00b0 above, 45\u00b0 to side",
       "Fill light opposite key light, lower intensity",
       "Back light creates rim effect (edge separation)",
       "Scene updates in real-time"
     ],
-    "related": ["render-environment", "render-material"]
+    "related": [
+      "render-environment",
+      "render-material"
+    ]
   },
   {
     "id": "render-environment",
@@ -1369,7 +1554,10 @@
       "Rotation changes light direction",
       "Presets for studio, outdoor, industrial"
     ],
-    "related": ["render-studio-lighting", "render-turntable"]
+    "related": [
+      "render-studio-lighting",
+      "render-turntable"
+    ]
   },
   {
     "id": "render-turntable",
@@ -1391,7 +1579,10 @@
       "Can loop video continuously",
       "Output is MP4 or image sequence"
     ],
-    "related": ["render-storyboard", "render-environment"]
+    "related": [
+      "render-storyboard",
+      "render-environment"
+    ]
   },
   {
     "id": "render-storyboard",
@@ -1413,7 +1604,10 @@
       "Can hide/show objects in timeline",
       "Professional presentations and marketing videos"
     ],
-    "related": ["render-turntable", "render-environment"]
+    "related": [
+      "render-turntable",
+      "render-environment"
+    ]
   },
   {
     "id": "simulation-stress",
@@ -1436,7 +1630,10 @@
       "Mesh refinement = more accurate but slower",
       "Can probe stress at any point"
     ],
-    "related": ["simulation-deformation", "simulation-thermal"]
+    "related": [
+      "simulation-deformation",
+      "simulation-thermal"
+    ]
   },
   {
     "id": "simulation-deformation",
@@ -1458,7 +1655,10 @@
       "Useful for spring designs, compliant mechanisms",
       "Compare to allowable tolerance"
     ],
-    "related": ["simulation-stress", "simulation-thermal"]
+    "related": [
+      "simulation-stress",
+      "simulation-thermal"
+    ]
   },
   {
     "id": "simulation-thermal",
@@ -1481,7 +1681,10 @@
       "Steady-state = equilibrium temperature",
       "Transient = temperature over time"
     ],
-    "related": ["simulation-stress", "simulation-modal"]
+    "related": [
+      "simulation-stress",
+      "simulation-modal"
+    ]
   },
   {
     "id": "simulation-modal",
@@ -1503,7 +1706,10 @@
       "Mode shapes show which features vibrate most",
       "Useful for avoiding resonance"
     ],
-    "related": ["simulation-stress", "simulation-deformation"]
+    "related": [
+      "simulation-stress",
+      "simulation-deformation"
+    ]
   },
   {
     "id": "inspect-measure",
@@ -1525,7 +1731,10 @@
       "Radius measurement clicks curved edge",
       "Useful for verification against drawing"
     ],
-    "related": ["inspect-section", "inspect-curvature"]
+    "related": [
+      "inspect-section",
+      "inspect-curvature"
+    ]
   },
   {
     "id": "inspect-section",
@@ -1547,7 +1756,10 @@
       "Check for undercuts, sharp corners, minimum wall thickness",
       "Useful for injection molding and casting design"
     ],
-    "related": ["inspect-measure", "inspect-draft"]
+    "related": [
+      "inspect-measure",
+      "inspect-draft"
+    ]
   },
   {
     "id": "inspect-curvature",
@@ -1568,7 +1780,10 @@
       "Can identify areas needing fillet radius increase",
       "Export curvature report"
     ],
-    "related": ["inspect-section", "inspect-draft"]
+    "related": [
+      "inspect-section",
+      "inspect-draft"
+    ]
   },
   {
     "id": "inspect-draft",
@@ -1582,7 +1797,7 @@
       "Select pull direction (mold opening direction)",
       "Green faces = removable without undercut",
       "Red faces = require core or undercut feature",
-      "Adjust direction angle (typically 2-5° draft)"
+      "Adjust direction angle (typically 2-5\u00b0 draft)"
     ],
     "tips": [
       "Essential for designing injection-molded parts",
@@ -1590,7 +1805,10 @@
       "Red areas must be avoided or require extra mold complexity",
       "Can add draft angles in CAD to fix issues"
     ],
-    "related": ["inspect-curvature", "inspect-zebra"]
+    "related": [
+      "inspect-curvature",
+      "inspect-zebra"
+    ]
   },
   {
     "id": "inspect-zebra",
@@ -1612,7 +1830,10 @@
       "Stripe pattern instantly reveals surface quality",
       "Essential for Class A (visible) surfaces"
     ],
-    "related": ["inspect-curvature", "inspect-section"]
+    "related": [
+      "inspect-curvature",
+      "inspect-section"
+    ]
   },
   {
     "id": "data-version-save",
@@ -1634,7 +1855,10 @@
       "Version history shows all saved states",
       "Useful for comparing designs over time"
     ],
-    "related": ["data-version-restore", "data-import-step"]
+    "related": [
+      "data-version-restore",
+      "data-import-step"
+    ]
   },
   {
     "id": "data-version-restore",
@@ -1654,7 +1878,10 @@
       "Compare versions before restoring (diff view)",
       "Can create branch (separate development line)"
     ],
-    "related": ["data-version-save", "data-import-step"]
+    "related": [
+      "data-version-save",
+      "data-import-step"
+    ]
   },
   {
     "id": "data-import-step",
@@ -1675,7 +1902,10 @@
       "Preserves solid body geometry, not feature history",
       "Useful for exchanging designs with different CAD"
     ],
-    "related": ["data-export-step", "data-export-stl"]
+    "related": [
+      "data-export-step",
+      "data-export-stl"
+    ]
   },
   {
     "id": "data-export-step",
@@ -1696,7 +1926,10 @@
       "Most manufacturers prefer STEP format",
       "Preserves solid geometry accurately"
     ],
-    "related": ["data-import-step", "data-export-stl"]
+    "related": [
+      "data-import-step",
+      "data-export-stl"
+    ]
   },
   {
     "id": "data-export-stl",
@@ -1718,7 +1951,10 @@
       "Binary STL = smaller file, ASCII = readable in text editor",
       "Essential for 3D printer preparation"
     ],
-    "related": ["data-export-step", "data-export-dxf"]
+    "related": [
+      "data-export-step",
+      "data-export-dxf"
+    ]
   },
   {
     "id": "data-export-dxf",
@@ -1739,7 +1975,10 @@
       "Preserves lines, arcs, circles, text",
       "Layer information can be included"
     ],
-    "related": ["data-export-step", "data-export-pdf"]
+    "related": [
+      "data-export-step",
+      "data-export-pdf"
+    ]
   },
   {
     "id": "data-export-pdf",
@@ -1760,7 +1999,10 @@
       "Preserves dimensions and annotations",
       "Print-ready format"
     ],
-    "related": ["data-export-dxf", "data-share"]
+    "related": [
+      "data-export-dxf",
+      "data-share"
+    ]
   },
   {
     "id": "data-share",
@@ -1781,7 +2023,10 @@
       "Link expires after set time (1 day, 1 week, permanent)",
       "Useful for customer review, team feedback"
     ],
-    "related": ["data-comments", "data-version-save"]
+    "related": [
+      "data-comments",
+      "data-version-save"
+    ]
   },
   {
     "id": "data-comments",
@@ -1803,6 +2048,38 @@
       "Can resolve/close comments when addressed",
       "Threaded discussion possible"
     ],
-    "related": ["data-share", "data-version-save"]
+    "related": [
+      "data-share",
+      "data-version-save"
+    ]
+  },
+  {
+    "id": "ai-copilot",
+    "title": "AI Copilot (multi-step)",
+    "category": "AI Tools",
+    "workspace": "Tools",
+    "shortcut": null,
+    "description": "Generates complete parametric CAD models from natural-language prompts. LLM plans a multi-step sequence that executes live via the Agent API; on step failure, asks for a recovery plan (up to 2 retries).",
+    "steps": [
+      "Tools menu \u2192 AI Copilot (multi-step)",
+      "Click \ud83d\udd11 and paste your Anthropic/Gemini/Groq API key",
+      "Select a model (Claude Sonnet 4.6 recommended)",
+      "Type a description of the part in plain English",
+      "Click \u26a1 Generate",
+      "Watch each step execute live in the viewport",
+      "On failure, the LLM is asked to recover and continues"
+    ],
+    "tips": [
+      "Example: 'create a Raspberry Pi 4B case with port cutouts and 3mm fillet'",
+      "Mention every dimension you care about for precise output",
+      "Claude knows real board specs (Pi 4B, Arduino Uno, Nano)",
+      "Keys stored in localStorage \u2014 never sent to our servers",
+      "Cmd/Ctrl+Enter in the textarea triggers Generate",
+      "Gemini 2.0 Flash and Groq Llama have free tiers"
+    ],
+    "related": [
+      "tools-text-to-cad",
+      "tools-photo-to-cad"
+    ]
   }
 ]

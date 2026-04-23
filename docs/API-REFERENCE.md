@@ -1421,3 +1421,20 @@ async function reviewAndExport() {
 ---
 
 End of API Reference
+
+## AI Copilot (v3.10.0+)
+
+Multi-step CAD generation from natural language. See `docs/AI-COPILOT.md` for full docs.
+
+```js
+window.CycleCAD.AICopilot.execute('generate', {
+  prompt: 'create a Raspberry Pi 4B case with port cutouts'
+});
+// Observe state
+window.CycleCAD.AICopilot.getState();
+// → { running: true, stepIndex: 3, results: 4, errors: 0 }
+// Stop mid-run
+window.CycleCAD.AICopilot.abort();
+```
+
+The copilot uses the Agent API (`window.cycleCAD.execute`) as its execution substrate, so every Agent API command above is reachable from a prompt.

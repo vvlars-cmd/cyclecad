@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Copilot Tests — cycleCAD</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; display: flex; height: 100vh; }
+  .app { flex: 0 0 70%; border: 1px solid #2d3748; }
+  .app iframe { width: 100%; height: 100%; border: 0; }
+  .panel { flex: 0 0 30%; display: flex; flex-direction: column; background: #1a202c; border-left: 1px solid #2d3748; }
+  .header { padding: 16px; border-bottom: 1px solid #2d3748; }
+  .header h1 { font-size: 16px; color: #38bdf8; margin-bottom: 10px; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; font-size: 11px; }
+  .stat { padding: 6px; background: #1e293b; border-radius: 4px; border-left: 2px solid #64748b; }
+  .stat.pass { border-left-color: #10b981; }
+  .stat.fail { border-left-color: #ef4444; }
+  .stat.skip { border-left-color: #f59e0b; }
+  .stat-label { font-size: 10px; color: #94a3b8; }
+  .stat-value { font-size: 16px; font-weight: 600; }
+  .controls { padding: 10px; border-bottom: 1px solid #2d3748; display: flex; gap: 6px; }
+  .controls button { flex: 1; padding: 6px 8px; background: #334155; color: #e2e8f0; border: 0; border-radius: 4px; font-size: 11px; cursor: pointer; }
+  .controls button:hover { background: #475569; }
+  .controls button.primary { background: #38bdf8; color: #0f172a; font-weight: 600; }
+  .log { flex: 1; overflow-y: auto; padding: 10px; font: 11px 'SF Mono', monospace; }
+  .entry { padding: 4px 6px; margin-bottom: 2px; border-radius: 3px; white-space: pre-wrap; }
+  .entry.pass { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+  .entry.fail { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+  .entry.info { color: #94a3b8; }
+</style>
+</head>
+<body>
+  <div class="app"><iframe id="appFrame" src="/app/index.html"></iframe></div>
+  <div class="panel">
+    <div class="header">
+      <h1>🤖 AI Copilot Tests</h1>
+      <div class="stats">
+        <div class="stat pass"><div class="stat-label">PASSED</div><div class="stat-value" id="passCount">0</div></div>
+        <div class="stat fail"><div class="stat-label">FAILED</div><div class="stat-value" id="failCount">0</div></div>
+        <div class="stat skip"><div class="stat-label">SKIPPED</div><div class="stat-value" id="skipCount">0</div></div>
+      </div>
+    </div>
+    <div class="controls">
+      <button class="primary" onclick="runAllTests()">▶ Run All</button>
+      <button onclick="document.getElementById('log').innerHTML=''">Clear</button>
+    </div>
+    <div class="log" id="log"></div>
+  </div>
+
+<script>
+let passCount = 0, failCount = 0, skipCount = 0;
+
+function log(msg, cls = 'info') {
+  const e = document.createElement('div');
+  e.className = 'entry ' + cls;
+  e.textContent = msg;
+  document.getElementById('log').appendChild(e);
+}
+
+function updateCounts() {
+  document.getElementById('passCount').textContent = passCount;
+  document.getElementById('failCount').textContent = failCount;
+  document.getElementById('skipCount').textContent = skipCount;
+}
+
+async function waitForFrame() {
+  const iframe = document.getElementById('appFrame');
+  iframe.src = 'http://localhost:3000/app/index.html?cb=' + Date.now();
+  await new Promise(r => iframe.addEventListener('load', r, { once: true }));
+  const deadline = Date.now() + 15000;
+  while (Date.now() < deadline) {
+    if (iframe.contentWindow.CycleCAD?.AICopilot) return true;
+    await new Promise(r => setTimeout(r, 200));
+  }
+  return false;
+}
+
+const tests = [
+  // MODULE LOADING
+  { name: 'AICopilot module exists', fn: () => {
+    const f = document.getElementById('appFrame').contentWindow;
+    return !!f.CycleCAD?.AICopilot;
+  }},
+  { name: 'getUI returns valid panel', fn: () => {
+    const f = document.getElementById('appFrame').contentWindow;
+    const ui = f.CycleCAD.AICopilot.getUI();
+    return !!ui && (ui instanceof f.HTMLElement || ui instanceof f.Node || typeof ui === 'object');
+  }},
+  { name: 'init function exists', fn: () => {
+    const f = document.getElementById('appFrame').contentWindow;
+    return typeof f.CycleCAD.AICopilot.init === 'function';
+  }},
+  { name: 'execute function exists', fn: () => {
+    const f = document.getElementById('appFrame').contentWindow;
+    return typeof f.CycleCAD.AICopilot.execute === 'function';
+  }},
+  { name: 'go function exists', fn: () => {
+    const f = document.getElementById('appFrame').contentWindow;
+    return typeof f.CycleCAD.AICopilot.go === 'function';
+  }},
+  { name: 'abort function exists', fn: () => {
+    const f = document.getElementById('appFrame').contentWindow;
+    return typeof f.CycleCAD.AICopilot.abort === 'function';
+  }},
+  { name: 'getState returns object', fn: () => {
+    const f = document.getElementById('appFrame').contentWindow;
+    const s = f.CycleCAD.AICopilot.getState();
+    return s && typeof s === 'object' && 'running' in s;
+  }},
+  // UI STRUCTURE
+  { name: 'UI has prompt textarea', fn: () => {
+    const f = document.getElementById('appFrame').contentWindow;
+    const ui = f.CycleCAD.AICopilot.getUI();
+    return !!ui.querySelector('.aic-prompt');
+  }},
+  { name: 'UI has Generate button', fn: () => {
+    const f = document.getElementById('appFrame').contentWindow;
+    const ui = f.CycleCAD.AICopilot.getUI();
+    return !!ui.querySelector('.aic-go');
+  }},
+  { name: 'UI has Stop button', fn: () => {
+    const f = document.getElementById('appFrame').contentWindow;
+    const ui = f.CycleCAD.AICopilot.getUI();
+    return !!ui.querySelector('.aic-stop');
+  }},
+  { name: 'UI has model dropdown', fn: () => {
+    const f = document.getElementById('appFrame').contentWindow;
+    const ui = f.CycleCAD.AICopilot.getUI();
+    const s = ui.querySelector('.aic-model');
+    return s && s.tagName === 'SELECT';
+  }},
+  { name: 'Model dropdown has 5 options', fn: () => {
+    const f = document.getElementById('appFrame').contentWindow;
+    const ui = f.CycleCAD.AICopilot.getUI();
+    const s = ui.querySelector('.aic-model');
+    return s && s.options.length === 5;
+  }},
+  { name: 'UI has API key button', fn: () => {
+    const f = document.getElementById('appFrame').contentWindow;
+    const ui = f.CycleCAD.AICopilot.getUI();
+    return !!ui.querySelector('.aic-key');
+  }},
+  { name: 'UI has progress bar', fn: () => {
+    const f = document.getElementById('appFrame').contentWindow;
+    const ui = f.CycleCAD.AICopilot.getUI();
+    return !!ui.querySelector('.aic-prog');
+  }},
+  { name: 'UI has log area', fn: () => {
+    const f = document.getElementById('appFrame').contentWindow;
+    const ui = f.CycleCAD.AICopilot.getUI();
+    return !!ui.querySelector('.aic-log');
+  }},
+  // MENU INTEGRATION
+  { name: 'Tools menu has AI Copilot entry', fn: () => {
+    const f = document.getElementById('appFrame').contentWindow;
+    const btn = f.document.querySelector('[data-action="tools-ai-copilot"]');
+    return !!btn;
+  }},
+  // BEHAVIOR
+  { name: 'execute("stop") returns without throwing', fn: () => {
+    const f = document.getElementById('appFrame').contentWindow;
+    f.CycleCAD.AICopilot.execute('stop');
+    return true;
+  }},
+  { name: 'getState.running is false initially', fn: () => {
+    const f = document.getElementById('appFrame').contentWindow;
+    return f.CycleCAD.AICopilot.getState().running === false;
+  }},
+  { name: 'Missing key shows friendly error', async fn() {
+    const f = document.getElementById('appFrame').contentWindow;
+    // Clear keys temporarily
+    const saved = f.localStorage.getItem('cyclecad_api_keys');
+    f.localStorage.setItem('cyclecad_api_keys', '{}');
+    try {
+      const ui = f.CycleCAD.AICopilot.getUI();
+      const prompt = ui.querySelector('.aic-prompt');
+      const log = ui.querySelector('.aic-log');
+      prompt.value = 'test';
+      await f.CycleCAD.AICopilot.go();
+      await new Promise(r => setTimeout(r, 500));
+      // Expect a warning about missing key in the log
+      return log.textContent.toLowerCase().includes('key') || log.textContent.toLowerCase().includes('missing');
+    } finally {
+      if (saved !== null) f.localStorage.setItem('cyclecad_api_keys', saved);
+    }
+  }},
+  { name: 'Empty prompt shows warning', async fn() {
+    const f = document.getElementById('appFrame').contentWindow;
+    const ui = f.CycleCAD.AICopilot.getUI();
+    const prompt = ui.querySelector('.aic-prompt');
+    const log = ui.querySelector('.aic-log');
+    log.innerHTML = '';
+    prompt.value = '';
+    await f.CycleCAD.AICopilot.go();
+    await new Promise(r => setTimeout(r, 200));
+    return log.textContent.toLowerCase().includes('prompt') || log.textContent.toLowerCase().includes('enter');
+  }},
+];
+
+async function runAllTests() {
+  passCount = failCount = skipCount = 0;
+  updateCounts();
+  document.getElementById('log').innerHTML = '';
+
+  log('Waiting for app iframe to populate window.CycleCAD.AICopilot...', 'info');
+  const ready = await waitForFrame();
+  log(ready ? '✓ App iframe ready. Running tests.' : '⚠ App did not populate AICopilot within 15s — tests may fail.', ready ? 'pass' : 'fail');
+
+  for (const t of tests) {
+    try {
+      const result = await Promise.resolve(t.fn());
+      if (result) {
+        passCount++;
+        log(`✓ ${t.name}`, 'pass');
+      } else {
+        failCount++;
+        log(`✗ ${t.name}`, 'fail');
+      }
+    } catch (e) {
+      failCount++;
+      log(`✗ ${t.name}: ${e.message}`, 'fail');
+    }
+    updateCounts();
+  }
+
+  log(`\nDone — ${passCount} passed, ${failCount} failed, ${skipCount} skipped.`, passCount === tests.length ? 'pass' : 'info');
+}
+</script>
+</body>
+</html>

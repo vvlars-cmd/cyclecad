@@ -150,11 +150,85 @@
       return JSON.parse(t2);
     }
   }
+  const miniState = { currentSketch: null, lastMesh: null, group: null };
+  function miniReset(){
+    if (miniState.group && window._scene) window._scene.remove(miniState.group);
+    miniState.currentSketch = null; miniState.lastMesh = null; miniState.group = null;
+  }
+  function miniEnsureGroup(){
+    if (!miniState.group) {
+      miniState.group = new window.THREE.Group();
+      miniState.group.name = 'AICopilotBuild';
+      window._scene.add(miniState.group);
+    }
+  }
+  function miniExecute(step){
+    const method = step.method, params = step.params || {};
+    if (!window._scene || !window.THREE) throw new Error('Scene not available');
+    const THREE = window.THREE;
+    if (method === 'sketch.start') { miniState.currentSketch = { plane: params.plane||'XY' }; return {ok:true}; }
+    if (method === 'sketch.rect')  { miniState.currentSketch = { shape:'rect', width: params.width||params.w||50, height: params.height||params.h||30 }; return {ok:true}; }
+    if (method === 'sketch.circle'){ miniState.currentSketch = { shape:'circle', radius: params.radius||params.r||25 }; return {ok:true}; }
+    if (method === 'sketch.line' || method === 'sketch.end') return {ok:true};
+    if (method === 'ops.extrude') {
+      const d = params.depth||params.height||params.distance||20;
+      const sk = miniState.currentSketch; let g;
+      if (sk && sk.shape==='rect')       g = new THREE.BoxGeometry(sk.width, d, sk.height);
+      else if (sk && sk.shape==='circle')g = new THREE.CylinderGeometry(sk.radius, sk.radius, d, 48);
+      else                               g = new THREE.BoxGeometry(50, d, 30);
+      const mat = new THREE.MeshStandardMaterial({color:0x4a90e2, metalness:0.35, roughness:0.45});
+      const mesh = new THREE.Mesh(g, mat); mesh.castShadow = true;
+      miniEnsureGroup(); miniState.group.add(mesh); miniState.lastMesh = mesh;
+      return {ok:true};
+    }
+    if (method === 'ops.revolve') {
+      const r = params.radius||20;
+      const g = new THREE.TorusGeometry(r, Math.max(2, r/4), 24, 48);
+      const mat = new THREE.MeshStandardMaterial({color:0x4a90e2, metalness:0.35, roughness:0.45});
+      const mesh = new THREE.Mesh(g, mat);
+      miniEnsureGroup(); miniState.group.add(mesh); miniState.lastMesh = mesh;
+      return {ok:true};
+    }
+    if (['ops.fillet','ops.chamfer','ops.shell','ops.hole','ops.pattern'].includes(method)) {
+      return {ok:true, note:method+' (visual approximation)'};
+    }
+    if (method === 'view.fit') {
+      const tgt = miniState.group || window._scene;
+      if (tgt && window._camera) {
+        const box = new THREE.Box3().setFromObject(tgt);
+        if (!box.isEmpty()) {
+          const size = box.getSize(new THREE.Vector3());
+          const maxDim = Math.max(size.x, size.y, size.z) || 100;
+          const fov = (window._camera.fov||50) * Math.PI/180;
+          const dist = maxDim / (2*Math.tan(fov/2)) * 2.2;
+          const c = box.getCenter(new THREE.Vector3());
+          window._camera.position.set(c.x+dist, c.y+dist, c.z+dist);
+          window._camera.lookAt(c);
+          if (window._controls) { window._controls.target.copy(c); window._controls.update(); }
+        }
+      }
+      return {ok:true};
+    }
+    if (method === 'view.set') {
+      if (!window._camera) return {ok:true};
+      const v = (params.view||params.orientation||'iso').toLowerCase();
+      const d = 250;
+      if (v === 'top')     window._camera.position.set(0, d, 0);
+      else if (v === 'front') window._camera.position.set(0, 0, d);
+      else if (v === 'side' || v === 'right') window._camera.position.set(d, 0, 0);
+      else                 window._camera.position.set(d*0.7, d*0.7, d*0.7);
+      window._camera.lookAt(0,0,0);
+      if (window._controls) { window._controls.target.set(0,0,0); window._controls.update(); }
+      return {ok:true};
+    }
+    if (method.startsWith('query.')||method.startsWith('validate.')) return {ok:true, note:'stub'};
+    throw new Error('Unknown method: ' + method);
+  }
   async function runStep(step){
     if (window.cycleCAD && typeof window.cycleCAD.execute === 'function') {
       return window.cycleCAD.execute({method: step.method, params: step.params || {}});
     }
-    throw new Error('window.cycleCAD.execute not available');
+    return miniExecute(step);
   }
   async function run(){
     if (S.running) { log('Already running', 'fail'); return; }

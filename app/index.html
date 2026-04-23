@@ -2910,5 +2910,40 @@ window._dismissSplash = function(action) {
   else initMenuPin();
 })();
 </script>
+<script>
+(function(){
+  function initDialogDrag(){
+    const dlg = document.getElementById('dialog-overlay');
+    const title = document.getElementById('dialog-title');
+    if (!dlg || !title) { setTimeout(initDialogDrag, 300); return; }
+    let dragging = false, ox = 0, oy = 0, sx = 0, sy = 0;
+    const inner = dlg.querySelector('.dialog-container, .dialog-content, [class*="dialog-"]:not([id])') || dlg.firstElementChild;
+    if (!inner) return;
+    inner.setAttribute('data-dialog-drag', 'wired');
+    title.style.cursor = 'move';
+    title.style.userSelect = 'none';
+    title.addEventListener('pointerdown', (e) => {
+      dragging = true; sx = e.clientX; sy = e.clientY;
+      const rect = inner.getBoundingClientRect();
+      ox = rect.left; oy = rect.top;
+      inner.style.position = 'fixed';
+      inner.style.margin = '0';
+      inner.style.left = ox + 'px';
+      inner.style.top = oy + 'px';
+      inner.style.transform = 'none';
+      title.setPointerCapture(e.pointerId);
+    });
+    title.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      inner.style.left = (ox + e.clientX - sx) + 'px';
+      inner.style.top  = (oy + e.clientY - sy) + 'px';
+    });
+    title.addEventListener('pointerup', (e) => { dragging = false; try { title.releasePointerCapture(e.pointerId); } catch(_){} });
+    console.log('[dialog-drag] wired');
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initDialogDrag);
+  else initDialogDrag();
+})();
+</script>
 </body>
 </html>

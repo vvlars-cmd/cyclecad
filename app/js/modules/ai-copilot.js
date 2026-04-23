@@ -431,7 +431,7 @@
     const m = MODELS[modelId];
     const earlyTpl = matchTemplate(effectivePrompt);
     if (!earlyTpl && !getKeys()[m.keyField]) { log('Missing '+m.keyField+' key — click the key icon', 'fail'); return; }
-    S.running = true; S.abort = false; S.stepIndex = 0; S.results = []; S.errors = [];
+    S.running = true; S.abort = false; S.stepIndex = 0; S.results = []; S.errors = []; miniReset();
     progress(5, 'Planning...');
     log('Planning with '+m.label+'...', 'info');
     let plan;

@@ -162,23 +162,33 @@
       window._scene.add(miniState.group);
     }
   }
+  function getPos(p){
+    if (Array.isArray(p.position)) return p.position;
+    if (Array.isArray(p.center))   return p.center;
+    if (Array.isArray(p.at))       return p.at;
+    return [+p.x||0, +p.y||0, +p.z||0];
+  }
   function miniExecute(step){
     const method = step.method, params = step.params || {};
     if (!window._scene || !window.THREE) throw new Error('Scene not available');
     const THREE = window.THREE;
-    if (method === 'sketch.start') { miniState.currentSketch = { plane: params.plane||'XY' }; return {ok:true}; }
-    if (method === 'sketch.rect')  { miniState.currentSketch = { shape:'rect', width: params.width||params.w||50, height: params.height||params.h||30 }; return {ok:true}; }
-    if (method === 'sketch.circle'){ miniState.currentSketch = { shape:'circle', radius: params.radius||params.r||25 }; return {ok:true}; }
+    if (method === 'sketch.start') { miniState.currentSketch = { plane: params.plane||'XY', origin: getPos(params) }; return {ok:true}; }
+    if (method === 'sketch.rect')  { miniState.currentSketch = Object.assign(miniState.currentSketch||{}, { shape:'rect', width: params.width||params.w||50, height: params.height||params.h||30, origin: getPos(params) }); return {ok:true}; }
+    if (method === 'sketch.circle'){ miniState.currentSketch = Object.assign(miniState.currentSketch||{}, { shape:'circle', radius: params.radius||params.r||(params.diameter?params.diameter/2:25), origin: getPos(params) }); return {ok:true}; }
     if (method === 'sketch.line' || method === 'sketch.end') return {ok:true};
     if (method === 'ops.extrude') {
       const d = params.depth||params.height||params.distance||20;
-      const sk = miniState.currentSketch; let g;
-      if (sk && sk.shape==='rect')       g = new THREE.BoxGeometry(sk.width, d, sk.height);
-      else if (sk && sk.shape==='circle')g = new THREE.CylinderGeometry(sk.radius, sk.radius, d, 48);
-      else                               g = new THREE.BoxGeometry(50, d, 30);
+      const sk = miniState.currentSketch || {};
+      const pos = sk.origin || [0,0,0];
+      let g;
+      if (sk.shape==='rect')         g = new THREE.BoxGeometry(sk.width, d, sk.height);
+      else if (sk.shape==='circle')  g = new THREE.CylinderGeometry(sk.radius, sk.radius, d, 48);
+      else                           g = new THREE.BoxGeometry(50, d, 30);
       const mat = new THREE.MeshStandardMaterial({color:0x4a90e2, metalness:0.35, roughness:0.45});
       const mesh = new THREE.Mesh(g, mat); mesh.castShadow = true;
+      mesh.position.set(pos[0]||0, (pos[1]||0) + d/2, pos[2]||0);
       miniEnsureGroup(); miniState.group.add(mesh); miniState.lastMesh = mesh;
+      miniState.currentSketch = null;
       return {ok:true};
     }
     if (method === 'ops.revolve') {
@@ -189,7 +199,31 @@
       miniEnsureGroup(); miniState.group.add(mesh); miniState.lastMesh = mesh;
       return {ok:true};
     }
-    if (['ops.fillet','ops.chamfer','ops.shell','ops.hole','ops.pattern'].includes(method)) {
+    if (method === 'ops.hole') {
+      const pos = getPos(params);
+      const r = params.radius || (params.diameter?params.diameter/2:3);
+      const d = params.depth || 15;
+      const g = new THREE.CylinderGeometry(r, r, d, 32);
+      const mat = new THREE.MeshStandardMaterial({color:0x1a1a1a, metalness:0.2, roughness:0.8});
+      const mesh = new THREE.Mesh(g, mat);
+      mesh.position.set(pos[0]||0, (pos[1]||0) + d/2 + 0.1, pos[2]||0);
+      miniEnsureGroup(); miniState.group.add(mesh);
+      return {ok:true};
+    }
+    if (method === 'ops.pattern') {
+      if (!miniState.lastMesh) return {ok:true, note:'no base mesh'};
+      const count = Math.max(2, Math.min(20, params.count||4));
+      const sx = params.spacingX || (params.direction==='x'?params.spacing:0) || 0;
+      const sz = params.spacingZ || (params.direction==='z'?params.spacing:0) || 0;
+      const sy = params.spacingY || 0;
+      for (let i = 1; i < count; i++) {
+        const c = miniState.lastMesh.clone();
+        c.position.x += sx*i; c.position.z += sz*i; c.position.y += sy*i;
+        miniState.group.add(c);
+      }
+      return {ok:true};
+    }
+    if (['ops.fillet','ops.chamfer','ops.shell'].includes(method)) {
       return {ok:true, note:method+' (visual approximation)'};
     }
     if (method === 'view.fit') {
@@ -224,7 +258,7 @@
     if (method.startsWith('query.')||method.startsWith('validate.')) return {ok:true, note:'stub'};
     throw new Error('Unknown method: ' + method);
   }
-  async function runStep(step){
+    async function runStep(step){
     if (window.cycleCAD && typeof window.cycleCAD.execute === 'function') {
       return window.cycleCAD.execute({method: step.method, params: step.params || {}});
     }

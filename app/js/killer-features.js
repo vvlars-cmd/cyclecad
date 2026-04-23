@@ -122,7 +122,6 @@ export const KillerFeatures = {
         `;
 
         document.body.appendChild(panel);
-        document.getElementById('kf-cost-close')?.addEventListener('click', () => estimator.hide());
 
         document.getElementById('kf-copilot-close').addEventListener('click', () => {
           panel.remove();
@@ -670,6 +669,7 @@ export const KillerFeatures = {
         `;
 
         document.body.appendChild(panel);
+        document.getElementById('kf-cost-close')?.addEventListener('click', () => estimator.hide());
         this.updateCosts();
 
         // Listen to scene changes

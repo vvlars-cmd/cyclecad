@@ -234,10 +234,13 @@
     if (S.running) { log('Already running', 'fail'); return; }
     const prompt = (S.els.prompt?.value || '').trim();
     if (!prompt) { log('Enter a prompt first', 'fail'); return; }
-    const quotedGoals = (prompt.match(/"[^"]{10,}"/g) || []).length;
-    if (quotedGoals >= 2) {
-      log('Detected '+quotedGoals+' goals in one prompt. Use ONE goal at a time.', 'fail');
-      return;
+    const quotedMatches = prompt.match(/"([^"]{10,})"/g) || [];
+    let effectivePrompt = prompt;
+    if (quotedMatches.length >= 2) {
+      const first = quotedMatches[0].replace(/^"|"$/g, '');
+      log('Detected '+quotedMatches.length+' goals. Running only the first: \"'+first.slice(0,60)+'...\"', 'info');
+      log('To run the others, paste them one at a time.', 'info');
+      effectivePrompt = first;
     }
     const modelId = S.els.model?.value;
     const m = MODELS[modelId];
@@ -247,7 +250,7 @@
     log('Planning with '+m.label+'...', 'info');
     let plan;
     try {
-      const raw = await callLLM(modelId, prompt);
+      const raw = await callLLM(modelId, effectivePrompt);
       plan = parseJson(raw);
       if (!Array.isArray(plan)) throw new Error('Plan is not an array');
       setLastWorkingModel(modelId);

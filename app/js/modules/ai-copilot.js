@@ -77,7 +77,7 @@
     }
   }
 
-  const SYSTEM_PROMPT = 'You are a CAD planning assistant. Given a user goal, output a JSON array of steps. Each step: {"method":"<ns.cmd>","params":{...},"note":"<short>"}. Namespaces: sketch.start, sketch.rect, sketch.circle, sketch.line, sketch.end, ops.extrude, ops.revolve, ops.fillet, ops.chamfer, ops.shell, ops.hole, ops.subtract, ops.pattern, view.set, view.fit. For ANY material removal (holes, port cutouts, slots, pockets) use ops.hole with params {position:[x,y,z], depth, AND EITHER radius OR width+height}. Never use sketch+extrude for cutouts. Always specify position:[x,y,z] for every feature that isn't at origin. Output ONLY the JSON array, no prose.';
+  const SYSTEM_PROMPT = 'You are a CAD planning assistant. Given a user goal, output a JSON array of steps. Each step: {"method":"<ns.cmd>","params":{...},"note":"<short>"}. Namespaces: sketch.start, sketch.rect, sketch.circle, sketch.line, sketch.end, ops.extrude, ops.revolve, ops.fillet, ops.chamfer, ops.shell, ops.hole, ops.subtract, ops.pattern, view.set, view.fit. For ANY material removal (holes, port cutouts, slots, pockets) use ops.hole with params {position:[x,y,z], depth, AND EITHER radius OR width+height}. Never use sketch+extrude for cutouts. Always specify position:[x,y,z] for every feature that is not at origin. Output ONLY the JSON array, no prose.';
 
   async function callClaude(model, prompt){
     const k = getKeys().anthropic; if (!k) throw new Error('Missing anthropic key');
@@ -172,7 +172,7 @@
   async function loadCSG(){
     if (_csgLib) return _csgLib;
     try {
-      const m = await import('https://cdn.jsdelivr.net/npm/three-bvh-csg@0.0.17/+esm');
+      const m = await import('/app/js/vendor/three-bvh-csg.js?v=1');
       _csgLib = { Brush:m.Brush, Evaluator:m.Evaluator, SUBTRACTION:m.SUBTRACTION, ADDITION:m.ADDITION };
       _csgEv = new m.Evaluator();
       return _csgLib;

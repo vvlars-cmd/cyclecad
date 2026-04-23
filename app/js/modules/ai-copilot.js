@@ -424,15 +424,15 @@
     }
     const modelId = S.els.model?.value;
     const m = MODELS[modelId];
-    if (!getKeys()[m.keyField]) { log('Missing '+m.keyField+' key — click the key icon', 'fail'); return; }
+    const earlyTpl = matchTemplate(effectivePrompt);
+    if (!earlyTpl && !getKeys()[m.keyField]) { log('Missing '+m.keyField+' key — click the key icon', 'fail'); return; }
     S.running = true; S.abort = false; S.stepIndex = 0; S.results = []; S.errors = [];
     progress(5, 'Planning...');
     log('Planning with '+m.label+'...', 'info');
     let plan;
-    const tpl = matchTemplate(effectivePrompt);
-    if (tpl) {
-      log('Matched built-in template ('+tpl.length+' steps). Skipping LLM.', 'pass');
-      plan = tpl;
+    if (earlyTpl) {
+      log('Matched built-in template ('+earlyTpl.length+' steps). Skipping LLM.', 'pass');
+      plan = earlyTpl;
     }
     try {
       if (!plan) {

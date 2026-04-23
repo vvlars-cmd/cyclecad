@@ -77,7 +77,7 @@
     }
   }
 
-  const SYSTEM_PROMPT = 'You are a CAD planning assistant. Given a user goal, output a JSON array of steps. Each step: {"method":"<ns.cmd>","params":{...},"note":"<short>"}. Namespaces: sketch.start, sketch.rect, sketch.circle, sketch.line, sketch.end, ops.extrude, ops.revolve, ops.fillet, ops.chamfer, ops.shell, ops.hole, ops.pattern, view.set, view.fit, query.features, query.bbox, validate.cost, validate.mass. Output ONLY the JSON array, no prose.';
+  const SYSTEM_PROMPT = 'You are a CAD planning assistant. Given a user goal, output a JSON array of steps. Each step: {"method":"<ns.cmd>","params":{...},"note":"<short>"}. Namespaces: sketch.start, sketch.rect, sketch.circle, sketch.line, sketch.end, ops.extrude, ops.revolve, ops.fillet, ops.chamfer, ops.shell, ops.hole, ops.subtract, ops.pattern, view.set, view.fit. For ANY material removal (holes, port cutouts, slots, pockets) use ops.hole with params {position:[x,y,z], depth, AND EITHER radius OR width+height}. Never use sketch+extrude for cutouts. Always specify position:[x,y,z] for every feature that isn't at origin. Output ONLY the JSON array, no prose.';
 
   async function callClaude(model, prompt){
     const k = getKeys().anthropic; if (!k) throw new Error('Missing anthropic key');
@@ -168,7 +168,38 @@
     if (Array.isArray(p.at))       return p.at;
     return [+p.x||0, +p.y||0, +p.z||0];
   }
-  function miniExecute(step){
+  let _csgLib = null, _csgEv = null;
+  async function loadCSG(){
+    if (_csgLib) return _csgLib;
+    try {
+      const m = await import('https://cdn.jsdelivr.net/npm/three-bvh-csg@0.0.17/+esm');
+      _csgLib = { Brush:m.Brush, Evaluator:m.Evaluator, SUBTRACTION:m.SUBTRACTION, ADDITION:m.ADDITION };
+      _csgEv = new m.Evaluator();
+      return _csgLib;
+    } catch(e) { console.warn('[Copilot] CSG load failed:', e.message); return null; }
+  }
+  async function subtractFromLast(cutMesh){
+    const csg = await loadCSG();
+    if (!csg || !miniState.lastMesh) { miniState.group.add(cutMesh); return; }
+    try {
+      miniState.lastMesh.updateMatrixWorld(true);
+      cutMesh.updateMatrixWorld(true);
+      const THREE = window.THREE;
+      const brA = new csg.Brush(miniState.lastMesh.geometry.clone(), miniState.lastMesh.material);
+      brA.position.copy(miniState.lastMesh.position); brA.quaternion.copy(miniState.lastMesh.quaternion); brA.scale.copy(miniState.lastMesh.scale); brA.updateMatrixWorld(true);
+      const brB = new csg.Brush(cutMesh.geometry.clone(), cutMesh.material);
+      brB.position.copy(cutMesh.position); brB.quaternion.copy(cutMesh.quaternion); brB.scale.copy(cutMesh.scale); brB.updateMatrixWorld(true);
+      const res = _csgEv.evaluate(brA, brB, csg.SUBTRACTION);
+      res.material = miniState.lastMesh.material;
+      miniState.group.remove(miniState.lastMesh);
+      miniState.group.add(res);
+      miniState.lastMesh = res;
+    } catch(e) {
+      console.warn('[Copilot] CSG subtract failed, visual fallback:', e.message);
+      miniState.group.add(cutMesh);
+    }
+  }
+  async function miniExecute(step){
     const method = step.method, params = step.params || {};
     if (!window._scene || !window.THREE) throw new Error('Scene not available');
     const THREE = window.THREE;
@@ -184,10 +215,13 @@
       if (sk.shape==='rect')         g = new THREE.BoxGeometry(sk.width, d, sk.height);
       else if (sk.shape==='circle')  g = new THREE.CylinderGeometry(sk.radius, sk.radius, d, 48);
       else                           g = new THREE.BoxGeometry(50, d, 30);
-      const mat = new THREE.MeshStandardMaterial({color:0x4a90e2, metalness:0.35, roughness:0.45});
+      const isSubtract = params.subtract === true || params.operation === 'cut' || params.operation === 'subtract';
+      const mat = new THREE.MeshStandardMaterial({color: isSubtract?0x1a1a1a:0x4a90e2, metalness:0.35, roughness:0.45});
       const mesh = new THREE.Mesh(g, mat); mesh.castShadow = true;
       mesh.position.set(pos[0]||0, (pos[1]||0) + d/2, pos[2]||0);
-      miniEnsureGroup(); miniState.group.add(mesh); miniState.lastMesh = mesh;
+      miniEnsureGroup();
+      if (isSubtract) { await subtractFromLast(mesh); }
+      else { miniState.group.add(mesh); miniState.lastMesh = mesh; }
       miniState.currentSketch = null;
       return {ok:true};
     }
@@ -199,15 +233,20 @@
       miniEnsureGroup(); miniState.group.add(mesh); miniState.lastMesh = mesh;
       return {ok:true};
     }
-    if (method === 'ops.hole') {
+    if (method === 'ops.hole' || method === 'ops.subtract' || method === 'ops.cut') {
       const pos = getPos(params);
-      const r = params.radius || (params.diameter?params.diameter/2:3);
-      const d = params.depth || 15;
-      const g = new THREE.CylinderGeometry(r, r, d, 32);
-      const mat = new THREE.MeshStandardMaterial({color:0x1a1a1a, metalness:0.2, roughness:0.8});
-      const mesh = new THREE.Mesh(g, mat);
-      mesh.position.set(pos[0]||0, (pos[1]||0) + d/2 + 0.1, pos[2]||0);
-      miniEnsureGroup(); miniState.group.add(mesh);
+      const d = params.depth || 25;
+      let g;
+      if (params.width && params.height) {
+        g = new THREE.BoxGeometry(params.width, d, params.height);
+      } else {
+        const r = params.radius || (params.diameter?params.diameter/2:3);
+        g = new THREE.CylinderGeometry(r, r, d, 48);
+      }
+      const cutMesh = new THREE.Mesh(g, new THREE.MeshStandardMaterial({color:0x000000}));
+      cutMesh.position.set(pos[0]||0, (pos[1]||0) + d/2 - 0.5, pos[2]||0);
+      miniEnsureGroup();
+      await subtractFromLast(cutMesh);
       return {ok:true};
     }
     if (method === 'ops.pattern') {
@@ -223,9 +262,7 @@
       }
       return {ok:true};
     }
-    if (['ops.fillet','ops.chamfer','ops.shell'].includes(method)) {
-      return {ok:true, note:method+' (visual approximation)'};
-    }
+    if (['ops.fillet','ops.chamfer','ops.shell'].includes(method)) return {ok:true, note:method+' (visual approximation)'};
     if (method === 'view.fit') {
       const tgt = miniState.group || window._scene;
       if (tgt && window._camera) {
@@ -246,11 +283,11 @@
     if (method === 'view.set') {
       if (!window._camera) return {ok:true};
       const v = (params.view||params.orientation||'iso').toLowerCase();
-      const d = 250;
-      if (v === 'top')     window._camera.position.set(0, d, 0);
-      else if (v === 'front') window._camera.position.set(0, 0, d);
-      else if (v === 'side' || v === 'right') window._camera.position.set(d, 0, 0);
-      else                 window._camera.position.set(d*0.7, d*0.7, d*0.7);
+      const d2 = 250;
+      if (v === 'top')     window._camera.position.set(0, d2, 0);
+      else if (v === 'front') window._camera.position.set(0, 0, d2);
+      else if (v === 'side' || v === 'right') window._camera.position.set(d2, 0, 0);
+      else                 window._camera.position.set(d2*0.7, d2*0.7, d2*0.7);
       window._camera.lookAt(0,0,0);
       if (window._controls) { window._controls.target.set(0,0,0); window._controls.update(); }
       return {ok:true};
@@ -258,7 +295,7 @@
     if (method.startsWith('query.')||method.startsWith('validate.')) return {ok:true, note:'stub'};
     throw new Error('Unknown method: ' + method);
   }
-    async function runStep(step){
+  async function runStep(step){
     if (window.cycleCAD && typeof window.cycleCAD.execute === 'function') {
       return window.cycleCAD.execute({method: step.method, params: step.params || {}});
     }

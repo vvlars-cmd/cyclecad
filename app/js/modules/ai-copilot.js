@@ -197,11 +197,13 @@
   }
   const miniState = { currentSketch: null, lastMesh: null, group: null };
   function miniReset(){
-    if (miniState.group && window._scene) window._scene.remove(miniState.group);
+    if (window._scene) {
+      [...window._scene.children].filter(c => c.name === 'AICopilotBuild').forEach(g => window._scene.remove(g));
+    }
     miniState.currentSketch = null; miniState.lastMesh = null; miniState.group = null; miniState.body = null;
   }
   function miniEnsureGroup(){
-    if (!miniState.group) {
+    if (!miniState.group || miniState.group.parent !== window._scene) {
       miniState.group = new window.THREE.Group();
       miniState.group.name = 'AICopilotBuild';
       window._scene.add(miniState.group);

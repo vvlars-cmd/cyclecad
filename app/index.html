@@ -2872,5 +2872,40 @@ window._dismissSplash = function(action) {
   initializeUI();
 </script>
 
+<script>
+(function(){
+  function initMenuPin(){
+    const items = document.querySelectorAll('.menu-item');
+    if (!items.length) { setTimeout(initMenuPin, 300); return; }
+    items.forEach(item => {
+      const drop = item.querySelector('.menu-dropdown');
+      if (!drop) return;
+      // Click on menu-item itself (NOT children) toggles open
+      item.addEventListener('click', (e) => {
+        if (e.target.closest('.menu-dropdown')) return; // clicks inside dropdown bubble to their own handler
+        e.stopPropagation();
+        const wasOpen = item.classList.contains('open');
+        document.querySelectorAll('.menu-item.open').forEach(x => x.classList.remove('open'));
+        if (!wasOpen) item.classList.add('open');
+      });
+      // Clicks on menu-item-link close the menu after action
+      drop.addEventListener('click', (e) => {
+        if (e.target.classList.contains('menu-item-link')) {
+          setTimeout(() => item.classList.remove('open'), 50);
+        }
+      });
+    });
+    // Click outside closes any open menu
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.menu-item')) {
+        document.querySelectorAll('.menu-item.open').forEach(x => x.classList.remove('open'));
+      }
+    });
+    console.log('[menu-pin] wired', items.length, 'menu items');
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initMenuPin);
+  else initMenuPin();
+})();
+</script>
 </body>
 </html>

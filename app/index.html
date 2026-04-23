@@ -1010,6 +1010,7 @@
       <button class="menu-item-link" data-action="tools-addins">Add-ins...</button>
       <button class="menu-item-link" data-action="tools-marketplace">Marketplace...</button>
       <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="tools-ai-copilot">✨ AI Copilot (multi-step)</button>
       <button class="menu-item-link" data-action="tools-text-to-cad">Text-to-CAD (AI)</button>
       <button class="menu-item-link" data-action="tools-photo-to-cad">Photo-to-CAD</button>
       <button class="menu-item-link" data-action="tools-dfm">Manufacturability Check</button>
@@ -1533,6 +1534,7 @@ window._dismissSplash = function(action) {
 <script type="module" src="/app/js/marketplace.js"></script>
 
 <!-- Killer Feature Modules -->
+<script src="/app/js/modules/ai-copilot.js"></script>
 <script src="/app/js/modules/text-to-cad.js"></script>
 <script src="/app/js/modules/photo-to-cad.js"></script>
 <script src="/app/js/modules/manufacturability.js"></script>
@@ -1953,6 +1955,13 @@ window._dismissSplash = function(action) {
         break;
       case 'help-about':
         showDialog('About cycleCAD', 'cycleCAD v0.9.0 - Fusion 360 Clone<br>Open-source parametric 3D CAD modeler<br><br>Built with Three.js, supporting STEP/IGES import, full parametric modeling, and AI-powered design assistance.');
+        break;
+      case 'tools-ai-copilot':
+        if (window.CycleCAD && window.CycleCAD.AICopilot) {
+          showDialog('✨ AI Copilot — multi-step CAD from natural language', '');
+          const dbc = document.getElementById('dialog-body');
+          if (dbc) { dbc.innerHTML = ''; dbc.appendChild(window.CycleCAD.AICopilot.getUI()); dbc.style.maxHeight = '620px'; dbc.style.overflow = 'auto'; }
+        } else { showToast('AI Copilot module not loaded', 'error'); }
         break;
       case 'tools-text-to-cad':
         if (window.CycleCAD && window.CycleCAD.TextToCAD) {

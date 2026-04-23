@@ -48,7 +48,7 @@
     const m = MODELS[S.els.model?.value]; if (!m) return;
     const hasKey = !!getKeys()[m.keyField];
     if (hasKey) {
-      S.els.banner.textContent = 'Ready: ' + m.label + (m.free?' (free)':'');
+      S.els.banner.textContent = 'Ready: ' + m.label;
       S.els.banner.style.background = '#065f46';
       S.els.banner.style.color = '#d1fae5';
     } else {

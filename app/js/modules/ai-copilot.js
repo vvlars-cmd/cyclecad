@@ -390,7 +390,105 @@
         {method:'view.fit', params:{}}
       ];
     }
-    // L-bracket with holes
+    // DIN 125 washer (M3-M12)
+    const washerM = p.match(/\bm(\d+)\s*washer|washer\s+m(\d+)|din\s*125\s*m?(\d+)/);
+    if (washerM) {
+      const size = parseInt(washerM[1]||washerM[2]||washerM[3]);
+      const outerR = ({3:3.5, 4:4.5, 5:5.3, 6:6.4, 8:8.4, 10:10.5, 12:13})[size] || size*1.2;
+      const thick  = ({3:0.5, 4:0.8, 5:1,   6:1.6, 8:1.6, 10:2,    12:2.5})[size] || size*0.2;
+      const holeR = (size + 0.4) / 2;
+      return [
+        {method:'sketch.start', params:{plane:'XY'}},
+        {method:'sketch.circle', params:{radius: outerR}},
+        {method:'ops.extrude', params:{depth: thick, position:[0,0,0]}, note:'DIN 125 M'+size+' washer'},
+        {method:'ops.hole', params:{position:[0, thick, 0], radius: holeR, depth: thick+2}, note:'M'+size+' hole'},
+        {method:'view.set', params:{view:'iso'}},
+        {method:'view.fit', params:{}}
+      ];
+    }
+    // Flange with bolt circle
+    const flangeM = p.match(/flange/);
+    if (flangeM) {
+      const odM = p.match(/(\d+)\s*mm/);
+      const od = odM ? parseInt(odM[1]) : 80;
+      const nM = p.match(/(\d+)\s*(?:bolt\s*)?holes?/);
+      const nHoles = nM ? parseInt(nM[1]) : 4;
+      const pcdM = p.match(/pcd\s*(\d+)|bolt\s*circle\s*(\d+)/);
+      const pcd = pcdM ? parseInt(pcdM[1]||pcdM[2]) : Math.round(od*0.7);
+      const thick = 8;
+      const plan = [
+        {method:'sketch.start', params:{plane:'XY'}},
+        {method:'sketch.circle', params:{radius: od/2}},
+        {method:'ops.extrude', params:{depth: thick, position:[0,0,0]}, note:'flange body Ø'+od},
+        {method:'ops.hole', params:{position:[0, thick, 0], radius: Math.max(5, od/8), depth: thick+2}, note:'center bore'}
+      ];
+      for (let i = 0; i < nHoles; i++) {
+        const a = (i / nHoles) * Math.PI * 2;
+        const x = Math.cos(a) * pcd/2, z = Math.sin(a) * pcd/2;
+        plan.push({method:'ops.hole', params:{position:[x, thick/2, z], radius: 3, depth: thick+2}, note:'bolt hole '+(i+1)+'/'+nHoles});
+      }
+      plan.push({method:'view.set', params:{view:'iso'}});
+      plan.push({method:'view.fit', params:{}});
+      return plan;
+    }
+    // Threaded rod / stud
+    const rodM = p.match(/threaded\s*rod|m(\d+)\s*rod|m(\d+)\s*stud|studding/);
+    if (rodM) {
+      const sM = p.match(/m(\d+)/);
+      const size = sM ? parseInt(sM[1]) : 8;
+      const lM = p.match(/(\d+)\s*mm/);
+      const len = lM ? parseInt(lM[1]) : 100;
+      return [
+        {method:'sketch.start', params:{plane:'XY'}},
+        {method:'sketch.circle', params:{radius: size/2}},
+        {method:'ops.extrude', params:{depth: len, position:[0,0,0]}, note:'M'+size+' threaded rod, '+len+'mm long'},
+        {method:'view.set', params:{view:'iso'}},
+        {method:'view.fit', params:{}}
+      ];
+    }
+    // Mounting plate
+    const plateM = p.match(/mounting\s*plate|base\s*plate|flat\s*plate/);
+    if (plateM) {
+      const dimM = p.match(/(\d+)\s*x\s*(\d+)/);
+      const w = dimM ? parseInt(dimM[1]) : 120;
+      const h = dimM ? parseInt(dimM[2]) : 80;
+      const thick = 6;
+      const nM = p.match(/(\d+)\s*holes?/);
+      const nHoles = nM ? parseInt(nM[1]) : 4;
+      const plan = [
+        {method:'sketch.start', params:{plane:'XY'}},
+        {method:'sketch.rect', params:{width: w, height: h}},
+        {method:'ops.extrude', params:{depth: thick, position:[0,0,0]}, note: w+'x'+h+'x'+thick+' mounting plate'}
+      ];
+      if (nHoles === 4) {
+        const mx = w/2 - 10, mz = h/2 - 10;
+        [[-mx,-mz],[mx,-mz],[-mx,mz],[mx,mz]].forEach((pp,i) => {
+          plan.push({method:'ops.hole', params:{position:[pp[0], thick/2, pp[1]], radius:3, depth:thick+2}, note:'corner hole '+(i+1)});
+        });
+      } else {
+        for (let i = 0; i < nHoles; i++) {
+          const x = -w/2 + 10 + (i/(nHoles-1)) * (w-20);
+          plan.push({method:'ops.hole', params:{position:[x, thick/2, 0], radius:3, depth:thick+2}, note:'hole '+(i+1)});
+        }
+      }
+      plan.push({method:'view.set', params:{view:'iso'}});
+      plan.push({method:'view.fit', params:{}});
+      return plan;
+    }
+    // Generic box NxNxN with optional fillet
+    const boxM = p.match(/\bbox\b|\bblock\b|\bcube\b|\bcuboid\b/);
+    const boxDim = p.match(/(\d+)\s*[x×]\s*(\d+)\s*[x×]\s*(\d+)/);
+    if (boxM && boxDim) {
+      const w = parseInt(boxDim[1]), h = parseInt(boxDim[2]), d = parseInt(boxDim[3]);
+      return [
+        {method:'sketch.start', params:{plane:'XY'}},
+        {method:'sketch.rect', params:{width: w, height: d}},
+        {method:'ops.extrude', params:{depth: h, position:[0,0,0]}, note: w+'x'+h+'x'+d+' box'},
+        {method:'view.set', params:{view:'iso'}},
+        {method:'view.fit', params:{}}
+      ];
+    }
+        // L-bracket with holes
     if (/l-?bracket|mounting\s*bracket|angle\s*bracket/.test(p)) {
       const lenM = p.match(/(\d+)\s*mm/);
       const length = lenM ? parseInt(lenM[1]) : 100;

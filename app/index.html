@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<base href="/app/">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -1530,7 +1531,7 @@ window._dismissSplash = function(action) {
 
 <!-- Token Engine & Marketplace Scripts (IIFE-based) -->
 <script src="js/token-engine.js"></script>
-<script src="js/marketplace.js"></script>
+<script type="module" src="js/marketplace.js"></script>
 
 <!-- Killer Feature Modules -->
 <script src="js/modules/text-to-cad.js"></script>
@@ -1556,7 +1557,6 @@ window._dismissSplash = function(action) {
   // ===== Three.js Imports =====
   import * as THREE from 'three';
   import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-  import { GridHelper } from 'three';
   import { KillerFeatures } from './js/killer-features.js';
   import { startSketch, endSketch, setTool, getEntities, clearSketch, entitiesToGeometry } from './js/sketch.js';
   import { initViewerMode } from './js/viewer-mode.js';
@@ -1761,6 +1761,7 @@ window._dismissSplash = function(action) {
     units: 'mm',
     gridEnabled: true,
     snapEnabled: true,
+    featureTree: [],
   };
 
   // ===== DOM Queries =====
@@ -1792,7 +1793,7 @@ window._dismissSplash = function(action) {
   const timelineContent = document.getElementById('timeline-content');
 
   // ===== Menu Actions Handler =====
-  function handleMenuAction(action) {
+  async function handleMenuAction(action) {
     switch (action) {
       case 'file-new':
         showToast('New project created', 'success');

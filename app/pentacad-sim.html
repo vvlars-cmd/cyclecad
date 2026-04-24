@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Pentacad Simulator — 5-axis G-code playback for Pentamachine V1 / V2 / Solo</title>
-<meta name="description" content="Browser-native 5-axis G-code simulator. Runs offline, no install. Parses LinuxCNC / Pentamachine V2 dialect, animates A-tilt + B-rotary table kinematics, reports soft-limit violations." />
+<title>Pentacad Simulator v0.3 — 5-axis G-code playback for Pentamachine V1 / V2 / Solo</title>
+<meta name="description" content="Browser-native 5-axis G-code simulator. Runs offline, no install. Parses LinuxCNC / Pentamachine V2 dialect, animates A-tilt + B-rotary table kinematics, reports soft-limit violations. v0.3: styled to match sim.pentamachine.com." />
+<meta name="theme-color" content="#333333" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛠️</text></svg>" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<!-- Native system fonts — matches sim.pentamachine.com (Roboto/Helvetica/Arial + Monaco/Menlo mono) -->
+
 
 <!-- Three.js via importmap (same version as rest of cycleCAD) -->
 <script type="importmap">
@@ -21,210 +21,338 @@
 </script>
 
 <style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   Pentacad Simulator v0.3.0 — styled to match sim.pentamachine.com
+   Palette sourced from the live Penta Simulator:
+     - Brand primary (Penta teal):  #03B188   → MUI palette.primary.main
+     - Top bar / app bar dark:      #333333   → MUI AppBar override
+     - Surfaces:                    #FFFFFF / #F5F5F5 / #F3F3F3 / #E0E0E0
+     - Divider / shade:             #D8D8D8
+     - Text:                        #000000 (primary) / #333333 (label) / rgba(0,0,0,0.54)
+     - Playback overlay:            rgba(100,100,100,0.75) white text
+     - Fonts:                       Roboto / Helvetica / Arial + Monaco/Menlo/Ubuntu Mono/...
+   ══════════════════════════════════════════════════════════════════════════ */
 :root {
-  --kc-green:        #15B573;
-  --kc-green-dark:   #0E8F5A;
-  --kc-green-glow:   rgba(21,181,115,0.18);
-  --kc-amber:        #F5A623;
-  --kc-red:          #E04444;
-  --kc-blue:         #2E90E8;
+  /* Brand */
+  --pt-green:        #03B188;   /* Penta primary teal */
+  --pt-green-dark:   #028F6D;
+  --pt-green-glow:   rgba(3,177,136,0.20);
 
-  --kc-bg:           #F5F7F8;
-  --kc-surface:      #FFFFFF;
-  --kc-surface-2:    #FAFBFC;
-  --kc-border:       #E3E7EA;
+  /* Accent / feedback */
+  --pt-amber:        #F5A623;
+  --pt-red:          #D32F2F;   /* MUI error.main */
+  --pt-blue:         #1976D2;   /* MUI info */
 
-  --kc-text:         #1F2529;
-  --kc-text-2:       #5C6770;
-  --kc-text-3:       #8A949D;
+  /* Surfaces — match Penta's light layering exactly */
+  --pt-bg:           #FFFFFF;    /* scene / body base — Penta uses pure white behind transparent canvas */
+  --pt-surface:      #FFFFFF;    /* sidebar / editor body */
+  --pt-surface-2:    #F5F5F5;    /* MuiTabs header + button default */
+  --pt-surface-3:    #F3F3F3;    /* Options panel collapsed state */
+  --pt-border:       #D8D8D8;    /* divider colour (matches css-xdzv46) */
+  --pt-border-soft:  #E0E0E0;
 
-  --kc-status:       #1A2828;
-  --kc-status-2:     #223232;
-  --kc-status-text:  #D7DCDE;
+  /* Text stack — MUI light theme defaults */
+  --pt-text:         rgba(0,0,0,0.87);   /* primary */
+  --pt-text-2:       rgba(0,0,0,0.60);   /* secondary */
+  --pt-text-3:       rgba(0,0,0,0.38);   /* disabled */
+  --pt-text-label:   #333333;            /* form labels */
 
-  --kc-radius: 8px;
-  --kc-radius-lg: 12px;
-  --kc-shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
-  --kc-shadow:    0 2px 8px rgba(0,0,0,0.06);
+  /* Top bar: Penta uses #333 with white text — see .TitleBar-appBar */
+  --pt-appbar:       #333333;
+  --pt-appbar-text:  #FFFFFF;
 
-  --kc-editor-bg:  #0F1419;
-  --kc-editor-fg:  #D7DCDE;
-  --kc-editor-sel: rgba(21,181,115,0.24);
+  /* Status bar (ours — Penta has no bottom status bar) */
+  --pt-status:       #333333;
+  --pt-status-text:  rgba(255,255,255,0.87);
+
+  /* Floating playback overlay */
+  --pt-overlay:      rgba(100, 100, 100, 0.75);
+  --pt-overlay-text: #FFFFFF;
+  --pt-overlay-btn:  rgb(221, 221, 221);
+
+  /* Shape */
+  --pt-radius:       4px;
+  --pt-radius-lg:    5px;
+  --pt-shadow-sm:    0 1px 2px rgba(0,0,0,0.06);
+  --pt-shadow:       0 2px 4px rgba(0,0,0,0.08);
+  --pt-shadow-elev:  0 2px 4px -1px rgba(0,0,0,0.2),
+                     0 4px 5px    0 rgba(0,0,0,0.14),
+                     0 1px 10px   0 rgba(0,0,0,0.12);  /* MUI elevation 3 */
+
+  /* G-code editor — light theme, matches sim.pentamachine.com */
+  --pt-editor-bg:     #FFFFFF;
+  --pt-editor-fg:     #000000;
+  --pt-editor-gutter: #FAFAFA;
+  --pt-editor-sel:    rgba(3,177,136,0.18);
+  --pt-editor-curbg:  rgba(3,177,136,0.10);
+
+  /* ── Back-compat aliases so existing rules keep working ── */
+  --kc-green:        var(--pt-green);
+  --kc-green-dark:   var(--pt-green-dark);
+  --kc-green-glow:   var(--pt-green-glow);
+  --kc-amber:        var(--pt-amber);
+  --kc-red:          var(--pt-red);
+  --kc-blue:         var(--pt-blue);
+  --kc-bg:           var(--pt-bg);
+  --kc-surface:      var(--pt-surface);
+  --kc-surface-2:    var(--pt-surface-2);
+  --kc-border:       var(--pt-border);
+  --kc-text:         var(--pt-text);
+  --kc-text-2:       var(--pt-text-2);
+  --kc-text-3:       var(--pt-text-3);
+  --kc-status:       var(--pt-status);
+  --kc-status-2:     #444444;
+  --kc-status-text:  var(--pt-status-text);
+  --kc-radius:       var(--pt-radius);
+  --kc-radius-lg:    var(--pt-radius-lg);
+  --kc-shadow-sm:    var(--pt-shadow-sm);
+  --kc-shadow:       var(--pt-shadow);
+  --kc-editor-bg:    var(--pt-editor-bg);
+  --kc-editor-fg:    var(--pt-editor-fg);
+  --kc-editor-sel:   var(--pt-editor-sel);
 }
 
 * { margin:0; padding:0; box-sizing:border-box; }
 html, body { height:100%; }
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  /* Matches sim.pentamachine.com body font stack (MUI default) */
+  font-family: Roboto, Helvetica, Arial, sans-serif;
   font-size: 14px;
-  background: var(--kc-bg);
-  color: var(--kc-text);
+  background: var(--pt-bg);
+  color: var(--pt-text);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
-code, pre, .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+/* Matches Penta G-code pane: Monaco, Menlo, "Ubuntu Mono", Consolas, "Source Code Pro", source-code-pro, monospace */
+code, pre, .mono { font-family: Monaco, Menlo, "Ubuntu Mono", Consolas, "Source Code Pro", source-code-pro, monospace; }
 button { font-family: inherit; font-size: inherit; cursor: pointer; border: 0; background: transparent; color: inherit; }
-button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--kc-green); outline-offset: 2px; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--pt-green); outline-offset: 2px; }
 
-/* ──────────────── TOP BAR ──────────────── */
+/* ──────────────── TOP BAR (Penta dark AppBar) ──────────────── */
 .topbar {
-  background: var(--kc-surface);
-  border-bottom: 1px solid var(--kc-border);
-  height: 56px;
+  background: var(--pt-appbar);       /* #333 — matches TitleBar-appBar */
+  color: var(--pt-appbar-text);
+  height: 64px;                        /* MUI AppBar standard */
   display: flex;
   align-items: center;
-  padding: 0 16px;
+  padding: 0 24px;
   gap: 16px;
   flex-shrink: 0;
+  z-index: 2200;                       /* Matches TitleBar-appBar z-index */
+  box-shadow: var(--pt-shadow-elev);
 }
 .brand {
   display: flex;
   align-items: baseline;
-  gap: 8px;
-  font-weight: 800;
-}
-.brand .logo { font-size: 20px; }
-.brand .name { font-size: 16px; letter-spacing: -0.01em; }
-.brand .tag { font-size: 11px; color: var(--kc-text-3); font-weight: 500; }
-
-.topbar .toolbar { display: flex; gap: 6px; margin-left: auto; align-items: center; }
-.btn {
-  padding: 8px 14px;
-  border-radius: var(--kc-radius);
-  background: var(--kc-surface-2);
-  border: 1px solid var(--kc-border);
+  gap: 10px;
   font-weight: 500;
-  color: var(--kc-text);
-  transition: background 0.12s, border-color 0.12s;
+  color: #FFFFFF;
+}
+.brand .logo { font-size: 24px; line-height: 1; }
+.brand .name {
+  font-family: Arial, Helvetica, sans-serif;  /* Penta logo is Arial 24px */
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: #FFFFFF;
+  text-decoration: none;
+}
+.brand .tag {
+  font-family: Roboto, Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  color: rgba(255,255,255,0.72);
+  font-weight: 400;
+  margin-left: 4px;
+}
+
+.topbar .toolbar { display: flex; gap: 4px; margin-left: auto; align-items: center; }
+
+/* Material-UI style buttons — flat, uppercase, rounded */
+.btn {
+  padding: 6px 16px;
+  border-radius: var(--pt-radius);
+  background: transparent;
+  border: 0;
+  font-family: Roboto, Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: inherit;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  min-height: 36px;
+  text-transform: none;   /* Penta doesn't uppercase — see TitleBar buttons */
+  cursor: pointer;
 }
-.btn:hover { background: var(--kc-bg); border-color: #C9CED3; }
+
+/* Buttons in the dark topbar: white text, subtle hover */
+.topbar .btn { color: #FFFFFF; }
+.topbar .btn:hover { background: rgba(255,255,255,0.08); }
+
+/* Buttons on light surfaces — MUI outlined style */
+.main .btn, .modal .btn {
+  background: var(--pt-surface-2);   /* #F5F5F5 */
+  border: 1px solid transparent;
+  color: var(--pt-text);
+}
+.main .btn:hover, .modal .btn:hover { background: var(--pt-border-soft); }
+
 .btn.primary {
-  background: var(--kc-green);
-  color: #fff;
-  border-color: var(--kc-green-dark);
+  background: var(--pt-green) !important;
+  color: #FFFFFF !important;
+  border-color: var(--pt-green-dark);
+  box-shadow: var(--pt-shadow-sm);
 }
-.btn.primary:hover { background: var(--kc-green-dark); }
+.btn.primary:hover { background: var(--pt-green-dark) !important; box-shadow: var(--pt-shadow); }
 .btn.ghost { background: transparent; border-color: transparent; }
-.btn.ghost:hover { background: var(--kc-surface-2); }
-.btn.icon { padding: 8px 10px; }
+.btn.ghost:hover { background: rgba(0,0,0,0.04); }
+.btn.icon { padding: 8px 10px; min-height: 36px; }
 
 .machine-picker {
-  padding: 8px 12px;
-  border-radius: var(--kc-radius);
-  background: var(--kc-surface-2);
-  border: 1px solid var(--kc-border);
+  padding: 6px 12px;
+  border-radius: var(--pt-radius);
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.16);
   font-weight: 500;
   font-size: 13px;
-  color: var(--kc-text);
+  color: #FFFFFF;
+  cursor: pointer;
+  min-height: 32px;
 }
+.machine-picker option { color: var(--pt-text); background: var(--pt-surface); }
+.machine-picker:hover { background: rgba(255,255,255,0.14); }
 
 /* ──────────────── MAIN LAYOUT ──────────────── */
+/* Penta GCodePane left = 320px (see .GCodePane-toolbar at [0,0 320x64]).
+   Right DRO/Stats panel is our addition (Penta has only a right-edge "Options" pop-out). */
 .main {
   flex: 1;
   display: grid;
-  grid-template-columns: 380px 1fr 320px;
+  grid-template-columns: 320px 1fr 300px;
   min-height: 0;
+  overflow: hidden;
 }
 
-/* ─── G-code editor (left) ─── */
+/* ─── G-code editor (left) — LIGHT theme to match Penta's GCodePane ─── */
 .editor-panel {
-  background: var(--kc-editor-bg);
-  color: var(--kc-editor-fg);
+  background: var(--pt-editor-bg);   /* white — matches GCodePane bg rgb(255,255,255) */
+  color: var(--pt-editor-fg);
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--kc-border);
+  border-right: 1px solid var(--pt-border);
 }
+
+/* GCodePane-toolbar: 56-64px header strip with MuiTabs look */
 .editor-header {
-  padding: 10px 14px;
-  border-bottom: 1px solid #1F2A33;
+  min-height: 56px;                     /* matches .GCodePane-toolbar */
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--pt-border);
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: #0A0F14;
+  gap: 12px;
+  background: var(--pt-surface-2);      /* #F5F5F5 — MuiTabs header bg */
+  color: var(--pt-text);
 }
 .editor-header .tag {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  color: var(--kc-text-3);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--pt-green);               /* Penta active-tab text uses brand green */
   text-transform: uppercase;
+  border-bottom: 2px solid var(--pt-green);
+  padding-bottom: 2px;
 }
 .editor-header .file-name {
-  font-size: 12px;
+  font-size: 13px;
   flex: 1;
-  color: var(--kc-editor-fg);
-  opacity: 0.8;
+  color: var(--pt-text-label);
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+
 .editor-body {
   flex: 1;
   overflow: auto;
-  font-size: 12px;
-  line-height: 1.55;
+  font-size: 12px;                      /* matches Penta GCodePane monospace 12px */
+  line-height: 1.5;
   position: relative;
+  background: var(--pt-editor-bg);
+  color: var(--pt-editor-fg);
 }
 .editor-body pre {
-  padding: 10px 14px 200px;
+  padding: 12px 14px 200px 14px;
   margin: 0;
   white-space: pre;
   min-width: 100%;
+  font-family: Monaco, Menlo, "Ubuntu Mono", Consolas, "Source Code Pro", source-code-pro, monospace;
 }
 .gc-line {
   display: block;
-  padding: 0 0 0 48px;
+  padding: 0 0 0 52px;
   position: relative;
   white-space: pre;
+  min-height: 18px;
 }
 .gc-line.current {
-  background: var(--kc-editor-sel);
-  box-shadow: inset 3px 0 0 var(--kc-green);
+  background: var(--pt-editor-curbg);
+  box-shadow: inset 3px 0 0 var(--pt-green);
 }
 .gc-line.error {
-  background: rgba(224,68,68,0.12);
-  box-shadow: inset 3px 0 0 var(--kc-red);
+  background: rgba(211, 47, 47, 0.08);
+  box-shadow: inset 3px 0 0 var(--pt-red);
 }
 .gc-line .lno {
   position: absolute;
-  left: 8px;
+  left: 0;
   top: 0;
-  width: 32px;
+  width: 40px;
+  padding-right: 8px;
   text-align: right;
-  color: #4A5862;
+  color: rgba(0,0,0,0.38);              /* MUI disabled text */
   user-select: none;
+  background: var(--pt-editor-gutter);
+  border-right: 1px solid var(--pt-border);
 }
-.tok-g  { color: #F5A623; font-weight: 600; }
-.tok-m  { color: #F5A623; font-weight: 600; }
-.tok-n  { color: #556873; }
-.tok-xyz { color: var(--kc-editor-fg); }
-.tok-abc { color: #63E8D0; }
-.tok-f  { color: #A290FF; }
-.tok-s  { color: #A290FF; }
-.tok-t  { color: #FFA9E6; }
-.tok-cmt { color: #556873; font-style: italic; }
+
+/* G-code token palette — dark-on-white, calibrated for readability on #FFF */
+.tok-g   { color: #D84315; font-weight: 600; }   /* G-words: deep orange */
+.tok-m   { color: #6A1B9A; font-weight: 600; }   /* M-words: purple */
+.tok-n   { color: rgba(0,0,0,0.38); }             /* N line numbers: muted */
+.tok-xyz { color: #1A237E; }                     /* Linear axes: indigo */
+.tok-abc { color: var(--pt-green-dark); font-weight: 500; }  /* Rotary axes: Penta teal */
+.tok-f   { color: #00838F; }                     /* Feed: cyan */
+.tok-s   { color: #AD1457; }                     /* Spindle: pink */
+.tok-t   { color: #EF6C00; font-weight: 500; }   /* Tool: orange */
+.tok-cmt { color: #607D8B; font-style: italic; } /* Comments: blue-grey */
 
 .editor-toolbar {
+  min-height: 48px;
   padding: 8px 12px;
-  border-top: 1px solid #1F2A33;
+  border-top: 1px solid var(--pt-border);
   display: flex;
-  gap: 6px;
-  background: #0A0F14;
+  gap: 4px;
+  background: var(--pt-surface-2);      /* #F5F5F5 matches GCodePane footer */
 }
 .editor-toolbar .btn {
-  background: #1A242C;
-  color: var(--kc-editor-fg);
-  border-color: #2A3A44;
+  background: transparent;
+  color: var(--pt-text-label);
+  border: 0;
   padding: 6px 10px;
   font-size: 12px;
+  min-height: 32px;
 }
-.editor-toolbar .btn:hover { background: #253440; border-color: #3B4F5E; }
+.editor-toolbar .btn:hover { background: rgba(0,0,0,0.06); }
 
-/* ─── 3D viewport (center) ─── */
+/* ─── 3D viewport (center) — WHITE background matching Penta's sim ─── */
 .viewport-panel {
   position: relative;
-  background: #1F2A33;
+  background: var(--pt-bg);             /* #FFFFFF — Penta canvas is transparent over white */
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -235,10 +363,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   width: 100%;
   height: 100%;
 }
+
+/* HUD cards — light translucent panels (Penta doesn't show info cards, but we keep ours
+   for DRO/tool info — restyled to fit the light theme) */
 .vp-hud {
   position: absolute;
-  left: 14px;
-  top: 14px;
+  left: 16px;
+  top: 16px;
   z-index: 10;
   display: flex;
   flex-direction: column;
@@ -246,85 +377,123 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   pointer-events: none;
 }
 .vp-hud-card {
-  background: rgba(15,20,25,0.85);
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 8px;
+  background: rgba(255,255,255,0.90);
+  backdrop-filter: blur(6px);
+  border: 1px solid var(--pt-border);
+  border-radius: var(--pt-radius);
   padding: 8px 12px;
-  color: #D7DCDE;
-  font-size: 11px;
-  line-height: 1.6;
+  color: var(--pt-text);
+  font-size: 12px;
+  line-height: 1.5;
   pointer-events: auto;
+  box-shadow: var(--pt-shadow-sm);
+  min-width: 140px;
 }
 .vp-hud-card label {
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #8A949D;
+  color: var(--pt-text-2);
   display: block;
+  margin-bottom: 2px;
+  font-weight: 500;
 }
-.vp-hud-card .mono { font-size: 12px; color: #D7DCDE; }
-.vp-hud-card .warn { color: var(--kc-amber); }
-.vp-hud-card .err  { color: var(--kc-red); }
+.vp-hud-card .mono { font-size: 13px; color: var(--pt-text); font-weight: 500; }
+.vp-hud-card .warn { color: var(--pt-amber); }
+.vp-hud-card .err  { color: var(--pt-red); }
 
+/* Visibility toggles — Penta CameraButtons-style: stacked circular/pill FABs top-right,
+   idle opacity 0.25, transition to 1.0 on hover (see .CameraButtons-button) */
 .vp-vis-toggles {
   position: absolute;
-  right: 14px;
-  top: 14px;
+  right: 16px;
+  top: 16px;
   z-index: 10;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 .vp-vis-toggles .btn {
-  background: rgba(15,20,25,0.85);
-  border-color: rgba(255,255,255,0.08);
-  color: #D7DCDE;
-  padding: 6px 10px;
+  background: #E0E0E0;                  /* matches FAB default rgb(224,224,224) */
+  border: 0;
+  color: rgba(0,0,0,0.87);
+  padding: 6px 14px;
   font-size: 11px;
-  min-width: 120px;
+  min-width: 130px;
+  min-height: 30px;
+  opacity: 0.25;                         /* Penta .CameraButtons-button idle opacity */
+  transition: opacity 0.5s, background 0.2s, box-shadow 0.2s;
   justify-content: space-between;
+  border-radius: 15px;                   /* MUI extendedFab pill */
+  box-shadow: var(--pt-shadow-sm);
+  text-transform: none;
 }
-.vp-vis-toggles .btn:hover { background: rgba(28,36,42,0.95); }
-.vp-vis-toggles .btn .tick { color: var(--kc-green); font-weight: 800; }
+.vp-vis-toggles:hover .btn { opacity: 1.0; }  /* Hover entire cluster -> brighten all */
+.vp-vis-toggles .btn:hover { background: #F5F5F5; box-shadow: var(--pt-shadow); }
+.vp-vis-toggles .btn .tick { color: var(--pt-green); font-weight: 700; }
 .vp-vis-toggles .btn.off .tick { visibility: hidden; }
+.vp-vis-toggles .btn.off { background: #F5F5F5; color: var(--pt-text-2); }
 
-/* Playback controls bar (bottom of viewport) */
+/* Playback controls bar — matches Penta .ControlsOverlay-overlay:
+   floating centered at bottom:50px, width 670px, rgba(100,100,100,0.75), border-radius 5px */
 .playback-bar {
-  background: rgba(15,20,25,0.95);
-  backdrop-filter: blur(6px);
-  border-top: 1px solid rgba(255,255,255,0.06);
-  padding: 10px 14px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 24px;
+  margin: 0 auto;
+  width: 720px;
+  max-width: calc(100% - 80px);
+  z-index: 1203;                        /* Matches Penta ControlsOverlay z-index */
+  background: var(--pt-overlay);        /* rgba(100,100,100,0.75) */
+  backdrop-filter: blur(4px);
+  border-radius: var(--pt-radius-lg);   /* 5px */
+  padding: 8px 14px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  color: #D7DCDE;
+  gap: 8px;
+  color: var(--pt-overlay-text);
   font-size: 12px;
+  box-shadow: var(--pt-shadow);
 }
 .playback-bar .btn {
-  background: #1A242C;
-  color: #D7DCDE;
-  border-color: #2A3A44;
+  background: transparent;
+  color: var(--pt-overlay-btn);         /* rgb(221,221,221) — Penta .ControlsOverlay-button */
+  border: 0;
   padding: 6px 10px;
+  min-height: 32px;
+  min-width: 32px;
+  font-size: 14px;
+  border-radius: 50%;                   /* Circular playback icons */
+  justify-content: center;
 }
-.playback-bar .btn:hover { background: #253440; }
+.playback-bar .btn:hover { background: rgba(255,255,255,0.12); color: #FFFFFF; }
 .playback-bar .btn.primary {
-  background: var(--kc-green);
-  border-color: var(--kc-green-dark);
-  color: #fff;
+  background: var(--pt-green) !important;
+  color: #FFFFFF !important;
+  border: 0;
+  box-shadow: var(--pt-shadow-sm);
 }
+.playback-bar .btn.primary:hover { background: var(--pt-green-dark) !important; }
+
 .timeline-wrap {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+}
+.timeline-wrap .mono {
+  color: rgba(255,255,255,0.92);
+  font-size: 11px;
+  min-width: 50px;                      /* matches .ControlsOverlay-sliderTime width */
+  font-variant-numeric: tabular-nums;
 }
 .timeline {
   flex: 1;
   appearance: none;
-  height: 6px;
-  background: #2A3A44;
-  border-radius: 3px;
+  height: 4px;
+  background: rgba(255,255,255,0.30);
+  border-radius: 2px;
   outline: none;
 }
 .timeline::-webkit-slider-thumb {
@@ -332,210 +501,242 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: var(--kc-green);
+  background: var(--pt-green);
   cursor: pointer;
-  box-shadow: 0 0 0 3px rgba(21,181,115,0.24);
+  box-shadow: 0 0 0 3px rgba(3,177,136,0.28);
 }
 .timeline::-moz-range-thumb {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: var(--kc-green);
+  background: var(--pt-green);
   cursor: pointer;
   border: 0;
 }
 .speed-chip {
-  background: #1A242C;
-  border: 1px solid #2A3A44;
-  border-radius: 16px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.24);
+  color: #FFFFFF;
+  border-radius: 14px;
   padding: 4px 10px;
   font-size: 11px;
+  font-family: Roboto, Helvetica, Arial, sans-serif;
 }
+.speed-chip option { color: var(--pt-text); background: var(--pt-surface); }
 
-/* ─── Right side panel ─── */
+/* Blink animation matching Penta's .ControlsOverlay-blink */
+@keyframes blinkButton {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.5; }
+}
+.playback-bar .btn.blink { animation: blinkButton 2s ease infinite; }
+
+/* ─── Right side panel — Penta MuiTabs header + form-style body ─── */
 .side-panel {
-  background: var(--kc-surface);
-  border-left: 1px solid var(--kc-border);
+  background: var(--pt-surface);
+  border-left: 1px solid var(--pt-border);
   display: flex;
   flex-direction: column;
   min-height: 0;
 }
 .side-panel .tabs {
   display: flex;
-  border-bottom: 1px solid var(--kc-border);
-  background: var(--kc-surface-2);
+  height: 48px;                         /* Matches MuiTabs-root height */
+  border-bottom: 1px solid var(--pt-border);
+  background: var(--pt-surface-2);      /* #F5F5F5 — Penta tab header bg */
+  position: relative;
 }
 .side-panel .tabs .tab {
   flex: 1;
-  padding: 10px 12px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--kc-text-2);
+  padding: 12px 12px;
+  font-family: Roboto, Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--pt-text-2);               /* rgba(0,0,0,0.60) inactive */
   text-align: center;
+  text-transform: uppercase;              /* MuiTab is uppercase */
+  letter-spacing: 0.02em;
   border-bottom: 2px solid transparent;
   cursor: pointer;
+  transition: color 0.2s, background 0.2s;
 }
+.side-panel .tabs .tab:hover { color: var(--pt-text); }
 .side-panel .tabs .tab.active {
-  color: var(--kc-green);
-  border-bottom-color: var(--kc-green);
-  background: var(--kc-surface);
+  color: var(--pt-green);                /* Penta active tab text = brand green */
+  border-bottom-color: var(--pt-green);   /* MuiTabs-indicator */
 }
 .side-panel .tab-body {
   flex: 1;
   overflow: auto;
-  padding: 16px;
+  padding: 20px;
 }
 .side-panel .tab-body.hidden { display: none; }
 
-/* DRO grid */
+/* DRO grid — tabular, 4-decimal precision */
 .dro-grid {
   display: grid;
-  grid-template-columns: 24px 1fr 64px;
-  gap: 6px 10px;
+  grid-template-columns: 28px 1fr 56px;
+  gap: 8px 12px;
   align-items: baseline;
 }
 .dro-axis {
-  font-weight: 800;
-  color: var(--kc-text-3);
+  font-family: Roboto, Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--pt-text-label);           /* #333 */
 }
 .dro-value {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: Monaco, Menlo, "Ubuntu Mono", Consolas, "Source Code Pro", source-code-pro, monospace;
   font-size: 20px;
-  font-weight: 600;
-  color: var(--kc-text);
+  font-weight: 400;
+  color: var(--pt-text);
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 .dro-unit {
-  font-size: 10px;
-  color: var(--kc-text-3);
+  font-size: 11px;
+  color: var(--pt-text-2);
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  font-weight: 400;
 }
 
 .panel-section {
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid var(--kc-border);
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--pt-border);
 }
 .panel-section h3 {
-  font-size: 11px;
-  letter-spacing: 0.08em;
+  /* Penta uses MuiFormLabel for section legends — see "Back Plot" */
+  font-family: Roboto, Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--kc-text-3);
-  margin-bottom: 10px;
-  font-weight: 700;
+  color: var(--pt-text-label);           /* #333 — matches Penta legend color */
+  margin-bottom: 12px;
+  font-weight: 500;
 }
 .kv {
   display: flex;
   justify-content: space-between;
-  padding: 4px 0;
-  font-size: 12px;
+  padding: 6px 0;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
 }
-.kv span:first-child { color: var(--kc-text-2); }
-.kv span:last-child  { font-family: 'JetBrains Mono', monospace; color: var(--kc-text); font-weight: 500; }
+.kv:last-child { border-bottom: 0; }
+.kv span:first-child { color: var(--pt-text-2); }
+.kv span:last-child  { font-family: Monaco, Menlo, "Ubuntu Mono", Consolas, "Source Code Pro", source-code-pro, monospace; color: var(--pt-text); font-weight: 400; }
 
 .modal-row {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 4px;
+  margin-top: 6px;
 }
 .modal-chip {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: Monaco, Menlo, "Ubuntu Mono", Consolas, "Source Code Pro", source-code-pro, monospace;
   font-size: 11px;
-  padding: 3px 7px;
-  background: var(--kc-surface-2);
-  border: 1px solid var(--kc-border);
+  padding: 3px 8px;
+  background: var(--pt-surface-2);
+  border: 1px solid var(--pt-border);
   border-radius: 12px;
-  color: var(--kc-text-2);
+  color: var(--pt-text-2);
 }
 .modal-chip.active {
-  background: var(--kc-green-glow);
-  border-color: var(--kc-green);
-  color: var(--kc-green-dark);
-  font-weight: 600;
+  background: var(--pt-green-glow);
+  border-color: var(--pt-green);
+  color: var(--pt-green-dark);
+  font-weight: 500;
 }
 
 .limit-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 8px;
-  border-radius: 4px;
+  padding: 8px 10px;
+  border-radius: var(--pt-radius);
   font-size: 12px;
-  margin-bottom: 2px;
+  margin-bottom: 3px;
 }
-.limit-row.ok    { background: rgba(21,181,115,0.08); color: var(--kc-green-dark); }
-.limit-row.warn  { background: rgba(245,166,35,0.12); color: #8A5A00; }
-.limit-row.fail  { background: rgba(224,68,68,0.12);  color: #A8322A; font-weight: 600; }
+.limit-row.ok    { background: rgba(3,177,136,0.08);   color: var(--pt-green-dark); }
+.limit-row.warn  { background: rgba(245,166,35,0.10);  color: #8A5A00; }
+.limit-row.fail  { background: rgba(211,47,47,0.09);   color: #B71C1C; font-weight: 600; }
 .limit-row .mono { font-size: 11px; }
 
-/* Stats/warnings list */
+/* Stats / warnings list — MUI Alert-style */
 .warn-list {
-  font-size: 12px;
-  color: var(--kc-text);
+  font-size: 13px;
+  color: var(--pt-text);
 }
 .warn-list .item {
-  padding: 6px 8px;
-  border-radius: 4px;
-  margin-bottom: 4px;
+  padding: 10px 12px;
+  border-radius: var(--pt-radius);
+  margin-bottom: 6px;
   font-size: 12px;
-  background: rgba(245,166,35,0.1);
-  border-left: 3px solid var(--kc-amber);
+  background: rgba(245,166,35,0.08);
+  border-left: 3px solid var(--pt-amber);
 }
 .warn-list .item.error {
-  background: rgba(224,68,68,0.1);
-  border-left-color: var(--kc-red);
+  background: rgba(211,47,47,0.07);
+  border-left-color: var(--pt-red);
 }
 .warn-list .item .line-hint {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  color: var(--kc-text-3);
+  font-family: Monaco, Menlo, "Ubuntu Mono", Consolas, "Source Code Pro", source-code-pro, monospace;
+  font-size: 11px;
+  color: var(--pt-text-2);
+  margin-top: 2px;
+  display: block;
 }
 
-/* ──────────────── STATUS BAR ──────────────── */
+/* ──────────────── STATUS BAR — slim dark strip, matches top AppBar tint ──────────────── */
 .statusbar {
-  height: 40px;
-  background: var(--kc-status);
-  color: var(--kc-status-text);
+  height: 32px;
+  background: var(--pt-status);         /* #333 — matches header */
+  color: var(--pt-status-text);
   display: flex;
   align-items: center;
-  padding: 0 14px;
+  padding: 0 16px;
   gap: 18px;
   flex-shrink: 0;
   font-size: 12px;
   font-variant-numeric: tabular-nums;
+  font-family: Monaco, Menlo, "Ubuntu Mono", Consolas, "Source Code Pro", source-code-pro, monospace;
+  border-top: 1px solid rgba(255,255,255,0.08);
 }
-.statusbar .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--kc-text-3); display: inline-block; margin-right: 6px; }
-.statusbar .dot.ok   { background: var(--kc-green); box-shadow: 0 0 8px var(--kc-green-glow); }
-.statusbar .dot.run  { background: var(--kc-green); animation: pulse 1.2s infinite; }
-.statusbar .dot.warn { background: var(--kc-amber); }
-.statusbar .dot.err  { background: var(--kc-red); }
+.statusbar .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: rgba(255,255,255,0.4);
+  display: inline-block; margin-right: 6px;
+}
+.statusbar .dot.ok   { background: var(--pt-green); box-shadow: 0 0 6px var(--pt-green-glow); }
+.statusbar .dot.run  { background: var(--pt-green); animation: pulse 1.2s infinite; }
+.statusbar .dot.warn { background: var(--pt-amber); }
+.statusbar .dot.err  { background: var(--pt-red); }
 @keyframes pulse { 0%{opacity:1;} 50%{opacity:0.4;} 100%{opacity:1;} }
-.statusbar .sep { width: 1px; height: 20px; background: rgba(255,255,255,0.12); }
+.statusbar .sep { width: 1px; height: 18px; background: rgba(255,255,255,0.14); }
 .statusbar .grow { flex: 1; }
 
-/* ──────────────── MODAL ──────────────── */
+/* ──────────────── MODAL (MUI Dialog style) ──────────────── */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15,20,25,0.6);
+  background: rgba(0, 0, 0, 0.5);       /* Matches MUI backdrop */
   display: none;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 1300;                         /* MUI Dialog zIndex */
 }
 .modal-overlay.open { display: flex; }
 .modal {
-  background: var(--kc-surface);
-  border-radius: var(--kc-radius-lg);
+  background: var(--pt-surface);
+  border-radius: var(--pt-radius-lg);
   max-width: 560px;
   width: 90%;
   max-height: 80vh;
   overflow: auto;
   padding: 24px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  box-shadow: var(--pt-shadow-elev);      /* MUI elevation 24 style */
+  position: relative;
 }
 .modal h2 { margin-bottom: 8px; font-size: 18px; }
 .modal p { color: var(--kc-text-2); margin-bottom: 16px; font-size: 13px; line-height: 1.5; }
@@ -592,8 +793,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 <header class="topbar">
   <div class="brand">
     <span class="logo">🛠️</span>
-    <span class="name">Pentacad Sim</span>
-    <span class="tag">5-axis G-code simulator · v0.2.0</span>
+    <a href="#" class="name">Pentacad Simulator</a>
+    <span class="tag">v0.3.0 · 5-axis G-code playback</span>
   </div>
 
   <select class="machine-picker" id="machine-picker" title="Select machine">
@@ -851,7 +1052,7 @@ const MACHINES = {
     spindle: { min_rpm: 2000, max_rpm: 40000, type: 'ER20' },
     defaultUnits: 'inch',
     stock: { x: 3.0, y: 2.0, z: 1.0, unit: 'inch' },
-    color: 0x15B573
+    color: 0x03B188   /* Penta brand teal — V2-50 is the flagship, gets primary */
   },
   'v2-10': {
     id: 'v2-10', name: 'Pentamachine V2-10',
@@ -1247,8 +1448,11 @@ function initThree() {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x1F2A33);
-  scene.fog = new THREE.Fog(0x1F2A33, 50, 200);
+  // Penta simulator clear color — transparent canvas over body #FFFFFF.
+  // We set an explicit near-white so grid / axes / machine read cleanly when canvas
+  // is isolated (e.g. screenshot / iframe without body bg).
+  scene.background = new THREE.Color(0xFFFFFF);
+  scene.fog = new THREE.Fog(0xFFFFFF, 400, 900);   // Much farther fog — keeps near-field crisp on white bg
 
   const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 5000);
   camera.position.set(12, 10, 14);
@@ -1258,11 +1462,11 @@ function initThree() {
   controls.dampingFactor = 0.08;
   controls.target.set(0, 2, 0);
 
-  // Lights
-  const ambient = new THREE.AmbientLight(0xffffff, 0.45);
-  const key = new THREE.DirectionalLight(0xffffff, 0.7);
+  // Lights — balanced for white background readability
+  const ambient = new THREE.AmbientLight(0xffffff, 0.55);
+  const key = new THREE.DirectionalLight(0xffffff, 0.85);
   key.position.set(10, 20, 10);
-  const rim = new THREE.DirectionalLight(0x63E8D0, 0.25);
+  const rim = new THREE.DirectionalLight(0x03B188, 0.15);  /* Subtle Penta-green rim */
   rim.position.set(-10, 5, -10);
   scene.add(ambient, key, rim);
 
@@ -1271,14 +1475,17 @@ function initThree() {
   root.scale.setScalar(10);
   scene.add(root);
 
-  // Grid
-  const grid = new THREE.GridHelper(20, 20, 0x3A4A54, 0x2A3A44);
+  // Grid — light-on-white, matches Penta's clean scene look
+  const grid = new THREE.GridHelper(20, 20, 0xB0B0B0, 0xE0E0E0);
   grid.rotation.x = 0; // keep on XZ plane
   grid.position.y = 0;
   scene.add(grid);
 
-  // World axes helper
+  // World axes helper — standard R/G/B but slightly darkened for visibility on white
   const axes = new THREE.AxesHelper(3);
+  if (axes.material) {
+    axes.material.linewidth = 2;
+  }
   scene.add(axes);
 
   // Machine structure (simplified proxy until Matt's GLB loads)
@@ -1310,11 +1517,12 @@ function initThree() {
 
   applyVizToggles();
 
-  // Resize
+  // Resize — canvas fills the full viewport-panel; playback-bar floats as an overlay
+  // (Penta pattern: ControlsOverlay is absolute-positioned on top of the canvas.)
   const resize = () => {
     const rect = canvas.parentElement.getBoundingClientRect();
-    const w = rect.width;
-    const h = rect.height - 52; // minus playback bar
+    const w = Math.max(1, rect.width);
+    const h = Math.max(1, rect.height);
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
@@ -1337,10 +1545,11 @@ function initThree() {
 function buildMachineProxy(m) {
   const g = new THREE.Group();
 
-  // Base plate
+  // Machine body — brushed-metal greys calibrated to read well on white background
+  // (Penta's real machines are anodized grey/silver, so lighter tones look natural)
   const base = new THREE.Mesh(
     new THREE.BoxGeometry(12, 0.4, 8),
-    new THREE.MeshStandardMaterial({ color: 0x2A3A44, metalness: 0.4, roughness: 0.7 })
+    new THREE.MeshStandardMaterial({ color: 0x8A9299, metalness: 0.55, roughness: 0.55 })
   );
   base.position.y = -0.2;
   g.add(base);
@@ -1348,15 +1557,15 @@ function buildMachineProxy(m) {
   // Column at back
   const column = new THREE.Mesh(
     new THREE.BoxGeometry(3, 8, 1.5),
-    new THREE.MeshStandardMaterial({ color: 0x3A4A54, metalness: 0.45, roughness: 0.6 })
+    new THREE.MeshStandardMaterial({ color: 0x9AA0A6, metalness: 0.55, roughness: 0.5 })
   );
   column.position.set(0, 4, -3.5);
   g.add(column);
 
-  // Spindle head (sits at top of column)
+  // Spindle head (sits at top of column) — machine accent colour (Penta teal on V2-50)
   const spindle = new THREE.Mesh(
     new THREE.BoxGeometry(1.6, 2, 1.8),
-    new THREE.MeshStandardMaterial({ color: m.color || 0x15B573, metalness: 0.6, roughness: 0.4 })
+    new THREE.MeshStandardMaterial({ color: m.color || 0x03B188, metalness: 0.6, roughness: 0.4 })
   );
   spindle.position.set(0, 6.5, -2.5);
   spindle.name = 'spindleHead';
@@ -1367,7 +1576,7 @@ function buildMachineProxy(m) {
   trunnion.name = 'trunnion';
   const trBase = new THREE.Mesh(
     new THREE.BoxGeometry(4, 0.6, 3),
-    new THREE.MeshStandardMaterial({ color: 0x4A5A64, metalness: 0.45, roughness: 0.55 })
+    new THREE.MeshStandardMaterial({ color: 0xA8AEB4, metalness: 0.55, roughness: 0.5 })
   );
   trBase.position.y = 0.3;
   trunnion.add(trBase);
@@ -1377,7 +1586,7 @@ function buildMachineProxy(m) {
   tableGroup.name = 'tableB';
   const table = new THREE.Mesh(
     new THREE.CylinderGeometry(1.5, 1.5, 0.25, 32),
-    new THREE.MeshStandardMaterial({ color: 0x5A6A74, metalness: 0.5, roughness: 0.4 })
+    new THREE.MeshStandardMaterial({ color: 0xB8BDC2, metalness: 0.65, roughness: 0.35 })
   );
   table.position.y = 0.7;
   tableGroup.add(table);
@@ -1412,10 +1621,10 @@ function buildTool() {
   const g = new THREE.Group();
   g.name = 'tool';
 
-  // Holder
+  // Holder — darker metallic contrast for white scene
   const holder = new THREE.Mesh(
     new THREE.CylinderGeometry(0.4, 0.55, 1.2, 16),
-    new THREE.MeshStandardMaterial({ color: 0x2A3A44, metalness: 0.7, roughness: 0.3 })
+    new THREE.MeshStandardMaterial({ color: 0x5A6168, metalness: 0.75, roughness: 0.25 })
   );
   holder.position.y = 1.0;
   g.add(holder);
@@ -1429,10 +1638,10 @@ function buildTool() {
   flute.name = 'flute';
   g.add(flute);
 
-  // Tip marker
+  // Tip marker — Penta teal glow
   const tip = new THREE.Mesh(
     new THREE.SphereGeometry(0.05, 8, 8),
-    new THREE.MeshStandardMaterial({ color: 0x15B573, emissive: 0x15B573, emissiveIntensity: 0.5 })
+    new THREE.MeshStandardMaterial({ color: 0x03B188, emissive: 0x03B188, emissiveIntensity: 0.6 })
   );
   g.add(tip);
 
@@ -1477,14 +1686,17 @@ function rebuildToolpath() {
     cursor = to;
   }
 
+  // Toolpath colour convention — matches industry-standard CAM simulator colouring:
+  //   Feed moves (G1/G2/G3):  Penta teal #03B188 (brand primary)
+  //   Rapid moves (G0):       red #D32F2F, dashed
   if (feedPoints.length) {
     const geom = new THREE.BufferGeometry().setFromPoints(feedPoints);
-    const mat = new THREE.LineBasicMaterial({ color: 0x15B573, linewidth: 2 });
+    const mat = new THREE.LineBasicMaterial({ color: 0x03B188, linewidth: 2 });
     g.add(new THREE.LineSegments(geom, mat));
   }
   if (rapidPoints.length && app.viz.rapids) {
     const geom = new THREE.BufferGeometry().setFromPoints(rapidPoints);
-    const mat = new THREE.LineDashedMaterial({ color: 0x8A949D, dashSize: 0.2, gapSize: 0.1 });
+    const mat = new THREE.LineDashedMaterial({ color: 0xD32F2F, dashSize: 0.2, gapSize: 0.1 });
     const lines = new THREE.LineSegments(geom, mat);
     lines.computeLineDistances();
     g.add(lines);
@@ -2005,6 +2217,7 @@ setGcode(EXAMPLES[0].code, `${EXAMPLES[0].id}.ngc`);
 
 // Expose for debugging
 window.app = app;
+window.PENTACAD_SIM_VERSION = '0.3.0';
 
 </script>
 

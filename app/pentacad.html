@@ -1,1448 +1,1178 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <title>Pentacad Workspace — cycleCAD Suite</title>
-  <meta name="description" content="Pentacad browser-native 5-axis CAM workspace. Machine digital twin, 3+2 setup manager, G-code simulator, Kinetic Control bridge." />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pentacad — 5-axis CAM for Pentamachine</title>
+<meta name="description" content="Pentacad workspace — browser-native CAM, simulator, and Rockhopper bridge for Pentamachine V1/V2/Solo." />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+/* ──────────────────────────────────────────────────────────
+   KINETIC CONTROL-STYLE DESIGN TOKENS
+   Close match to Pentamachine's own UI for native feel.
+   ────────────────────────────────────────────────────────── */
+:root {
+  --kc-green:        #15B573;      /* primary action / active */
+  --kc-green-dark:   #0E8F5A;
+  --kc-green-glow:   rgba(21,181,115,0.18);
+  --kc-amber:        #F5A623;      /* RESET banner / warning */
+  --kc-amber-dark:   #E0931B;
+  --kc-red:          #E04444;      /* error / estop */
+  --kc-info-blue:    #2E90E8;      /* info badge */
 
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
-    }
-  }
-  </script>
+  --kc-bg:           #F5F7F8;      /* app background */
+  --kc-bg-soft:      #EEF1F3;
+  --kc-surface:      #FFFFFF;      /* panel background */
+  --kc-surface-2:    #FAFBFC;
+  --kc-border:       #E3E7EA;
+  --kc-border-dark:  #CFD4D8;
 
-  <style>
-    :root {
-      --bg:         #0A1628;
-      --bg-alt:     #122240;
-      --bg-card:    #1A2D50;
-      --bg-panel:   #0F1D36;
-      --border:     #1E3A5F;
-      --border-hi:  #2A4F80;
-      --text:       #F0F0E8;
-      --text-2:     #8B9AB5;
-      --text-3:     #5A6B85;
-      --emerald:    #10B981;
-      --emerald-2:  #34D399;
-      --emerald-dim: rgba(16,185,129,0.12);
-      --amber:      #F59E0B;
-      --red:        #EF4444;
-      --blue:       #2E86DE;
-      --mono: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
-    }
-    * { box-sizing: border-box; }
-    html, body {
-      margin: 0; padding: 0; height: 100%; overflow: hidden;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: var(--bg); color: var(--text); font-size: 13px;
-      -webkit-font-smoothing: antialiased;
-    }
-    button { font-family: inherit; }
+  --kc-text:         #1F2529;
+  --kc-text-2:       #5C6770;
+  --kc-text-3:       #8A949D;
+  --kc-text-light:   #F5F7F8;
 
-    /* ────────── LAYOUT ────────── */
-    #app {
-      display: grid;
-      grid-template-rows: 52px 1fr 30px;
-      grid-template-columns: 72px 1fr 360px;
-      grid-template-areas:
-        "top  top  top"
-        "tabs main side"
-        "stat stat stat";
-      height: 100vh;
-    }
+  --kc-status:       #1A2828;      /* dark status bar background */
+  --kc-status-2:     #223232;
+  --kc-status-text:  #D7DCDE;
 
-    /* ────────── TOP BAR ────────── */
-    #topbar {
-      grid-area: top;
-      display: flex; align-items: center; gap: 16px;
-      padding: 0 16px;
-      background: var(--bg-alt);
-      border-bottom: 1px solid var(--border);
-    }
-    .brand {
-      display: inline-flex; align-items: center; gap: 10px;
-      font-weight: 700; font-size: 1rem; letter-spacing: 0.02em;
-      color: var(--text); text-decoration: none;
-    }
-    .brand-logo {
-      display: inline-grid; place-items: center;
-      width: 28px; height: 28px; border-radius: 7px;
-      background: linear-gradient(135deg, var(--emerald), var(--blue));
-      color: var(--bg); font-weight: 800; font-size: 0.95rem;
-    }
-    .brand-sub {
-      font-size: 10px; letter-spacing: 2px; color: var(--text-3);
-      border-left: 1px solid var(--border); padding-left: 12px; margin-left: 4px;
-    }
-    .brand-sub a { color: inherit; text-decoration: none; }
-    .brand-sub a:hover { color: var(--emerald-2); }
+  --kc-gauge-track:  #E3E7EA;
+  --kc-gauge-fill:   #15B573;
 
-    .top-picker {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: var(--bg-card); border: 1px solid var(--border);
-      padding: 6px 10px; border-radius: 6px;
-      font-size: 12px; color: var(--text-2);
-      cursor: pointer; transition: border-color 0.15s;
-    }
-    .top-picker:hover { border-color: var(--emerald); color: var(--text); }
-    .top-picker .chip { color: var(--emerald-2); font-weight: 600; font-family: var(--mono); }
-    .top-picker .arrow { color: var(--text-3); font-size: 10px; }
-    .top-spacer { flex: 1; }
+  --kc-radius-sm: 4px;
+  --kc-radius:    8px;
+  --kc-radius-lg: 12px;
 
-    .icon-btn {
-      background: transparent; color: var(--text-2);
-      border: 1px solid transparent; padding: 6px 10px; border-radius: 6px;
-      cursor: pointer; font-size: 15px;
-    }
-    .icon-btn:hover { background: var(--bg-card); color: var(--text); border-color: var(--border); }
+  --kc-shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --kc-shadow:    0 2px 8px rgba(0,0,0,0.06);
+}
 
-    /* ────────── LEFT TABS ────────── */
-    #tabs {
-      grid-area: tabs;
-      background: var(--bg-panel); border-right: 1px solid var(--border);
-      display: flex; flex-direction: column; align-items: stretch;
-      padding: 10px 6px; gap: 4px;
-    }
-    .tab {
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 3px; padding: 10px 4px; border-radius: 8px;
-      background: transparent; color: var(--text-3);
-      border: 1px solid transparent; cursor: pointer;
-      font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase;
-      transition: background 0.15s, color 0.15s, border-color 0.15s;
-    }
-    .tab .ico { font-size: 20px; line-height: 1; }
-    .tab:hover { background: var(--bg-card); color: var(--text-2); }
-    .tab.active { background: var(--emerald-dim); color: var(--emerald-2); border-color: rgba(16,185,129,0.35); }
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  background: var(--kc-bg);
+  color: var(--kc-text);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+code, .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+button { font-family: inherit; font-size: inherit; cursor: pointer; border: 0; background: transparent; color: inherit; }
 
-    /* ────────── MAIN VIEWPORT ────────── */
-    #viewport {
-      grid-area: main; position: relative; background: #0A1628;
-    }
-    #viewport canvas { display: block; width: 100%; height: 100%; }
-    .vp-overlay {
-      position: absolute; bottom: 10px; left: 12px;
-      font-family: var(--mono); font-size: 10px; color: var(--text-3);
-      pointer-events: none; line-height: 1.6;
-    }
+/* ──────────────────────────────────────────────────────────
+   TOP TAB BAR
+   ────────────────────────────────────────────────────────── */
+.kc-topbar {
+  background: var(--kc-surface);
+  border-bottom: 1px solid var(--kc-border);
+  display: flex;
+  align-items: stretch;
+  height: 64px;
+  flex-shrink: 0;
+  box-shadow: var(--kc-shadow-sm);
+}
+.kc-brand {
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 22px;
+  border-right: 1px solid var(--kc-border);
+  font-weight: 800;
+  color: var(--kc-text);
+}
+.kc-brand .logo {
+  width: 34px; height: 34px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--kc-green), var(--kc-green-dark));
+  color: white;
+  display: grid; place-items: center;
+  font-size: 20px;
+}
+.kc-brand .name { font-size: 16px; letter-spacing: 0.5px; }
+.kc-brand .suite { font-size: 10px; color: var(--kc-text-3); letter-spacing: 1.5px; text-transform: uppercase; }
 
-    /* ────────── RIGHT SIDE PANEL ────────── */
-    #side {
-      grid-area: side;
-      background: var(--bg-panel); border-left: 1px solid var(--border);
-      display: flex; flex-direction: column; overflow: hidden;
-    }
-    .side-head {
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border);
-      display: flex; align-items: baseline; justify-content: space-between;
-      flex-shrink: 0;
-    }
-    .side-head h2 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: 0.03em; }
-    .side-head .hint { font-size: 10px; color: var(--text-3); letter-spacing: 0.08em; text-transform: uppercase; }
-    .side-body {
-      flex: 1; overflow-y: auto; padding: 14px 16px;
-    }
-    .side-body::-webkit-scrollbar { width: 8px; }
-    .side-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+.kc-tabs {
+  display: flex; align-items: stretch; flex: 1;
+  padding-left: 12px;
+}
+.kc-tab {
+  padding: 0 22px;
+  display: flex; align-items: center; gap: 6px;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  color: var(--kc-text-2);
+  position: relative;
+  transition: color 0.15s;
+}
+.kc-tab:hover { color: var(--kc-text); }
+.kc-tab.active { color: var(--kc-green); }
+.kc-tab.active::after {
+  content: '';
+  position: absolute;
+  left: 22px; right: 22px; bottom: -1px;
+  height: 3px;
+  background: var(--kc-green);
+  border-radius: 3px 3px 0 0;
+}
+.kc-tab .arrow { font-size: 10px; opacity: 0.7; }
 
-    .section { margin-bottom: 18px; }
-    .section-title {
-      font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
-      color: var(--text-3); margin-bottom: 8px; font-weight: 600;
-    }
-    .card {
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: 8px; padding: 10px 12px; margin-bottom: 6px;
-    }
-    .card.active { border-color: var(--emerald); box-shadow: 0 0 0 1px rgba(16,185,129,0.35); }
-    .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-    .row + .row { margin-top: 4px; }
-    .muted { color: var(--text-3); font-size: 11px; }
-    .kv { font-family: var(--mono); font-size: 11px; color: var(--text-2); }
-    .kv b { color: var(--emerald-2); font-weight: 500; }
+.kc-brand-right {
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 22px;
+  border-left: 1px solid var(--kc-border);
+  background: linear-gradient(135deg, var(--kc-green), var(--kc-green-dark));
+  color: white;
+  font-weight: 800;
+  letter-spacing: 2.5px;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+.kc-brand-right .machine-select {
+  background: rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 1px;
+  outline: none;
+}
 
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-      background: var(--bg-card); color: var(--text);
-      border: 1px solid var(--border); border-radius: 6px;
-      padding: 7px 12px; font-size: 12px; cursor: pointer;
-      transition: border-color 0.15s, background 0.15s;
-    }
-    .btn:hover { border-color: var(--border-hi); background: var(--bg-alt); }
-    .btn.primary {
-      background: var(--emerald); color: #05271B; border-color: var(--emerald);
-      font-weight: 600;
-    }
-    .btn.primary:hover { background: var(--emerald-2); }
-    .btn.danger { border-color: rgba(239,68,68,0.5); color: var(--red); }
-    .btn.danger:hover { background: rgba(239,68,68,0.12); }
-    .btn.full { width: 100%; }
-    .btn-row { display: flex; gap: 6px; flex-wrap: wrap; }
+/* ──────────────────────────────────────────────────────────
+   MAIN CONTENT — PRODUCTION tab shown by default
+   ────────────────────────────────────────────────────────── */
+.kc-main { flex: 1; overflow: auto; padding: 18px; }
+.kc-tabview { display: none; }
+.kc-tabview.active { display: block; }
 
-    input, select, textarea {
-      width: 100%;
-      background: var(--bg); color: var(--text);
-      border: 1px solid var(--border); border-radius: 5px;
-      padding: 6px 8px; font-size: 12px; font-family: inherit;
-    }
-    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--emerald); }
-    textarea { resize: vertical; min-height: 60px; font-family: var(--mono); font-size: 11px; }
-    label {
-      display: block; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
-      color: var(--text-3); margin-bottom: 3px; margin-top: 8px;
-    }
-    .field-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
-    .field-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+/* ── Production: 4-column panel row ── */
+.production-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1.1fr 1fr 1.2fr;
+  gap: 18px;
+  height: 100%;
+  min-height: 520px;
+}
+.panel {
+  background: var(--kc-surface);
+  border: 1px solid var(--kc-border);
+  border-radius: var(--kc-radius);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: var(--kc-shadow-sm);
+}
+.panel-head {
+  display: flex; align-items: baseline; gap: 10px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--kc-text);
+  margin-bottom: 20px;
+}
+.panel-head h2 {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--kc-text);
+}
+.panel-head .tag {
+  font-size: 10px;
+  color: var(--kc-text-3);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-left: auto;
+}
 
-    /* ────────── STATUS STRIP ────────── */
-    #status {
-      grid-area: stat;
-      background: var(--bg-alt); border-top: 1px solid var(--border);
-      display: flex; align-items: center; gap: 16px;
-      padding: 0 14px; font-size: 11px; font-family: var(--mono);
-      color: var(--text-2); overflow: hidden;
-    }
-    #status .seg { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
-    #status .seg b { color: var(--text); font-weight: 500; }
-    #status .sep { width: 1px; height: 14px; background: var(--border); flex-shrink: 0; }
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); flex-shrink: 0; }
-    .dot.amber { background: var(--amber); animation: pulse 1.2s ease-in-out infinite; }
-    .dot.green { background: var(--emerald); }
-    .dot.red { background: var(--red); }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+/* ──────────────────────────────────────────────────────────
+   SPINDLE + FEED — circular donut gauges with arc labels
+   ────────────────────────────────────────────────────────── */
+.gauge-wrap {
+  position: relative;
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.gauge-ring {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  max-width: 260px;
+}
+.gauge-ring svg { width: 100%; height: 100%; overflow: visible; }
+.gauge-ring .g-track { fill: none; stroke: var(--kc-gauge-track); }
+.gauge-ring .g-fill  { fill: none; stroke: var(--kc-green); stroke-linecap: round; }
+.gauge-ring .g-fill.fill-orange { stroke: var(--kc-amber); }
+.gauge-ring .g-fill.fill-red    { stroke: var(--kc-red); }
 
-    .status-event {
-      margin-left: auto; color: var(--text-3); font-size: 10px;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 360px;
-    }
+.gauge-ring .g-label {
+  position: absolute;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: var(--kc-text-2);
+}
+.gauge-ring .g-label.lbl-tl { top: 22%; left: 8%; }
+.gauge-ring .g-label.lbl-tr { top: 22%; right: 8%; text-align: right; }
+.gauge-ring .g-label.lbl-bl { bottom: 22%; left: 8%; color: var(--kc-text-3); font-weight: 600; font-size: 10px; }
+.gauge-ring .g-label.lbl-br { bottom: 22%; right: 8%; color: var(--kc-text-3); font-weight: 600; font-size: 10px; text-align: right; }
+.gauge-ring .g-center {
+  position: absolute;
+  top: 50%; left: 50%; transform: translate(-50%, -50%);
+  text-align: center;
+}
+.gauge-ring .g-center .value {
+  font-size: 32px; font-weight: 800; line-height: 1.1;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: -0.02em;
+  color: var(--kc-text);
+}
+.gauge-ring .g-center .unit {
+  font-size: 10px; font-weight: 700; letter-spacing: 2px;
+  color: var(--kc-text-3);
+  margin-top: 2px;
+}
 
-    /* ────────── JOG PAD ────────── */
-    .jog-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 6px; }
-    .jog-btn {
-      background: var(--bg-card); color: var(--text); border: 1px solid var(--border);
-      border-radius: 4px; padding: 8px; font-family: var(--mono);
-      font-size: 11px; font-weight: 600; cursor: pointer;
-    }
-    .jog-btn:hover { background: var(--bg-alt); border-color: var(--emerald); }
-    .jog-btn.empty { background: transparent; border: none; cursor: default; }
+.gauge-footer {
+  text-align: center;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--kc-border);
+  width: 100%;
+}
+.gauge-footer .k { font-size: 9px; font-weight: 700; letter-spacing: 2px; color: var(--kc-text-3); text-transform: uppercase; }
+.gauge-footer .v { font-size: 18px; font-weight: 700; color: var(--kc-text); margin-top: 2px; }
 
-    /* ────────── MODAL ────────── */
-    .modal-bg {
-      position: fixed; inset: 0; background: rgba(5,10,20,0.7); z-index: 100;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .modal {
-      background: var(--bg-panel); border: 1px solid var(--border-hi);
-      border-radius: 10px; padding: 20px;
-      width: min(520px, 90vw); max-height: 80vh; overflow-y: auto;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    }
-    .modal h3 { margin: 0 0 12px 0; font-size: 15px; }
-    .modal .close { float: right; cursor: pointer; color: var(--text-3); font-size: 18px; line-height: 1; background:none; border:none; }
+.pressure-badge {
+  position: absolute;
+  top: 18px; left: 18px;
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  border: 3px solid var(--kc-green);
+  display: grid; place-items: center;
+  background: var(--kc-surface);
+}
+.pressure-badge .k { font-size: 7px; font-weight: 700; letter-spacing: 1px; color: var(--kc-text-3); }
+.pressure-badge .v { font-size: 10px; font-weight: 700; color: var(--kc-text); }
 
-    /* ────────── DROPDOWN MENU ────────── */
-    .menu {
-      position: absolute; background: var(--bg-panel);
-      border: 1px solid var(--border-hi); border-radius: 6px;
-      min-width: 180px; padding: 4px; z-index: 200;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-    }
-    .menu-item {
-      padding: 6px 10px; cursor: pointer; border-radius: 4px;
-      font-size: 12px; color: var(--text-2);
-      display: flex; justify-content: space-between; align-items: center;
-    }
-    .menu-item:hover { background: var(--bg-card); color: var(--text); }
-    .menu-item .tag { font-size: 9px; color: var(--text-3); letter-spacing: 0.08em; text-transform: uppercase; }
+.warm-up-btn {
+  margin-top: 10px;
+  padding: 8px 18px;
+  font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+  color: var(--kc-text-3);
+  background: var(--kc-bg);
+  border: 1px solid var(--kc-border);
+  border-radius: 4px;
+  align-self: flex-start;
+}
 
-    .timeline {
-      width: 100%; margin: 8px 0; height: 6px; background: var(--bg);
-      border-radius: 3px; cursor: pointer; position: relative; overflow: hidden;
-      border: 1px solid var(--border);
-    }
-    .timeline-fill { height: 100%; background: linear-gradient(90deg, var(--emerald), var(--blue)); width: 0%; transition: width 0.1s linear; }
+/* ──────────────────────────────────────────────────────────
+   DRO — large X/Y/Z/A/B readout
+   ────────────────────────────────────────────────────────── */
+.dro-top {
+  display: flex; gap: 10px;
+  margin-bottom: 20px;
+}
+.dro-select {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 12px;
+  background: var(--kc-surface);
+  border: 1px solid var(--kc-border);
+  border-radius: 4px;
+  color: var(--kc-text);
+  outline: none;
+  font-weight: 500;
+}
+.home-all-btn {
+  padding: 8px 18px;
+  background: var(--kc-green);
+  color: white;
+  font-size: 12px; font-weight: 700; letter-spacing: 1.5px;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+.home-all-btn:hover { background: var(--kc-green-dark); }
 
-    .pill {
-      display: inline-block; padding: 2px 7px; border-radius: 10px;
-      font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase;
-      background: var(--emerald-dim); color: var(--emerald-2); font-weight: 600;
-    }
-    .pill.warn { background: rgba(245,158,11,0.15); color: var(--amber); }
-    .pill.err { background: rgba(239,68,68,0.15); color: var(--red); }
+.dro-rows { display: flex; flex-direction: column; gap: 4px; }
+.dro-row {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--kc-bg-soft);
+  border-radius: 4px;
+  gap: 12px;
+}
+.dro-row:nth-child(even) { background: var(--kc-bg); }
+.dro-row .axis {
+  font-size: 16px; font-weight: 800;
+  color: var(--kc-text-2);
+  letter-spacing: 1px;
+}
+.dro-row .val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 22px; font-weight: 600;
+  color: var(--kc-text);
+  text-align: right;
+  letter-spacing: -0.02em;
+}
+.dro-row .val .unit {
+  font-size: 12px; font-weight: 500;
+  color: var(--kc-text-3);
+  margin-left: 6px;
+}
 
-    .footer-links { font-size: 10px; color: var(--text-3); }
-    .footer-links a { color: var(--text-2); text-decoration: none; margin-left: 12px; }
-    .footer-links a:hover { color: var(--emerald-2); }
+/* ──────────────────────────────────────────────────────────
+   CONTROL PANEL
+   ────────────────────────────────────────────────────────── */
+.ctrl-row {
+  display: flex; gap: 8px;
+  margin-bottom: 10px;
+}
+.ctrl-btn {
+  flex: 1;
+  padding: 12px 14px;
+  font-size: 12px; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase;
+  background: var(--kc-bg);
+  color: var(--kc-text-3);
+  border: 1px solid var(--kc-border);
+  border-radius: 4px;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: all 0.15s;
+}
+.ctrl-btn.cycle {
+  background: var(--kc-surface);
+  color: var(--kc-text-3);
+  border: 1px solid var(--kc-border);
+}
+.ctrl-btn.cycle:not(:disabled):hover { background: var(--kc-green); color: white; border-color: var(--kc-green); }
+.ctrl-btn.hold {
+  background: var(--kc-amber);
+  color: white;
+  border-color: var(--kc-amber-dark);
+}
+.ctrl-btn.hold:hover { background: var(--kc-amber-dark); }
+.ctrl-btn.step {
+  background: var(--kc-green);
+  color: white;
+  border-color: var(--kc-green-dark);
+}
+.ctrl-btn.step:hover { background: var(--kc-green-dark); }
 
-    @media (max-width: 1100px) {
-      #side { display: none; }
-      #app { grid-template-columns: 72px 1fr; grid-template-areas: "top top" "tabs main" "stat stat"; }
-    }
-  </style>
+.opt-stop {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--kc-border);
+  margin: 8px 0 18px;
+}
+.opt-stop .k {
+  font-size: 10px; font-weight: 700; letter-spacing: 2px;
+  color: var(--kc-text-3);
+  text-transform: uppercase;
+}
+.opt-stop .toggle {
+  width: 42px; height: 22px;
+  background: var(--kc-green);
+  border-radius: 11px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.opt-stop .toggle.off { background: var(--kc-border-dark); }
+.opt-stop .toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 22px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: white;
+  transition: left 0.15s;
+  box-shadow: var(--kc-shadow-sm);
+}
+.opt-stop .toggle.off::after { left: 2px; }
+
+.slider-row {
+  margin-bottom: 18px;
+}
+.slider-row .head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 6px;
+}
+.slider-row .k {
+  font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+  color: var(--kc-text-3);
+  text-transform: uppercase;
+}
+.slider-row .reset {
+  font-size: 11px; color: var(--kc-text-3);
+  padding: 2px 4px;
+  cursor: pointer;
+  opacity: 0.6;
+}
+.slider-row .reset:hover { opacity: 1; }
+.slider-row input[type="range"] {
+  width: 100%; height: 4px;
+  background: var(--kc-border);
+  border-radius: 2px;
+  -webkit-appearance: none; appearance: none;
+  outline: none;
+}
+.slider-row input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 18px; height: 18px;
+  background: var(--kc-green);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: var(--kc-shadow-sm);
+}
+.slider-row .v {
+  font-size: 14px; font-weight: 700;
+  color: var(--kc-text-2);
+  margin-top: 4px;
+}
+
+/* ──────────────────────────────────────────────────────────
+   BOTTOM STATUS BAR
+   ────────────────────────────────────────────────────────── */
+.kc-bottom {
+  background: var(--kc-status);
+  color: var(--kc-status-text);
+  border-top: 1px solid rgba(255,255,255,0.06);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: stretch;
+  height: 54px;
+  flex-shrink: 0;
+  font-size: 12px;
+}
+.kc-bottom .left,
+.kc-bottom .right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 18px;
+}
+.kc-bottom .right { justify-content: flex-end; }
+.status-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--kc-green);
+  box-shadow: 0 0 0 3px rgba(21,181,115,0.2);
+}
+.status-dot.off { background: var(--kc-text-3); box-shadow: none; }
+.conn-label { font-weight: 700; letter-spacing: 1.5px; color: white; font-size: 11px; text-transform: uppercase; }
+.modal-state {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--kc-text-3);
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+.kc-bottom .reset-wrap {
+  position: relative;
+  display: flex; align-items: center;
+}
+.kc-bottom .big-reset {
+  background: var(--kc-amber);
+  color: var(--kc-text);
+  font-weight: 800; letter-spacing: 6px;
+  font-size: 14px;
+  padding: 0 60px;
+  height: 100%;
+  clip-path: polygon(15px 0, calc(100% - 15px) 0, 100% 100%, 0 100%);
+  transition: background 0.15s;
+}
+.kc-bottom .big-reset:hover { background: var(--kc-amber-dark); }
+.run-state {
+  font-size: 11px; font-weight: 700; letter-spacing: 2px;
+  color: white;
+  text-transform: uppercase;
+}
+.run-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--kc-status-text);
+}
+.alert-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px;
+  border-radius: 11px;
+  font-weight: 700;
+  font-size: 11px;
+}
+.alert-pill.info  { background: var(--kc-info-blue); color: white; }
+.alert-pill.error { background: var(--kc-red); color: white; }
+
+/* ──────────────────────────────────────────────────────────
+   OTHER TABS — simpler layouts
+   ────────────────────────────────────────────────────────── */
+.kc-tabview > h2 {
+  font-size: 20px; font-weight: 800;
+  margin-bottom: 18px;
+  letter-spacing: -0.01em;
+}
+.kc-tabview .card {
+  background: var(--kc-surface);
+  border: 1px solid var(--kc-border);
+  border-radius: var(--kc-radius);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.kc-tabview .card h3 {
+  font-size: 14px; font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--kc-text-2);
+  margin-bottom: 12px;
+}
+
+/* CAM / Simulate / Design tabs share a viewport layout */
+.ws-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 18px;
+  height: calc(100vh - 180px);
+}
+.ws-viewport {
+  background: var(--kc-status);
+  border-radius: var(--kc-radius);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--kc-border);
+}
+.ws-viewport canvas { width: 100%; height: 100%; display: block; }
+.ws-viewport .floaty {
+  position: absolute;
+  top: 12px; left: 12px;
+  background: rgba(26,40,40,0.9);
+  color: white;
+  padding: 6px 12px;
+  font-size: 11px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.ws-side {
+  display: flex; flex-direction: column; gap: 12px;
+}
+
+/* ──────────────────────────────────────────────────────────
+   RESPONSIVE
+   ────────────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .production-grid { grid-template-columns: 1fr 1fr; gap: 14px; }
+  .panel { padding: 14px; }
+  .kc-bottom .big-reset { padding: 0 32px; letter-spacing: 4px; }
+  .ws-layout { grid-template-columns: 1fr; }
+}
+@media (max-width: 700px) {
+  .production-grid { grid-template-columns: 1fr; }
+  .kc-brand .suite { display: none; }
+  .kc-tabs { overflow-x: auto; }
+  .kc-tab { padding: 0 14px; font-size: 11px; }
+}
+</style>
 </head>
 <body>
-  <div id="app">
-    <!-- ============ TOP BAR ============ -->
-    <header id="topbar">
-      <a href="/app/" class="brand" title="Back to cycleCAD">
-        <span class="brand-logo">P</span>
-        Pentacad
-      </a>
-      <span class="brand-sub"><a href="/">cycleCAD SUITE</a></span>
 
-      <button class="top-picker" id="machine-picker">
-        <span class="muted">Machine:</span>
-        <span class="chip" id="machine-chip">—</span>
-        <span class="arrow">▼</span>
-      </button>
-
-      <button class="top-picker" id="setup-picker">
-        <span class="muted">Setup:</span>
-        <span class="chip" id="setup-chip">—</span>
-        <span class="arrow">▼</span>
-      </button>
-
-      <span class="top-spacer"></span>
-      <span class="muted footer-links">
-        <a href="/pentacad.html" target="_blank">Marketing page ↗</a>
-      </span>
-      <button class="icon-btn" id="settings-btn" title="Settings">⚙</button>
-    </header>
-
-    <!-- ============ LEFT TABS ============ -->
-    <nav id="tabs">
-      <button class="tab active" data-ws="machine"><span class="ico">🛠</span>Machine</button>
-      <button class="tab" data-ws="design"><span class="ico">📐</span>Design</button>
-      <button class="tab" data-ws="cam"><span class="ico">✂️</span>CAM</button>
-      <button class="tab" data-ws="sim"><span class="ico">▶</span>Simulate</button>
-      <button class="tab" data-ws="control"><span class="ico">⚡</span>Control</button>
-    </nav>
-
-    <!-- ============ VIEWPORT ============ -->
-    <main id="viewport">
-      <div class="vp-overlay" id="vp-overlay">loading…</div>
-    </main>
-
-    <!-- ============ RIGHT SIDE PANEL ============ -->
-    <aside id="side">
-      <div class="side-head">
-        <h2 id="side-title">Machine</h2>
-        <span class="hint" id="side-hint">digital twin</span>
-      </div>
-      <div class="side-body" id="side-body">
-        <!-- dynamic content per tab -->
-      </div>
-    </aside>
-
-    <!-- ============ STATUS STRIP ============ -->
-    <footer id="status">
-      <span class="seg"><span class="muted">X</span><b id="dro-x">0.0000</b></span>
-      <span class="seg"><span class="muted">Y</span><b id="dro-y">0.0000</b></span>
-      <span class="seg"><span class="muted">Z</span><b id="dro-z">0.0000</b></span>
-      <span class="sep"></span>
-      <span class="seg"><span class="muted">A</span><b id="dro-a">0.00°</b></span>
-      <span class="seg"><span class="muted">B</span><b id="dro-b">0.00°</b></span>
-      <span class="sep"></span>
-      <span class="seg"><span class="muted">Feed</span><b id="dro-feed">0</b></span>
-      <span class="seg"><span class="muted">S</span><b id="dro-rpm">0</b></span>
-      <span class="sep"></span>
-      <span class="seg"><span class="dot" id="bridge-dot"></span><span id="bridge-label">disconnected</span></span>
-      <span class="status-event" id="status-event">Pentacad v0.1.0 ready</span>
-    </footer>
+<!-- ═══════════════════════════════════════════════════════════
+     TOP TAB BAR
+     ═══════════════════════════════════════════════════════════ -->
+<header class="kc-topbar">
+  <div class="kc-brand">
+    <span class="logo">⚙</span>
+    <div>
+      <div class="name">Pentacad</div>
+      <div class="suite">cycleCAD Suite</div>
+    </div>
   </div>
+  <nav class="kc-tabs" role="tablist">
+    <button class="kc-tab" data-tab="machine">MACHINE</button>
+    <button class="kc-tab" data-tab="design">DESIGN</button>
+    <button class="kc-tab" data-tab="cam">CAM</button>
+    <button class="kc-tab" data-tab="simulate">SIMULATE</button>
+    <button class="kc-tab active" data-tab="production"><span class="arrow">▸</span> PRODUCTION</button>
+  </nav>
+  <div class="kc-brand-right">
+    <span>Kinetic Control</span>
+    <select id="machine-select" class="machine-select" title="Active machine">
+      <option value="v2-50">V2-50</option>
+      <option value="v2-10">V2-10</option>
+      <option value="v1">V1</option>
+      <option value="solo">Solo</option>
+    </select>
+  </div>
+</header>
 
-  <!-- Pentacad sub-modules (load before coordinator) -->
-  <script>window.CycleCAD = window.CycleCAD || {}; window.CycleCAD.SkipPentacadInit = true;</script>
-  <script src="./js/modules/pentacad-cam.js"></script>
-  <script src="./js/modules/pentacad-sim.js"></script>
-  <!-- Rockhopper native client (preferred bridge — ships on every Pentamachine) -->
-  <script src="./js/modules/rockhopper-client.js"></script>
-  <!-- pentacad-bridge: fallback for LinuxCNC installs without Rockhopper -->
-  <script src="./js/modules/pentacad-bridge.js"></script>
-  <script src="./js/modules/pentacad.js"></script>
+<!-- ═══════════════════════════════════════════════════════════
+     MAIN CONTENT — tab views
+     ═══════════════════════════════════════════════════════════ -->
+<main class="kc-main">
 
-  <!-- Three.js bootstrap via ES module, assign to window.THREE so modules can reach it -->
-  <script type="module">
-    import * as THREE from 'three';
-    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-    window.THREE = THREE;
-    window.OrbitControls = OrbitControls;
-    window.dispatchEvent(new Event('three-ready'));
-  </script>
+  <!-- ───────────────── PRODUCTION TAB ───────────────── -->
+  <section class="kc-tabview active" data-tabview="production">
+    <div class="production-grid">
 
-  <!-- Workspace app logic -->
-  <script>
-  (() => {
-    'use strict';
+      <!-- SPINDLE -->
+      <div class="panel" id="panel-spindle">
+        <div class="panel-head">
+          <h2>Spindle</h2>
+          <div class="tag">●</div>
+        </div>
+        <div class="gauge-wrap">
+          <div class="gauge-ring">
+            <!-- Pressure mini-badge top-left -->
+            <div class="pressure-badge">
+              <div class="k">PRESSURE</div>
+              <div class="v" id="g-pressure">0.00 psi</div>
+            </div>
 
-    // ─────────────────────────────────────────────────────────────
-    // WORKSPACE STATE
-    // ─────────────────────────────────────────────────────────────
-    const WS = {
-      activeTab: 'machine',
-      machineId: null,
-      machineDef: null,
-      setups: [],           // [{ id, name, stock: {x,y,z}, material, wcs:{x,y,z,a,b}, fixtureNotes }]
-      activeSetupId: null,
-      operations: [],       // [{ id, setupId, strategyId, tool:{number,rpm,diameter,name}, feed, region }]
-      toolpaths: [],        // generated
-      gcode: null,
-      sim: { playing: false, speed: 1, cursor: 0, moves: [], animHandle: null },
-      bridgeUrl: localStorage.getItem('pentacad_bridge_url') || 'ws://localhost:7777',
-      dro: { x: 0, y: 0, z: 0, a: 0, b: 0, feed: 0, rpm: 0 },
-    };
+            <svg viewBox="0 0 200 200" aria-hidden="true">
+              <!-- Background ring -->
+              <circle class="g-track" cx="100" cy="100" r="80" stroke-width="12"/>
+              <!-- POWER arc (top-left) -->
+              <path class="g-fill" id="arc-spindle-power"
+                    d="M 100 20 A 80 80 0 0 0 36 128"
+                    stroke-width="12"
+                    stroke-dasharray="251 1000"
+                    stroke-dashoffset="0"/>
+              <!-- LOAD arc (top-right) -->
+              <path class="g-fill" id="arc-spindle-load"
+                    d="M 100 20 A 80 80 0 0 1 164 128"
+                    stroke-width="12"
+                    stroke-dasharray="0 1000"/>
+            </svg>
 
-    const $ = (sel, root = document) => root.querySelector(sel);
-    const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
-    const e = (tag, attrs = {}, ...children) => {
-      const el = document.createElement(tag);
-      for (const [k, v] of Object.entries(attrs)) {
-        if (k === 'class') el.className = v;
-        else if (k === 'html') el.innerHTML = v;
-        else if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2), v);
-        else if (v !== undefined && v !== null) el.setAttribute(k, v);
-      }
-      for (const c of children) {
-        if (c == null) continue;
-        el.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
-      }
-      return el;
-    };
+            <!-- Arc labels around the ring -->
+            <div class="g-label lbl-tl">POWER</div>
+            <div class="g-label lbl-tr">LOAD</div>
+            <div class="g-label lbl-bl" id="g-spindle-w">0 W</div>
+            <div class="g-label lbl-br" id="g-spindle-load">0.0 %</div>
 
-    const setEvent = (msg) => {
-      const el = $('#status-event');
-      if (el) el.textContent = msg;
-    };
+            <!-- Center text -->
+            <div class="g-center">
+              <div class="value" id="g-spindle-rpm">0</div>
+              <div class="unit">RPM</div>
+            </div>
+          </div>
 
-    // ─────────────────────────────────────────────────────────────
-    // THREE.JS SCENE (waits for module script to publish window.THREE)
-    // ─────────────────────────────────────────────────────────────
-    let THREE, OrbitControls, renderer, scene, camera, controls;
-    let machineGroup, stockMesh, toolpathGroup, toolMarker;
+          <div class="gauge-footer">
+            <div class="k">Temperature</div>
+            <div class="v" id="g-spindle-temp">— °F</div>
+          </div>
 
-    function bootScene() {
-      THREE = window.THREE;
-      OrbitControls = window.OrbitControls;
-      if (!THREE) return false;
+          <button class="warm-up-btn">WARM UP</button>
+        </div>
+      </div>
 
-      const vp = $('#viewport');
-      renderer = new THREE.WebGLRenderer({ antialias: true });
-      renderer.setPixelRatio(window.devicePixelRatio);
-      renderer.setSize(vp.clientWidth, vp.clientHeight);
-      renderer.setClearColor(0x0a1628, 1);
-      vp.appendChild(renderer.domElement);
+      <!-- FEED -->
+      <div class="panel" id="panel-feed">
+        <div class="panel-head">
+          <h2>Feed</h2>
+          <div class="tag">●</div>
+        </div>
+        <div class="gauge-wrap">
+          <div class="gauge-ring">
+            <svg viewBox="0 0 200 200" aria-hidden="true">
+              <circle class="g-track" cx="100" cy="100" r="80" stroke-width="12"/>
+              <path class="g-fill" id="arc-feed-power"
+                    d="M 100 20 A 80 80 0 0 0 36 128"
+                    stroke-width="12"
+                    stroke-dasharray="0 1000"/>
+              <path class="g-fill" id="arc-feed-chip"
+                    d="M 100 20 A 80 80 0 0 1 164 128"
+                    stroke-width="12"
+                    stroke-dasharray="0 1000"/>
+            </svg>
 
-      scene = new THREE.Scene();
-      camera = new THREE.PerspectiveCamera(42, vp.clientWidth / vp.clientHeight, 0.1, 5000);
-      camera.position.set(220, 170, 220);
-      camera.lookAt(0, 30, 0);
+            <div class="g-label lbl-tl">POWER</div>
+            <div class="g-label lbl-tr">CHIP LOAD</div>
+            <div class="g-label lbl-bl" id="g-feed-w">0 W</div>
+            <div class="g-label lbl-br" id="g-feed-chip">0.0000 in</div>
 
-      controls = new OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.08;
-      controls.target.set(0, 30, 0);
+            <div class="g-center">
+              <div class="value" id="g-feed-rate">0</div>
+              <div class="unit">in/min</div>
+            </div>
+          </div>
 
-      // Grid + axes
-      const grid = new THREE.GridHelper(400, 40, 0x2a4f80, 0x1e3a5f);
-      scene.add(grid);
+          <div class="gauge-footer">
+            <div class="k">Surface Speed</div>
+            <div class="v" id="g-feed-ss">— ft/min</div>
+          </div>
+        </div>
+      </div>
 
-      addAxis('X', new THREE.Vector3(100, 0, 0), 0xef4444);
-      addAxis('Y', new THREE.Vector3(0, 100, 0), 0x10b981);
-      addAxis('Z', new THREE.Vector3(0, 0, 100), 0x2e86de);
+      <!-- DRO -->
+      <div class="panel" id="panel-dro">
+        <div class="panel-head">
+          <h2>DRO</h2>
+        </div>
+        <div class="dro-top">
+          <select class="dro-select" id="dro-mode">
+            <option value="position">Position</option>
+            <option value="relative">Relative</option>
+            <option value="dtg">Distance-to-go</option>
+            <option value="joint">Joint</option>
+          </select>
+          <button class="home-all-btn" id="btn-home-all">HOME ALL</button>
+        </div>
+        <div class="dro-rows" id="dro-rows">
+          <div class="dro-row"><span class="axis">X</span><span class="val" data-axis="x">0.0000<span class="unit">in</span></span></div>
+          <div class="dro-row"><span class="axis">Y</span><span class="val" data-axis="y">0.0000<span class="unit">in</span></span></div>
+          <div class="dro-row"><span class="axis">Z</span><span class="val" data-axis="z">0.0000<span class="unit">in</span></span></div>
+          <div class="dro-row"><span class="axis">A</span><span class="val" data-axis="a">0.000<span class="unit">deg</span></span></div>
+          <div class="dro-row"><span class="axis">B</span><span class="val" data-axis="b">0.000<span class="unit">deg</span></span></div>
+        </div>
+      </div>
 
-      scene.add(new THREE.HemisphereLight(0xccdcff, 0x142238, 0.9));
-      const key = new THREE.DirectionalLight(0xffffff, 0.7);
-      key.position.set(150, 200, 100); scene.add(key);
+      <!-- CONTROL -->
+      <div class="panel" id="panel-control">
+        <div class="panel-head">
+          <h2>Control</h2>
+        </div>
+        <div class="ctrl-row">
+          <button class="ctrl-btn cycle" id="btn-cycle" disabled>▶ CYCLE/START</button>
+        </div>
+        <div class="ctrl-row">
+          <button class="ctrl-btn hold" id="btn-hold">❚❚ FEED HOLD</button>
+          <button class="ctrl-btn step" id="btn-step">▶ STEP</button>
+        </div>
 
-      // Machine base
-      machineGroup = new THREE.Group();
-      const base = new THREE.Mesh(
-        new THREE.BoxGeometry(260, 8, 200),
-        new THREE.MeshStandardMaterial({ color: 0x1a2d50, metalness: 0.6, roughness: 0.4 })
-      );
-      base.position.y = -4; machineGroup.add(base);
+        <div class="opt-stop">
+          <span class="k">Optional Stop</span>
+          <div class="toggle" id="tog-opt-stop" role="switch" tabindex="0"></div>
+        </div>
 
-      // Column
-      const col = new THREE.Mesh(
-        new THREE.BoxGeometry(30, 160, 30),
-        new THREE.MeshStandardMaterial({ color: 0x243a62, metalness: 0.5, roughness: 0.5 })
-      );
-      col.position.set(-100, 80, -80); machineGroup.add(col);
+        <div class="slider-row">
+          <div class="head">
+            <span class="k">Max Velocity</span>
+            <span class="reset" data-reset="maxvel" title="Reset to 100%">↺</span>
+          </div>
+          <input type="range" min="0" max="200" value="100" id="sl-maxvel"/>
+          <div class="v"><span id="v-maxvel">100</span>%</div>
+        </div>
 
-      // Spindle head
-      const sp = new THREE.Mesh(
-        new THREE.CylinderGeometry(12, 12, 50, 24),
-        new THREE.MeshStandardMaterial({ color: 0x34d399, metalness: 0.7, roughness: 0.3, emissive: 0x0c3d2b })
-      );
-      sp.position.set(0, 130, 0); machineGroup.add(sp);
+        <div class="slider-row">
+          <div class="head">
+            <span class="k">Max Rapid</span>
+            <span class="reset" data-reset="rapid" title="Reset to 100%">↺</span>
+          </div>
+          <input type="range" min="0" max="100" value="100" id="sl-rapid"/>
+          <div class="v"><span id="v-rapid">100</span>%</div>
+        </div>
 
-      // Tool marker (cone)
-      toolMarker = new THREE.Mesh(
-        new THREE.ConeGeometry(4, 14, 12),
-        new THREE.MeshStandardMaterial({ color: 0xe8c065, metalness: 0.8, roughness: 0.2 })
-      );
-      toolMarker.rotation.x = Math.PI;
-      toolMarker.position.set(0, 98, 0);
-      scene.add(toolMarker);
+        <div class="slider-row">
+          <div class="head">
+            <span class="k">Feed Rate</span>
+            <span class="reset" data-reset="feed" title="Reset to 100%">↺</span>
+          </div>
+          <input type="range" min="0" max="200" value="100" id="sl-feed"/>
+          <div class="v"><span id="v-feed">100</span>%</div>
+        </div>
 
-      // A/B table indicators
-      const aArrow = new THREE.ArrowHelper(new THREE.Vector3(1,0,0), new THREE.Vector3(60,10,0), 30, 0xef4444, 6, 4);
-      const bArrow = new THREE.ArrowHelper(new THREE.Vector3(0,1,0), new THREE.Vector3(0,10,60), 30, 0x2e86de, 6, 4);
-      machineGroup.add(aArrow); machineGroup.add(bArrow);
+        <div class="slider-row">
+          <div class="head">
+            <span class="k">Spindle Rate</span>
+            <span class="reset" data-reset="spindle" title="Reset to 100%">↺</span>
+          </div>
+          <input type="range" min="0" max="150" value="100" id="sl-spindle"/>
+          <div class="v"><span id="v-spindle">100</span>%</div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-      scene.add(machineGroup);
+  <!-- ───────────────── MACHINE TAB ───────────────── -->
+  <section class="kc-tabview" data-tabview="machine">
+    <h2>Machine</h2>
+    <div class="card">
+      <h3>Active machine</h3>
+      <div id="machine-summary" style="font-size:14px;color:var(--kc-text-2);line-height:1.7">
+        Select a machine from the dropdown in the top-right to load its kinematics + INI template.
+      </div>
+    </div>
+    <div class="card">
+      <h3>Rockhopper connection</h3>
+      <div style="display:flex;gap:10px;margin-bottom:10px">
+        <input id="rh-url" style="flex:1;padding:8px;border:1px solid var(--kc-border);border-radius:4px" placeholder="ws://<machine-ip>:8000/websocket/" value="ws://localhost:8000/websocket/" />
+        <button id="rh-connect" class="home-all-btn">CONNECT</button>
+        <button id="rh-mock" class="warm-up-btn">Use mock</button>
+      </div>
+      <div id="rh-status" class="mono" style="font-size:12px;color:var(--kc-text-2)">idle</div>
+    </div>
+  </section>
 
-      toolpathGroup = new THREE.Group();
-      scene.add(toolpathGroup);
+  <!-- ───────────────── DESIGN TAB ───────────────── -->
+  <section class="kc-tabview" data-tabview="design">
+    <h2>Design</h2>
+    <div class="card">
+      <h3>Import workpiece</h3>
+      <input type="file" id="file-step" accept=".step,.stp,.iam,.stl" style="padding:8px"/>
+    </div>
+    <div class="card">
+      <h3>Stock</h3>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+        <label>X<input type="number" value="100" style="width:100%;padding:6px;border:1px solid var(--kc-border);border-radius:4px"/></label>
+        <label>Y<input type="number" value="100" style="width:100%;padding:6px;border:1px solid var(--kc-border);border-radius:4px"/></label>
+        <label>Z<input type="number" value="10"  style="width:100%;padding:6px;border:1px solid var(--kc-border);border-radius:4px"/></label>
+        <label>Material
+          <select style="width:100%;padding:6px;border:1px solid var(--kc-border);border-radius:4px">
+            <option>aluminum</option><option>steel</option><option>brass</option><option>acrylic</option><option>wood</option>
+          </select>
+        </label>
+      </div>
+    </div>
+  </section>
 
-      window.addEventListener('resize', onResize);
+  <!-- ───────────────── CAM TAB ───────────────── -->
+  <section class="kc-tabview" data-tabview="cam">
+    <h2>CAM</h2>
+    <div class="ws-layout">
+      <div class="ws-viewport" id="cam-viewport">
+        <div class="floaty">CAM viewport · toolpaths render here</div>
+      </div>
+      <div class="ws-side">
+        <div class="card"><h3>Operations</h3><div id="op-list" style="font-size:12px;color:var(--kc-text-2)">No operations yet.</div></div>
+        <button class="home-all-btn">+ Add operation</button>
+        <button class="warm-up-btn">Generate toolpaths</button>
+      </div>
+    </div>
+  </section>
 
-      // Expose for debug
-      window._scene = scene; window._camera = camera; window._renderer = renderer;
+  <!-- ───────────────── SIMULATE TAB ───────────────── -->
+  <section class="kc-tabview" data-tabview="simulate">
+    <h2>Simulate</h2>
+    <div class="ws-layout">
+      <div class="ws-viewport" id="sim-viewport">
+        <div class="floaty">Simulator · A/B forward kinematics + toolpath animation</div>
+      </div>
+      <div class="ws-side">
+        <div class="card">
+          <h3>Playback</h3>
+          <div style="display:flex;gap:8px;margin-bottom:10px">
+            <button class="ctrl-btn step" style="flex:1">▶ Play</button>
+            <button class="ctrl-btn hold" style="flex:1">❚❚ Pause</button>
+          </div>
+          <label style="font-size:11px;color:var(--kc-text-3);letter-spacing:1.5px;text-transform:uppercase">Speed</label>
+          <input type="range" min="0.25" max="8" step="0.25" value="1" style="width:100%"/>
+        </div>
+        <div class="card">
+          <h3>Soft-limit check</h3>
+          <div class="mono" style="font-size:12px;color:var(--kc-green);font-weight:700">PASS</div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-      animate();
-      return true;
-    }
+</main>
 
-    function addAxis(label, vec, color) {
-      const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0.05,0), vec]);
-      const m = new THREE.LineBasicMaterial({ color });
-      scene.add(new THREE.Line(g, m));
-    }
+<!-- ═══════════════════════════════════════════════════════════
+     BOTTOM STATUS BAR — connected + modal state + RESET + timer
+     ═══════════════════════════════════════════════════════════ -->
+<footer class="kc-bottom">
+  <div class="left">
+    <span class="status-dot off" id="conn-dot"></span>
+    <span class="conn-label" id="conn-label">DISCONNECTED</span>
+    <span class="modal-state" id="modal-state">G17 G20 G40 G54 G90 G94 M5 M9</span>
+  </div>
+  <div class="reset-wrap">
+    <button class="big-reset" id="btn-reset">RESET</button>
+  </div>
+  <div class="right">
+    <span class="run-state" id="run-state">IDLE</span>
+    <span class="run-time" id="run-time">00:00:00.0</span>
+    <span class="alert-pill info">i <span id="info-count">0</span></span>
+    <span class="alert-pill error">! <span id="error-count">0</span></span>
+  </div>
+</footer>
 
-    function onResize() {
-      const vp = $('#viewport');
-      if (!renderer || !vp) return;
-      renderer.setSize(vp.clientWidth, vp.clientHeight);
-      camera.aspect = vp.clientWidth / vp.clientHeight;
-      camera.updateProjectionMatrix();
-    }
+<!-- ═══════════════════════════════════════════════════════════
+     PENTACAD MODULES — load in order (skip coordinator auto-init
+     so our custom bootstrap below runs it with Three.js ready).
+     ═══════════════════════════════════════════════════════════ -->
+<script>window.CycleCAD = window.CycleCAD || {}; window.CycleCAD.SkipPentacadInit = true;</script>
+<script src="./js/modules/pentacad-cam.js"></script>
+<script src="./js/modules/pentacad-sim.js"></script>
+<script src="./js/modules/rockhopper-client.js"></script>
+<script src="./js/modules/pentacad-bridge.js"></script>
+<script src="./js/modules/pentacad.js"></script>
 
-    let frameCount = 0, lastFpsCheck = performance.now(), fpsDisplay = 60;
-    function animate() {
-      requestAnimationFrame(animate);
-      controls?.update();
-      renderer?.render(scene, camera);
-      frameCount++;
-      const now = performance.now();
-      if (now - lastFpsCheck > 500) {
-        fpsDisplay = Math.round(frameCount * 1000 / (now - lastFpsCheck));
-        const tris = renderer?.info.render.triangles || 0;
-        $('#vp-overlay').textContent = `${fpsDisplay} fps · ${tris.toLocaleString()} tris · ${WS.machineId || 'no machine'}`;
-        frameCount = 0; lastFpsCheck = now;
-      }
-    }
+<!-- Three.js loaded lazily when CAM/Simulate tabs are first opened -->
+<script>
+(() => {
+  'use strict';
 
-    // ─────────────────────────────────────────────────────────────
-    // STOCK + TOOLPATH RENDERING
-    // ─────────────────────────────────────────────────────────────
-    function renderStock(setup) {
-      if (!THREE) return;
-      if (stockMesh) { scene.remove(stockMesh); stockMesh.geometry.dispose(); stockMesh.material.dispose(); stockMesh = null; }
-      if (!setup) return;
-      const { x, y, z } = setup.stock;
-      stockMesh = new THREE.Mesh(
-        new THREE.BoxGeometry(x, y, z),
-        new THREE.MeshStandardMaterial({
-          color: 0xb8c2d6, metalness: 0.6, roughness: 0.35,
-          transparent: true, opacity: 0.55,
-        })
-      );
-      stockMesh.position.set(0, y/2 + 2, 0);
-      scene.add(stockMesh);
-    }
-
-    function renderToolpaths(toolpaths, kinematics) {
-      if (!THREE) return;
-      toolpathGroup.clear();
-      for (const tp of toolpaths) {
-        const moves = tp.moves || [];
-        if (!moves.length) continue;
-        const pts = [];
-        let last = { x: 0, y: 0, z: 0 };
-        let rapid = true;
-        const colors = [];
-        for (const m of moves) {
-          const to = { x: m.x ?? last.x, y: m.y ?? last.y, z: m.z ?? last.z };
-          const violates = kinematics ? !isWithinLimits(to, kinematics) : false;
-          const color = violates ? [1,0.2,0.2] : (m.type === 'rapid' ? [0.3,0.85,0.5] : [0.3,0.6,0.95]);
-          pts.push(last.x, last.y, last.z);
-          pts.push(to.x, to.y, to.z);
-          colors.push(...color, ...color);
-          last = to;
-          rapid = m.type === 'rapid';
-        }
-        const geom = new THREE.BufferGeometry();
-        geom.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-        geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-        const mat = new THREE.LineBasicMaterial({ vertexColors: true });
-        toolpathGroup.add(new THREE.LineSegments(geom, mat));
-      }
-    }
-
-    function isWithinLimits(pos, kin) {
-      if (!kin?.linear) return true;
-      for (const ax of ['x','y','z']) {
-        const r = kin.linear[ax]; if (!r) continue;
-        // scale inch limits up to mm for rendering comparison
-        const scale = r.unit === 'inch' ? 25.4 : 1;
-        if (pos[ax] < r.min * scale || pos[ax] > r.max * scale) return false;
-      }
-      return true;
-    }
-
-    // ─────────────────────────────────────────────────────────────
-    // DEMO DATA — ensures the viewport shows something on first load
-    // ─────────────────────────────────────────────────────────────
-    function seedDemoSetup() {
-      if (WS.setups.length) return;
-      const setup = {
-        id: 'setup-1',
-        name: 'Bottle-opener ring',
-        stock: { x: 100, y: 10, z: 100 },
-        material: 'Aluminium 6061',
-        wcs: { x: 0, y: 0, z: 0, a: 0, b: 0 },
-        fixtureNotes: 'Vacuum table, align along +X',
-      };
-      WS.setups.push(setup);
-      WS.activeSetupId = setup.id;
-
-      const op = {
-        id: 'op-1',
-        setupId: setup.id,
-        strategyId: 'pocket',
-        tool: { number: 1, rpm: 18000, diameter: 3.175, name: '1/8" flat endmill' },
-        feed: 800,
-        stepover: 0.4,
-        stepdown: 0.6,
-        depth: 4,
-        region: { type: 'circle', cx: 0, cy: 0, r: 35 },
-      };
-      WS.operations.push(op);
-    }
-
-    // Generate a simple pocket toolpath purely for viewport preview
-    // (real CAM module fills this in in Phase 2)
-    function generatePreviewToolpaths() {
-      WS.toolpaths = WS.operations.map(op => {
-        const setup = WS.setups.find(s => s.id === op.setupId);
-        if (!setup) return null;
-        const moves = [];
-        if (op.strategyId === 'pocket' && op.region?.type === 'circle') {
-          const r = op.region.r;
-          const stepover = op.tool.diameter * (op.stepover || 0.4);
-          const stepdown = op.stepdown || 0.6;
-          const depth = op.depth || 4;
-          // Concentric circles at each depth
-          for (let d = stepdown; d <= depth + 0.0001; d += stepdown) {
-            const z = setup.stock.y - d;
-            let first = true;
-            for (let curR = r; curR >= stepover; curR -= stepover) {
-              const segs = Math.max(24, Math.ceil(curR * 2));
-              for (let i = 0; i <= segs; i++) {
-                const t = (i / segs) * Math.PI * 2;
-                moves.push({
-                  type: first && i === 0 ? 'rapid' : 'linear',
-                  x: Math.cos(t) * curR, y: z, z: Math.sin(t) * curR,
-                  feed: op.feed,
-                });
-                first = false;
-              }
-            }
-          }
-        }
-        return {
-          strategy: op.strategyId,
-          name: `${op.strategyId} — ${setup.name}`,
-          tool: op.tool,
-          moves,
-        };
-      }).filter(Boolean);
-
-      renderToolpaths(WS.toolpaths, WS.machineDef?.kinematics);
-
-      // Build a flat moves list for the sim timeline
-      WS.sim.moves = WS.toolpaths.flatMap(tp => tp.moves || []);
-      WS.sim.cursor = 0;
-    }
-
-    // ─────────────────────────────────────────────────────────────
-    // TAB SWITCHING
-    // ─────────────────────────────────────────────────────────────
-    $$('.tab').forEach(btn => {
-      btn.addEventListener('click', () => switchTab(btn.dataset.ws));
+  // -------------------------------------------------------------------
+  // Tab switching
+  // -------------------------------------------------------------------
+  const tabs = document.querySelectorAll('.kc-tab');
+  const views = document.querySelectorAll('.kc-tabview');
+  tabs.forEach((t) => {
+    t.addEventListener('click', () => {
+      tabs.forEach((x) => x.classList.remove('active'));
+      views.forEach((x) => x.classList.remove('active'));
+      t.classList.add('active');
+      const target = t.dataset.tab;
+      const v = document.querySelector(`[data-tabview="${target}"]`);
+      if (v) v.classList.add('active');
     });
+  });
 
-    function switchTab(ws) {
-      WS.activeTab = ws;
-      $$('.tab').forEach(b => b.classList.toggle('active', b.dataset.ws === ws));
-      const titles = { machine: 'Machine', design: 'Design', cam: 'CAM', sim: 'Simulate', control: 'Control' };
-      const hints  = { machine: 'digital twin', design: 'stock & WCS', cam: 'setups · strategies', sim: 'replay · limits', control: 'bridge · jog · stream' };
-      $('#side-title').textContent = titles[ws];
-      $('#side-hint').textContent = hints[ws];
-      renderSidePanel();
-    }
+  // -------------------------------------------------------------------
+  // Gauge update helpers — arc length 0..251 (circumference × proportion)
+  // The arcs we drew span ~1/3 of the circle each (180° quarter each).
+  // -------------------------------------------------------------------
+  const ARC_MAX = 125;   // half of arc-path length — tuned to visual arc span
+  function setArc(id, fraction) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const f = Math.max(0, Math.min(1, fraction || 0));
+    el.setAttribute('stroke-dasharray', `${(f * ARC_MAX).toFixed(1)} 1000`);
+  }
 
-    // ─────────────────────────────────────────────────────────────
-    // SIDE PANEL RENDERERS (one per tab)
-    // ─────────────────────────────────────────────────────────────
-    function renderSidePanel() {
-      const body = $('#side-body');
-      body.innerHTML = '';
-      const renderer = {
-        machine: renderMachinePanel,
-        design:  renderDesignPanel,
-        cam:     renderCAMPanel,
-        sim:     renderSimPanel,
-        control: renderControlPanel,
-      }[WS.activeTab];
-      if (renderer) renderer(body);
-    }
+  // -------------------------------------------------------------------
+  // Live state — populated from Rockhopper or mock
+  // -------------------------------------------------------------------
+  const state = {
+    connected: false,
+    pos: { x: 0, y: 0, z: 0, a: 0, b: 0 },
+    units: 'in',          // derived from program_units
+    spindleRPM: 0,
+    spindleLoad: 0,
+    spindleWatt: 0,
+    spindleTemp: 0,
+    pressure: 0,
+    feedIPM: 0,
+    feedWatt: 0,
+    chipLoad: 0,
+    surfaceSpeed: 0,
+    modalState: 'G17 G20 G40 G54 G90 G94 M5 M9',
+    runState: 'IDLE',
+    runTimeSec: 0,
+    optStopOn: true,
+    infoCount: 0,
+    errorCount: 0
+  };
 
-    function renderMachinePanel(body) {
-      const def = WS.machineDef;
-      if (!def) {
-        body.appendChild(e('div', { class: 'muted' }, 'No machine loaded. Use the Machine dropdown in the top bar.'));
-        return;
-      }
-      const kin = def.kinematics || {};
-      const linHTML = kin.linear ? Object.entries(kin.linear).map(([ax, r]) =>
-        `<div class="row"><span>${ax.toUpperCase()}</span><span class="kv"><b>${r.min}</b> … <b>${r.max}</b> ${r.unit} ${r._confirmed ? '' : '<span class="pill warn">template</span>'}</span></div>`
-      ).join('') : '<div class="muted">no linear data</div>';
-      const rotHTML = kin.rotary ? Object.entries(kin.rotary).map(([ax, r]) =>
-        `<div class="row"><span>${ax.toUpperCase()}</span><span class="kv"><b>${r.min}</b> … <b>${r.max}</b> ${r.unit} ${r.continuous ? '<span class="pill">∞</span>' : ''}</span></div>`
-      ).join('') : '<div class="muted">no rotary data</div>';
+  function render() {
+    // Spindle
+    document.getElementById('g-spindle-rpm').textContent = state.spindleRPM.toLocaleString();
+    document.getElementById('g-spindle-w').textContent = `${state.spindleWatt.toFixed(0)} W`;
+    document.getElementById('g-spindle-load').textContent = `${state.spindleLoad.toFixed(1)} %`;
+    document.getElementById('g-spindle-temp').textContent = `${state.spindleTemp.toFixed(1)} °F`;
+    document.getElementById('g-pressure').textContent = `${state.pressure.toFixed(2)} psi`;
+    setArc('arc-spindle-power', state.spindleWatt / 500);      // scale 0..500W -> 0..1
+    setArc('arc-spindle-load',  state.spindleLoad / 100);
 
-      body.innerHTML = `
-        <div class="section">
-          <div class="section-title">Identity</div>
-          <div class="card">
-            <div class="row"><span>ID</span><span class="kv">${def.id}</span></div>
-            <div class="row"><span>Vendor</span><span class="kv">${kin.vendor || '—'}</span></div>
-            <div class="row"><span>Type</span><span class="kv">${kin.type || '—'}</span></div>
-          </div>
-        </div>
-        <div class="section">
-          <div class="section-title">Linear axes</div>
-          <div class="card">${linHTML}</div>
-        </div>
-        <div class="section">
-          <div class="section-title">Rotary axes</div>
-          <div class="card">${rotHTML}</div>
-        </div>
-        <div class="section">
-          <div class="section-title">Kinematics offsets</div>
-          <div class="card">
-            <div class="row"><span>A → Table</span><span class="kv">${fmtVec(kin.pivots?.a_to_table)}</span></div>
-            <div class="row"><span>B → A</span><span class="kv">${fmtVec(kin.pivots?.b_to_a)}</span></div>
-          </div>
-        </div>
-        <div class="section">
-          <div class="btn-row">
-            <button class="btn" id="edit-kin-btn">Edit _confirmed flags</button>
-            <button class="btn" id="reload-machine-btn">Reload</button>
-          </div>
-        </div>
-      `;
-      $('#edit-kin-btn')?.addEventListener('click', () => openModal(editKinematicsDialog()));
-      $('#reload-machine-btn')?.addEventListener('click', () => loadMachine(WS.machineId));
-    }
+    // Feed
+    document.getElementById('g-feed-rate').textContent = Math.round(state.feedIPM);
+    document.getElementById('g-feed-w').textContent = `${state.feedWatt.toFixed(0)} W`;
+    document.getElementById('g-feed-chip').textContent = `${state.chipLoad.toFixed(4)} in`;
+    document.getElementById('g-feed-ss').textContent = `${state.surfaceSpeed.toFixed(2)} ft/min`;
+    setArc('arc-feed-power', state.feedWatt / 500);
+    setArc('arc-feed-chip',  state.chipLoad / 0.005);
 
-    function fmtVec(p) {
-      if (!p) return '—';
-      return `${p.x ?? 0}, ${p.y ?? 0}, ${p.z ?? 0}`;
-    }
+    // DRO — inches for XYZ, degrees for AB
+    const dp = (val, digits, unit) => `${val.toFixed(digits)}<span class="unit">${unit}</span>`;
+    document.querySelector('[data-axis="x"]').innerHTML = dp(state.pos.x, 4, state.units);
+    document.querySelector('[data-axis="y"]').innerHTML = dp(state.pos.y, 4, state.units);
+    document.querySelector('[data-axis="z"]').innerHTML = dp(state.pos.z, 4, state.units);
+    document.querySelector('[data-axis="a"]').innerHTML = dp(state.pos.a, 3, 'deg');
+    document.querySelector('[data-axis="b"]').innerHTML = dp(state.pos.b, 3, 'deg');
 
-    function editKinematicsDialog() {
-      const c = e('div');
-      c.innerHTML = `
-        <h3>Confirmed flags <button class="close" data-close>×</button></h3>
-        <p class="muted">Tick axes whose limits you have verified against the real Pentamachine V2-50CHB specs (from Matt).</p>
-        <div id="confirm-list" style="margin: 12px 0;"></div>
-        <div class="btn-row">
-          <button class="btn primary" id="save-confirm">Save to localStorage</button>
-        </div>
-      `;
-      const list = c.querySelector('#confirm-list');
-      const kin = WS.machineDef?.kinematics;
-      if (kin) {
-        for (const group of ['linear', 'rotary']) {
-          for (const [ax, r] of Object.entries(kin[group] || {})) {
-            const row = e('label', { style: 'display:flex;gap:8px;align-items:center;margin-top:6px;' });
-            const cb = e('input', { type: 'checkbox', style: 'width:auto;' });
-            cb.checked = !!r._confirmed;
-            cb.dataset.axis = ax; cb.dataset.group = group;
-            row.appendChild(cb);
-            row.appendChild(e('span', {}, `${group}.${ax.toUpperCase()} (${r.min}…${r.max} ${r.unit})`));
-            list.appendChild(row);
-          }
-        }
-      }
-      c.querySelector('#save-confirm').addEventListener('click', () => {
-        const confirmed = {};
-        list.querySelectorAll('input[type=checkbox]').forEach(cb => {
-          if (cb.checked) confirmed[`${cb.dataset.group}.${cb.dataset.axis}`] = true;
-        });
-        localStorage.setItem(`pentacad_confirmed_${WS.machineId}`, JSON.stringify(confirmed));
-        setEvent('Confirmed flags saved');
-        closeModal();
-      });
-      return c;
-    }
+    // Status bar
+    const dot = document.getElementById('conn-dot');
+    const label = document.getElementById('conn-label');
+    if (state.connected) { dot.classList.remove('off'); label.textContent = 'CONNECTED'; }
+    else                 { dot.classList.add('off');    label.textContent = 'DISCONNECTED'; }
+    document.getElementById('modal-state').textContent = state.modalState;
+    document.getElementById('run-state').textContent = state.runState;
+    const t = state.runTimeSec;
+    const h = Math.floor(t / 3600).toString().padStart(2, '0');
+    const m = Math.floor((t % 3600) / 60).toString().padStart(2, '0');
+    const s = (t % 60).toFixed(1).padStart(4, '0');
+    document.getElementById('run-time').textContent = `${h}:${m}:${s}`;
+    document.getElementById('info-count').textContent = state.infoCount;
+    document.getElementById('error-count').textContent = state.errorCount;
+  }
+  render();
 
-    function renderDesignPanel(body) {
-      body.innerHTML = `
-        <div class="section">
-          <div class="section-title">Workpiece</div>
-          <div class="card">
-            <div class="muted" style="margin-bottom:8px;">Import a 3D model to machine.</div>
-            <div class="btn-row">
-              <button class="btn" id="import-step">STEP / STP</button>
-              <button class="btn" id="import-iam">IAM</button>
-              <button class="btn" id="import-stl">STL</button>
-            </div>
-          </div>
-        </div>
-        <div class="section">
-          <div class="section-title">Stock</div>
-          <div class="card">
-            <label>Dimensions (mm)</label>
-            <div class="field-grid">
-              <input id="stock-x" type="number" step="0.1" value="100" />
-              <input id="stock-y" type="number" step="0.1" value="10" />
-              <input id="stock-z" type="number" step="0.1" value="100" />
-            </div>
-            <label>Material</label>
-            <select id="stock-mat">
-              <option>Aluminium 6061</option>
-              <option>Aluminium 7075</option>
-              <option>Steel 1018</option>
-              <option>Stainless 304</option>
-              <option>Brass C360</option>
-              <option>Titanium Grade 5</option>
-              <option>Wax / foam</option>
-            </select>
-          </div>
-        </div>
-        <div class="section">
-          <div class="section-title">Work coordinate system</div>
-          <div class="card">
-            <label>Origin (X Y Z mm)</label>
-            <div class="field-grid">
-              <input id="wcs-x" type="number" step="0.01" value="0" />
-              <input id="wcs-y" type="number" step="0.01" value="0" />
-              <input id="wcs-z" type="number" step="0.01" value="0" />
-            </div>
-            <label>Rotation (A B deg)</label>
-            <div class="field-grid-2">
-              <input id="wcs-a" type="number" step="0.1" value="0" />
-              <input id="wcs-b" type="number" step="0.1" value="0" />
-            </div>
-          </div>
-        </div>
-        <div class="section">
-          <label>Fixture notes</label>
-          <textarea id="fixture-notes" placeholder="e.g. Vacuum table, align along +X">${
-            WS.setups[0]?.fixtureNotes || ''
-          }</textarea>
-        </div>
-        <button class="btn primary full" id="apply-design">Apply to active setup</button>
-      `;
-
-      $('#import-step')?.addEventListener('click', () => openFilePicker('.step,.stp'));
-      $('#import-iam')?.addEventListener('click', () => openFilePicker('.iam'));
-      $('#import-stl')?.addEventListener('click', () => openFilePicker('.stl'));
-
-      $('#apply-design')?.addEventListener('click', () => {
-        const setup = WS.setups.find(s => s.id === WS.activeSetupId);
-        if (!setup) return;
-        setup.stock = {
-          x: parseFloat($('#stock-x').value) || 100,
-          y: parseFloat($('#stock-y').value) || 10,
-          z: parseFloat($('#stock-z').value) || 100,
-        };
-        setup.material = $('#stock-mat').value;
-        setup.wcs = {
-          x: parseFloat($('#wcs-x').value) || 0,
-          y: parseFloat($('#wcs-y').value) || 0,
-          z: parseFloat($('#wcs-z').value) || 0,
-          a: parseFloat($('#wcs-a').value) || 0,
-          b: parseFloat($('#wcs-b').value) || 0,
-        };
-        setup.fixtureNotes = $('#fixture-notes').value;
-        renderStock(setup);
-        setEvent(`Setup "${setup.name}" updated`);
-      });
-    }
-
-    function openFilePicker(accept) {
-      const i = e('input', { type: 'file', accept, style: 'display:none;' });
-      document.body.appendChild(i);
-      i.addEventListener('change', () => {
-        const f = i.files?.[0];
-        if (f) setEvent(`Imported ${f.name} (${(f.size/1024).toFixed(1)} KB) — parser stub, real model loader arrives with cycleCAD STEP integration`);
-        i.remove();
-      });
-      i.click();
-    }
-
-    function renderCAMPanel(body) {
-      const strategies = window.CycleCAD?.PentacadCAM?.STRATEGIES || [];
-
-      body.innerHTML = `
-        <div class="section">
-          <div class="section-title">Setups</div>
-          <div id="setup-list"></div>
-          <button class="btn full" id="add-setup" style="margin-top:6px;">+ Add setup</button>
-        </div>
-        <div class="section">
-          <div class="section-title">Operations</div>
-          <div id="op-list"></div>
-          <button class="btn full" id="add-op" style="margin-top:6px;">+ Add operation</button>
-        </div>
-        <div class="section">
-          <button class="btn primary full" id="gen-paths">Generate toolpaths</button>
-        </div>
-      `;
-
-      const sul = $('#setup-list');
-      WS.setups.forEach(s => {
-        const card = e('div', { class: 'card' + (s.id === WS.activeSetupId ? ' active' : ''), onclick: () => {
-          WS.activeSetupId = s.id; renderSidePanel(); renderStock(s);
-        }});
-        card.innerHTML = `<div class="row"><b>${s.name}</b><span class="pill">${s.material || '—'}</span></div>
-          <div class="muted">${s.stock.x}×${s.stock.y}×${s.stock.z} mm · WCS ${s.wcs.x},${s.wcs.y},${s.wcs.z}</div>`;
-        sul.appendChild(card);
-      });
-
-      const oul = $('#op-list');
-      const ops = WS.operations.filter(o => o.setupId === WS.activeSetupId);
-      if (!ops.length) oul.appendChild(e('div', { class: 'muted' }, 'No operations in this setup yet.'));
-      ops.forEach(op => {
-        const card = e('div', { class: 'card' });
-        const strat = strategies.find(s => s.id === op.strategyId);
-        card.innerHTML = `<div class="row"><b>${strat?.name || op.strategyId}</b><span class="pill">T${op.tool.number}</span></div>
-          <div class="muted">${op.tool.name} · ${op.tool.rpm} rpm · feed ${op.feed} mm/min</div>`;
-        oul.appendChild(card);
-      });
-
-      $('#add-setup')?.addEventListener('click', () => {
-        const s = {
-          id: 'setup-' + (WS.setups.length + 1),
-          name: `Setup ${WS.setups.length + 1}`,
-          stock: { x: 100, y: 10, z: 100 },
-          material: 'Aluminium 6061',
-          wcs: { x: 0, y: 0, z: 0, a: 0, b: 0 },
-          fixtureNotes: '',
-        };
-        WS.setups.push(s); WS.activeSetupId = s.id;
-        renderSidePanel(); renderStock(s);
-      });
-
-      $('#add-op')?.addEventListener('click', () => openModal(addOperationDialog(strategies)));
-
-      $('#gen-paths')?.addEventListener('click', () => {
-        generatePreviewToolpaths();
-        // Also ping the real CAM module in case it's wired up
-        try { window.CycleCAD.PentacadCAM?.execute?.({ method: 'cam.generate' }); } catch (_) {}
-        setEvent(`${WS.toolpaths.length} toolpath(s) generated · ${WS.sim.moves.length} moves`);
-      });
-    }
-
-    function addOperationDialog(strategies) {
-      const c = e('div');
-      c.innerHTML = `
-        <h3>Add operation <button class="close" data-close>×</button></h3>
-        <label>Strategy</label>
-        <select id="op-strat">${
-          strategies.map(s => `<option value="${s.id}">${s.name} (${s.kind})</option>`).join('')
-        }</select>
-        <label>Tool</label>
-        <div class="field-grid-2">
-          <input id="op-tool-n" type="number" value="1" placeholder="T number"/>
-          <input id="op-tool-dia" type="number" step="0.01" value="3.175" placeholder="Ø mm"/>
-        </div>
-        <input id="op-tool-name" placeholder="Tool name" style="margin-top:6px;" value="1/8&quot; flat endmill"/>
-        <label>Feeds & speeds</label>
-        <div class="field-grid-2">
-          <input id="op-rpm" type="number" value="18000" placeholder="rpm"/>
-          <input id="op-feed" type="number" value="800" placeholder="feed mm/min"/>
-        </div>
-        <div class="btn-row" style="margin-top:8px;">
-          <button class="btn" id="auto-fs">Auto (from material)</button>
-        </div>
-        <div class="btn-row" style="margin-top:14px;">
-          <button class="btn primary" id="create-op">Create</button>
-        </div>
-      `;
-
-      c.querySelector('#auto-fs')?.addEventListener('click', () => {
-        // Best-effort call to CAM module; otherwise heuristic
-        let fs = { rpm: 18000, feed: 800 };
-        try {
-          const r = window.CycleCAD.PentacadCAM?.recommendFeeds?.({
-            material: WS.setups.find(s => s.id === WS.activeSetupId)?.material || 'Aluminium 6061',
-            toolDiameter: parseFloat(c.querySelector('#op-tool-dia').value) || 3,
-          });
-          if (r && r.rpm) fs = r;
-        } catch (_) {}
-        c.querySelector('#op-rpm').value = fs.rpm;
-        c.querySelector('#op-feed').value = fs.feed;
-      });
-
-      c.querySelector('#create-op').addEventListener('click', () => {
-        const op = {
-          id: 'op-' + (WS.operations.length + 1),
-          setupId: WS.activeSetupId,
-          strategyId: c.querySelector('#op-strat').value,
-          tool: {
-            number: parseInt(c.querySelector('#op-tool-n').value) || 1,
-            rpm: parseInt(c.querySelector('#op-rpm').value) || 12000,
-            diameter: parseFloat(c.querySelector('#op-tool-dia').value) || 3.175,
-            name: c.querySelector('#op-tool-name').value || 'endmill',
-          },
-          feed: parseInt(c.querySelector('#op-feed').value) || 600,
-          stepover: 0.4,
-          stepdown: 0.6,
-          depth: 4,
-          region: { type: 'circle', cx: 0, cy: 0, r: 30 },
-        };
-        WS.operations.push(op);
-        closeModal();
-        renderSidePanel();
-        setEvent(`Added ${op.strategyId} operation`);
-      });
-      return c;
-    }
-
-    function renderSimPanel(body) {
-      body.innerHTML = `
-        <div class="section">
-          <div class="btn-row">
-            <button class="btn" id="sim-play">▶ Play</button>
-            <button class="btn" id="sim-pause">❚❚ Pause</button>
-            <button class="btn" id="sim-stop">■ Stop</button>
-          </div>
-          <div class="timeline" id="sim-timeline"><div class="timeline-fill" id="sim-fill"></div></div>
-          <div class="row">
-            <span class="muted">Move <span id="sim-idx">0</span> / <span id="sim-total">${WS.sim.moves.length}</span></span>
-            <span class="kv" id="sim-pct">0%</span>
-          </div>
-        </div>
-        <div class="section">
-          <label>Speed: <span id="speed-label">1×</span></label>
-          <input type="range" id="sim-speed" min="0.25" max="8" step="0.25" value="${WS.sim.speed}" />
-        </div>
-        <div class="section">
-          <div class="section-title">Soft-limit check</div>
-          <div class="card" id="limit-check"><div class="muted">Ready</div></div>
-        </div>
-        <div class="section">
-          <div class="section-title">Motion summary</div>
-          <div class="card" id="motion-summary"><div class="muted">No toolpath generated yet.</div></div>
-        </div>
-      `;
-
-      $('#sim-play')?.addEventListener('click', simPlay);
-      $('#sim-pause')?.addEventListener('click', simPause);
-      $('#sim-stop')?.addEventListener('click', simStop);
-      $('#sim-speed')?.addEventListener('input', (ev) => {
-        WS.sim.speed = parseFloat(ev.target.value);
-        $('#speed-label').textContent = WS.sim.speed + '×';
-      });
-      $('#sim-timeline')?.addEventListener('click', (ev) => {
-        const rect = ev.currentTarget.getBoundingClientRect();
-        const frac = (ev.clientX - rect.left) / rect.width;
-        WS.sim.cursor = Math.floor(frac * WS.sim.moves.length);
-        updateSimUI();
-        applySimCursor();
-      });
-
-      // Motion summary (uses sim module if available)
-      const parsed = window.CycleCAD?.PentacadSim?.parse?.(WS.gcode || '');
-      const summary = $('#motion-summary');
-      if (WS.sim.moves.length) {
-        summary.innerHTML = `
-          <div class="row"><span>Total moves</span><b>${WS.sim.moves.length}</b></div>
-          <div class="row"><span>Rapids</span><b>${WS.sim.moves.filter(m => m.type === 'rapid').length}</b></div>
-          <div class="row"><span>Feeds</span><b>${WS.sim.moves.filter(m => m.type === 'linear').length}</b></div>
-          <div class="row"><span>Machines</span><b>${WS.machineId || '—'}</b></div>
-        `;
-      }
-
-      runSoftLimitCheck();
-      updateSimUI();
-    }
-
-    function runSoftLimitCheck() {
-      const el = $('#limit-check'); if (!el) return;
-      const kin = WS.machineDef?.kinematics;
-      if (!kin || !WS.sim.moves.length) {
-        el.innerHTML = '<div class="muted">No kinematics or no toolpath.</div>'; return;
-      }
-      let violations = 0, samples = 0;
-      for (const m of WS.sim.moves) {
-        if (m.x === undefined && m.y === undefined && m.z === undefined) continue;
-        samples++;
-        if (!isWithinLimits({x: m.x ?? 0, y: m.y ?? 0, z: m.z ?? 0}, kin)) violations++;
-      }
-      if (violations === 0) {
-        el.innerHTML = `<div class="row"><span class="pill">OK</span><span class="muted">${samples} positions within envelope</span></div>`;
-      } else {
-        el.innerHTML = `<div class="row"><span class="pill err">${violations} violations</span><span class="muted">of ${samples} checked — shown red in viewport</span></div>`;
-      }
-    }
-
-    function simPlay() {
-      if (!WS.sim.moves.length) { setEvent('No toolpath to simulate — generate one first'); return; }
-      WS.sim.playing = true;
-      if (WS.sim.animHandle) cancelAnimationFrame(WS.sim.animHandle);
-      const tick = () => {
-        if (!WS.sim.playing) return;
-        WS.sim.cursor = Math.min(WS.sim.cursor + Math.max(1, Math.round(WS.sim.speed)), WS.sim.moves.length);
-        applySimCursor();
-        updateSimUI();
-        if (WS.sim.cursor >= WS.sim.moves.length) { WS.sim.playing = false; setEvent('Simulation complete'); return; }
-        WS.sim.animHandle = requestAnimationFrame(tick);
-      };
-      tick();
-    }
-    function simPause() { WS.sim.playing = false; }
-    function simStop()  { WS.sim.playing = false; WS.sim.cursor = 0; applySimCursor(); updateSimUI(); }
-
-    function applySimCursor() {
-      const m = WS.sim.moves[Math.min(WS.sim.cursor, WS.sim.moves.length - 1)];
-      if (!m || !toolMarker) return;
-      const x = m.x ?? WS.dro.x, y = m.y ?? WS.dro.y, z = m.z ?? WS.dro.z;
-      // In our viewport, Y is up. Toolpath moves are in stock frame so:
-      toolMarker.position.set(x, Math.max(y + 14, 14), z);
-      WS.dro.x = x; WS.dro.y = y; WS.dro.z = z;
-      WS.dro.feed = m.feed || 0;
-      updateDRO();
-    }
-
-    function updateSimUI() {
-      const total = WS.sim.moves.length;
-      const pct = total ? (WS.sim.cursor / total) * 100 : 0;
-      const fill = $('#sim-fill'); if (fill) fill.style.width = pct + '%';
-      const idx = $('#sim-idx'); if (idx) idx.textContent = WS.sim.cursor;
-      const tot = $('#sim-total'); if (tot) tot.textContent = total;
-      const pctEl = $('#sim-pct'); if (pctEl) pctEl.textContent = pct.toFixed(1) + '%';
-    }
-
-    function renderControlPanel(body) {
-      body.innerHTML = `
-        <div class="section">
-          <div class="section-title">Post-process</div>
-          <div class="btn-row">
-            <button class="btn" id="post-btn">Post → G-code</button>
-            <button class="btn" id="download-btn">⬇ Download .ngc</button>
-          </div>
-          <textarea id="gcode-preview" readonly style="margin-top:8px;height:120px;" placeholder="G-code appears here after posting."></textarea>
-        </div>
-        <div class="section">
-          <div class="section-title">Bridge</div>
-          <div class="card">
-            <label>WebSocket URL</label>
-            <input id="bridge-url" value="${WS.bridgeUrl}" />
-            <div class="btn-row" style="margin-top:8px;">
-              <button class="btn primary" id="bridge-connect">Connect</button>
-              <button class="btn" id="bridge-disconnect">Disconnect</button>
-            </div>
-            <div class="muted" style="margin-top:8px;">Status: <span id="bridge-detail">${WS.bridgeStatus || 'disconnected'}</span></div>
-          </div>
-        </div>
-        <div class="section">
-          <div class="section-title">Jog</div>
-          <div class="card">
-            <label>Step (mm or deg)</label>
-            <select id="jog-step">
-              <option value="0.01">0.01</option>
-              <option value="0.1">0.1</option>
-              <option value="1" selected>1</option>
-              <option value="10">10</option>
-            </select>
-            <div class="jog-pad" style="margin-top:10px;">
-              <button class="jog-btn empty"></button>
-              <button class="jog-btn" data-jog="y+">Y+</button>
-              <button class="jog-btn empty"></button>
-              <button class="jog-btn" data-jog="x-">X−</button>
-              <button class="jog-btn" data-jog="home">⌂</button>
-              <button class="jog-btn" data-jog="x+">X+</button>
-              <button class="jog-btn empty"></button>
-              <button class="jog-btn" data-jog="y-">Y−</button>
-              <button class="jog-btn empty"></button>
-            </div>
-            <div class="jog-pad" style="margin-top:6px;">
-              <button class="jog-btn" data-jog="z+">Z+</button>
-              <button class="jog-btn" data-jog="a+">A+</button>
-              <button class="jog-btn" data-jog="b+">B+</button>
-              <button class="jog-btn" data-jog="z-">Z−</button>
-              <button class="jog-btn" data-jog="a-">A−</button>
-              <button class="jog-btn" data-jog="b-">B−</button>
-            </div>
-          </div>
-        </div>
-        <div class="section">
-          <div class="section-title">Stream</div>
-          <div class="btn-row">
-            <button class="btn primary" id="stream-start">▶ Stream</button>
-            <button class="btn" id="stream-pause">❚❚ Pause</button>
-            <button class="btn" id="stream-resume">⏵ Resume</button>
-            <button class="btn danger" id="stream-abort">■ Abort</button>
-          </div>
-          <label>Feed override: <span id="fo-label">100%</span></label>
-          <input type="range" id="fo-slider" min="10" max="200" value="100" />
-        </div>
-      `;
-
-      $('#post-btn')?.addEventListener('click', () => {
-        try {
-          const gcode = window.CycleCAD.PentacadCAM?.emitGCode?.(WS.toolpaths, WS.machineDef) || '(no CAM module)';
-          WS.gcode = gcode;
-          $('#gcode-preview').value = gcode;
-          setEvent(`Posted ${gcode.split('\n').length} G-code lines`);
-        } catch (err) {
-          setEvent('Post failed: ' + err.message);
-        }
-      });
-
-      $('#download-btn')?.addEventListener('click', () => {
-        if (!WS.gcode) { setEvent('No G-code — click Post first'); return; }
-        const blob = new Blob([WS.gcode], { type: 'text/plain' });
-        const a = e('a', { href: URL.createObjectURL(blob), download: 'pentacad.ngc' });
-        document.body.appendChild(a); a.click(); a.remove();
-      });
-
-      $('#bridge-connect')?.addEventListener('click', () => {
-        const url = $('#bridge-url').value.trim();
-        WS.bridgeUrl = url; localStorage.setItem('pentacad_bridge_url', url);
-        window.CycleCAD.PentacadBridge?.connect?.(url);
-        setEvent(`Bridge connecting to ${url}…`);
-      });
-      $('#bridge-disconnect')?.addEventListener('click', () => {
-        window.CycleCAD.PentacadBridge?.disconnect?.();
-      });
-
-      $$('.jog-btn').forEach(b => b.addEventListener('click', () => {
-        const dir = b.dataset.jog; if (!dir) return;
-        const step = parseFloat($('#jog-step').value);
-        if (dir === 'home') {
-          setEvent('Jog: home');
-          window.CycleCAD.PentacadBridge?.execute?.({ method: 'bridge.jog', params: { axis: 'home', delta: 0, feed: 1000 } });
-          return;
-        }
-        const axis = dir[0]; const sign = dir[1] === '+' ? 1 : -1;
-        window.CycleCAD.PentacadBridge?.jog?.(axis, sign * step, 600);
-        setEvent(`Jog ${axis.toUpperCase()}${sign>0?'+':'-'}${step}`);
-      }));
-
-      $('#stream-start')?.addEventListener('click', () => {
-        if (!WS.gcode) { setEvent('No G-code — post first'); return; }
-        window.CycleCAD.PentacadBridge?.streamGCode?.(WS.gcode);
-        setEvent('Streaming G-code…');
-      });
-      $('#stream-pause')?.addEventListener('click', () => window.CycleCAD.PentacadBridge?.pause?.());
-      $('#stream-resume')?.addEventListener('click', () => window.CycleCAD.PentacadBridge?.resume?.());
-      $('#stream-abort')?.addEventListener('click', () => { window.CycleCAD.PentacadBridge?.abort?.(); setEvent('Stream aborted'); });
-
-      $('#fo-slider')?.addEventListener('input', (ev) => {
-        const v = parseInt(ev.target.value);
-        $('#fo-label').textContent = v + '%';
-        window.CycleCAD.PentacadBridge?.feedOverride?.(v);
-      });
-    }
-
-    // ─────────────────────────────────────────────────────────────
-    // TOP-BAR DROPDOWNS
-    // ─────────────────────────────────────────────────────────────
-    function openDropdown(anchor, items, onPick) {
-      closeDropdown();
-      const menu = e('div', { class: 'menu' });
-      items.forEach(it => {
-        const m = e('div', { class: 'menu-item', onclick: () => { onPick(it); closeDropdown(); } },
-          e('span', {}, it.label),
-          it.tag ? e('span', { class: 'tag' }, it.tag) : null
-        );
-        menu.appendChild(m);
-      });
-      const r = anchor.getBoundingClientRect();
-      menu.style.left = r.left + 'px';
-      menu.style.top  = (r.bottom + 4) + 'px';
-      menu.id = 'active-menu';
-      document.body.appendChild(menu);
-      setTimeout(() => document.addEventListener('click', closeDropdown, { once: true }), 50);
-    }
-    function closeDropdown() {
-      const m = $('#active-menu'); if (m) m.remove();
-    }
-
-    $('#machine-picker').addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      const machines = window.CycleCAD?.Pentacad?.SUPPORTED_MACHINES || [];
-      openDropdown(ev.currentTarget, machines.map(m => ({ label: m.name, value: m.id, tag: m.status })),
-        (pick) => loadMachine(pick.value));
-    });
-
-    $('#setup-picker').addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      const items = WS.setups.map(s => ({ label: s.name, value: s.id, tag: `${s.stock.x}×${s.stock.y}×${s.stock.z}` }));
-      items.push({ label: '+ New setup', value: '__new' });
-      openDropdown(ev.currentTarget, items, (pick) => {
-        if (pick.value === '__new') {
-          const n = WS.setups.length + 1;
-          WS.setups.push({ id: 'setup-' + n, name: 'Setup ' + n, stock: { x: 100, y: 10, z: 100 }, material: 'Aluminium 6061', wcs: { x:0,y:0,z:0,a:0,b:0 }, fixtureNotes: '' });
-          WS.activeSetupId = 'setup-' + n;
-        } else {
-          WS.activeSetupId = pick.value;
-        }
-        const s = WS.setups.find(s => s.id === WS.activeSetupId);
-        $('#setup-chip').textContent = s?.name || '—';
-        renderStock(s); renderSidePanel();
-      });
-    });
-
-    $('#settings-btn').addEventListener('click', () => openModal(settingsDialog()));
-
-    function settingsDialog() {
-      const c = e('div');
-      c.innerHTML = `
-        <h3>Settings <button class="close" data-close>×</button></h3>
-        <label>Default bridge URL</label>
-        <input id="s-bridge" value="${WS.bridgeUrl}" />
-        <label>Default units</label>
-        <select id="s-units"><option value="mm">mm</option><option value="inch">inch</option></select>
-        <label>Grid size (mm)</label>
-        <input id="s-grid" type="number" value="400" />
-        <div class="btn-row" style="margin-top:14px;">
-          <button class="btn primary" id="s-save">Save</button>
-        </div>
-      `;
-      c.querySelector('#s-save').addEventListener('click', () => {
-        WS.bridgeUrl = c.querySelector('#s-bridge').value.trim();
-        localStorage.setItem('pentacad_bridge_url', WS.bridgeUrl);
-        setEvent('Settings saved');
-        closeModal();
-      });
-      return c;
-    }
-
-    // ─────────────────────────────────────────────────────────────
-    // MODAL
-    // ─────────────────────────────────────────────────────────────
-    function openModal(contentEl) {
-      closeModal();
-      const bg = e('div', { class: 'modal-bg', id: 'modal-bg', onclick: (ev) => { if (ev.target === bg) closeModal(); } });
-      const modal = e('div', { class: 'modal' });
-      modal.appendChild(contentEl);
-      bg.appendChild(modal);
-      document.body.appendChild(bg);
-      modal.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeModal));
-    }
-    function closeModal() {
-      const m = $('#modal-bg'); if (m) m.remove();
-    }
-
-    // ─────────────────────────────────────────────────────────────
-    // MACHINE LOAD
-    // ─────────────────────────────────────────────────────────────
-    async function loadMachine(id) {
-      if (!id) return;
-      setEvent(`Loading ${id}…`);
+  // -------------------------------------------------------------------
+  // Slider wiring
+  // -------------------------------------------------------------------
+  const sliders = [
+    { id: 'sl-maxvel',  out: 'v-maxvel',  label: 'maxvel' },
+    { id: 'sl-rapid',   out: 'v-rapid',   label: 'rapid' },
+    { id: 'sl-feed',    out: 'v-feed',    label: 'feed' },
+    { id: 'sl-spindle', out: 'v-spindle', label: 'spindle' }
+  ];
+  sliders.forEach(({ id, out, label }) => {
+    const s = document.getElementById(id);
+    const v = document.getElementById(out);
+    s.addEventListener('input', () => {
+      v.textContent = s.value;
+      const rh = window.CycleCAD.Rockhopper;
+      if (!rh || !state.connected) return;
+      const factor = Number(s.value) / 100;
       try {
-        const def = await window.CycleCAD.Pentacad.loadMachine(id);
-        WS.machineId = id;
-        WS.machineDef = def;
-        $('#machine-chip').textContent = id;
-        setEvent(`Machine ${id} loaded`);
-        renderSidePanel();
-        renderToolpaths(WS.toolpaths, def.kinematics);
-      } catch (err) {
-        setEvent(`Failed to load ${id}: ${err.message}`);
-        console.error(err);
-      }
-    }
-
-    // ─────────────────────────────────────────────────────────────
-    // BRIDGE STATUS + DRO EVENTS
-    // ─────────────────────────────────────────────────────────────
-    window.addEventListener('pentacad:bridge-status', (ev) => {
-      WS.bridgeStatus = ev.detail.status;
-      updateBridgeUI();
-      const detail = $('#bridge-detail'); if (detail) detail.textContent = ev.detail.status;
+        if (label === 'feed')    rh.feedOverride(factor);
+        if (label === 'spindle') rh.spindleOverride(factor);
+        if (label === 'rapid')   rh.put && rh.put('rapidrate', { rate: factor });
+        if (label === 'maxvel')  rh.put && rh.put('maxvel',    { rate: factor });
+      } catch (_) { /* ignore */ }
     });
-    window.addEventListener('pentacad:dro', (ev) => {
-      Object.assign(WS.dro, ev.detail);
-      updateDRO();
+  });
+  document.querySelectorAll('.slider-row .reset').forEach((el) => {
+    el.addEventListener('click', () => {
+      const name = el.dataset.reset;
+      const slider = document.querySelector(`#sl-${name}`);
+      if (slider) { slider.value = 100; slider.dispatchEvent(new Event('input')); }
     });
-    window.addEventListener('pentacad:spindle', (ev) => {
-      WS.dro.rpm = ev.detail.rpm || WS.dro.rpm;
-      updateDRO();
-    });
-    window.addEventListener('pentacad:alarm', (ev) => {
-      setEvent('ALARM: ' + JSON.stringify(ev.detail));
-    });
+  });
 
-    function updateBridgeUI() {
-      const dot = $('#bridge-dot'); const label = $('#bridge-label');
-      const map = { disconnected: '', connecting: 'amber', connected: 'green', error: 'red' };
-      if (dot) dot.className = 'dot ' + (map[WS.bridgeStatus] || '');
-      if (label) label.textContent = WS.bridgeStatus || 'disconnected';
+  // -------------------------------------------------------------------
+  // Optional-stop toggle
+  // -------------------------------------------------------------------
+  const optStop = document.getElementById('tog-opt-stop');
+  optStop.addEventListener('click', () => {
+    state.optStopOn = !state.optStopOn;
+    optStop.classList.toggle('off', !state.optStopOn);
+    const rh = window.CycleCAD.Rockhopper;
+    if (rh && state.connected) {
+      try { rh.put && rh.put('set_optional_stop', { onoff: state.optStopOn ? 1 : 0 }); } catch (_) {}
     }
+  });
 
-    function updateDRO() {
-      $('#dro-x').textContent = (WS.dro.x || 0).toFixed(4);
-      $('#dro-y').textContent = (WS.dro.y || 0).toFixed(4);
-      $('#dro-z').textContent = (WS.dro.z || 0).toFixed(4);
-      $('#dro-a').textContent = (WS.dro.a || 0).toFixed(2) + '°';
-      $('#dro-b').textContent = (WS.dro.b || 0).toFixed(2) + '°';
-      $('#dro-feed').textContent = Math.round(WS.dro.feed || 0);
-      $('#dro-rpm').textContent = Math.round(WS.dro.rpm || 0);
+  // -------------------------------------------------------------------
+  // Control buttons
+  // -------------------------------------------------------------------
+  document.getElementById('btn-home-all').addEventListener('click', () => {
+    const rh = window.CycleCAD.Rockhopper;
+    if (rh) rh.homeAll().catch((e) => console.warn(e));
+  });
+  document.getElementById('btn-cycle').addEventListener('click', () => {
+    const rh = window.CycleCAD.Rockhopper;
+    if (rh) rh.auto('run').catch((e) => console.warn(e));
+  });
+  document.getElementById('btn-hold').addEventListener('click', () => {
+    const rh = window.CycleCAD.Rockhopper;
+    if (rh) rh.pause().catch((e) => console.warn(e));
+  });
+  document.getElementById('btn-step').addEventListener('click', () => {
+    const rh = window.CycleCAD.Rockhopper;
+    if (rh) rh.auto('step').catch((e) => console.warn(e));
+  });
+  document.getElementById('btn-reset').addEventListener('click', () => {
+    const rh = window.CycleCAD.Rockhopper;
+    if (!rh) return;
+    // RESET = clear-estop + abort any running program
+    rh.clearEstop().catch(() => {});
+    rh.abort().catch(() => {});
+  });
+
+  // -------------------------------------------------------------------
+  // Rockhopper connection buttons (Machine tab)
+  // -------------------------------------------------------------------
+  const rhStatus = document.getElementById('rh-status');
+  document.getElementById('rh-connect').addEventListener('click', async () => {
+    const rh = window.CycleCAD.Rockhopper;
+    if (!rh) { rhStatus.textContent = 'rockhopper module not loaded'; return; }
+    const url = document.getElementById('rh-url').value.trim();
+    rhStatus.textContent = 'connecting to ' + url + ' ...';
+    try {
+      await rh.connect({ url, username: 'default', password: 'default' });
+      state.connected = true;
+      rhStatus.textContent = 'connected';
+      render();
+      // Subscribe to DRO + spindle + feed updates
+      rh.on('status', ({ name, data }) => {
+        if (name === 'actual_position' && Array.isArray(data)) {
+          state.pos.x = data[0] || 0; state.pos.y = data[1] || 0; state.pos.z = data[2] || 0;
+          state.pos.a = data[3] || 0; state.pos.b = data[4] || 0;
+        } else if (name === 'spindle' && data) {
+          state.spindleRPM = Math.round(data.speed || 0);
+          state.spindleLoad = Number(data.load || 0);
+        } else if (name === 'current_vel') {
+          state.feedIPM = Number(data) || 0;
+        }
+        render();
+      });
+    } catch (err) {
+      state.connected = false;
+      rhStatus.textContent = 'ERROR: ' + err.message;
+      render();
     }
+  });
 
-    // ─────────────────────────────────────────────────────────────
-    // BOOT
-    // ─────────────────────────────────────────────────────────────
-    async function boot() {
-      // Init pentacad coordinator + sub-modules
-      if (window.CycleCAD?.Pentacad?.init) window.CycleCAD.Pentacad.init();
+  document.getElementById('rh-mock').addEventListener('click', () => {
+    const rh = window.CycleCAD.Rockhopper;
+    if (!rh) return;
+    rh.startMock();
+    state.connected = true;
+    state.runState = 'MOCK';
+    state.spindleRPM = 42853;
+    state.spindleLoad = 24;
+    state.spindleWatt = 180;
+    state.spindleTemp = 94.2;
+    state.pressure = 19.77;
+    state.feedIPM = 28;
+    state.feedWatt = 120;
+    state.chipLoad = 0.0007;
+    state.surfaceSpeed = 1402.36;
+    state.modalState = 'G3 G17 G20 G43 G59.3 G90 G94 M5 M9 M429';
+    state.infoCount = 5; state.errorCount = 1;
+    rhStatus.textContent = 'mock mode — demo values applied';
+    render();
 
-      // Wait for Three.js
-      if (!window.THREE) await new Promise(r => window.addEventListener('three-ready', r, { once: true }));
-      bootScene();
+    // Start a fake run clock
+    const startedAt = Date.now();
+    setInterval(() => { state.runTimeSec = (Date.now() - startedAt) / 1000; render(); }, 100);
 
-      // Seed demo data, load default machine, render first paint
-      seedDemoSetup();
-      $('#setup-chip').textContent = WS.setups[0].name;
-      renderStock(WS.setups[0]);
+    // Jitter the DRO like a machine in motion
+    setInterval(() => {
+      state.pos.x = Math.sin(Date.now() / 1500) * 0.5 - 0.0677;
+      state.pos.y = Math.cos(Date.now() / 1700) * 0.3 - 0.0231;
+      state.pos.z = -0.32 + Math.sin(Date.now() / 800) * 0.02;
+      state.pos.a = 90;
+      state.pos.b = 0;
+      state.spindleRPM = 42853 + Math.round((Math.random() - 0.5) * 200);
+      state.feedIPM = 28 + (Math.random() - 0.5) * 2;
+      state.feedWatt = 110 + Math.random() * 40;
+      state.spindleWatt = 175 + Math.random() * 20;
+      render();
+    }, 200);
+  });
 
-      await loadMachine('v2-50-chb');
-      generatePreviewToolpaths();
-      updateBridgeUI();
-      updateDRO();
-      renderSidePanel();
-      setEvent('Pentacad workspace ready · Phase 0 scaffold');
+  // -------------------------------------------------------------------
+  // Machine selector on top bar
+  // -------------------------------------------------------------------
+  const machineSel = document.getElementById('machine-select');
+  machineSel.addEventListener('change', async () => {
+    const id = machineSel.value;
+    const rh = window.CycleCAD.Pentacad;
+    if (rh && rh.loadMachine) {
+      try { await rh.loadMachine(id); } catch (e) { console.warn('loadMachine failed:', e); }
     }
+    const summary = document.getElementById('machine-summary');
+    if (summary) summary.textContent = `Active machine: ${id} — config at machines/${id}/kinematics.json`;
+  });
 
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', boot);
-    } else {
-      boot();
-    }
+  // -------------------------------------------------------------------
+  // Init coordinator once everything else loaded
+  // -------------------------------------------------------------------
+  if (window.CycleCAD.Pentacad && window.CycleCAD.Pentacad.init) {
+    window.CycleCAD.Pentacad.init();
+    window.CycleCAD.Pentacad.loadMachine('v2-50').catch(() => {});
+  }
 
-    // Expose for debugging
-    window.PentacadWS = WS;
-  })();
-  </script>
+  console.log('[pentacad-ui] Kinetic-Control-style UI ready. Click "Use mock" on the Machine tab for a demo run.');
+})();
+</script>
+
 </body>
 </html>

@@ -180,6 +180,279 @@
   }
 
   // ===================================================================
+  // GEAR MATERIAL DATA — AGMA Grade 1 steel allowables (Shigley Table 14-3 / 14-6)
+  // Keys: hardness in HB (Brinell). Values: {S_t, S_c} in MPa (converted from psi).
+  // S_t: allowable bending stress. S_c: allowable contact (surface) stress.
+  // Formulas for through-hardened steel (AGMA 2001):
+  //   S_t = 77 * HB + 12,800 psi        (Grade 1 bending)
+  //   S_c = 322 * HB + 29,100 psi       (Grade 1 contact)
+  // 1 psi = 0.00689476 MPa.
+  // ===================================================================
+  /**
+   * Allowable bending stress for Grade 1 through-hardened gear steel (AGMA 2001).
+   * @param {number} HB Brinell hardness (180–400 typical).
+   * @returns {number} S_t in MPa.
+   */
+  function gearAllowableBending(HB) {
+    return (77 * HB + 12800) * 0.00689476;
+  }
+  /**
+   * Allowable contact stress for Grade 1 through-hardened gear steel (AGMA 2001).
+   * @param {number} HB Brinell hardness.
+   * @returns {number} S_c in MPa.
+   */
+  function gearAllowableContact(HB) {
+    return (322 * HB + 29100) * 0.00689476;
+  }
+
+  // AGMA geometry factor J (bending) — approximated from Shigley Fig. 14-6
+  // for external spur gears at 20° pressure angle. Interpolated by number of teeth.
+  const J_TABLE = [
+    [12, 0.245], [14, 0.265], [17, 0.295], [20, 0.32], [25, 0.345],
+    [30, 0.365], [35, 0.38], [40, 0.39], [50, 0.41], [75, 0.435], [100, 0.45]
+  ];
+  function gearGeometryJ(teeth) {
+    const z = Math.max(J_TABLE[0][0], Math.min(J_TABLE[J_TABLE.length-1][0], teeth));
+    for (let i = 0; i < J_TABLE.length - 1; i++) {
+      const [z1, j1] = J_TABLE[i], [z2, j2] = J_TABLE[i+1];
+      if (z >= z1 && z <= z2) return j1 + (j2 - j1) * (z - z1) / (z2 - z1);
+    }
+    return 0.4;
+  }
+
+  // AGMA geometry factor I (pitting) — external gear pair, 20° pressure angle.
+  // Approximated from Shigley Eq. 14-23 with m_N = 1 for spur gears.
+  function gearGeometryI(pinionTeeth, gearTeeth, pressureAngle) {
+    const phi = (pressureAngle || 20) * Math.PI / 180;
+    const mG = gearTeeth / pinionTeeth;
+    return (Math.cos(phi) * Math.sin(phi) / 2) * (mG / (mG + 1));
+  }
+
+  /**
+   * Spur gear AGMA bending + pitting analysis (Shigley Ch. 14).
+   *
+   * Uses the fundamental AGMA 2001 stress equations with sensible default modifying factors.
+   * For safety-critical applications, confirm each K-factor per AGMA 908-B89.
+   *
+   * @param {object} p
+   * @param {number} p.pinionTeeth  z_P — pinion tooth count.
+   * @param {number} p.gearTeeth    z_G — gear tooth count.
+   * @param {number} p.module       m — in mm.
+   * @param {number} p.faceWidth    F — in mm.
+   * @param {number} p.torque       T_P — torque on pinion in N·m.
+   * @param {number} p.pinionHB     HB_P — Brinell hardness of pinion.
+   * @param {number} p.gearHB       HB_G — Brinell hardness of gear.
+   * @param {number} [p.overload=1.0]       K_o — 1.0 uniform / 1.25 moderate / 1.5 heavy shock.
+   * @param {number} [p.dynamic=1.1]        K_v — dynamic factor (≈1.0 precision, 1.1–1.3 typical).
+   * @param {number} [p.loadDist=1.3]       K_m — load distribution (1.3 good alignment).
+   * @param {number} [p.reliability=1.0]    K_R — 1.0 @ 99% reliability, 1.25 @ 99.9%.
+   * @param {number} [p.pressureAngle=20]   φ — pressure angle in degrees.
+   * @param {number} [p.Z_E=190]            Elastic coefficient for steel-steel (MPa^0.5).
+   * @returns {object} {inputs, pinion:{…}, gear:{…}, verdict, …}
+   */
+  function spurGearAnalysis(p) {
+    const z_P = Math.max(12, Math.round(Number(p.pinionTeeth) || 20));
+    const z_G = Math.max(12, Math.round(Number(p.gearTeeth) || 40));
+    const m   = Math.max(0.5, Number(p.module) || 2);
+    const F   = Math.max(3, Number(p.faceWidth) || 25);
+    const T_P = Math.max(0, Number(p.torque) || 0);
+    const HB_P = Math.max(150, Number(p.pinionHB) || 240);
+    const HB_G = Math.max(150, Number(p.gearHB)   || HB_P);
+    const K_o = Math.max(1, Number(p.overload) || 1.0);
+    const K_v = Math.max(1, Number(p.dynamic)  || 1.1);
+    const K_m = Math.max(1, Number(p.loadDist) || 1.3);
+    const K_R = Math.max(1, Number(p.reliability) || 1.0);
+    const phi = Number(p.pressureAngle) || 20;
+    const Z_E = Number(p.Z_E) || 190;
+    const K_s = 1.0;   // size factor — ignore for typical sizes
+    const K_B = 1.0;   // rim thickness — solid blank
+    const C_f = 1.0;   // surface condition — clean-cut
+    const Y_N = 1.0, Z_N = 1.0, C_H = 1.0, K_T = 1.0; // nominal life factors
+    const mG = z_G / z_P;
+
+    // Pitch diameters and tangential load
+    const d_P = m * z_P;                    // pinion pitch dia in mm
+    const d_G = m * z_G;                    // gear pitch dia
+    const T_Pnmm = T_P * 1000;              // convert N·m → N·mm
+    const W_t = (d_P > 0) ? (2 * T_Pnmm) / d_P : 0;  // tangential load N
+
+    // Geometry factors
+    const J_P = gearGeometryJ(z_P);
+    const J_G = gearGeometryJ(z_G);
+    const I   = gearGeometryI(z_P, z_G, phi);
+
+    // AGMA bending stress (both gears see same W_t but different J)
+    const sigma_b_P = (W_t * K_o * K_v * K_s * K_m * K_B) / (F * m * J_P);
+    const sigma_b_G = (W_t * K_o * K_v * K_s * K_m * K_B) / (F * m * J_G);
+
+    // AGMA contact stress (same magnitude for both meshing teeth)
+    const sigma_c = (W_t > 0 && d_P > 0 && I > 0)
+      ? Z_E * Math.sqrt((W_t * K_o * K_v * K_s * K_m * C_f) / (d_P * F * I))
+      : 0;
+
+    // Allowable stresses (material)
+    const St_P = gearAllowableBending(HB_P);
+    const St_G = gearAllowableBending(HB_G);
+    const Sc_P = gearAllowableContact(HB_P);
+    const Sc_G = gearAllowableContact(HB_G);
+
+    // Factors of safety — Shigley Eq. 14-41 / 14-42 simplified
+    const SF_bending_P = St_P * Y_N / (sigma_b_P * K_T * K_R);
+    const SF_bending_G = St_G * Y_N / (sigma_b_G * K_T * K_R);
+    const SF_contact_P = (Sc_P * Z_N * C_H) / (sigma_c * K_T * K_R);
+    const SF_contact_G = (Sc_G * Z_N * C_H) / (sigma_c * K_T * K_R);
+
+    const SF_min = Math.min(SF_bending_P, SF_bending_G, SF_contact_P, SF_contact_G);
+    const safe = SF_min >= 1.0;
+    const verdict = SF_min >= 2.0 ? 'SAFE (margin ≥ 2)' :
+                    SF_min >= 1.5 ? 'SAFE (margin ≥ 1.5 — industry typical)' :
+                    SF_min >= 1.0 ? 'MARGINAL (factor < 1.5 — review assumptions)' :
+                                    'UNSAFE (factor < 1.0 — tooth will fail)';
+    const verdictClass = SF_min >= 1.5 ? 'pass' : SF_min >= 1.0 ? 'warn' : 'fail';
+    const notes = [];
+    if (SF_bending_P < SF_bending_G) notes.push('Pinion is the weaker gear in bending (lower J factor) — as expected.');
+    if (SF_contact_P < SF_bending_P) notes.push('Contact stress governs over bending — consider surface hardening (carburizing/induction) for higher S_c.');
+    if (SF_min < 1.5) notes.push('Margin below industry-typical 1.5 — increase module, face width, or hardness.');
+
+    return {
+      inputs: { z_P, z_G, m, F, T_P, HB_P, HB_G, K_o, K_v, K_m, K_R, phi, Z_E,
+                d_P, d_G, mG, W_t, J_P, J_G, I, St_P, St_G, Sc_P, Sc_G },
+      pinion: { SF_bending: SF_bending_P, SF_contact: SF_contact_P,
+                sigma_b: sigma_b_P, sigma_c, S_t: St_P, S_c: Sc_P, J: J_P },
+      gear:   { SF_bending: SF_bending_G, SF_contact: SF_contact_G,
+                sigma_b: sigma_b_G, sigma_c, S_t: St_G, S_c: Sc_G, J: J_G },
+      SF_min, safe, verdict, verdictClass, notes
+    };
+  }
+
+  // ===================================================================
+  // SHAFT FATIGUE — Goodman / Soderberg (Shigley Ch. 7)
+  // ===================================================================
+  // Shaft material data (wrought carbon steel from Shigley Table A-20).
+  const SHAFT_MATERIALS = Object.freeze({
+    '1020_hr':    { label: 'AISI 1020 hot-rolled',     S_ut: 380, S_y: 210 },
+    '1020_cd':    { label: 'AISI 1020 cold-drawn',     S_ut: 470, S_y: 390 },
+    '1040_hr':    { label: 'AISI 1040 hot-rolled',     S_ut: 520, S_y: 290 },
+    '1040_cd':    { label: 'AISI 1040 cold-drawn',     S_ut: 590, S_y: 490 },
+    '1050_hr':    { label: 'AISI 1050 hot-rolled',     S_ut: 620, S_y: 340 },
+    '1050_cd':    { label: 'AISI 1050 cold-drawn',     S_ut: 690, S_y: 580 },
+    '4140_Q&T':   { label: 'AISI 4140 Q&T 425°C',      S_ut: 1020, S_y: 900 },
+    '4340_Q&T':   { label: 'AISI 4340 Q&T 425°C',      S_ut: 1280, S_y: 1140 }
+  });
+
+  // Marin surface factor — Shigley Eq. 6-19, a*S_ut^b.
+  const SURFACE_FACTORS = {
+    'ground':      { a: 1.58,  b: -0.085 },
+    'machined':    { a: 4.51,  b: -0.265 },
+    'cold-drawn':  { a: 4.51,  b: -0.265 },
+    'hot-rolled':  { a: 57.7,  b: -0.718 },
+    'as-forged':   { a: 272,   b: -0.995 }
+  };
+
+  /**
+   * Shaft fatigue analysis using Goodman / Soderberg criteria.
+   *
+   * Given mean and alternating stresses (computed from bending moment + torque amplitudes),
+   * applies Marin modifying factors to estimate the endurance limit and returns factors of
+   * safety per Goodman (common) and Soderberg (conservative).
+   *
+   * @param {object} p
+   * @param {string} p.material       Key into SHAFT_MATERIALS.
+   * @param {number} p.diameter       Shaft diameter in mm.
+   * @param {number} p.M_a            Alternating bending moment amplitude in N·m.
+   * @param {number} p.M_m            Mean bending moment in N·m (often 0 for rotating-bending).
+   * @param {number} p.T_a            Alternating torque amplitude in N·m.
+   * @param {number} p.T_m            Mean torque in N·m.
+   * @param {number} [p.Kf=2.0]       Fatigue stress concentration for bending (≥1).
+   * @param {number} [p.Kfs=1.5]      Fatigue stress concentration for torsion.
+   * @param {string} [p.surface='machined']  Surface finish preset.
+   * @param {number} [p.reliability=0.99]    Reliability (0.5–0.999999).
+   * @param {number} [p.temperatureC=25]     Operating temperature in °C.
+   * @returns {object}
+   */
+  function shaftFatigueAnalysis(p) {
+    const mat = SHAFT_MATERIALS[p.material] || SHAFT_MATERIALS['1050_cd'];
+    const d   = Math.max(5, Number(p.diameter) || 25);   // mm
+    const M_a = Math.max(0, Number(p.M_a) || 0);          // N·m
+    const M_m = Math.max(0, Number(p.M_m) || 0);
+    const T_a = Math.max(0, Number(p.T_a) || 0);
+    const T_m = Math.max(0, Number(p.T_m) || 0);
+    const Kf  = Math.max(1, Number(p.Kf)  || 2.0);
+    const Kfs = Math.max(1, Number(p.Kfs) || 1.5);
+    const surfaceKey = p.surface || 'machined';
+    const surf = SURFACE_FACTORS[surfaceKey] || SURFACE_FACTORS.machined;
+    const R   = Math.max(0.5, Math.min(0.999999, Number(p.reliability) || 0.99));
+    const T_C = Number(p.temperatureC) || 25;
+
+    // Marin surface factor k_a = a * (S_ut[MPa])^b
+    const k_a = surf.a * Math.pow(mat.S_ut, surf.b);
+    // Size factor k_b — Shigley Eq. 6-20 (rotating bending, 2.79 ≤ d ≤ 51 mm)
+    let k_b;
+    if (d <= 51)  k_b = 1.24 * Math.pow(d, -0.107);
+    else if (d <= 254) k_b = 1.51 * Math.pow(d, -0.157);
+    else k_b = 0.60;
+    // Loading factor k_c = 1 for combined bending + torsion (we handle each via Kf/Kfs)
+    const k_c = 1.0;
+    // Temperature factor k_d — Eq. 6-27
+    const k_d = (T_C <= 70) ? 1.0 : (0.975 + 0.432e-3*T_C - 0.115e-5*T_C*T_C + 0.104e-8*T_C*T_C*T_C);
+    // Reliability factor k_e — Shigley Table 6-5 (z_a from normal distribution)
+    const z_a = (R === 0.99 ? 2.326 : R === 0.999 ? 3.091 : R === 0.95 ? 1.645 : R === 0.90 ? 1.288 : 2.326);
+    const k_e = 1 - 0.08 * z_a;
+    // Miscellaneous k_f = 1 for this scope
+    const k_f = 1.0;
+    // Uncorrected endurance limit S_e' — Shigley Eq. 6-10
+    const S_e_prime = (mat.S_ut <= 1400) ? 0.5 * mat.S_ut : 700;
+    // Corrected endurance limit
+    const S_e = k_a * k_b * k_c * k_d * k_e * k_f * S_e_prime;
+
+    // Stresses — bending σ_a/σ_m (Kf applied), torsion τ_a/τ_m (Kfs applied)
+    // σ = 32·M / (π·d^3)   [M in N·mm, d in mm → MPa]
+    // τ = 16·T / (π·d^3)
+    const d_m = d;  // mm
+    const sigma_a = (32 * M_a * 1000) / (Math.PI * Math.pow(d_m, 3));
+    const sigma_m = (32 * M_m * 1000) / (Math.PI * Math.pow(d_m, 3));
+    const tau_a   = (16 * T_a * 1000) / (Math.PI * Math.pow(d_m, 3));
+    const tau_m   = (16 * T_m * 1000) / (Math.PI * Math.pow(d_m, 3));
+
+    // Von Mises effective stresses (amplitude + mean) with fatigue concentrations
+    const sigma_prime_a = Math.sqrt(Math.pow(Kf  * sigma_a, 2) + 3 * Math.pow(Kfs * tau_a, 2));
+    const sigma_prime_m = Math.sqrt(Math.pow(Kf  * sigma_m, 2) + 3 * Math.pow(Kfs * tau_m, 2));
+
+    // Goodman: 1/n = σ_a'/S_e + σ_m'/S_ut
+    const goodmanInv = (sigma_prime_a / S_e) + (sigma_prime_m / mat.S_ut);
+    const n_Goodman  = goodmanInv > 0 ? 1 / goodmanInv : Infinity;
+
+    // Soderberg: 1/n = σ_a'/S_e + σ_m'/S_y (conservative — yields instead of UTS)
+    const soderbergInv = (sigma_prime_a / S_e) + (sigma_prime_m / mat.S_y);
+    const n_Soderberg  = soderbergInv > 0 ? 1 / soderbergInv : Infinity;
+
+    // First-cycle yield check — static
+    const sigma_max = sigma_prime_a + sigma_prime_m;
+    const n_yield = mat.S_y / sigma_max;
+
+    // Verdict
+    const n_fatigue = Math.min(n_Goodman, n_Soderberg);
+    let verdict, verdictClass;
+    if (n_fatigue >= 2.0 && n_yield >= 2.0)      { verdict = 'SAFE (margin ≥ 2)'; verdictClass = 'pass'; }
+    else if (n_fatigue >= 1.5 && n_yield >= 1.5) { verdict = 'SAFE (industry typical)'; verdictClass = 'pass'; }
+    else if (n_fatigue >= 1.0 && n_yield >= 1.0) { verdict = 'MARGINAL — factor below 1.5'; verdictClass = 'warn'; }
+    else                                          { verdict = 'UNSAFE — factor < 1.0'; verdictClass = 'fail'; }
+    const notes = [];
+    if (n_yield < n_fatigue) notes.push('First-cycle yield governs — increase diameter or use higher-strength material.');
+    if (sigma_prime_m > sigma_prime_a) notes.push('Mean stress dominant — consider rotating-bending to convert static to fully-reversed.');
+    if (n_Goodman > n_Soderberg + 0.3) notes.push('Soderberg (conservative) significantly lower — review if proof strength, not UTS, is the correct allowable.');
+
+    return {
+      inputs: { material: p.material || '1050_cd', material_label: mat.label, d, S_ut: mat.S_ut, S_y: mat.S_y,
+                M_a, M_m, T_a, T_m, Kf, Kfs, surfaceKey, reliability: R, temperatureC: T_C },
+      marin: { k_a, k_b, k_c, k_d, k_e, k_f, S_e_prime, S_e },
+      stresses: { sigma_a, sigma_m, tau_a, tau_m, sigma_prime_a, sigma_prime_m, sigma_max },
+      n_Goodman, n_Soderberg, n_yield,
+      verdict, verdictClass, notes
+    };
+  }
+
+  // ===================================================================
   // UNIT TESTS — verify core against MecAgent screenshot values
   // ===================================================================
   function runSelfTests() {
@@ -205,6 +478,45 @@
     test('σ (tensile)',      r.combinedStress.sigma,                 542,    1);    // 45687.5/84.3
     test('τ (shear)',        r.combinedStress.tau,                   79,     1.5);  // 6687.5/84.3 ≈ 79.3
     test('σ_vm',             r.combinedStress.sigma_vm,              558,    2);    // √(542² + 3·79²)
+
+    // ------- GEAR TEST — Shigley Example 14-5 adapted -------
+    // 17T pinion / 52T gear, m=2mm, F=30mm, 2.5kW @ 1800rpm → T_P ≈ 13.26 N·m
+    // Through-hardened 240 HB both gears, K_o=1, K_v=1, K_m=1.3
+    const g = spurGearAnalysis({
+      pinionTeeth: 17, gearTeeth: 52, module: 2, faceWidth: 30,
+      torque: 13.26, pinionHB: 240, gearHB: 240,
+      overload: 1, dynamic: 1, loadDist: 1.3
+    });
+    // Tangential load W_t = 2·T / d_P = 2·13260 / 34 ≈ 780 N
+    test('gear W_t',               g.inputs.W_t,          780,   3);
+    // J for 17 teeth ≈ 0.295 per interpolation table
+    test('gear J (pinion)',        g.pinion.J,            0.295, 0.01);
+    // σ_b (pinion) = 780·1·1·1.3 / (30·2·0.295) = 1014/17.7 ≈ 57.3 MPa
+    test('gear σ_b pinion',        g.pinion.sigma_b,      57.3,  1.5);
+    // S_t @240HB = (77·240 + 12800)·psi→MPa = 31280·0.00689 ≈ 215.7 MPa
+    test('gear S_t @240HB',        g.pinion.S_t,          215.7, 1.5);
+    // SF_bending_P ≈ 215.7 / 57.3 ≈ 3.77
+    test('gear SF_bending pinion', g.pinion.SF_bending,   3.77,  0.2);
+
+    // ------- SHAFT TEST — clean case with rotating-bending + constant torque -------
+    // AISI 1050 CD, d=25mm, M_a=100 N·m (rotating bending so M_m=0), T_m=50 N·m, T_a=0
+    // Kf=2.0 (fillet), Kfs=1.5, machined surface, R=0.99, T=25°C
+    const sh = shaftFatigueAnalysis({
+      material: '1050_cd', diameter: 25,
+      M_a: 100, M_m: 0, T_a: 0, T_m: 50,
+      Kf: 2.0, Kfs: 1.5, surface: 'machined', reliability: 0.99, temperatureC: 25
+    });
+    // σ_a = 32·100000 / (π·25³) = 32e5 / 49087 ≈ 65.2 MPa
+    test('shaft σ_a',              sh.stresses.sigma_a,      65.2,  0.5);
+    // τ_m = 16·50000 / (π·25³) ≈ 16.3 MPa
+    test('shaft τ_m',              sh.stresses.tau_m,        16.3,  0.3);
+    // σ_prime_a with Kf·σ_a only (no mean bending, no alternating torque) ≈ Kf·σ_a = 130.4
+    test('shaft σ′_a',             sh.stresses.sigma_prime_a, 130.4, 1.0);
+    // σ_prime_m = √3 · Kfs · τ_m ≈ √3 · 1.5 · 16.3 ≈ 42.4
+    test('shaft σ′_m',             sh.stresses.sigma_prime_m, 42.4,  1.0);
+    // Must be finite + positive
+    test('shaft n_Goodman finite', Number.isFinite(sh.n_Goodman) && sh.n_Goodman > 0 ? 1 : 0, 1, 0);
+    test('shaft n_Soderberg ≤ Goodman', (sh.n_Soderberg <= sh.n_Goodman + 1e-6) ? 1 : 0, 1, 0);
 
     return { results, allPass: results.every(r => r.pass) };
   }
@@ -585,8 +897,20 @@
   // ===================================================================
   let uiEl = null;
   window.CycleCAD.AIEngineer = {
+    // ---- v1: bolted-joint ----
     analyze: boltedJointAnalysis,
     parsePrompt: parseBoltedJointPrompt,
+    // ---- v2: gears ----
+    analyzeGear: spurGearAnalysis,
+    gearAllowableBending,
+    gearAllowableContact,
+    gearGeometryJ,
+    gearGeometryI,
+    // ---- v2: shafts ----
+    analyzeShaft: shaftFatigueAnalysis,
+    SHAFT_MATERIALS,
+    SURFACE_FACTORS,
+    // ---- shared ----
     runSelfTests,
     STEEL_GRADES,
     BOLT_STRESS_AREA,
@@ -597,17 +921,19 @@
       if (!t.allPass) {
         console.warn('[AI Engineer] self-test failures:', t.results.filter(r => !r.pass));
       } else {
-        console.log('[AI Engineer] self-tests pass (' + t.results.length + '/' + t.results.length + ' against MecAgent reference values)');
+        console.log('[AI Engineer] self-tests pass (' + t.results.length + '/' + t.results.length + ' across bolted-joint + gears + shafts)');
       }
       return t.allPass;
     },
     getUI: () => { if (!uiEl) uiEl = buildUI(); return uiEl; },
     execute: (cmd, params) => {
-      if (cmd === 'analyze') return boltedJointAnalysis(params || {});
-      if (cmd === 'parse')   return parseBoltedJointPrompt((params && params.prompt) || '');
-      if (cmd === 'show')    { if (!uiEl) uiEl = buildUI(); return uiEl; }
+      if (cmd === 'analyze')        return boltedJointAnalysis(params || {});
+      if (cmd === 'analyze-gear')   return spurGearAnalysis(params || {});
+      if (cmd === 'analyze-shaft')  return shaftFatigueAnalysis(params || {});
+      if (cmd === 'parse')          return parseBoltedJointPrompt((params && params.prompt) || '');
+      if (cmd === 'show')           { if (!uiEl) uiEl = buildUI(); return uiEl; }
     }
   };
 
-  console.log('AI Engineering Analyst v1.0 module loaded');
+  console.log('AI Engineering Analyst v2.0 module loaded (bolted-joint + gears + shafts)');
 })();

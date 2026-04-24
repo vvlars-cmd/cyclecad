@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ExplodeView — 3D viewer, AR, AI render · cycleCAD Suite</title>
+<meta name="description" content="ExplodeView: browser-based 3D viewer with AR mode, AI render (Gemini Nano Banana v2 preservation-first), AI part identifier with McMaster-Carr matches. MIT. Part of the cycleCAD Suite." />
+<meta name="keywords" content="ExplodeView, 3D viewer, STEP viewer, AR CAD, WebXR, AI render, Gemini Nano Banana, McMaster-Carr, exploded view, cycleCAD Suite" />
+<meta name="author" content="Sachin Kumar" />
+<link rel="canonical" href="https://cyclecad.com/explodeview.html" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="cycleCAD Suite" />
+<meta property="og:title" content="ExplodeView — 3D viewer, AR, AI render" />
+<meta property="og:description" content="Any STEP file. A marketing-ready 3D experience. In seconds. Exploded views, AI renders, AR walkthroughs, McMaster-matched part identifiers — all in one browser tab." />
+<meta property="og:url" content="https://cyclecad.com/explodeview.html" />
+<meta property="og:image" content="https://cyclecad.com/screenshot.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="ExplodeView — 3D viewer, AR, AI render" />
+<meta name="twitter:description" content="Exploded views, AI renders, AR walkthroughs, McMaster-matched part identifiers — all in one browser tab." />
+<meta name="twitter:image" content="https://cyclecad.com/screenshot.png" />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💥</text></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<style>
+/* ─────────────────────────────────────────────
+   DESIGN TOKENS — shared with suite landing
+   ───────────────────────────────────────────── */
+:root {
+  --bg:         #0A1628;
+  --bg-alt:     #122240;
+  --bg-card:    #1A2D50;
+  --border:     #1E3A5F;
+  --border-hi:  #2A4F80;
+  --text:       #F0F0E8;
+  --text-2:     #8B9AB5;
+  --text-3:     #5A6B85;
+  --gold:       #D4A843;
+  --gold-2:     #E8C065;
+  --blue:       #2E86DE;
+  --teal:       #3AAFA9;
+  --teal-2:     #5ACCC5;
+  --teal-3:     rgba(58,175,169,0.14);
+  --emerald:    #10B981;
+  --emerald-2:  #34D399;
+  --emerald-3:  rgba(16,185,129,0.12);
+  --purple:     #8B6FC0;
+  --amber:      #F59E0B;
+  --red:        #EF4444;
+  --t-fast: 0.18s;
+  --t-med:  0.35s;
+  --t-slow: 0.8s;
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 400;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.65;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4 { font-family: 'Fraunces', Georgia, serif; font-weight: 700; line-height: 1.15; letter-spacing: -0.015em; color: var(--text); }
+em { font-style: italic; color: var(--teal-2); font-weight: 700; }
+code, pre { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+.wrap { max-width: 1280px; margin: 0 auto; padding: 0 32px; }
+
+/* ─────────────────────────────────────────────
+   NAV — matches suite landing
+   ───────────────────────────────────────────── */
+nav {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(10, 22, 40, 0.72);
+  backdrop-filter: blur(20px) saturate(1.5);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 0;
+}
+nav .wrap { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.brand { display: inline-flex; align-items: center; gap: 10px; font-family: 'Fraunces', serif; font-weight: 700; font-size: 1.12rem; color: var(--text); text-decoration: none; }
+.brand .logo { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, var(--gold), var(--teal)); color: var(--bg); font-size: 0.9rem; }
+.brand em { color: var(--gold); font-style: italic; }
+nav .links { display: flex; align-items: center; gap: 24px; font-size: 0.95rem; }
+nav .links a { color: var(--text-2); text-decoration: none; transition: color var(--t-fast); }
+nav .links a:hover { color: var(--text); }
+nav .links a.cta {
+  background: linear-gradient(135deg, var(--teal), var(--blue));
+  color: var(--bg); padding: 8px 16px; border-radius: 24px;
+  font-weight: 600; transition: transform var(--t-fast), box-shadow var(--t-fast);
+}
+nav .links a.cta:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(58,175,169,0.32); }
+@media (max-width: 720px) { nav .links a:not(.cta) { display: none; } }
+
+/* ─────────────────────────────────────────────
+   HERO
+   ───────────────────────────────────────────── */
+.hero {
+  position: relative;
+  padding: 120px 0 100px;
+  background:
+    radial-gradient(ellipse 1000px 450px at 20% 0%, rgba(58,175,169,0.16), transparent 60%),
+    radial-gradient(ellipse 800px 350px at 80% 30%, rgba(46,134,222,0.12),  transparent 60%),
+    var(--bg);
+  overflow: hidden;
+}
+.hero::before {
+  content: ''; position: absolute; inset: 0;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><circle cx='1' cy='1' r='0.6' fill='%232A4F80'/></svg>");
+  opacity: 0.35; pointer-events: none;
+}
+.hero .wrap { position: relative; z-index: 1; display: grid; grid-template-columns: 1.1fr 1fr; gap: 72px; align-items: center; }
+.hero .kicker {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 14px; border-radius: 24px; font-size: 0.78rem; font-weight: 600;
+  color: var(--teal-2); background: var(--teal-3); border: 1px solid rgba(58,175,169,0.38);
+  letter-spacing: 0.6px; text-transform: uppercase; margin-bottom: 24px;
+}
+.hero .kicker .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); animation: dotPulse 1.8s ease-in-out infinite; box-shadow: 0 0 12px var(--teal); }
+@keyframes dotPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.hero h1 { font-size: clamp(2.6rem, 5vw, 4.2rem); max-width: 680px; margin-bottom: 24px; font-weight: 900; }
+.hero p.lead { font-size: 1.2rem; color: var(--text-2); max-width: 620px; margin-bottom: 36px; }
+.hero .ctas { display: flex; gap: 14px; flex-wrap: wrap; }
+.btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 14px 26px; border-radius: 30px; font-weight: 600; font-size: 0.98rem;
+  text-decoration: none; transition: transform var(--t-fast), box-shadow var(--t-fast), background var(--t-fast);
+}
+.btn-primary { background: linear-gradient(135deg, var(--teal), var(--blue)); color: var(--bg); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(58,175,169,0.38); }
+.btn-secondary { background: transparent; color: var(--text); border: 1px solid var(--border-hi); }
+.btn-secondary:hover { background: rgba(255,255,255,0.04); border-color: var(--teal); color: var(--teal-2); }
+.btn .arrow { transition: transform var(--t-fast); }
+.btn:hover .arrow { transform: translateX(4px); }
+
+/* Hero visual — exploded assembly */
+.hero-visual {
+  position: relative; aspect-ratio: 1 / 1; max-width: 460px; justify-self: end;
+  background: radial-gradient(circle at 50% 50%, rgba(58,175,169,0.1), transparent 70%);
+  border-radius: 50%;
+}
+.hero-visual svg { width: 100%; height: 100%; }
+.hero-visual .p1 { animation: pop1 5s ease-in-out infinite; transform-origin: 150px 150px; }
+.hero-visual .p2 { animation: pop2 5s ease-in-out infinite; transform-origin: 150px 150px; }
+.hero-visual .p3 { animation: pop3 5s ease-in-out infinite; transform-origin: 150px 150px; }
+.hero-visual .p4 { animation: pop4 5s ease-in-out infinite; transform-origin: 150px 150px; }
+.hero-visual .p5 { animation: pop5 5s ease-in-out infinite; transform-origin: 150px 150px; }
+.hero-visual .p6 { animation: pop6 5s ease-in-out infinite; transform-origin: 150px 150px; }
+@keyframes pop1 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-36px, -32px); } }
+@keyframes pop2 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(38px, -28px); } }
+@keyframes pop3 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-40px, 30px); } }
+@keyframes pop4 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(42px, 34px); } }
+@keyframes pop5 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(0, -52px); } }
+@keyframes pop6 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(0, 48px); } }
+.hero-visual .trail { stroke-dasharray: 4 4; animation: dashMove 12s linear infinite; }
+@keyframes dashMove { to { stroke-dashoffset: -160; } }
+
+@media (max-width: 920px) {
+  .hero { padding: 80px 0 60px; }
+  .hero .wrap { grid-template-columns: 1fr; gap: 40px; }
+  .hero-visual { max-width: 360px; justify-self: center; }
+}
+
+/* ─────────────────────────────────────────────
+   PROBLEM STRIP
+   ───────────────────────────────────────────── */
+.problem {
+  padding: 70px 0;
+  background: var(--bg-alt);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.problem h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); max-width: 740px; margin: 0 auto 14px; text-align: center; }
+.problem .sub { color: var(--text-2); text-align: center; max-width: 760px; margin: 0 auto 40px; }
+.problem-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+.problem-card {
+  padding: 18px 16px; border-radius: 12px;
+  background: var(--bg); border: 1px solid var(--border);
+  text-align: center;
+}
+.problem-card .icon {
+  width: 38px; height: 38px; display: grid; place-items: center; margin: 0 auto 10px;
+  border-radius: 10px; background: rgba(239,68,68,0.12); color: var(--red); font-size: 1.2rem;
+}
+.problem-card .ttl { font-weight: 600; font-size: 0.95rem; margin-bottom: 4px; color: var(--text); }
+.problem-card .sub { font-size: 0.78rem; color: var(--text-3); margin-bottom: 0; }
+@media (max-width: 900px) { .problem-grid { grid-template-columns: repeat(3, 1fr); } .problem-card:nth-child(4), .problem-card:nth-child(5) { grid-column: span 1; } }
+@media (max-width: 560px) { .problem-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.vs-line {
+  position: relative; margin: 40px 0 0; text-align: center;
+  font-family: 'Fraunces', serif; font-style: italic; font-size: 1.15rem; color: var(--text-2);
+}
+.vs-line::before, .vs-line::after {
+  content: ''; display: inline-block; width: 64px; height: 1px;
+  background: linear-gradient(to right, transparent, var(--border-hi));
+  vertical-align: middle; margin: 0 12px;
+}
+.vs-line::after { background: linear-gradient(to left, transparent, var(--border-hi)); }
+
+/* ─────────────────────────────────────────────
+   SOLUTION — five modules
+   ───────────────────────────────────────────── */
+.solution { padding: 100px 0; }
+.solution .header-block { text-align: center; max-width: 760px; margin: 0 auto 60px; }
+.section-kicker {
+  display: inline-block; font-size: 0.72rem; letter-spacing: 2.5px; text-transform: uppercase;
+  color: var(--teal-2); font-weight: 700; margin-bottom: 16px;
+}
+.solution h2 { font-size: clamp(2rem, 4vw, 3rem); margin-bottom: 16px; }
+.solution p.sub { color: var(--text-2); font-size: 1.08rem; }
+
+.five-modules { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; }
+.mod-card {
+  position: relative;
+  padding: 28px 22px; border-radius: 16px;
+  background: var(--bg-alt); border: 1px solid var(--border);
+  transition: transform var(--t-med), border-color var(--t-med), box-shadow var(--t-med);
+}
+.mod-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(58,175,169,0.45);
+  box-shadow: 0 12px 32px rgba(58,175,169,0.16);
+}
+.mod-num {
+  display: grid; place-items: center;
+  width: 28px; height: 28px; border-radius: 8px;
+  background: var(--teal-3); color: var(--teal-2);
+  font: 700 0.82rem 'JetBrains Mono'; margin-bottom: 14px;
+}
+.mod-card h3 { font-size: 1.05rem; font-family: 'Inter', sans-serif; font-weight: 700; margin-bottom: 8px; }
+.mod-card p { font-size: 0.88rem; color: var(--text-2); line-height: 1.55; }
+@media (max-width: 920px) { .five-modules { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 520px) { .five-modules { grid-template-columns: 1fr; } }
+
+/* ─────────────────────────────────────────────
+   FEATURES GRID
+   ───────────────────────────────────────────── */
+.strategies { padding: 100px 0; background: var(--bg-alt); }
+.strategies .header-block { text-align: center; max-width: 720px; margin: 0 auto 50px; }
+.strategies h2 { font-size: clamp(2rem, 4vw, 2.8rem); margin-bottom: 14px; }
+.strategies p.sub { color: var(--text-2); }
+.strat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.strat-card {
+  padding: 22px 20px; border-radius: 14px;
+  background: var(--bg); border: 1px solid var(--border);
+  transition: all var(--t-med);
+}
+.strat-card:hover { border-color: var(--teal); transform: translateY(-3px); }
+.strat-card .icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: var(--teal-3); margin-bottom: 14px;
+  display: grid; place-items: center;
+}
+.strat-card .icon svg { width: 20px; height: 20px; stroke: var(--teal-2); stroke-width: 2; fill: none; }
+.strat-card h4 { font-size: 1rem; font-family: 'Inter', sans-serif; font-weight: 700; margin-bottom: 4px; }
+.strat-card .kind { font-size: 0.72rem; font-family: 'JetBrains Mono'; color: var(--text-3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.strat-card p { font-size: 0.84rem; color: var(--text-2); line-height: 1.5; }
+@media (max-width: 920px) { .strat-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 520px) { .strat-grid { grid-template-columns: 1fr; } }
+
+/* ─────────────────────────────────────────────
+   AI RENDER — side-by-side with prompt sample
+   ───────────────────────────────────────────── */
+.post-section { padding: 100px 0; }
+.post-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+.post-body h2 { font-size: clamp(1.9rem, 3.5vw, 2.6rem); margin-bottom: 16px; }
+.post-body p { color: var(--text-2); margin-bottom: 14px; font-size: 1.02rem; }
+.post-body .feature-list { list-style: none; margin-top: 26px; }
+.post-body .feature-list li {
+  position: relative; padding-left: 24px; margin-bottom: 10px;
+  color: var(--text); font-size: 0.95rem;
+}
+.post-body .feature-list li::before {
+  content: '✓'; position: absolute; left: 0; top: 0;
+  width: 16px; height: 16px; background: var(--teal-3); color: var(--teal-2);
+  border-radius: 4px; display: grid; place-items: center;
+  font-size: 0.78rem; font-weight: 700;
+}
+.post-body code.inline {
+  background: var(--bg-card); color: var(--teal-2); padding: 2px 7px; border-radius: 4px;
+  font-size: 0.88em;
+}
+
+.ngc-block {
+  position: relative;
+  background: var(--bg-alt);
+  border: 1px solid var(--border); border-radius: 14px;
+  overflow: hidden;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.82rem;
+}
+.ngc-block .hd {
+  padding: 10px 16px; background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  color: var(--text-2); font-size: 0.78rem; letter-spacing: 1px; text-transform: uppercase;
+}
+.ngc-block .hd .dots { display: inline-flex; gap: 5px; }
+.ngc-block .hd .dots span { width: 9px; height: 9px; border-radius: 50%; background: var(--border-hi); }
+.ngc-block pre {
+  padding: 18px 18px 22px;
+  color: var(--text); line-height: 1.65;
+  overflow-x: auto; white-space: pre-wrap;
+}
+.ngc-block .kw  { color: var(--teal-2); font-weight: 700; }
+.ngc-block .val { color: var(--gold-2); }
+.ngc-block .cm  { color: var(--text-3); font-style: italic; }
+.ngc-block .ax  { color: var(--blue); }
+@media (max-width: 900px) { .post-layout { grid-template-columns: 1fr; gap: 40px; } }
+
+/* ─────────────────────────────────────────────
+   AR SECTION
+   ───────────────────────────────────────────── */
+.sim-section { padding: 100px 0; background: var(--bg-alt); }
+.sim-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+.sim-layout.rev > :first-child { order: 2; }
+.sim-visual {
+  aspect-ratio: 1.1 / 1;
+  background: radial-gradient(circle at 50% 50%, rgba(58,175,169,0.1), transparent 70%);
+  border-radius: 20px; border: 1px solid var(--border);
+  position: relative; overflow: hidden;
+}
+.sim-visual svg { width: 100%; height: 100%; }
+.sim-visual .ar-float { animation: arFloat 4.2s ease-in-out infinite; transform-origin: 150px 110px; }
+@keyframes arFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.sim-visual .ar-parts { animation: arPartsSpread 6s ease-in-out infinite; }
+@keyframes arPartsSpread {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+.sim-visual .floor-grid { stroke-dasharray: 6 4; animation: floorScroll 14s linear infinite; }
+@keyframes floorScroll { to { stroke-dashoffset: -120; } }
+.sim-body h2 { font-size: clamp(1.9rem, 3.5vw, 2.6rem); margin-bottom: 16px; }
+.sim-body p { color: var(--text-2); margin-bottom: 14px; font-size: 1.02rem; }
+.sim-body .feature-list { list-style: none; margin-top: 22px; }
+.sim-body .feature-list li { position: relative; padding-left: 24px; margin-bottom: 10px; font-size: 0.95rem; }
+.sim-body .feature-list li::before {
+  content: '✓'; position: absolute; left: 0; top: 0;
+  width: 16px; height: 16px; background: var(--teal-3); color: var(--teal-2);
+  border-radius: 4px; display: grid; place-items: center;
+  font-size: 0.78rem; font-weight: 700;
+}
+@media (max-width: 900px) {
+  .sim-layout { grid-template-columns: 1fr; gap: 40px; }
+  .sim-layout.rev > :first-child { order: 0; }
+}
+
+/* ─────────────────────────────────────────────
+   McMASTER BRIDGE SECTION
+   ───────────────────────────────────────────── */
+.bridge { padding: 100px 0; }
+.bridge .header-block { text-align: center; max-width: 780px; margin: 0 auto 60px; }
+.bridge h2 { font-size: clamp(1.9rem, 3.8vw, 2.7rem); margin-bottom: 16px; }
+.bridge p.sub { color: var(--text-2); font-size: 1.05rem; }
+.bridge-diagram {
+  position: relative;
+  padding: 60px 40px;
+  border-radius: 20px;
+  background: var(--bg-alt); border: 1px solid var(--border);
+}
+.bridge-row { display: grid; grid-template-columns: 1fr 90px 1fr 90px 1fr 90px 1fr; align-items: center; gap: 12px; }
+.bridge-node {
+  padding: 22px 14px; border-radius: 14px;
+  background: var(--bg); border: 1px solid var(--border);
+  text-align: center;
+}
+.bridge-node .icn { font-size: 1.6rem; margin-bottom: 8px; }
+.bridge-node h4 { font-size: 0.96rem; font-family: 'Inter', sans-serif; font-weight: 700; margin-bottom: 4px; }
+.bridge-node .ttag { display: inline-block; font-size: 0.7rem; font-family: 'JetBrains Mono'; color: var(--text-3); }
+.bridge-arrow { position: relative; height: 2px; background: linear-gradient(to right, var(--border-hi), var(--teal), var(--border-hi)); border-radius: 2px; }
+.bridge-arrow::after {
+  content: ''; position: absolute; right: -2px; top: 50%; transform: translateY(-50%);
+  border-left: 8px solid var(--teal); border-top: 5px solid transparent; border-bottom: 5px solid transparent;
+}
+.bridge-arrow .packet {
+  position: absolute; top: 50%; left: 0; transform: translateY(-50%);
+  width: 10px; height: 10px; border-radius: 50%; background: var(--teal);
+  box-shadow: 0 0 14px var(--teal);
+  animation: packetFly 2.6s ease-in-out infinite;
+}
+.bridge-arrow .packet.p2 { animation-delay: 1s; }
+@keyframes packetFly { 0% { left: 0; opacity: 0; } 10% { opacity: 1; } 80% { opacity: 1; } 100% { left: calc(100% - 10px); opacity: 0; } }
+.bridge-caption { text-align: center; margin-top: 30px; color: var(--text-2); font-size: 0.92rem; }
+.bridge-caption code { background: var(--bg-card); color: var(--teal-2); padding: 2px 7px; border-radius: 4px; font-size: 0.88em; }
+
+.bridge-events {
+  margin-top: 36px;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+}
+.bridge-event {
+  padding: 14px 16px; border-radius: 10px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  font-family: 'JetBrains Mono', monospace; font-size: 0.82rem;
+}
+.bridge-event .evt-name { color: var(--teal-2); }
+.bridge-event .evt-sub { color: var(--text-3); font-size: 0.76rem; margin-top: 2px; }
+@media (max-width: 1040px) {
+  .bridge-row { grid-template-columns: 1fr; gap: 8px; }
+  .bridge-arrow { height: 36px; width: 2px; margin: 0 auto; background: linear-gradient(to bottom, var(--border-hi), var(--teal), var(--border-hi)); }
+  .bridge-arrow::after { right: 50%; top: auto; bottom: -2px; transform: translateX(50%); border: 0; border-top: 8px solid var(--teal); border-left: 5px solid transparent; border-right: 5px solid transparent; }
+  .bridge-arrow .packet { animation: packetFlyV 2.6s ease-in-out infinite; }
+  .bridge-events { grid-template-columns: 1fr; }
+}
+@keyframes packetFlyV { 0% { top: 0; opacity: 0; } 10% { opacity: 1; } 80% { opacity: 1; } 100% { top: calc(100% - 10px); opacity: 0; } }
+
+/* ─────────────────────────────────────────────
+   ROADMAP
+   ───────────────────────────────────────────── */
+.roadmap { padding: 100px 0; background: var(--bg-alt); }
+.roadmap .header-block { text-align: center; max-width: 720px; margin: 0 auto 60px; }
+.roadmap h2 { font-size: clamp(1.9rem, 3.5vw, 2.6rem); margin-bottom: 14px; }
+.roadmap p.sub { color: var(--text-2); }
+
+.phases { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; position: relative; }
+.phases::before {
+  content: ''; position: absolute; top: 45px; left: 8%; right: 8%; height: 2px;
+  background: linear-gradient(to right, var(--teal), var(--amber), var(--border-hi), var(--border-hi));
+  z-index: 0;
+}
+.phase {
+  position: relative; z-index: 1;
+  padding: 24px 20px; border-radius: 14px;
+  background: var(--bg); border: 1px solid var(--border);
+}
+.phase-dot {
+  width: 18px; height: 18px; border-radius: 50%;
+  margin: 0 auto 12px; border: 3px solid var(--bg);
+  box-shadow: 0 0 0 2px var(--border-hi);
+}
+.phase.done .phase-dot   { background: var(--teal); box-shadow: 0 0 0 2px var(--teal); }
+.phase.active .phase-dot { background: var(--amber); box-shadow: 0 0 0 2px var(--amber); animation: pulseDot 1.8s ease-in-out infinite; }
+.phase.next .phase-dot   { background: var(--bg-card); box-shadow: 0 0 0 2px var(--border-hi); }
+@keyframes pulseDot { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.22); } }
+.phase-num {
+  display: block; font-family: 'JetBrains Mono'; font-size: 0.78rem;
+  color: var(--text-3); letter-spacing: 1.5px; text-align: center; margin-bottom: 4px; text-transform: uppercase;
+}
+.phase h4 { text-align: center; font-size: 1rem; font-family: 'Inter', sans-serif; font-weight: 700; margin-bottom: 10px; }
+.phase ul { list-style: none; }
+.phase li { font-size: 0.82rem; color: var(--text-2); padding: 4px 0; border-bottom: 1px dashed var(--border); }
+.phase li:last-child { border-bottom: 0; }
+.phase.done    { border-color: rgba(58,175,169,0.4); }
+.phase.active  { border-color: rgba(245,158,11,0.4); }
+@media (max-width: 920px) { .phases { grid-template-columns: repeat(2, 1fr); } .phases::before { display: none; } }
+@media (max-width: 520px) { .phases { grid-template-columns: 1fr; } }
+
+/* ─────────────────────────────────────────────
+   FINAL CTA
+   ───────────────────────────────────────────── */
+.cta-final {
+  padding: 110px 0;
+  background:
+    radial-gradient(ellipse 800px 400px at 50% 50%, rgba(58,175,169,0.16), transparent 60%),
+    var(--bg);
+  text-align: center;
+}
+.cta-final h2 { font-size: clamp(2rem, 4vw, 3rem); max-width: 780px; margin: 0 auto 16px; }
+.cta-final p { color: var(--text-2); max-width: 680px; margin: 0 auto 36px; font-size: 1.05rem; }
+.cta-final .ctas { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.cta-final .tiny {
+  margin-top: 26px;
+  color: var(--text-3); font-size: 0.82rem;
+}
+.cta-final .tiny a { color: var(--text-2); text-decoration: underline; text-decoration-color: var(--border-hi); }
+.cta-final .tiny a:hover { color: var(--teal-2); }
+
+/* ─────────────────────────────────────────────
+   FOOTER — same as suite landing
+   ───────────────────────────────────────────── */
+footer {
+  padding: 70px 0 40px;
+  background: var(--bg-alt);
+  border-top: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+footer .row {
+  display: grid; grid-template-columns: 1.8fr 1fr 1fr 1fr 1fr; gap: 40px;
+  padding-bottom: 40px; border-bottom: 1px solid var(--border);
+}
+footer .brand-col p { color: var(--text-2); font-size: 0.92rem; margin-top: 14px; max-width: 320px; }
+footer .col h4 {
+  font-size: 0.78rem; font-family: 'Inter', sans-serif; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-3); margin-bottom: 14px;
+}
+footer .col a { display: block; color: var(--text-2); text-decoration: none; padding: 4px 0; transition: color var(--t-fast); }
+footer .col a:hover { color: var(--teal-2); }
+footer .legal {
+  margin-top: 30px; display: flex; justify-content: space-between; gap: 16px;
+  color: var(--text-3); font-size: 0.82rem; flex-wrap: wrap;
+}
+@media (max-width: 900px) { footer .row { grid-template-columns: 1fr 1fr; } }
+
+/* ─────────────────────────────────────────────
+   SCROLL-TRIGGERED ANIMATION
+   ───────────────────────────────────────────── */
+[data-animate] { opacity: 0; transform: translateY(24px); transition: opacity var(--t-slow) var(--ease), transform var(--t-slow) var(--ease); }
+[data-animate].in-view { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a href="/" class="brand">
+      <span class="logo">⚙</span>
+      cycle<em>CAD</em> suite
+    </a>
+    <div class="links">
+      <a href="/">Suite</a>
+      <a href="/cyclecad.html">cycleCAD</a>
+      <a href="/pentacad.html">Pentacad</a>
+      <a href="#features">Features</a>
+      <a href="https://explodeview.com/" class="cta">Open ExplodeView →</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="wrap">
+    <div>
+      <div class="kicker">
+        <span class="dot"></span>
+        Live · v1.0.22 · MIT
+      </div>
+      <h1>
+        Any STEP file.<br/>
+        A <em>marketing-ready</em> 3D experience.<br/>
+        In seconds.
+      </h1>
+      <p class="lead">
+        ExplodeView is the presentation stage of the Suite. Drop a STEP or IAM in —
+        get an interactive exploded view, AI-rendered hero shots, AR walkthroughs,
+        and McMaster-matched part identifiers. All shareable via URL.
+      </p>
+      <div class="ctas">
+        <a href="https://explodeview.com/" class="btn btn-primary">Open ExplodeView <span class="arrow">→</span></a>
+        <a href="#features" class="btn btn-secondary">See features</a>
+      </div>
+    </div>
+
+    <div class="hero-visual" aria-hidden="true">
+      <svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="hero-core-ev" cx="50%" cy="50%">
+            <stop offset="0%" stop-color="#3AAFA9" stop-opacity="0.55"/>
+            <stop offset="70%" stop-color="#3AAFA9" stop-opacity="0.06"/>
+            <stop offset="100%" stop-color="#3AAFA9" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="part-teal" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#5ACCC5"/>
+            <stop offset="100%" stop-color="#3AAFA9"/>
+          </linearGradient>
+          <linearGradient id="part-gold" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#E8C065"/>
+            <stop offset="100%" stop-color="#D4A843"/>
+          </linearGradient>
+          <linearGradient id="part-blue" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#5BA0E6"/>
+            <stop offset="100%" stop-color="#2E86DE"/>
+          </linearGradient>
+        </defs>
+        <!-- Center glow -->
+        <circle cx="150" cy="150" r="110" fill="url(#hero-core-ev)"/>
+        <!-- Dashed trail rings connecting exploded parts -->
+        <g opacity="0.25" stroke="#3AAFA9" fill="none" stroke-width="1" class="trail">
+          <circle cx="150" cy="150" r="60"/>
+          <circle cx="150" cy="150" r="98"/>
+        </g>
+        <!-- Central hub -->
+        <g>
+          <rect x="130" y="130" width="40" height="40" rx="4" fill="url(#part-teal)" stroke="#2D8580" stroke-width="0.8"/>
+          <circle cx="150" cy="150" r="6" fill="#0A1628" opacity="0.5"/>
+        </g>
+        <!-- Exploded part 1 — top-left cylinder -->
+        <g class="p1">
+          <ellipse cx="100" cy="100" rx="16" ry="5" fill="url(#part-blue)" stroke="#1F5A9E" stroke-width="0.6"/>
+          <rect x="84" y="100" width="32" height="18" fill="url(#part-blue)" stroke="#1F5A9E" stroke-width="0.6"/>
+          <ellipse cx="100" cy="118" rx="16" ry="5" fill="#1F5A9E"/>
+        </g>
+        <!-- Exploded part 2 — top-right bolt -->
+        <g class="p2">
+          <polygon points="190,96 210,96 214,106 210,116 190,116 186,106" fill="url(#part-gold)" stroke="#8F7229" stroke-width="0.6"/>
+          <rect x="197" y="116" width="6" height="26" fill="#B89238"/>
+        </g>
+        <!-- Exploded part 3 — bottom-left washer -->
+        <g class="p3">
+          <ellipse cx="95" cy="205" rx="18" ry="6" fill="url(#part-teal)" stroke="#2D8580" stroke-width="0.6"/>
+          <ellipse cx="95" cy="205" rx="8" ry="3" fill="#0A1628"/>
+        </g>
+        <!-- Exploded part 4 — bottom-right bracket -->
+        <g class="p4">
+          <path d="M 180 200 L 215 200 L 215 220 L 195 220 L 195 214 L 180 214 Z" fill="url(#part-teal)" stroke="#2D8580" stroke-width="0.6"/>
+        </g>
+        <!-- Exploded part 5 — top plate -->
+        <g class="p5">
+          <rect x="130" y="65" width="40" height="14" rx="2" fill="url(#part-gold)" stroke="#8F7229" stroke-width="0.6"/>
+          <circle cx="138" cy="72" r="1.5" fill="#0A1628"/>
+          <circle cx="162" cy="72" r="1.5" fill="#0A1628"/>
+        </g>
+        <!-- Exploded part 6 — bottom plate -->
+        <g class="p6">
+          <rect x="128" y="225" width="44" height="14" rx="2" fill="url(#part-blue)" stroke="#1F5A9E" stroke-width="0.6"/>
+          <circle cx="136" cy="232" r="1.5" fill="#0A1628"/>
+          <circle cx="164" cy="232" r="1.5" fill="#0A1628"/>
+        </g>
+        <!-- Corner labels -->
+        <text x="16"  y="24"  font-family="JetBrains Mono" font-size="9" fill="#5A6B85">01</text>
+        <text x="270" y="24"  font-family="JetBrains Mono" font-size="9" fill="#5A6B85">02</text>
+        <text x="16"  y="288" font-family="JetBrains Mono" font-size="9" fill="#5A6B85">03</text>
+        <text x="272" y="288" font-family="JetBrains Mono" font-size="9" fill="#5A6B85">04</text>
+      </svg>
+    </div>
+  </div>
+</header>
+
+<!-- PROBLEM STRIP -->
+<section class="problem" data-animate>
+  <div class="wrap">
+    <h2>Every CAD marketing asset used to take a <em>week</em>.</h2>
+    <p class="sub">STEP → SolidWorks Visualize → Photoshop retouch → PowerPoint for the exploded view → Adobe Dimension for the AR try-on. Five tools. Five handoffs. Five license fees.</p>
+    <div class="problem-grid">
+      <div class="problem-card"><div class="icon">$$</div><div class="ttl">KeyShot</div><div class="sub">~$995/yr</div></div>
+      <div class="problem-card"><div class="icon">$$</div><div class="ttl">SW Visualize</div><div class="sub">~$1,995/yr</div></div>
+      <div class="problem-card"><div class="icon">$$</div><div class="ttl">Autodesk VRED</div><div class="sub">~$4,495/yr</div></div>
+      <div class="problem-card"><div class="icon">$$</div><div class="ttl">Adobe Dimension</div><div class="sub">~$240/yr</div></div>
+      <div class="problem-card"><div class="icon">!!</div><div class="ttl">PowerPoint gymnastics</div><div class="sub">priceless frustration</div></div>
+    </div>
+    <div class="vs-line">ExplodeView does all of it in one browser tab.</div>
+  </div>
+</section>
+
+<!-- SOLUTION — 5 MODULES -->
+<section class="solution" data-animate>
+  <div class="wrap">
+    <div class="header-block">
+      <span class="section-kicker">The Viewer Surface</span>
+      <h2>Five modules. <em>One</em> shareable URL.</h2>
+      <p class="sub">ExplodeView is the presentation stage of the cycleCAD Suite. It picks up a STEP, GLB, or IAM and turns it into something a product team, a marketing lead, or a field tech can actually use.</p>
+    </div>
+
+    <div class="five-modules">
+      <div class="mod-card">
+        <div class="mod-num">01</div>
+        <h3>Loader</h3>
+        <p>STEP / GLB / IAM import via server-side converter or browser WASM. Cached in IndexedDB. Survives tab refresh and 138MB assemblies.</p>
+      </div>
+      <div class="mod-card">
+        <div class="mod-num">02</div>
+        <h3>Interactive Viewer</h3>
+        <p>Assembly tree with AI drawings, 399-part performance, section cut X/Y/Z, annotations, 2-3 point measurements. Built on Three.js r170.</p>
+      </div>
+      <div class="mod-card">
+        <div class="mod-num">03</div>
+        <h3>AI Render</h3>
+        <p>Gemini Nano Banana v2 with preservation-first prompts. Photoreal any scene — forest, studio, factory — without the model redesigning your CAD.</p>
+      </div>
+      <div class="mod-card">
+        <div class="mod-num">04</div>
+        <h3>AR Mode</h3>
+        <p>WebXR hit-test + pinch-to-scale. iOS Safari 17+ and Chrome Android. Drop your assembly on the floor, walk around it, explode in place.</p>
+      </div>
+      <div class="mod-card">
+        <div class="mod-num">05</div>
+        <h3>AI Part Identifier</h3>
+        <p>Geometry-based classification with McMaster-Carr deep links + CSV BOM export. Click a mystery bolt, get a purchase link.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES GRID -->
+<section class="strategies" id="features" data-animate>
+  <div class="wrap">
+    <div class="header-block">
+      <span class="section-kicker">Viewer features</span>
+      <h2>Every tool a product team <em>needs</em>.</h2>
+      <p class="sub">45+ features shipped, all reachable from a tabbed toolbar. These are the 12 that matter most when you're presenting a physical product.</p>
+    </div>
+
+    <div class="strat-grid">
+
+      <div class="strat-card">
+        <div class="icon"><svg viewBox="0 0 24 24"><path d="M12 3v18 M4 7l8-4 8 4 M4 17l8 4 8-4 M4 7v10 M20 7v10"/></svg></div>
+        <h4>Exploded view</h4>
+        <div class="kind">Viewer · Core</div>
+        <p>Explosion slider + presets. Drag parts independently. Animate assembly ↔ disassembly. Save and load sequences.</p>
+      </div>
+
+      <div class="strat-card">
+        <div class="icon"><svg viewBox="0 0 24 24"><path d="M3 12h18 M12 3v18" stroke-dasharray="2 2"/><rect x="7" y="7" width="10" height="10"/></svg></div>
+        <h4>Section cut</h4>
+        <div class="kind">Viewer · Inspect</div>
+        <p>Per-axis X/Y/Z with flip, plus global clipping. DoubleSide material mode — no hollow artifacts when slicing.</p>
+      </div>
+
+      <div class="strat-card">
+        <div class="icon"><svg viewBox="0 0 24 24"><path d="M4 5h16 M4 12h10 M4 19h16 M18 9l3 3-3 3"/></svg></div>
+        <h4>Assembly tree</h4>
+        <div class="kind">Viewer · Navigate</div>
+        <p>Tree-style numbering (1.4.21), hide/show/isolate per branch, AI-generated drawings per sub-assembly. 6 sub-assembly rollups.</p>
+      </div>
+
+      <div class="strat-card">
+        <div class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="4"/><path d="M12 13v8 M8 21h8"/></svg></div>
+        <h4>Annotations</h4>
+        <div class="kind">Viewer · Collaborate</div>
+        <p>Click-to-place 3D notes. Draggable pins, click-to-edit. Stored per session. User-specific colors for team review.</p>
+      </div>
+
+      <div class="strat-card">
+        <div class="icon"><svg viewBox="0 0 24 24"><path d="M3 17 L21 17 M6 14 L6 17 M12 12 L12 17 M18 9 L18 17 M9 17 L15 11"/></svg></div>
+        <h4>Measurements</h4>
+        <div class="kind">Viewer · Inspect</div>
+        <p>2-point distance, 3-point angle, radial, edge-to-edge. Tooltips track pointer. Snap to vertex / edge / face centers.</p>
+      </div>
+
+      <div class="strat-card">
+        <div class="icon"><svg viewBox="0 0 24 24"><path d="M12 3 L20 9 L20 17 L12 21 L4 17 L4 9 Z"/><path d="M8 12 L16 12 M12 8 L12 16"/></svg></div>
+        <h4>AI Render</h4>
+        <div class="kind">Create · Marketing</div>
+        <p>Preservation-first Gemini 2.0 Flash Image. 6 scene presets, 5 style presets + None. Multi-turn conversation for refinement.</p>
+      </div>
+
+      <div class="strat-card">
+        <div class="icon"><svg viewBox="0 0 24 24"><path d="M9 4h6l1 3H8z M7 7h10l-1 14H8z M11 11v6 M13 11v6"/></svg></div>
+        <h4>AI Part Identifier</h4>
+        <div class="kind">Analyze · AI</div>
+        <p>Geometry-based classifier plus Gemini Vision fallback. McMaster-Carr search queries auto-built from classification.</p>
+      </div>
+
+      <div class="strat-card">
+        <div class="icon"><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M10 18h4" stroke-linecap="round"/><circle cx="12" cy="7" r="1.5"/></svg></div>
+        <h4>AR Mode</h4>
+        <div class="kind">Viewer · Field</div>
+        <p>WebXR hit-test. iOS Safari 17+ and Chrome Android. Pinch-scale, tap to place, rotate around, explode in-place.</p>
+      </div>
+
+      <div class="strat-card">
+        <div class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18 M12 3a14 14 0 0 1 0 18 M12 3a14 14 0 0 0 0 18"/></svg></div>
+        <h4>Multi-language</h4>
+        <div class="kind">UI · Localization</div>
+        <p>EN · DE · FR · ES · IT · NL with dropdown selector. All panel text, tooltips, and toasts fully translated.</p>
+      </div>
+
+      <div class="strat-card">
+        <div class="icon"><svg viewBox="0 0 24 24"><path d="M12 3v12 M6 10l6 6 6-6 M4 19h16"/></svg></div>
+        <h4>STL export</h4>
+        <div class="kind">Export · Per-part</div>
+        <p>Right-click any part → Export STL (ASCII or binary). Works on selected mesh or whole assembly. Drop straight into Kiri:Moto.</p>
+      </div>
+
+      <div class="strat-card">
+        <div class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="1"/><path d="M3 9h18 M8 5v14"/></svg></div>
+        <h4>Embed widget</h4>
+        <div class="kind">Share · Distribute</div>
+        <p>Single <code>&lt;iframe&gt;</code> snippet with URL params for starting angle, explosion state, and hidden parts.</p>
+      </div>
+
+      <div class="strat-card">
+        <div class="icon"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7"/><rect x="13" y="4" width="7" height="7"/><rect x="4" y="13" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/><rect x="19" y="14" width="1" height="1"/><rect x="14" y="19" width="1" height="1"/></svg></div>
+        <h4>QR codes</h4>
+        <div class="kind">Share · Physical</div>
+        <p>One QR per part. Scans deep-link to <code>#part={idx}</code> — lands on the viewer pre-selected. Print on service labels.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- AI RENDER -->
+<section class="post-section" data-animate>
+  <div class="wrap post-layout">
+    <div class="post-body">
+      <span class="section-kicker">AI Render · v304</span>
+      <h2>Gemini + CAD geometry, <em>finally</em> co-operating.</h2>
+      <p>Most generative image models redesign your CAD the moment they see a better-looking shape. The wing-shaped side panel becomes a smooth curve. The stainless frame becomes matte black. The whole thing drifts 15% off spec.</p>
+      <p>ExplodeView v304 shipped a <strong>preservation-first prompt pattern</strong> that leads with reference-image anchoring. The model renders your exact geometry into any scene, instead of reinterpreting it.</p>
+      <ul class="feature-list">
+        <li>Gemini 2.0 Flash Image (aka Nano Banana 2) via <code class="inline">generativelanguage.googleapis.com</code></li>
+        <li>Preservation-first prompt wrapper with explicit reference anchors</li>
+        <li>6 scene presets: forest trail, golden hour, studio, factory floor, urban loft, beach</li>
+        <li>5 style presets + <code class="inline">None</code> for raw scene fidelity</li>
+        <li>Multi-turn refinement conversation with context carry-over</li>
+        <li>1024×1024 offscreen capture before prompting — no viewport artifacts</li>
+      </ul>
+    </div>
+
+    <div class="ngc-block">
+      <div class="hd">
+        <span class="dots"><span></span><span></span><span></span></span>
+        <span>prompt.pattern.v304</span>
+      </div>
+<pre><span class="cm">[PRESERVE]</span>
+<span class="kw">Silver/grey</span> bike washing station from the
+reference image. <span class="kw">Same</span> shape, <span class="kw">same</span>
+wing-shaped side panels, <span class="kw">same</span> white top,
+<span class="kw">same</span> stainless frame, <span class="kw">same</span> adjustable feet.
+<span class="val">Do not redesign it.</span>
+
+<span class="cm">[SCENE]</span>
+Three mountain bikers on a forest trail at
+golden hour. Station in the left third,
+bikers <span class="ax">mid-shot</span>.
+
+<span class="cm">[CAMERA]</span>
+DSLR, <span class="val">35mm f/2.8</span>, natural light,
+shallow <span class="ax">DoF</span>.
+
+<span class="cm">[STYLE]</span>
+<span class="val">None</span>  <span class="cm">(let the scene breathe)</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- AR MODE -->
+<section class="sim-section" data-animate>
+  <div class="wrap sim-layout">
+    <div class="sim-visual" aria-hidden="true">
+      <svg viewBox="0 0 300 270" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="phone-body" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#1A2D50"/>
+            <stop offset="100%" stop-color="#0A1628"/>
+          </linearGradient>
+          <linearGradient id="ar-part" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#5ACCC5"/>
+            <stop offset="100%" stop-color="#3AAFA9"/>
+          </linearGradient>
+        </defs>
+        <!-- Phone silhouette -->
+        <rect x="80" y="10" width="140" height="250" rx="20" fill="url(#phone-body)" stroke="#2A4F80" stroke-width="1.5"/>
+        <!-- Screen area -->
+        <rect x="90" y="24" width="120" height="220" rx="6" fill="#122240"/>
+        <!-- Camera notch -->
+        <rect x="140" y="16" width="20" height="4" rx="2" fill="#0A1628"/>
+
+        <!-- AR Scene inside screen -->
+        <!-- Floor grid (perspective) -->
+        <g opacity="0.45">
+          <line x1="92" y1="180" x2="208" y2="180" stroke="#3AAFA9" stroke-width="0.5" class="floor-grid"/>
+          <line x1="92" y1="195" x2="208" y2="195" stroke="#3AAFA9" stroke-width="0.5" class="floor-grid"/>
+          <line x1="92" y1="215" x2="208" y2="215" stroke="#3AAFA9" stroke-width="0.5" class="floor-grid"/>
+          <line x1="92" y1="240" x2="208" y2="240" stroke="#3AAFA9" stroke-width="0.5" class="floor-grid"/>
+          <line x1="120" y1="180" x2="100" y2="240" stroke="#3AAFA9" stroke-width="0.5" opacity="0.3"/>
+          <line x1="150" y1="180" x2="150" y2="240" stroke="#3AAFA9" stroke-width="0.5" opacity="0.3"/>
+          <line x1="180" y1="180" x2="200" y2="240" stroke="#3AAFA9" stroke-width="0.5" opacity="0.3"/>
+        </g>
+
+        <!-- Plane-detection reticle -->
+        <ellipse cx="150" cy="215" rx="40" ry="10" fill="none" stroke="#5ACCC5" stroke-width="0.8" stroke-dasharray="3 2" opacity="0.6"/>
+        <circle cx="150" cy="215" r="3" fill="#5ACCC5" opacity="0.8"/>
+
+        <!-- Exploded assembly floating above plane -->
+        <g class="ar-float">
+          <g class="ar-parts">
+            <!-- Top floating part -->
+            <rect x="135" y="60" width="30" height="10" rx="2" fill="url(#ar-part)" stroke="#2D8580" stroke-width="0.6"/>
+            <!-- Left floating part -->
+            <rect x="105" y="95" width="18" height="14" rx="2" fill="url(#ar-part)" stroke="#2D8580" stroke-width="0.6"/>
+            <!-- Right floating part -->
+            <rect x="180" y="95" width="18" height="14" rx="2" fill="url(#ar-part)" stroke="#2D8580" stroke-width="0.6"/>
+            <!-- Central body -->
+            <rect x="128" y="120" width="44" height="28" rx="3" fill="url(#ar-part)" stroke="#2D8580" stroke-width="0.8"/>
+            <circle cx="150" cy="134" r="4" fill="#0A1628" opacity="0.4"/>
+            <!-- Bottom base -->
+            <rect x="118" y="160" width="64" height="12" rx="2" fill="#D4A843" stroke="#8F7229" stroke-width="0.6"/>
+          </g>
+          <!-- Connection lines -->
+          <g stroke="#3AAFA9" stroke-width="0.4" stroke-dasharray="1 2" opacity="0.5" fill="none">
+            <line x1="150" y1="70" x2="150" y2="120"/>
+            <line x1="114" y1="109" x2="128" y2="134"/>
+            <line x1="189" y1="109" x2="172" y2="134"/>
+            <line x1="150" y1="148" x2="150" y2="160"/>
+          </g>
+        </g>
+
+        <!-- AR UI overlay - top -->
+        <rect x="98" y="32" width="28" height="8" rx="3" fill="#3AAFA9" opacity="0.35"/>
+        <text x="112" y="38" font-family="JetBrains Mono" font-size="5" fill="#5ACCC5" text-anchor="middle">AR</text>
+        <circle cx="198" cy="36" r="3" fill="#3AAFA9" opacity="0.6"/>
+
+        <!-- Bottom tap hint -->
+        <circle cx="150" cy="255" r="5" fill="none" stroke="#8B9AB5" stroke-width="0.8"/>
+        <circle cx="150" cy="255" r="2" fill="#8B9AB5" opacity="0.7"/>
+      </svg>
+    </div>
+
+    <div class="sim-body">
+      <span class="section-kicker">AR Mode</span>
+      <h2>Walk around the assembly. <em>Before</em> it exists.</h2>
+      <p>ExplodeView runs WebXR natively in iOS Safari 17+ and Chrome Android. Tap AR, point at the floor, drop the assembly in place. Pinch to scale. Rotate around it.</p>
+      <p>Hit the Explode button and the physical world hosts your exploded view — parts floating in your living room, at scale, with the tree panel in your hand.</p>
+      <ul class="feature-list">
+        <li>WebXR hit-test + plane detection (iOS Safari 17+ · Chrome Android)</li>
+        <li>Pinch-to-scale gesture with clamped min/max</li>
+        <li>Object-anchored exploded view — explosion persists as you walk</li>
+        <li>Works offline once the page is loaded</li>
+        <li>Shares via URL back to the normal in-browser viewer</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- McMASTER BRIDGE -->
+<section class="bridge" data-animate>
+  <div class="wrap">
+    <div class="header-block">
+      <span class="section-kicker">AI Part Identifier</span>
+      <h2>From mystery part to <em>purchase link</em> in 3 clicks.</h2>
+      <p class="sub">Click a part. ExplodeView analyses geometry (bbox, volume, feature hints), classifies it (bolt / nut / washer / bearing / profile / bracket / …), generates a McMaster-Carr search query, and surfaces matching parts with prices.</p>
+    </div>
+
+    <div class="bridge-diagram">
+      <div class="bridge-row">
+        <div class="bridge-node">
+          <div class="icn">🖱️</div>
+          <h4>Click a part</h4>
+          <div class="ttag">3D selection</div>
+        </div>
+        <div class="bridge-arrow"><div class="packet"></div><div class="packet p2"></div></div>
+        <div class="bridge-node">
+          <div class="icn">🧠</div>
+          <h4>AI classify</h4>
+          <div class="ttag">geometry + vision</div>
+        </div>
+        <div class="bridge-arrow"><div class="packet"></div><div class="packet p2"></div></div>
+        <div class="bridge-node">
+          <div class="icn">🔍</div>
+          <h4>McMaster search</h4>
+          <div class="ttag">built query URL</div>
+        </div>
+        <div class="bridge-arrow"><div class="packet"></div><div class="packet p2"></div></div>
+        <div class="bridge-node">
+          <div class="icn">🛒</div>
+          <h4>Matches + prices</h4>
+          <div class="ttag">ranked list</div>
+        </div>
+      </div>
+
+      <div class="bridge-caption">
+        Persisted in <code>window._aiIdentifiedParts</code> and reused across session tools — BOM, report, shopping list.
+      </div>
+
+      <div class="bridge-events">
+        <div class="bridge-event"><span class="evt-name">explodeview:classify</span><div class="evt-sub">geometry heuristics · Gemini Vision fallback · returns type + confidence</div></div>
+        <div class="bridge-event"><span class="evt-name">explodeview:search</span><div class="evt-sub">McMaster-Carr URL with exact query params</div></div>
+        <div class="bridge-event"><span class="evt-name">explodeview:match</span><div class="evt-sub">ranked candidate list with prices · alternative sizes</div></div>
+        <div class="bridge-event"><span class="evt-name">explodeview:csv</span><div class="evt-sub">BOM export with McMaster part numbers in column</div></div>
+        <div class="bridge-event"><span class="evt-name">explodeview:order</span><div class="evt-sub">deep-link to McMaster cart with qty pre-filled</div></div>
+        <div class="bridge-event"><span class="evt-name">explodeview:database</span><div class="evt-sub">persists identifications across session for report export</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ROADMAP -->
+<section class="roadmap" data-animate>
+  <div class="wrap">
+    <div class="header-block">
+      <span class="section-kicker">Roadmap</span>
+      <h2>Shipped. <em>Shipping</em>. And what's next.</h2>
+      <p class="sub">ExplodeView is live — v1.0.22 on npm, 400+ weekly downloads. The roadmap is honest about what works today and what comes next.</p>
+    </div>
+
+    <div class="phases">
+      <div class="phase done">
+        <div class="phase-dot"></div>
+        <span class="phase-num">Done</span>
+        <h4>Phase 0 · Shipped</h4>
+        <ul>
+          <li>Three.js r170 viewer</li>
+          <li>STEP / GLB / IAM import</li>
+          <li>45+ features in tabbed toolbar</li>
+          <li>AI Render v304 preservation-first</li>
+          <li>AR Mode (WebXR)</li>
+          <li>Multi-language · McMaster integration</li>
+        </ul>
+      </div>
+
+      <div class="phase active">
+        <div class="phase-dot"></div>
+        <span class="phase-num">In progress</span>
+        <h4>Phase 1 · Compositing</h4>
+        <ul>
+          <li>Transparent-background 3D render</li>
+          <li>Background-only inpainting prompt</li>
+          <li>Canvas compositing of foreground over gen background</li>
+          <li>Guaranteed pixel-level CAD preservation</li>
+          <li>Ship as v305 / v1.0.23</li>
+        </ul>
+      </div>
+
+      <div class="phase next">
+        <div class="phase-dot"></div>
+        <span class="phase-num">Next</span>
+        <h4>Phase 2 · Collaboration</h4>
+        <ul>
+          <li>Real-time collab cursors</li>
+          <li>Cloud-backed shared sessions</li>
+          <li>Comment threads per part</li>
+          <li>Multi-user AR walk-around</li>
+          <li>Review-mode history</li>
+        </ul>
+      </div>
+
+      <div class="phase next">
+        <div class="phase-dot"></div>
+        <span class="phase-num">Later</span>
+        <h4>Phase 3 · Distribute</h4>
+        <ul>
+          <li>Video walkthrough export</li>
+          <li>Embed widget analytics</li>
+          <li>White-label embed</li>
+          <li>VR mode (Quest / Vision Pro)</li>
+          <li>Offline desktop build (Tauri)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="cta-final">
+  <div class="wrap">
+    <h2>Your next 3D asset shouldn't take a <em>week</em>.</h2>
+    <p>Open ExplodeView in the browser. Drop in your STEP file. Explode it, render it, walk around it in AR, match the hardware to McMaster. Share a URL.</p>
+    <div class="ctas">
+      <a href="https://explodeview.com/" class="btn btn-primary">Open ExplodeView <span class="arrow">→</span></a>
+      <a href="https://github.com/vvlars-cmd/explodeview" class="btn btn-secondary">View on GitHub</a>
+      <a href="https://www.npmjs.com/package/explodeview" class="btn btn-secondary">View on npm</a>
+    </div>
+    <div class="tiny">
+      ExplodeView is <strong>MIT-licensed</strong>. Part of the <a href="/">cycleCAD Suite</a>.
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <div class="row">
+      <div class="col brand-col">
+        <span class="brand">cycle<em>CAD</em> suite</span>
+        <p>From idea to finished part, in one browser tab. Open-source CAD for designers, makers, and CNC shops.</p>
+      </div>
+      <div class="col">
+        <h4>Products</h4>
+        <a href="/app/">cycleCAD</a>
+        <a href="https://explodeview.com/">ExplodeView</a>
+        <a href="/pentacad.html">Pentacad</a>
+      </div>
+      <div class="col">
+        <h4>Resources</h4>
+        <a href="https://github.com/vvlars-cmd/cyclecad#readme">Documentation</a>
+        <a href="https://github.com/vvlars-cmd/cyclecad/blob/main/cycleCAD-Architecture.pptx">Architecture</a>
+        <a href="https://github.com/vvlars-cmd/cyclecad/blob/main/docs/API-REFERENCE.md">API reference</a>
+      </div>
+      <div class="col">
+        <h4>Developers</h4>
+        <a href="https://github.com/vvlars-cmd/explodeview">GitHub</a>
+        <a href="https://www.npmjs.com/package/explodeview">npm</a>
+        <a href="https://github.com/vvlars-cmd/cyclecad/blob/main/server/mcp-server.js">MCP server</a>
+      </div>
+      <div class="col">
+        <h4>Contact</h4>
+        <a href="mailto:sachin.kumar@cyclewash.com">Email</a>
+        <a href="https://cyclewash.de/en">cycleWASH</a>
+      </div>
+    </div>
+    <div class="legal">
+      <span>© 2026 cycleCAD Suite · Sachin Kumar</span>
+      <span>cycleCAD MIT · ExplodeView MIT · Pentacad AGPL-3.0</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(() => {
+  const els = document.querySelectorAll('[data-animate]');
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (e.isIntersecting) {
+        e.target.classList.add('in-view');
+        obs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  els.forEach((el) => obs.observe(el));
+})();
+</script>
+
+</body>
+</html>

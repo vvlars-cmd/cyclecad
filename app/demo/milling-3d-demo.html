@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pentacad Demo — Milling a 3D object from stock in a vice (V2-10)</title>
+<meta name="description" content="Pentacad demo running the same G-code as sim.pentamachine.com on a real V2-10 machine model — 2×2 inch face pass at A=90° with the B-platter tilted vertical." />
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; overflow:hidden; }
+body {
+  font-family: Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  color: rgba(0,0,0,0.87);
+  background: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+}
+header {
+  background: #333333;
+  color: #FFFFFF;
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.14);
+  z-index: 10;
+}
+header .brand {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+}
+header .dot { width:8px; height:8px; border-radius:50%; background:#03B188; box-shadow: 0 0 6px rgba(3,177,136,0.5); animation: pulse 1.4s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+header .tag {
+  font-size: 12px;
+  color: rgba(255,255,255,0.65);
+  letter-spacing: 0.04em;
+  margin-left: 8px;
+}
+header .spacer { flex: 1; }
+header .pill {
+  font-size: 11px;
+  padding: 4px 10px;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 10px;
+  color: rgba(255,255,255,0.75);
+}
+header a {
+  color: #03B188;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+}
+header a:hover { text-decoration: underline; }
+
+main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  min-height: 0;
+}
+#sim-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  background: #FFFFFF;
+}
+aside {
+  background: #FAFAFA;
+  border-left: 1px solid #D8D8D8;
+  padding: 24px;
+  overflow-y: auto;
+  min-width: 0;
+}
+aside h2 {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333333;
+  margin-bottom: 4px;
+}
+aside .subtitle {
+  font-size: 12px;
+  color: rgba(0,0,0,0.54);
+  margin-bottom: 22px;
+}
+aside section {
+  margin-top: 22px;
+}
+aside section h3 {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #333333;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  border-bottom: 2px solid #03B188;
+  padding-bottom: 4px;
+  display: inline-block;
+}
+aside .step {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 4px;
+  background: #FFFFFF;
+  border: 1px solid #E0E0E0;
+  transition: border-color 0.15s, background 0.15s;
+  cursor: pointer;
+}
+aside .step:hover { border-color: #03B188; }
+aside .step.active {
+  border-color: #03B188;
+  background: rgba(3,177,136,0.04);
+  box-shadow: 0 1px 4px rgba(3,177,136,0.15);
+}
+aside .step .num {
+  flex-shrink: 0;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: #03B188;
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+aside .step .body { flex: 1; min-width: 0; }
+aside .step .title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #333333;
+  margin-bottom: 3px;
+}
+aside .step .desc {
+  font-size: 12px;
+  color: rgba(0,0,0,0.62);
+  line-height: 1.4;
+}
+
+aside .kv {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0;
+  font-size: 12px;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+}
+aside .kv:last-child { border-bottom: 0; }
+aside .kv .k { color: rgba(0,0,0,0.56); }
+aside .kv .v {
+  font-family: Monaco, Menlo, "Ubuntu Mono", Consolas, monospace;
+  color: #333333;
+  font-weight: 500;
+}
+
+aside .controls {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+aside .ctrl-btn {
+  padding: 8px 14px;
+  background: #F5F5F5;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: #333333;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+aside .ctrl-btn:hover { background: #E0E0E0; }
+aside .ctrl-btn.primary {
+  background: #03B188;
+  color: #FFFFFF;
+}
+aside .ctrl-btn.primary:hover { background: #028F6D; }
+
+.note {
+  font-size: 11px;
+  color: rgba(0,0,0,0.5);
+  line-height: 1.5;
+  padding: 10px 12px;
+  background: rgba(3,177,136,0.06);
+  border-left: 3px solid #03B188;
+  border-radius: 3px;
+  margin-top: 14px;
+}
+
+@media (max-width: 900px) {
+  main { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+  aside { border-left: 0; border-top: 1px solid #D8D8D8; max-height: 40vh; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <span class="dot"></span>
+  <span class="brand">Pentacad Demo</span>
+  <span class="tag">V2-10 · sim.ngc face-pass · same G-code as sim.pentamachine.com</span>
+  <span class="spacer"></span>
+  <span class="pill">v0.3 preview</span>
+  <a href="../pentacad-sim.html">Open simulator ↗</a>
+</header>
+
+<main>
+  <iframe id="sim-frame"
+          src="../pentacad-sim.html#m=v2-10&ex=sim-ngc&speed=2&play=1"
+          title="Pentacad simulator — V2-10 running sim.ngc face-pass program at A=90°">
+  </iframe>
+
+  <aside>
+    <h2>Face-pass on V2-10 — same program as sim.pentamachine.com</h2>
+    <div class="subtitle">
+      Penta's own demo program · V2-10 · T4 tool · 8500 RPM · 20 ipm · A=90° (platter vertical)
+    </div>
+
+    <div class="controls">
+      <button class="ctrl-btn primary" onclick="sendSim('play')">▶ Play / Pause</button>
+      <button class="ctrl-btn" onclick="sendSim('restart')">⟳ Restart</button>
+      <a class="ctrl-btn" href="https://sim.pentamachine.com" target="_blank" rel="noopener" style="text-decoration:none;">↗ Penta sim</a>
+    </div>
+
+    <section>
+      <h3>Setup</h3>
+      <div class="kv"><span class="k">Machine</span><span class="v">Pentamachine V2-10</span></div>
+      <div class="kv"><span class="k">Spindle</span><span class="v">24,000 RPM · ER11</span></div>
+      <div class="kv"><span class="k">Travel</span><span class="v">±3.25" × ±2.25" × ±1.75"</span></div>
+      <div class="kv"><span class="k">Rotary</span><span class="v">A: −35° … +135° · B: cont.</span></div>
+      <div class="kv"><span class="k">Workholding</span><span class="v">B-rotary platter (direct)</span></div>
+      <div class="kv"><span class="k">Stock</span><span class="v">2 × 1.5 × 0.75 in · AL 6061</span></div>
+      <div class="kv"><span class="k">Program</span><span class="v">sim.ngc — Penta default</span></div>
+    </section>
+
+    <section>
+      <h3>Watch for</h3>
+
+      <div class="step" onclick="sendSim('play')">
+        <div class="num">1</div>
+        <div class="body">
+          <div class="title">Machine powers up at home</div>
+          <div class="desc">G53 G0 Z0 retracts Z to the top of travel. G0 A0 B0 parks the rotary axes. DRO shows X=0 Y=0 Z=0 A=0 B=0.</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="num">2</div>
+        <div class="body">
+          <div class="title">G20 G90 — imperial, absolute</div>
+          <div class="desc">Program opens with G20 (inch) G90 (absolute) G94 (per-minute feed) G17 (XY plane). The standard Pentamachine V2 dialect.</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="num">3</div>
+        <div class="body">
+          <div class="title">Tool 4 loads, spindle 8500 RPM</div>
+          <div class="desc">M5 stop → M0 pause → T4 M6 tool change → G43 length compensation on → S8500 M3 starts the spindle CW at 8500 RPM. Feed set to 20 ipm.</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="num">4</div>
+        <div class="body">
+          <div class="title">A-axis tilts to 90°</div>
+          <div class="desc"><code>G0 A90</code> rotates the trunnion so the B-platter is vertical, facing the spindle. Watch the trunnion body swing around its horizontal axis.</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="num">5</div>
+        <div class="body">
+          <div class="title">Square face pass at (1, 1) → (-1, -1) → (1, 1)</div>
+          <div class="desc">Four G1 moves cut a 2"×2" square perimeter on the face of the stock. Feed moves draw in Penta teal.</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="num">6</div>
+        <div class="body">
+          <div class="title">DRO ticks live every frame</div>
+          <div class="desc">X/Y/Z/A/B readout on the right panel — same readout you'll see on a real machine over Rockhopper WebSocket when the V2-10 is plugged in.</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="num">7</div>
+        <div class="body">
+          <div class="title">G49 + G53 Z0 safe retract</div>
+          <div class="desc">G49 cancels tool-length offset. G53 G0 Z0 moves Z to machine-coordinate zero at rapid. M5 stops spindle. M30 ends the program.</div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h3>Try it</h3>
+      <div class="kv"><span class="k">Speed ↑/↓</span><span class="v">Speed chip ≪ bottom of sim</span></div>
+      <div class="kv"><span class="k">Scrub timeline</span><span class="v">Drag the timeline slider</span></div>
+      <div class="kv"><span class="k">Orbit</span><span class="v">Click-drag in viewport</span></div>
+      <div class="kv"><span class="k">Zoom</span><span class="v">Scroll wheel</span></div>
+      <div class="kv"><span class="k">Change machine</span><span class="v">Dropdown in sim topbar</span></div>
+      <div class="kv"><span class="k">Load different program</span><span class="v">📂 Open · 📑 Examples in sim</span></div>
+    </section>
+
+    <div class="note">
+      <strong>Real hardware mode.</strong> Plug a Pentamachine into USB (BeagleBone at 192.168.6.2 / 192.168.7.2) and connect via the main Pentacad app → Machine tab. Rockhopper over WebSocket streams live DRO into the same readout.
+    </div>
+  </aside>
+</main>
+
+<script>
+// Light wrapper that pokes the sim iframe — the sim itself is the real UI;
+// these buttons are just shortcuts so the narrative panel can drive it.
+function sendSim(action) {
+  const f = document.getElementById('sim-frame');
+  const win = f && f.contentWindow;
+  if (!win) return;
+  switch (action) {
+    case 'play':
+      if (typeof win.togglePlay === 'function') win.togglePlay();
+      else { f.src = f.src.split('#')[0] + '#m=v2-10&ex=sim-ngc&speed=2&play=1'; }
+      break;
+    case 'restart':
+      // Force a reload with a cache-busting token so the sim re-runs from move 0
+      f.src = f.src.split('#')[0] + '#m=v2-10&ex=sim-ngc&speed=2&play=1&_t=' + Date.now();
+      break;
+    case 'toggle-vice':
+      if (win.app && win.app.viz) {
+        win.app.viz.vice = !win.app.viz.vice;
+        const b = win.document && win.document.getElementById('vis-vice');
+        if (b) b.click();
+      }
+      break;
+  }
+}
+</script>
+</body>
+</html>

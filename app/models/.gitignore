@@ -1,0 +1,8 @@
+# GLB machine models — don't commit these.
+# They live on the connected Pentamachine and are fetched at runtime,
+# or pulled from the Kinetic Control disk image locally by the developer.
+# See README.md in this directory for how to populate.
+*.glb
+*.gltf
+!.gitignore
+!README.md

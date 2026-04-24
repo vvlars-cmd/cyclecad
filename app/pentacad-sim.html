@@ -780,8 +780,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 }
 .dropzone.active { display: flex; }
 
-@media (max-width: 1100px) {
-  .main { grid-template-columns: 1fr; grid-template-rows: 280px 1fr 280px; }
+@media (max-width: 820px) {
+  .main { grid-template-columns: 1fr; grid-template-rows: 240px 1fr 240px; }
   .editor-panel { border-right: 0; border-bottom: 1px solid var(--kc-border); }
   .side-panel { border-left: 0; border-top: 1px solid var(--kc-border); }
 }
@@ -798,8 +798,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   </div>
 
   <select class="machine-picker" id="machine-picker" title="Select machine">
+    <option value="v2-10" selected>V2-10 (24k ER11) — your machine</option>
     <option value="v2-50">V2-50 (40k ER20)</option>
-    <option value="v2-10">V2-10 (24k ER11)</option>
     <option value="v1">V1 (legacy)</option>
     <option value="solo">Solo</option>
   </select>
@@ -854,6 +854,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     <div class="vp-vis-toggles">
       <button class="btn" id="vis-machine">Machine <span class="tick">✓</span></button>
       <button class="btn" id="vis-stock">Stock <span class="tick">✓</span></button>
+      <button class="btn off" id="vis-vice">Vice <span class="tick">✓</span></button>
       <button class="btn" id="vis-toolpath">Toolpath <span class="tick">✓</span></button>
       <button class="btn off" id="vis-rapids">Rapid moves <span class="tick">✓</span></button>
       <button class="btn" id="vis-grid">Grid <span class="tick">✓</span></button>
@@ -1034,6 +1035,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 'use strict';
 
@@ -1094,6 +1097,40 @@ const MACHINES = {
 // ═══════════════════════════════════════════════════════════════════════════
 
 const EXAMPLES = [
+  {
+    id: 'sim-ngc',
+    title: "sim.pentamachine.com default — 2×2\" face pass at A=90°",
+    desc: "The exact program shipped on sim.pentamachine.com. G20/G90 imperial absolute · T4 tool change · 8500 RPM · 20 ipm · A=90° (platter vertical) · square face pass at X±1 Y±1.",
+    units: 'inch',
+    code: `%
+G20
+G90 G94 G40 G17
+G53 G0 Z0
+G0 A0 B0
+G0 X0
+M5
+M0
+T4 M6
+G43
+S8500 M3
+F20
+
+G0 A90
+G0 X1 Y1
+G1 Z0
+G1 X-1
+G1 Y-1
+G1 X1
+G1 Y1
+
+G49
+G53 G0 Z0
+
+M5
+M30
+%
+`
+  },
   {
     id: 'face-mill',
     title: 'Face-mill a 40×30mm pocket top',
@@ -1332,7 +1369,7 @@ if (!sim) {
 }
 
 const app = {
-  machine: MACHINES['v2-50'],
+  machine: MACHINES['v2-10'],   /* Default to V2-10 — Sachin's machine */
   gcode: '',
   parsed: null,       // { lines, errors }
   moves: [],          // from executor
@@ -1350,7 +1387,8 @@ const app = {
     rapids: false,
     grid: true,
     axes: false,
-    origin: true
+    origin: true,
+    vice: false               /* Optional V2 workholding vice overlay */
   }
 };
 
@@ -1446,27 +1484,37 @@ function initThree() {
   const canvas = document.getElementById('viewport-canvas');
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  // PBR-correct output: sRGB + ACES tonemapping so GLB metals don't render black
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.0;
 
   const scene = new THREE.Scene();
-  // Penta simulator clear color — transparent canvas over body #FFFFFF.
-  // We set an explicit near-white so grid / axes / machine read cleanly when canvas
-  // is isolated (e.g. screenshot / iframe without body bg).
   scene.background = new THREE.Color(0xFFFFFF);
-  scene.fog = new THREE.Fog(0xFFFFFF, 400, 900);   // Much farther fog — keeps near-field crisp on white bg
+  scene.fog = new THREE.Fog(0xFFFFFF, 400, 900);
+
+  // Environment map — REQUIRED for PBR metallic materials to have any reflectance.
+  // RoomEnvironment is a procedural "showroom box" ~0.5 MB, bundled with Three.js.
+  const pmremGen = new THREE.PMREMGenerator(renderer);
+  const envTex = pmremGen.fromScene(new RoomEnvironment(), 0.04).texture;
+  scene.environment = envTex;
+  pmremGen.dispose();
 
   const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 5000);
-  camera.position.set(12, 10, 14);
+  // Pulled back so the real V2-10 GLB (≈14 wide × 18 tall × 12 deep authored units,
+  // × root.scale 10 = ≈180 render units) fits comfortably without clipping.
+  camera.position.set(28, 22, 34);
 
   const controls = new OrbitControls(camera, canvas);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
-  controls.target.set(0, 2, 0);
+  controls.target.set(0, 8, 0);   // Raised to machine mid-height, not the ground
 
-  // Lights — balanced for white background readability
-  const ambient = new THREE.AmbientLight(0xffffff, 0.55);
-  const key = new THREE.DirectionalLight(0xffffff, 0.85);
+  // Direct lights are now subtle — envMap does the heavy lifting for PBR
+  const ambient = new THREE.AmbientLight(0xffffff, 0.25);
+  const key = new THREE.DirectionalLight(0xffffff, 0.55);
   key.position.set(10, 20, 10);
-  const rim = new THREE.DirectionalLight(0x03B188, 0.15);  /* Subtle Penta-green rim */
+  const rim = new THREE.DirectionalLight(0x03B188, 0.10);
   rim.position.set(-10, 5, -10);
   scene.add(ambient, key, rim);
 
@@ -1488,9 +1536,51 @@ function initThree() {
   }
   scene.add(axes);
 
-  // Machine structure (simplified proxy until Matt's GLB loads)
+  // Machine structure — try real GLB, fall back to hand-built proxy.
+  // buildMachineProxy renders immediately; if the GLB arrives later we swap it in.
   const machine = buildMachineProxy(app.machine);
   root.add(machine);
+  loadMachineModel(app.machine, (gltfScene, url) => {
+    const bbox = frameMachineModel(gltfScene, 14, app.machine.id);
+    gltfScene.name = 'machineGlb';
+    gltfScene.userData.glbUrl = url;
+    root.remove(machine);
+    root.add(gltfScene);
+    if (app.three) {
+      app.three.machine = gltfScene;
+      app.three.machine.visible = app.viz.machine;
+      positionStockOnGlb(bbox, app.machine);
+      fitCameraToObject(app.three.camera, app.three.controls, app.three.root);
+
+      // Optional vice overlay — toggle via app.viz.vice or #vice=1 URL hash
+      const hpVice = location.hash && new URLSearchParams(location.hash.slice(1)).get('vice') === '1';
+      if (app.viz.vice || hpVice) {
+        app.viz.vice = true;
+        const platterY = bbox.min.y + (bbox.max.y - bbox.min.y) * 0.35;
+        loadViceOverlay(platterY, vice => {
+          root.add(vice);
+          app.three.vice = vice;
+          // Lift stock to sit on the vice jaws instead of bare platter
+          if (app.three.stock) {
+            const viceBox = new THREE.Box3().setFromObject(vice);
+            const stockH = (app.machine.stock.z || 1);
+            app.three.stock.position.y = viceBox.max.y + stockH / 2 + 0.05;
+          }
+          // Update vis toggle button state
+          const b = document.getElementById('vis-vice');
+          if (b) b.classList.remove('off');
+        });
+      }
+    }
+    console.info('[pentacad-sim] loaded GLB model:', url);
+  }, () => {
+    // No GLB available — proxy remains. Set a hint on the HUD.
+    const hud = document.getElementById('hud-machine');
+    if (hud && !hud.dataset.noted) {
+      hud.dataset.noted = '1';
+      hud.title = 'Proxy model (no ./models/<machine-id>.glb found)';
+    }
+  });
 
   // Stock block
   const stock = buildStock(app.machine);
@@ -1542,54 +1632,467 @@ function initThree() {
   })();
 }
 
+/*
+  Machine model resolution order:
+    1. #glb=<url>                 — explicit override from URL hash
+    2. localStorage 'pentacad.sim.glb.<id>'   — previously cached blob URL
+    3. ./models/<machine-id>.glb  — repo-local file (user drops in app/models/)
+    4. buildMachineProxy(m)       — Three.js primitive fallback
+
+  Real GLBs live on the Pentamachine itself at http://<machine-ip>/gltf/<id>.glb
+  when plugged in via USB (192.168.6.2 on macOS, 192.168.7.2 on Linux/Win).
+  They can also be extracted from the Kinetic Control disk image under
+  /opt/penta-ui-builds/gltf/.  Drop the .glb files into ~/cyclecad/app/models/
+  and they'll be auto-loaded.
+*/
+function resolveMachineGlbUrl(m) {
+  if (location.hash) {
+    const hp = new URLSearchParams(location.hash.slice(1));
+    if (hp.get('glb')) return hp.get('glb');
+  }
+  const cached = localStorage.getItem('pentacad.sim.glb.' + m.id);
+  if (cached) return cached;
+  return `./models/${m.id}.glb`;
+}
+
+let _gltfLoader = null;
+function loadMachineModel(m, onReady, onFail) {
+  const url = resolveMachineGlbUrl(m);
+  if (!_gltfLoader) _gltfLoader = new GLTFLoader();
+  fetch(url, { method: 'HEAD' }).then(r => {
+    if (!r.ok) throw new Error('no glb at ' + url);
+    _gltfLoader.load(url, gltf => {
+      filterGlbMeshes(gltf.scene, m.id);   // hide enclosure / housing by default
+      onReady(gltf.scene, url);
+    }, undefined, err => {
+      console.warn('[pentacad-sim] GLB load failed:', err);
+      onFail && onFail(err);
+    });
+  }).catch(err => {
+    onFail && onFail(err);
+  });
+}
+
+// Hide enclosure / cover / housing meshes from a loaded GLB so we see the
+// working mechanism. Logs every mesh name to the console so you can identify
+// what's what, then applies name-pattern matching to hide the outer shell.
+//
+// URL hash overrides:
+//   #showAll=1                     — don't hide anything
+//   #hide=Foo,Bar                  — hide extra meshes by name (comma-sep substring)
+//   #show=Enclosure_Base,Case_Lid  — force-keep specific meshes visible
+// Kinetic Control's v*.glb mesh naming is minimal and everything in the file
+// is part of the visible machine — sim.pentamachine.com shows all of it,
+// including the red cycle-start LED and yellow E-stop LED on the pendant.
+//
+//   Base_1, Base_2       — machine base plate
+//   x_1, x_2, y, z       — linear carriage pieces
+//   a, b                 — A-tilt trunnion + B-rotary platter
+//   SHORT, LONG, collet* — tool holders
+//   buttons, *_led       — pendant controls (visible on real hardware too)
+//
+// So the default hide list is empty. Defensive patterns stay in case Matt
+// ever ships a variant GLB with bundled enclosure / safety shield.
+const ENCLOSURE_HIDE_PATTERNS = [
+  /enclosure/i, /acrylic/i, /polycarbonate/i, /plexi/i,
+  /^door$/i, /^window$/i, /^lid$/i, /safety_shield/i
+];
+
+function filterGlbMeshes(root3d, machineId) {
+  const meshNames = [];
+  const hidden = [];
+  const meshList = [];          /* { mesh, name, vol, bbox } */
+  const hp = location.hash ? new URLSearchParams(location.hash.slice(1)) : null;
+  const showAll   = hp && hp.get('showAll') === '1';
+  const extraHide = (hp && hp.get('hide')) ? hp.get('hide').split(',').map(s => s.trim().toLowerCase()) : [];
+  const forceShow = (hp && hp.get('show')) ? hp.get('show').split(',').map(s => s.trim().toLowerCase()) : [];
+  // Opt-in only — set #sizeHide=0.4 in URL to activate volume-based hiding.
+  // Default is disabled because v*.glb's biggest meshes (Base_1/Base_2) ARE
+  // the machine base; size-hiding them revealed what looked like an enclosure.
+  const sizeThresh = hp && hp.get('sizeHide') ? parseFloat(hp.get('sizeHide')) : 0;
+
+  // First pass: gather every mesh + its volume
+  const rootBox = new THREE.Box3().setFromObject(root3d);
+  const rootSize = new THREE.Vector3(); rootBox.getSize(rootSize);
+  const rootVol = Math.max(0.0001, rootSize.x * rootSize.y * rootSize.z);
+
+  root3d.traverse(obj => {
+    if (!obj.isMesh) return;
+    const name = obj.name || '(unnamed)';
+    meshNames.push(name);
+    const b = new THREE.Box3().setFromObject(obj);
+    const s = new THREE.Vector3(); b.getSize(s);
+    meshList.push({ mesh: obj, name, vol: s.x * s.y * s.z });
+  });
+
+  // Second pass: decide visibility
+  for (const m of meshList) {
+    if (showAll) continue;
+    if (forceShow.some(p => p && m.name.toLowerCase().includes(p))) continue;
+
+    const nameMatch = ENCLOSURE_HIDE_PATTERNS.some(re => re.test(m.name));
+    const extraMatch = extraHide.some(p => p && m.name.toLowerCase().includes(p));
+    // Size check is OPT-IN only; disable when sizeThresh ≤ 0.
+    const sizeMatch  = sizeThresh > 0 && m.vol > sizeThresh * rootVol;
+
+    if (nameMatch || extraMatch || sizeMatch) {
+      m.mesh.visible = false;
+      hidden.push(m.name + (sizeMatch && !nameMatch ? ` (size ${(m.vol/rootVol*100).toFixed(0)}%)` : ''));
+    }
+  }
+
+  console.info(
+    `[pentacad-sim] GLB contains ${meshNames.length} meshes (hidden ${hidden.length}):\n  ` +
+    meshList.map(m => (hidden.includes(m.name) || hidden.some(h => h.startsWith(m.name + ' '))) ? `✗ ${m.name}` : `  ${m.name}`).join('\n  ')
+  );
+
+  // Expose for easy retuning from console:
+  //   _pentacadShow('ColumnFrame')    — force-show a specific mesh by name
+  //   _pentacadHide('BigBlock')       — force-hide a specific mesh
+  window._pentacadGlbMeshes = meshNames;
+  window._pentacadGlbHidden = hidden;
+  window._pentacadShow = function(nameSubstr) {
+    const matches = meshList.filter(m => m.name.toLowerCase().includes((nameSubstr || '').toLowerCase()));
+    matches.forEach(m => m.mesh.visible = true);
+    console.info('[pentacad-sim] showed', matches.length, 'meshes matching "' + nameSubstr + '"');
+  };
+  window._pentacadHide = function(nameSubstr) {
+    const matches = meshList.filter(m => m.name.toLowerCase().includes((nameSubstr || '').toLowerCase()));
+    matches.forEach(m => m.mesh.visible = false);
+    console.info('[pentacad-sim] hid', matches.length, 'meshes matching "' + nameSubstr + '"');
+  };
+}
+
+// Framing helper — positions + scales a loaded GLB so:
+//   1. Any manual rotation from localStorage / URL hash is applied
+//   2. Its max horizontal dimension ≈ targetWidth
+//   3. Its bottom sits at y=0 (base meshes with the grid)
+//
+// Orientation tuning: set window.PENTACAD_ROT = { x: deg, y: deg, z: deg }
+// or URL hash #rx=90&ry=0&rz=0 to correct Z-up vs Y-up differences.
+// Setting is persisted per-machine-id in localStorage as 'pentacad.rot.<id>'.
+// Returns the final Box3 for callers.
+function frameMachineModel(root3d, targetWidth = 14, machineId = '') {
+  // 1. Log raw bbox BEFORE any manipulation
+  const rawBox = new THREE.Box3().setFromObject(root3d);
+  const rawSize = new THREE.Vector3(); rawBox.getSize(rawSize);
+  console.info('[pentacad-sim] GLB raw bbox:',
+    { x: +rawSize.x.toFixed(2), y: +rawSize.y.toFixed(2), z: +rawSize.z.toFixed(2) });
+
+  // 2. Apply manual orientation (hash > localStorage > default no-rotation)
+  let rot = { x: 0, y: 0, z: 0 };
+  if (location.hash) {
+    const hp = new URLSearchParams(location.hash.slice(1));
+    if (hp.get('rx') || hp.get('ry') || hp.get('rz')) {
+      rot = { x: +hp.get('rx') || 0, y: +hp.get('ry') || 0, z: +hp.get('rz') || 0 };
+    }
+  }
+  if (!rot.x && !rot.y && !rot.z && machineId) {
+    try {
+      const saved = JSON.parse(localStorage.getItem('pentacad.rot.' + machineId) || '{}');
+      if (saved && (saved.x || saved.y || saved.z)) rot = saved;
+    } catch (e) {}
+  }
+  root3d.rotation.set(
+    THREE.MathUtils.degToRad(rot.x),
+    THREE.MathUtils.degToRad(rot.y),
+    THREE.MathUtils.degToRad(rot.z)
+  );
+  root3d.updateMatrixWorld(true);
+
+  // 3. Scale so the largest horizontal dim matches targetWidth
+  let box = new THREE.Box3().setFromObject(root3d);
+  let size = new THREE.Vector3(); box.getSize(size);
+  const maxHoriz = Math.max(size.x, size.z);
+  if (maxHoriz > 0) {
+    const s = targetWidth / maxHoriz;
+    root3d.scale.setScalar(s);
+    root3d.updateMatrixWorld(true);
+  }
+
+  // 4. Rest the machine on y=0
+  box = new THREE.Box3().setFromObject(root3d);
+  root3d.position.y -= box.min.y;
+  root3d.updateMatrixWorld(true);
+
+  // Recompute final box for callers
+  const finalBox = new THREE.Box3().setFromObject(root3d);
+  console.info('[pentacad-sim] GLB framed bbox:',
+    { x: +(finalBox.max.x - finalBox.min.x).toFixed(2),
+      y: +(finalBox.max.y - finalBox.min.y).toFixed(2),
+      z: +(finalBox.max.z - finalBox.min.z).toFixed(2),
+      rot });
+  return finalBox;
+}
+
+// Helper the user can call from the console to set + save rotation:
+//   setMachineRotation('v2-10', 90, 0, 0)   // rotate 90° around X
+window.setMachineRotation = function(machineId, x = 0, y = 0, z = 0) {
+  localStorage.setItem('pentacad.rot.' + machineId, JSON.stringify({ x, y, z }));
+  console.info('[pentacad-sim] saved rotation for', machineId, { x, y, z }, '— reload page to apply');
+  return { x, y, z };
+};
+
+// After the GLB is in place, move the stock + tool marker to sit on the actual
+// B-rotary platter inside the GLB. We approximate the platter height as ~35%
+// of the machine's total height — holds for V2-10 / V2-50 / Solo.
+function positionStockOnGlb(glbBox, m) {
+  if (!app.three) return;
+  const platterY = glbBox.min.y + (glbBox.max.y - glbBox.min.y) * 0.35;
+  const stockHeight = (m.stock.z || 1);
+  if (app.three.stock) {
+    app.three.stock.position.y = platterY + stockHeight / 2 + 0.05;
+  }
+  if (app.three.tool) {
+    // Park the tool marker above the platter at travel-home height
+    app.three.tool.position.set(0, platterY + 3.0, 0);
+  }
+}
+
+// Load the V2 workholding vice overlay (./models/v2-vise.glb) and place it on
+// the B-rotary platter at the given y height. Optional — only called when
+// app.viz.vice is true or #vice=1 in URL.
+function loadViceOverlay(platterY, onReady) {
+  if (!_gltfLoader) _gltfLoader = new GLTFLoader();
+  const url = './models/v2-vise.glb';
+  fetch(url, { method: 'HEAD' }).then(r => {
+    if (!r.ok) throw new Error('no vice.glb');
+    _gltfLoader.load(url, gltf => {
+      const vice = gltf.scene;
+      vice.name = 'viceGlb';
+      // Frame it to fit roughly on the 2.4-radius platter (5-wide)
+      const box = new THREE.Box3().setFromObject(vice);
+      const sz = new THREE.Vector3(); box.getSize(sz);
+      const maxH = Math.max(sz.x, sz.z);
+      if (maxH > 0) {
+        vice.scale.setScalar(4.5 / maxH);
+        vice.updateMatrixWorld(true);
+      }
+      const finalBox = new THREE.Box3().setFromObject(vice);
+      vice.position.y = platterY - finalBox.min.y;
+      onReady && onReady(vice);
+    }, undefined, e => console.warn('[pentacad-sim] vice load failed:', e));
+  }).catch(() => {});
+}
+
+// Frame camera to include an object's bounding box with a comfortable margin.
+// Called after the GLB loads so the real V2-10 always fills the viewport nicely.
+function fitCameraToObject(camera, controls, object, offset = 1.55) {
+  const box = new THREE.Box3().setFromObject(object);
+  if (box.isEmpty()) return;
+  const size = new THREE.Vector3(); box.getSize(size);
+  const center = new THREE.Vector3(); box.getCenter(center);
+  const maxDim = Math.max(size.x, size.y, size.z);
+  const fov = camera.fov * Math.PI / 180;
+  const dist = (maxDim / 2) / Math.tan(fov / 2) * offset;
+  const dir = new THREE.Vector3(0.8, 0.55, 1.0).normalize();  /* Slightly elevated iso */
+  camera.position.copy(center.clone().add(dir.multiplyScalar(dist)));
+  camera.near = Math.max(0.1, dist / 200);
+  camera.far = dist * 200;
+  camera.updateProjectionMatrix();
+  controls.target.copy(center);
+  controls.update();
+}
+
 function buildMachineProxy(m) {
+  /*
+    Pentamachine V2-50 proxy — Three.js primitives.
+    Matches the real bench-top 5-axis router's silhouette:
+      - White/cream enclosure shell with open front (~20" W × 14" D × 18" H)
+      - Grey internal frame + base plate
+      - Back column carrying a cylindrical spindle body (ER20 on V2-50)
+      - A-tilt trunnion + B-rotary platter at the front of the base
+      - Accent-coloured top cap (machine colour, e.g. Penta teal on V2-50)
+
+    Author units ≈ inches. `root.scale = 10` upscales to render units.
+    (Runtime will be replaced by the real GLB fetched from the connected
+     machine when USB is attached — see pentacad.html rockhopper.*.)
+  */
+
   const g = new THREE.Group();
+  g.name = 'machineProxy';
 
-  // Machine body — brushed-metal greys calibrated to read well on white background
-  // (Penta's real machines are anodized grey/silver, so lighter tones look natural)
-  const base = new THREE.Mesh(
-    new THREE.BoxGeometry(12, 0.4, 8),
-    new THREE.MeshStandardMaterial({ color: 0x8A9299, metalness: 0.55, roughness: 0.55 })
+  // Materials
+  const whitePanel = new THREE.MeshStandardMaterial({
+    color: 0xF2F0EB, metalness: 0.1, roughness: 0.55
+  });
+  const darkFrame = new THREE.MeshStandardMaterial({
+    color: 0x2A2F35, metalness: 0.4, roughness: 0.55
+  });
+  const platePlate = new THREE.MeshStandardMaterial({
+    color: 0x8A9299, metalness: 0.55, roughness: 0.5
+  });
+  const brushedMetal = new THREE.MeshStandardMaterial({
+    color: 0xBCC1C6, metalness: 0.75, roughness: 0.25
+  });
+  const accent = new THREE.MeshStandardMaterial({
+    color: m.color || 0x03B188, metalness: 0.5, roughness: 0.45
+  });
+  const spindleBody = new THREE.MeshStandardMaterial({
+    color: 0x3C4249, metalness: 0.65, roughness: 0.3
+  });
+
+  // ── ENCLOSURE — open front, white panels (like Matt's V2 chassis) ──
+  // Using individual thin panels so we can leave the front open for visibility.
+  const W = 20, H = 15, D = 13;      // outer dimensions in authored units (≈ inches)
+  const t = 0.35;                     // panel thickness
+
+  // Left / right walls
+  const mkWall = (w, h, d) => new THREE.Mesh(new THREE.BoxGeometry(w, h, d), whitePanel);
+  const leftWall  = mkWall(t, H, D); leftWall.position.set(-W/2 + t/2, H/2 - 1.2, 0);
+  const rightWall = mkWall(t, H, D); rightWall.position.set( W/2 - t/2, H/2 - 1.2, 0);
+  const backWall  = mkWall(W, H, t); backWall.position.set(0, H/2 - 1.2, -D/2 + t/2);
+  g.add(leftWall, rightWall, backWall);
+
+  // Top panel — accent colour (Penta teal on V2-50, blue on V2-10, etc.)
+  const topPanel = new THREE.Mesh(new THREE.BoxGeometry(W, t, D), accent);
+  topPanel.position.set(0, H - 1.2 + t/2, 0);
+  topPanel.name = 'topPanel';
+  g.add(topPanel);
+
+  // Subtle dark frame strips running along the top-front edge (industrial accent)
+  const frontFrame = new THREE.Mesh(new THREE.BoxGeometry(W, 0.15, 0.15), darkFrame);
+  frontFrame.position.set(0, H - 1.2, D/2 - 0.1);
+  g.add(frontFrame);
+
+  // ── BOTTOM / BASE PLATE — grey internal working surface ──
+  const basePlate = new THREE.Mesh(
+    new THREE.BoxGeometry(W - 2*t - 0.2, 0.6, D - 2*t - 0.2),
+    platePlate
   );
-  base.position.y = -0.2;
-  g.add(base);
+  basePlate.position.set(0, -1.2 + 0.3, 0);
+  g.add(basePlate);
 
-  // Column at back
+  // Two T-slot rails on the base (decorative detail)
+  for (const xOff of [-2.8, 2.8]) {
+    const slot = new THREE.Mesh(
+      new THREE.BoxGeometry(0.4, 0.02, D - 2*t - 1.5),
+      new THREE.MeshStandardMaterial({ color: 0x4A5058, metalness: 0.5, roughness: 0.5 })
+    );
+    slot.position.set(xOff, 0.01, 0);
+    g.add(slot);
+  }
+
+  // ── COLUMN — runs up the back to carry the spindle ──
   const column = new THREE.Mesh(
-    new THREE.BoxGeometry(3, 8, 1.5),
-    new THREE.MeshStandardMaterial({ color: 0x9AA0A6, metalness: 0.55, roughness: 0.5 })
+    new THREE.BoxGeometry(4.5, H - 2.0, 2.8),
+    brushedMetal
   );
-  column.position.set(0, 4, -3.5);
+  column.position.set(0, (H - 2.0)/2 - 0.9, -D/2 + 2.4);
   g.add(column);
 
-  // Spindle head (sits at top of column) — machine accent colour (Penta teal on V2-50)
-  const spindle = new THREE.Mesh(
-    new THREE.BoxGeometry(1.6, 2, 1.8),
-    new THREE.MeshStandardMaterial({ color: m.color || 0x03B188, metalness: 0.6, roughness: 0.4 })
+  // Column front face (lighter "ways" cover plate)
+  const colFace = new THREE.Mesh(
+    new THREE.BoxGeometry(3.0, H - 3.0, 0.1),
+    new THREE.MeshStandardMaterial({ color: 0xDCDEE1, metalness: 0.4, roughness: 0.4 })
   );
-  spindle.position.set(0, 6.5, -2.5);
-  spindle.name = 'spindleHead';
-  g.add(spindle);
+  colFace.position.set(0, (H - 2.0)/2 - 0.9, -D/2 + 3.8 + 0.05);
+  g.add(colFace);
 
-  // A-axis trunnion proxy (A-tilt of table)
+  // Z-axis carriage (rides on the column front face, holds the spindle)
+  const zCarriage = new THREE.Mesh(
+    new THREE.BoxGeometry(3.4, 3.4, 1.8),
+    new THREE.MeshStandardMaterial({ color: 0x5A6068, metalness: 0.6, roughness: 0.35 })
+  );
+  zCarriage.position.set(0, H/2 + 1.5, -D/2 + 4.6);
+  zCarriage.name = 'zCarriage';
+  g.add(zCarriage);
+
+  // ── SPINDLE BODY — cylindrical, ER20 collet on V2-50 ──
+  // Main cylindrical motor body
+  const spindleMotor = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.05, 1.05, 4.2, 24),
+    spindleBody
+  );
+  spindleMotor.position.set(0, H/2 + 0.3, -D/2 + 4.6 + 0.8);
+  spindleMotor.name = 'spindleMotor';
+  g.add(spindleMotor);
+
+  // Cooling fins (subtle — a thin ring near the top)
+  const fins = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.15, 1.15, 0.6, 24),
+    new THREE.MeshStandardMaterial({ color: 0x2C3137, metalness: 0.7, roughness: 0.25 })
+  );
+  fins.position.set(0, H/2 + 1.7, -D/2 + 4.6 + 0.8);
+  g.add(fins);
+
+  // Nose cone / collet housing (tapered body)
+  const nose = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.8, 0.55, 1.0, 20),
+    new THREE.MeshStandardMaterial({ color: 0x8C9299, metalness: 0.8, roughness: 0.18 })
+  );
+  nose.position.set(0, H/2 - 2.3, -D/2 + 4.6 + 0.8);
+  nose.name = 'spindleNose';
+  g.add(nose);
+
+  // Collet nut (ER20 looks like a hex-shaped nut at the tip)
+  const collet = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.5, 0.5, 0.5, 6),
+    new THREE.MeshStandardMaterial({ color: 0xB0B4B8, metalness: 0.85, roughness: 0.15 })
+  );
+  collet.position.set(0, H/2 - 3.05, -D/2 + 4.6 + 0.8);
+  g.add(collet);
+
+  // ── TRUNNION + B-ROTARY TABLE (at the front of the base) ──
   const trunnion = new THREE.Group();
   trunnion.name = 'trunnion';
-  const trBase = new THREE.Mesh(
-    new THREE.BoxGeometry(4, 0.6, 3),
-    new THREE.MeshStandardMaterial({ color: 0xA8AEB4, metalness: 0.55, roughness: 0.5 })
-  );
-  trBase.position.y = 0.3;
-  trunnion.add(trBase);
 
-  // B-rotary table
+  // Twin support arms that hold the A-axis
+  const armMat = new THREE.MeshStandardMaterial({ color: 0x6A7078, metalness: 0.6, roughness: 0.4 });
+  for (const x of [-3.0, 3.0]) {
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(1.0, 2.2, 2.5), armMat);
+    arm.position.set(x, 1.1, 1.8);
+    trunnion.add(arm);
+  }
+
+  // Horizontal trunnion bar connecting the arms (the A-axis itself)
+  const aBar = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.4, 0.4, 6.4, 16),
+    new THREE.MeshStandardMaterial({ color: 0x8A9299, metalness: 0.75, roughness: 0.25 })
+  );
+  aBar.rotation.z = Math.PI / 2;  // horizontal along X
+  aBar.position.set(0, 1.6, 1.8);
+  trunnion.add(aBar);
+
+  // A-tilt body hanging off the bar — carries the B platter
+  const aBody = new THREE.Mesh(
+    new THREE.BoxGeometry(5.0, 1.0, 3.5),
+    new THREE.MeshStandardMaterial({ color: 0x7A7F85, metalness: 0.55, roughness: 0.4 })
+  );
+  aBody.position.set(0, 0.85, 1.8);
+  trunnion.add(aBody);
+
+  // B-rotary platter on top of the A body
   const tableGroup = new THREE.Group();
   tableGroup.name = 'tableB';
   const table = new THREE.Mesh(
-    new THREE.CylinderGeometry(1.5, 1.5, 0.25, 32),
-    new THREE.MeshStandardMaterial({ color: 0xB8BDC2, metalness: 0.65, roughness: 0.35 })
+    new THREE.CylinderGeometry(2.4, 2.4, 0.3, 40),
+    new THREE.MeshStandardMaterial({ color: 0xC8CCD0, metalness: 0.7, roughness: 0.28 })
   );
-  table.position.y = 0.7;
+  table.position.y = 0.80;
   tableGroup.add(table);
+
+  // Platter T-slot pattern (decorative)
+  const platterSlotMat = new THREE.MeshStandardMaterial({ color: 0x4A5058, metalness: 0.4, roughness: 0.55 });
+  for (let angle = 0; angle < Math.PI; angle += Math.PI / 3) {
+    const slot = new THREE.Mesh(
+      new THREE.BoxGeometry(4.4, 0.02, 0.18),
+      platterSlotMat
+    );
+    slot.rotation.y = angle;
+    slot.position.y = 0.95;
+    tableGroup.add(slot);
+  }
+
+  // Centre reference pin on the platter
+  const centerPin = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.12, 0.12, 0.12, 16),
+    new THREE.MeshStandardMaterial({ color: 0x303538, metalness: 0.8, roughness: 0.2 })
+  );
+  centerPin.position.y = 1.01;
+  tableGroup.add(centerPin);
+
+  tableGroup.position.set(0, 0.1, 1.8);
   trunnion.add(tableGroup);
 
   trunnion.position.set(0, 0, 0);
@@ -1599,20 +2102,23 @@ function buildMachineProxy(m) {
 }
 
 function buildStock(m) {
-  const sx = m.stock.x * 10;
-  const sz = m.stock.y * 10; // note: sim uses Y as depth, three uses Z
-  const sy = m.stock.z * 10;
+  // Author units: ~1 inch = 1 unit. Previously had an errant ×10 multiplier
+  // that made the stock 10× bigger than the machine envelope.
+  const sx = m.stock.x;
+  const sz = m.stock.y; // note: sim uses Y as depth, three uses Z
+  const sy = m.stock.z;
   const stock = new THREE.Mesh(
     new THREE.BoxGeometry(sx, sy, sz),
     new THREE.MeshStandardMaterial({
-      color: 0xD7B36F,
-      metalness: 0.1,
-      roughness: 0.85,
+      color: 0xD7B36F,     // Aluminum-yellow
+      metalness: 0.25,
+      roughness: 0.65,
       transparent: true,
-      opacity: 0.5
+      opacity: 0.55
     })
   );
-  stock.position.y = sy / 2 + 0.7; // sit on top of the rotary table
+  // Sit on top of the B-rotary platter (platter top is at y ≈ 0.95)
+  stock.position.y = sy / 2 + 0.95;
   stock.name = 'stock';
   return stock;
 }
@@ -1714,6 +2220,7 @@ function applyVizToggles() {
   t.axes.visible    = app.viz.axes;
   t.origin.visible  = app.viz.origin;
   t.toolpathGroup.visible = app.viz.toolpath;
+  if (t.vice) t.vice.visible = !!app.viz.vice;
   rebuildToolpath();
 
   document.querySelectorAll('.vp-vis-toggles .btn').forEach(b => {
@@ -2030,8 +2537,29 @@ function wireUI() {
   document.getElementById('machine-picker').addEventListener('change', e => {
     app.machine = MACHINES[e.target.value];
     document.getElementById('hud-machine').textContent = app.machine.name;
-    // Rebuild stock
+    // Rebuild both the machine AND the stock (each machine has a different
+    // accent colour on the top panel + different envelope + different stock size).
+    // Machine first tries GLB, then falls back to proxy.
     if (app.three) {
+      app.three.root.remove(app.three.machine);
+      const proxy = buildMachineProxy(app.machine);
+      app.three.root.add(proxy);
+      app.three.machine = proxy;
+      app.three.machine.visible = app.viz.machine;
+
+      loadMachineModel(app.machine, (gltfScene, url) => {
+        const bbox = frameMachineModel(gltfScene, 14, app.machine.id);
+        gltfScene.name = 'machineGlb';
+        gltfScene.userData.glbUrl = url;
+        app.three.root.remove(app.three.machine);
+        app.three.root.add(gltfScene);
+        app.three.machine = gltfScene;
+        app.three.machine.visible = app.viz.machine;
+        positionStockOnGlb(bbox, app.machine);
+        fitCameraToObject(app.three.camera, app.three.controls, app.three.root);
+        console.info('[pentacad-sim] swapped GLB model:', url);
+      });
+
       app.three.root.remove(app.three.stock);
       app.three.stock = buildStock(app.machine);
       app.three.root.add(app.three.stock);
@@ -2117,6 +2645,23 @@ function wireUI() {
     b.addEventListener('click', () => {
       const key = b.id.replace('vis-', '');
       app.viz[key] = !app.viz[key];
+
+      // Lazy-load the vice the first time the toggle turns on
+      if (key === 'vice' && app.viz.vice && app.three && !app.three.vice) {
+        const bbox = new THREE.Box3().setFromObject(app.three.machine);
+        const platterY = bbox.min.y + (bbox.max.y - bbox.min.y) * 0.35;
+        loadViceOverlay(platterY, vice => {
+          app.three.root.add(vice);
+          app.three.vice = vice;
+          if (app.three.stock) {
+            const vb = new THREE.Box3().setFromObject(vice);
+            const sh = (app.machine.stock.z || 1);
+            app.three.stock.position.y = vb.max.y + sh / 2 + 0.05;
+          }
+          applyVizToggles();
+        });
+      }
+
       applyVizToggles();
     });
   });
@@ -2153,16 +2698,44 @@ function wireUI() {
     else if ((e.metaKey || e.ctrlKey) && e.key === 'e') { e.preventDefault(); openModal('modal-examples'); }
   });
 
-  // Parse URL hash for #m=machine&g=base64_gcode
-  if (location.hash) {
-    const params = new URLSearchParams(location.hash.slice(1));
-    if (params.get('m') && MACHINES[params.get('m')]) {
-      document.getElementById('machine-picker').value = params.get('m');
-      app.machine = MACHINES[params.get('m')];
+  // Parse URL hash for sharing + demo-tour driving.
+  //   #m=<machine-id>         — pick machine (v1 / v2-10 / v2-50 / solo)
+  //   #g=<base64-gcode>       — inline G-code payload (used by Share button)
+  //   #ex=<example-id>        — load a bundled example by id (used by sim-tour.html)
+  //   #play=1                 — auto-play after load (demo tours)
+  //   #speed=<n>              — set playback speed (demo tours, 0.25..50)
+  applyHash();
+  window.addEventListener('hashchange', applyHash);
+}
+
+function applyHash() {
+  if (!location.hash) return;
+  const params = new URLSearchParams(location.hash.slice(1));
+
+  if (params.get('m') && MACHINES[params.get('m')]) {
+    const picker = document.getElementById('machine-picker');
+    picker.value = params.get('m');
+    // Dispatch 'change' so the existing handler rebuilds stock/machine groups
+    picker.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  if (params.get('ex')) {
+    const ex = EXAMPLES.find(e => e.id === params.get('ex'));
+    if (ex) setGcode(ex.code, `${ex.id}.ngc`);
+  }
+  if (params.get('g')) {
+    try { setGcode(decodeURIComponent(atob(params.get('g'))), 'shared.ngc'); } catch (e) {}
+  }
+  if (params.get('speed')) {
+    const s = parseFloat(params.get('speed'));
+    if (!isNaN(s) && s > 0) {
+      app.speed = s;
+      const chip = document.getElementById('speed-chip');
+      if (chip) chip.value = String(s);
     }
-    if (params.get('g')) {
-      try { setGcode(decodeURIComponent(atob(params.get('g'))), 'shared.ngc'); } catch (e) {}
-    }
+  }
+  if (params.get('play') === '1' && app.moves.length && !app.playing) {
+    // Defer so setGcode has time to build moves
+    setTimeout(() => { if (!app.playing) togglePlay(); }, 300);
   }
 }
 
@@ -2212,8 +2785,16 @@ function fitView() {
 initThree();
 wireUI();
 
-// Load first example so the page isn't empty
-setGcode(EXAMPLES[0].code, `${EXAMPLES[0].id}.ngc`);
+// Load first example so the page isn't empty — but only if the URL hash
+// isn't already requesting a specific example / payload, otherwise we'd
+// stomp the hash-selected program on boot.
+{
+  const hp = location.hash ? new URLSearchParams(location.hash.slice(1)) : null;
+  const hashWantsProgram = hp && (hp.get('ex') || hp.get('g'));
+  if (!hashWantsProgram) {
+    setGcode(EXAMPLES[0].code, `${EXAMPLES[0].id}.ngc`);
+  }
+}
 
 // Expose for debugging
 window.app = app;

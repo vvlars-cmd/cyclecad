@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>pentacad-cam.js focused tests</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<style>
+  body { font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, sans-serif; padding: 24px; max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+  .subtitle { color: #5C6770; margin-bottom: 20px; }
+  .btn { background: #15B573; color: #fff; border: 0; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+  .btn.ghost { background: #FAFBFC; color: #1F2529; border: 1px solid #E3E7EA; margin-left: 8px; }
+  .summary { margin: 18px 0; padding: 14px 18px; background: #FAFBFC; border: 1px solid #E3E7EA; border-radius: 8px; font-family: monospace; }
+  .test { padding: 6px 10px; font-family: monospace; font-size: 12px; border-bottom: 1px solid #F0F3F5; }
+  .pass { color: #0E8F5A; }
+  .fail { color: #E04444; font-weight: 600; }
+  .detail { color: #8A949D; font-size: 11px; display: block; margin-left: 20px; }
+  p.link { font-size: 13px; color: #5C6770; margin-top: 20px; }
+</style>
+</head>
+<body>
+<h1>pentacad-cam.js — focused test suite</h1>
+<div class="subtitle">Toolpath strategies + post-processor for Pentamachine V2 dialect.</div>
+
+<button class="btn" onclick="run()">▶ Run tests</button>
+<button class="btn ghost" onclick="location.href='./pentacad-all-tests.html'">Full suite →</button>
+
+<div class="summary" id="summary">No run yet.</div>
+<div id="results"></div>
+
+<p class="link">For the complete test dashboard across all Pentacad modules, open
+<a href="./pentacad-all-tests.html">pentacad-all-tests.html</a>.</p>
+
+<script src="../js/modules/pentacad-cam.js"></script>
+<script src="../js/modules/pentacad-sim.js"></script>
+<script>
+'use strict';
+
+const cam = window.CycleCAD?.PentacadCAM;
+const sim = window.CycleCAD?.PentacadSim;
+
+function run() {
+  const results = [];
+  const t0 = performance.now();
+
+  if (!cam) {
+    document.getElementById('summary').innerHTML = '<span class="fail">✗ pentacad-cam.js did not load</span>';
+    return;
+  }
+
+  // Delegate to module's own self-tests
+  if (cam.runSelfTests) {
+    const r = cam.runSelfTests();
+    (r.results || []).forEach(x => results.push({
+      name: x.name, pass: x.pass, detail: x.detail || ''
+    }));
+  }
+
+  // Extra tests unique to this page: CAM → Sim round-trips
+  if (cam.emitGCode && sim) {
+    results.push(extraTest('post-emitted G-code parses without errors', () => {
+      const tp = [
+        { x: 0, y: 0, z: 2, mode: 'rapid' },
+        { x: 1, y: 0, z: -0.05, mode: 'feed', f: 30 },
+        { x: 1, y: 1, z: -0.05, mode: 'feed', f: 30 },
+        { x: 0, y: 0, z: 2, mode: 'rapid' }
+      ];
+      const gcode = cam.emitGCode(tp, { units: 'inch', planeCode: 'G17', distanceCode: 'G90', wcsDefault: 'G54', decimalPlacesLinear: 4 });
+      const parsed = sim.parseGCode(gcode);
+      return parsed.errors.length === 0;
+    }));
+
+    results.push(extraTest('post always emits M5 M30 at end', () => {
+      const tp = [{ x: 0, y: 0, z: 0, mode: 'rapid' }];
+      const gcode = cam.emitGCode(tp, { units: 'inch' });
+      return /M5/.test(gcode) && /M30/.test(gcode);
+    }));
+
+    results.push(extraTest('post uses G93 inverse-time on rotary moves', () => {
+      const tp = [
+        { x: 0, y: 0, z: 0, a: 0, b: 0, mode: 'rapid' },
+        { x: 0, y: 0, z: 0, a: 30, b: 0, mode: 'feed', f: 3 },  // A move
+        { x: 1, y: 0, z: 0, a: 30, b: 0, mode: 'feed', f: 30 }
+      ];
+      const gcode = cam.emitGCode(tp, { units: 'inch', feedModeFor5Axis: 'G93' });
+      return /G93/.test(gcode);
+    }));
+  }
+
+  const pass = results.filter(r => r.pass).length;
+  const fail = results.length - pass;
+  const elapsed = performance.now() - t0;
+
+  document.getElementById('summary').innerHTML =
+    `<b>${pass}/${results.length}</b> passed · <b class="${fail > 0 ? 'fail' : 'pass'}">${fail}</b> failed · ${elapsed.toFixed(1)} ms`;
+
+  document.getElementById('results').innerHTML = results.map(r => `
+    <div class="test">
+      <span class="${r.pass ? 'pass' : 'fail'}">${r.pass ? '✓' : '✗'}</span> ${r.name}
+      ${r.detail ? `<span class="detail">${r.detail}</span>` : ''}
+    </div>
+  `).join('');
+}
+
+function extraTest(name, fn) {
+  try {
+    const ok = fn();
+    return { name, pass: !!ok, detail: '' };
+  } catch (err) {
+    return { name, pass: false, detail: err.message };
+  }
+}
+
+setTimeout(run, 100);
+</script>
+</body>
+</html>

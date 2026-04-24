@@ -1,0 +1,2012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pentacad Simulator — 5-axis G-code playback for Pentamachine V1 / V2 / Solo</title>
+<meta name="description" content="Browser-native 5-axis G-code simulator. Runs offline, no install. Parses LinuxCNC / Pentamachine V2 dialect, animates A-tilt + B-rotary table kinematics, reports soft-limit violations." />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛠️</text></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<!-- Three.js via importmap (same version as rest of cycleCAD) -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+:root {
+  --kc-green:        #15B573;
+  --kc-green-dark:   #0E8F5A;
+  --kc-green-glow:   rgba(21,181,115,0.18);
+  --kc-amber:        #F5A623;
+  --kc-red:          #E04444;
+  --kc-blue:         #2E90E8;
+
+  --kc-bg:           #F5F7F8;
+  --kc-surface:      #FFFFFF;
+  --kc-surface-2:    #FAFBFC;
+  --kc-border:       #E3E7EA;
+
+  --kc-text:         #1F2529;
+  --kc-text-2:       #5C6770;
+  --kc-text-3:       #8A949D;
+
+  --kc-status:       #1A2828;
+  --kc-status-2:     #223232;
+  --kc-status-text:  #D7DCDE;
+
+  --kc-radius: 8px;
+  --kc-radius-lg: 12px;
+  --kc-shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --kc-shadow:    0 2px 8px rgba(0,0,0,0.06);
+
+  --kc-editor-bg:  #0F1419;
+  --kc-editor-fg:  #D7DCDE;
+  --kc-editor-sel: rgba(21,181,115,0.24);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  background: var(--kc-bg);
+  color: var(--kc-text);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+code, pre, .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+button { font-family: inherit; font-size: inherit; cursor: pointer; border: 0; background: transparent; color: inherit; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--kc-green); outline-offset: 2px; }
+
+/* ──────────────── TOP BAR ──────────────── */
+.topbar {
+  background: var(--kc-surface);
+  border-bottom: 1px solid var(--kc-border);
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 16px;
+  flex-shrink: 0;
+}
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-weight: 800;
+}
+.brand .logo { font-size: 20px; }
+.brand .name { font-size: 16px; letter-spacing: -0.01em; }
+.brand .tag { font-size: 11px; color: var(--kc-text-3); font-weight: 500; }
+
+.topbar .toolbar { display: flex; gap: 6px; margin-left: auto; align-items: center; }
+.btn {
+  padding: 8px 14px;
+  border-radius: var(--kc-radius);
+  background: var(--kc-surface-2);
+  border: 1px solid var(--kc-border);
+  font-weight: 500;
+  color: var(--kc-text);
+  transition: background 0.12s, border-color 0.12s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn:hover { background: var(--kc-bg); border-color: #C9CED3; }
+.btn.primary {
+  background: var(--kc-green);
+  color: #fff;
+  border-color: var(--kc-green-dark);
+}
+.btn.primary:hover { background: var(--kc-green-dark); }
+.btn.ghost { background: transparent; border-color: transparent; }
+.btn.ghost:hover { background: var(--kc-surface-2); }
+.btn.icon { padding: 8px 10px; }
+
+.machine-picker {
+  padding: 8px 12px;
+  border-radius: var(--kc-radius);
+  background: var(--kc-surface-2);
+  border: 1px solid var(--kc-border);
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--kc-text);
+}
+
+/* ──────────────── MAIN LAYOUT ──────────────── */
+.main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 380px 1fr 320px;
+  min-height: 0;
+}
+
+/* ─── G-code editor (left) ─── */
+.editor-panel {
+  background: var(--kc-editor-bg);
+  color: var(--kc-editor-fg);
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--kc-border);
+}
+.editor-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid #1F2A33;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #0A0F14;
+}
+.editor-header .tag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--kc-text-3);
+  text-transform: uppercase;
+}
+.editor-header .file-name {
+  font-size: 12px;
+  flex: 1;
+  color: var(--kc-editor-fg);
+  opacity: 0.8;
+}
+.editor-body {
+  flex: 1;
+  overflow: auto;
+  font-size: 12px;
+  line-height: 1.55;
+  position: relative;
+}
+.editor-body pre {
+  padding: 10px 14px 200px;
+  margin: 0;
+  white-space: pre;
+  min-width: 100%;
+}
+.gc-line {
+  display: block;
+  padding: 0 0 0 48px;
+  position: relative;
+  white-space: pre;
+}
+.gc-line.current {
+  background: var(--kc-editor-sel);
+  box-shadow: inset 3px 0 0 var(--kc-green);
+}
+.gc-line.error {
+  background: rgba(224,68,68,0.12);
+  box-shadow: inset 3px 0 0 var(--kc-red);
+}
+.gc-line .lno {
+  position: absolute;
+  left: 8px;
+  top: 0;
+  width: 32px;
+  text-align: right;
+  color: #4A5862;
+  user-select: none;
+}
+.tok-g  { color: #F5A623; font-weight: 600; }
+.tok-m  { color: #F5A623; font-weight: 600; }
+.tok-n  { color: #556873; }
+.tok-xyz { color: var(--kc-editor-fg); }
+.tok-abc { color: #63E8D0; }
+.tok-f  { color: #A290FF; }
+.tok-s  { color: #A290FF; }
+.tok-t  { color: #FFA9E6; }
+.tok-cmt { color: #556873; font-style: italic; }
+
+.editor-toolbar {
+  padding: 8px 12px;
+  border-top: 1px solid #1F2A33;
+  display: flex;
+  gap: 6px;
+  background: #0A0F14;
+}
+.editor-toolbar .btn {
+  background: #1A242C;
+  color: var(--kc-editor-fg);
+  border-color: #2A3A44;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+.editor-toolbar .btn:hover { background: #253440; border-color: #3B4F5E; }
+
+/* ─── 3D viewport (center) ─── */
+.viewport-panel {
+  position: relative;
+  background: #1F2A33;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+#viewport-canvas {
+  flex: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.vp-hud {
+  position: absolute;
+  left: 14px;
+  top: 14px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+.vp-hud-card {
+  background: rgba(15,20,25,0.85);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #D7DCDE;
+  font-size: 11px;
+  line-height: 1.6;
+  pointer-events: auto;
+}
+.vp-hud-card label {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8A949D;
+  display: block;
+}
+.vp-hud-card .mono { font-size: 12px; color: #D7DCDE; }
+.vp-hud-card .warn { color: var(--kc-amber); }
+.vp-hud-card .err  { color: var(--kc-red); }
+
+.vp-vis-toggles {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.vp-vis-toggles .btn {
+  background: rgba(15,20,25,0.85);
+  border-color: rgba(255,255,255,0.08);
+  color: #D7DCDE;
+  padding: 6px 10px;
+  font-size: 11px;
+  min-width: 120px;
+  justify-content: space-between;
+}
+.vp-vis-toggles .btn:hover { background: rgba(28,36,42,0.95); }
+.vp-vis-toggles .btn .tick { color: var(--kc-green); font-weight: 800; }
+.vp-vis-toggles .btn.off .tick { visibility: hidden; }
+
+/* Playback controls bar (bottom of viewport) */
+.playback-bar {
+  background: rgba(15,20,25,0.95);
+  backdrop-filter: blur(6px);
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #D7DCDE;
+  font-size: 12px;
+}
+.playback-bar .btn {
+  background: #1A242C;
+  color: #D7DCDE;
+  border-color: #2A3A44;
+  padding: 6px 10px;
+}
+.playback-bar .btn:hover { background: #253440; }
+.playback-bar .btn.primary {
+  background: var(--kc-green);
+  border-color: var(--kc-green-dark);
+  color: #fff;
+}
+.timeline-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.timeline {
+  flex: 1;
+  appearance: none;
+  height: 6px;
+  background: #2A3A44;
+  border-radius: 3px;
+  outline: none;
+}
+.timeline::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--kc-green);
+  cursor: pointer;
+  box-shadow: 0 0 0 3px rgba(21,181,115,0.24);
+}
+.timeline::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--kc-green);
+  cursor: pointer;
+  border: 0;
+}
+.speed-chip {
+  background: #1A242C;
+  border: 1px solid #2A3A44;
+  border-radius: 16px;
+  padding: 4px 10px;
+  font-size: 11px;
+}
+
+/* ─── Right side panel ─── */
+.side-panel {
+  background: var(--kc-surface);
+  border-left: 1px solid var(--kc-border);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.side-panel .tabs {
+  display: flex;
+  border-bottom: 1px solid var(--kc-border);
+  background: var(--kc-surface-2);
+}
+.side-panel .tabs .tab {
+  flex: 1;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--kc-text-2);
+  text-align: center;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+.side-panel .tabs .tab.active {
+  color: var(--kc-green);
+  border-bottom-color: var(--kc-green);
+  background: var(--kc-surface);
+}
+.side-panel .tab-body {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+}
+.side-panel .tab-body.hidden { display: none; }
+
+/* DRO grid */
+.dro-grid {
+  display: grid;
+  grid-template-columns: 24px 1fr 64px;
+  gap: 6px 10px;
+  align-items: baseline;
+}
+.dro-axis {
+  font-weight: 800;
+  color: var(--kc-text-3);
+}
+.dro-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--kc-text);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.dro-unit {
+  font-size: 10px;
+  color: var(--kc-text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.panel-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--kc-border);
+}
+.panel-section h3 {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--kc-text-3);
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+.kv {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 12px;
+}
+.kv span:first-child { color: var(--kc-text-2); }
+.kv span:last-child  { font-family: 'JetBrains Mono', monospace; color: var(--kc-text); font-weight: 500; }
+
+.modal-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.modal-chip {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 3px 7px;
+  background: var(--kc-surface-2);
+  border: 1px solid var(--kc-border);
+  border-radius: 12px;
+  color: var(--kc-text-2);
+}
+.modal-chip.active {
+  background: var(--kc-green-glow);
+  border-color: var(--kc-green);
+  color: var(--kc-green-dark);
+  font-weight: 600;
+}
+
+.limit-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+.limit-row.ok    { background: rgba(21,181,115,0.08); color: var(--kc-green-dark); }
+.limit-row.warn  { background: rgba(245,166,35,0.12); color: #8A5A00; }
+.limit-row.fail  { background: rgba(224,68,68,0.12);  color: #A8322A; font-weight: 600; }
+.limit-row .mono { font-size: 11px; }
+
+/* Stats/warnings list */
+.warn-list {
+  font-size: 12px;
+  color: var(--kc-text);
+}
+.warn-list .item {
+  padding: 6px 8px;
+  border-radius: 4px;
+  margin-bottom: 4px;
+  font-size: 12px;
+  background: rgba(245,166,35,0.1);
+  border-left: 3px solid var(--kc-amber);
+}
+.warn-list .item.error {
+  background: rgba(224,68,68,0.1);
+  border-left-color: var(--kc-red);
+}
+.warn-list .item .line-hint {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--kc-text-3);
+}
+
+/* ──────────────── STATUS BAR ──────────────── */
+.statusbar {
+  height: 40px;
+  background: var(--kc-status);
+  color: var(--kc-status-text);
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 18px;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.statusbar .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--kc-text-3); display: inline-block; margin-right: 6px; }
+.statusbar .dot.ok   { background: var(--kc-green); box-shadow: 0 0 8px var(--kc-green-glow); }
+.statusbar .dot.run  { background: var(--kc-green); animation: pulse 1.2s infinite; }
+.statusbar .dot.warn { background: var(--kc-amber); }
+.statusbar .dot.err  { background: var(--kc-red); }
+@keyframes pulse { 0%{opacity:1;} 50%{opacity:0.4;} 100%{opacity:1;} }
+.statusbar .sep { width: 1px; height: 20px; background: rgba(255,255,255,0.12); }
+.statusbar .grow { flex: 1; }
+
+/* ──────────────── MODAL ──────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15,20,25,0.6);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--kc-surface);
+  border-radius: var(--kc-radius-lg);
+  max-width: 560px;
+  width: 90%;
+  max-height: 80vh;
+  overflow: auto;
+  padding: 24px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.modal h2 { margin-bottom: 8px; font-size: 18px; }
+.modal p { color: var(--kc-text-2); margin-bottom: 16px; font-size: 13px; line-height: 1.5; }
+.modal .example-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.modal .example-btn {
+  text-align: left;
+  padding: 12px 14px;
+  background: var(--kc-surface-2);
+  border: 1px solid var(--kc-border);
+  border-radius: var(--kc-radius);
+  transition: background 0.12s;
+  width: 100%;
+  cursor: pointer;
+}
+.modal .example-btn:hover { background: var(--kc-bg); border-color: #C9CED3; }
+.modal .example-btn .title { font-weight: 600; font-size: 13px; }
+.modal .example-btn .desc  { font-size: 11px; color: var(--kc-text-2); margin-top: 4px; }
+.modal .close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  font-size: 24px;
+  line-height: 1;
+  padding: 4px 10px;
+  color: var(--kc-text-3);
+}
+
+/* Drop zone overlay */
+.dropzone {
+  position: fixed;
+  inset: 0;
+  background: rgba(21,181,115,0.2);
+  border: 4px dashed var(--kc-green);
+  z-index: 999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--kc-green-dark);
+}
+.dropzone.active { display: flex; }
+
+@media (max-width: 1100px) {
+  .main { grid-template-columns: 1fr; grid-template-rows: 280px 1fr 280px; }
+  .editor-panel { border-right: 0; border-bottom: 1px solid var(--kc-border); }
+  .side-panel { border-left: 0; border-top: 1px solid var(--kc-border); }
+}
+</style>
+</head>
+<body>
+
+<!-- ──────────────── TOP BAR ──────────────── -->
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">🛠️</span>
+    <span class="name">Pentacad Sim</span>
+    <span class="tag">5-axis G-code simulator · v0.2.0</span>
+  </div>
+
+  <select class="machine-picker" id="machine-picker" title="Select machine">
+    <option value="v2-50">V2-50 (40k ER20)</option>
+    <option value="v2-10">V2-10 (24k ER11)</option>
+    <option value="v1">V1 (legacy)</option>
+    <option value="solo">Solo</option>
+  </select>
+
+  <div class="toolbar">
+    <button class="btn" id="btn-open" title="Open G-code file (Cmd/Ctrl+O)">📂 Open</button>
+    <button class="btn" id="btn-examples" title="Load example program">📑 Examples</button>
+    <button class="btn" id="btn-help" title="Help / keyboard shortcuts">❓ Help</button>
+    <button class="btn" id="btn-share" title="Copy shareable link">🔗 Share</button>
+  </div>
+  <input type="file" id="file-input" accept=".nc,.ngc,.gcode,.tap,.txt" style="display:none" />
+</header>
+
+<!-- ──────────────── MAIN ──────────────── -->
+<main class="main">
+
+  <!-- G-code editor -->
+  <section class="editor-panel">
+    <div class="editor-header">
+      <span class="tag">G-CODE</span>
+      <span class="file-name" id="file-name">untitled.ngc</span>
+      <span class="mono" id="line-count" style="font-size:11px; color:var(--kc-text-3);">0 lines</span>
+    </div>
+    <div class="editor-body" id="editor-body">
+      <pre id="editor-pre"></pre>
+    </div>
+    <div class="editor-toolbar">
+      <button class="btn" id="btn-edit" title="Edit as plain text">✏️ Edit</button>
+      <button class="btn" id="btn-clear" title="Clear program">🗑 Clear</button>
+      <button class="btn" id="btn-copy" title="Copy to clipboard">📋 Copy</button>
+      <button class="btn" id="btn-download" title="Download .ngc">⬇ Save</button>
+    </div>
+  </section>
+
+  <!-- 3D viewport -->
+  <section class="viewport-panel">
+    <div class="vp-hud">
+      <div class="vp-hud-card">
+        <label>Machine</label>
+        <div class="mono" id="hud-machine">Pentamachine V2-50</div>
+      </div>
+      <div class="vp-hud-card">
+        <label>Tool</label>
+        <div class="mono" id="hud-tool">—</div>
+      </div>
+      <div class="vp-hud-card" id="hud-warn-card" style="display:none;">
+        <label class="warn">Warnings</label>
+        <div id="hud-warn-list" style="font-size:11px; line-height:1.4;"></div>
+      </div>
+    </div>
+
+    <div class="vp-vis-toggles">
+      <button class="btn" id="vis-machine">Machine <span class="tick">✓</span></button>
+      <button class="btn" id="vis-stock">Stock <span class="tick">✓</span></button>
+      <button class="btn" id="vis-toolpath">Toolpath <span class="tick">✓</span></button>
+      <button class="btn off" id="vis-rapids">Rapid moves <span class="tick">✓</span></button>
+      <button class="btn" id="vis-grid">Grid <span class="tick">✓</span></button>
+      <button class="btn off" id="vis-axes">Axes <span class="tick">✓</span></button>
+      <button class="btn" id="vis-origin">Origin <span class="tick">✓</span></button>
+    </div>
+
+    <canvas id="viewport-canvas"></canvas>
+
+    <div class="playback-bar">
+      <button class="btn" id="pb-stop" title="Stop (reset to start)">⏮</button>
+      <button class="btn primary" id="pb-play" title="Play / pause (Space)">▶</button>
+      <button class="btn" id="pb-step" title="Step one move (→)">⏭</button>
+
+      <div class="timeline-wrap">
+        <span class="mono" id="t-elapsed">0.00 s</span>
+        <input type="range" class="timeline" id="timeline" min="0" max="1000" value="0" step="1" />
+        <span class="mono" id="t-total">0.00 s</span>
+      </div>
+
+      <select class="speed-chip" id="speed-chip">
+        <option value="0.25">0.25×</option>
+        <option value="0.5">0.5×</option>
+        <option value="1" selected>1×</option>
+        <option value="2">2×</option>
+        <option value="4">4×</option>
+        <option value="10">10×</option>
+        <option value="50">50× (fast)</option>
+      </select>
+    </div>
+  </section>
+
+  <!-- Side panel with tabs -->
+  <aside class="side-panel">
+    <div class="tabs">
+      <div class="tab active" data-tab="dro">DRO</div>
+      <div class="tab" data-tab="stats">Stats</div>
+      <div class="tab" data-tab="limits">Limits</div>
+      <div class="tab" data-tab="warn">Issues</div>
+    </div>
+
+    <div class="tab-body" data-tab="dro">
+      <div class="dro-grid">
+        <div class="dro-axis">X</div><div class="dro-value" id="dro-x">0.0000</div><div class="dro-unit">in</div>
+        <div class="dro-axis">Y</div><div class="dro-value" id="dro-y">0.0000</div><div class="dro-unit">in</div>
+        <div class="dro-axis">Z</div><div class="dro-value" id="dro-z">0.0000</div><div class="dro-unit">in</div>
+        <div class="dro-axis">A</div><div class="dro-value" id="dro-a">0.000</div><div class="dro-unit">°</div>
+        <div class="dro-axis">B</div><div class="dro-value" id="dro-b">0.000</div><div class="dro-unit">°</div>
+      </div>
+
+      <div class="panel-section">
+        <h3>Active modal state</h3>
+        <div class="modal-row" id="modal-chips">
+          <span class="modal-chip" data-mg="motion">G0</span>
+          <span class="modal-chip active" data-mg="units">G20</span>
+          <span class="modal-chip active" data-mg="plane">G17</span>
+          <span class="modal-chip active" data-mg="dist">G90</span>
+          <span class="modal-chip active" data-mg="feedMode">G94</span>
+          <span class="modal-chip active" data-mg="wcs">G54</span>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <h3>Feed / speed</h3>
+        <div class="kv"><span>Feed</span><span id="feed-val">0.00 in/min</span></div>
+        <div class="kv"><span>Spindle</span><span id="rpm-val">0 RPM</span></div>
+        <div class="kv"><span>Tool</span><span id="tool-val">—</span></div>
+        <div class="kv"><span>Coolant</span><span id="coolant-val">off</span></div>
+      </div>
+    </div>
+
+    <div class="tab-body hidden" data-tab="stats">
+      <h3 style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--kc-text-3); margin-bottom:10px;">Motion summary</h3>
+      <div class="kv"><span>Total lines</span><span id="stat-lines">0</span></div>
+      <div class="kv"><span>Moves</span><span id="stat-moves">0</span></div>
+      <div class="kv"><span>Rapid (G0)</span><span id="stat-rapid">0</span></div>
+      <div class="kv"><span>Feed (G1/2/3)</span><span id="stat-feed">0</span></div>
+      <div class="kv"><span>Tool changes (M6)</span><span id="stat-m6">0</span></div>
+
+      <div class="panel-section">
+        <h3>Distance / time</h3>
+        <div class="kv"><span>Feed distance</span><span id="stat-dist">0.00 in</span></div>
+        <div class="kv"><span>Rapid distance</span><span id="stat-dist-rapid">0.00 in</span></div>
+        <div class="kv"><span>Estimated run</span><span id="stat-time">0.00 min</span></div>
+      </div>
+
+      <div class="panel-section">
+        <h3>Envelope used</h3>
+        <div class="kv"><span>X range</span><span id="stat-x-range">—</span></div>
+        <div class="kv"><span>Y range</span><span id="stat-y-range">—</span></div>
+        <div class="kv"><span>Z range</span><span id="stat-z-range">—</span></div>
+        <div class="kv"><span>A range</span><span id="stat-a-range">—</span></div>
+        <div class="kv"><span>B range</span><span id="stat-b-range">—</span></div>
+      </div>
+    </div>
+
+    <div class="tab-body hidden" data-tab="limits">
+      <h3 style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--kc-text-3); margin-bottom:10px;">Soft-limit check</h3>
+      <div id="limits-list"></div>
+      <div class="panel-section">
+        <h3>Machine envelope</h3>
+        <div id="envelope-info" class="mono" style="font-size:11px; color:var(--kc-text-2);"></div>
+      </div>
+    </div>
+
+    <div class="tab-body hidden" data-tab="warn">
+      <h3 style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--kc-text-3); margin-bottom:10px;">Issues &amp; warnings</h3>
+      <div id="warn-list" class="warn-list">
+        <div style="color:var(--kc-text-3); font-size:12px;">No issues.</div>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<!-- ──────────────── STATUS BAR ──────────────── -->
+<footer class="statusbar">
+  <div><span class="dot" id="status-dot"></span><span id="status-text">Ready</span></div>
+  <div class="sep"></div>
+  <div id="status-pos" class="mono">X 0.0000  Y 0.0000  Z 0.0000  A 0.0  B 0.0</div>
+  <div class="sep"></div>
+  <div><span class="dot warn"></span><span id="status-mode">IDLE</span></div>
+  <div class="grow"></div>
+  <div id="status-line">—</div>
+  <div class="sep"></div>
+  <div id="status-progress">0%</div>
+</footer>
+
+<!-- Drag-drop overlay -->
+<div class="dropzone" id="dropzone">Drop a .ngc / .nc / .gcode file to load</div>
+
+<!-- Examples modal -->
+<div class="modal-overlay" id="modal-examples">
+  <div class="modal" style="position:relative;">
+    <button class="close-btn" data-close="modal-examples">×</button>
+    <h2>Load example program</h2>
+    <p>Pre-built G-code samples to try the simulator. Each one exercises a different feature — 3-axis pocket, 5-axis positioning, drilling, thread milling, and a full bottle-opener ring that Matt provided as reference.</p>
+    <div class="example-list" id="example-list"></div>
+  </div>
+</div>
+
+<!-- Help modal -->
+<div class="modal-overlay" id="modal-help">
+  <div class="modal" style="position:relative;">
+    <button class="close-btn" data-close="modal-help">×</button>
+    <h2>Pentacad Simulator — quick help</h2>
+    <p>Browser-native 5-axis G-code simulator for Pentamachine V1 / V2 / Solo. Everything runs locally; no file is uploaded anywhere.</p>
+
+    <h3 style="font-size:12px; margin-top:16px; color:var(--kc-text-2);">Keyboard shortcuts</h3>
+    <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.8; color: var(--kc-text-2); margin-top: 8px;">
+      <div><b>Space</b> — play / pause</div>
+      <div><b>→ / ←</b> — step one move forward / back</div>
+      <div><b>Home</b> — go to start</div>
+      <div><b>End</b> — jump to last move</div>
+      <div><b>F</b> — fit view</div>
+      <div><b>R</b> — reset camera (isometric)</div>
+      <div><b>1 / 3 / 7</b> — front / right / top view</div>
+      <div><b>Cmd/Ctrl + O</b> — open file</div>
+      <div><b>Cmd/Ctrl + E</b> — examples</div>
+    </div>
+
+    <h3 style="font-size:12px; margin-top:16px; color:var(--kc-text-2);">Supported G/M codes</h3>
+    <div style="font-size: 12px; color: var(--kc-text-2); margin-top:4px; line-height:1.6;">
+      Motion: <code>G0 G1 G2 G3 G28 G38.2</code><br>
+      Modal: <code>G17/18/19 G20/21 G40 G54-59 G90/91 G93/94/95</code><br>
+      Canned: <code>G81 G82 G83 G73</code><br>
+      M: <code>M0 M1 M2 M3 M4 M5 M6 M7 M8 M9 M30</code>
+    </div>
+
+    <h3 style="font-size:12px; margin-top:16px; color:var(--kc-text-2);">About</h3>
+    <p style="font-size:12px;">Pentacad is part of the <a href="https://cyclecad.com" style="color:var(--kc-green-dark);">cycleCAD Suite</a>. Source: <a href="https://github.com/vvlars-cmd/cyclecad" style="color:var(--kc-green-dark);">github.com/vvlars-cmd/cyclecad</a>. AGPL-3.0-only, commercial available.</p>
+  </div>
+</div>
+
+<!-- ──────────────── SCRIPTS ──────────────── -->
+<!-- Load sim core + machine list -->
+<script src="./js/modules/pentacad-sim.js?v=20260424a"></script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+'use strict';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MACHINE DEFINITIONS (bundled — no fetch() required so the page works
+// offline and from file:// origin)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const MACHINES = {
+  'v2-50': {
+    id: 'v2-50', name: 'Pentamachine V2-50',
+    linear: { x: { min: -5, max: 5, unit: 'inch' }, y: { min: -3.5, max: 3.5, unit: 'inch' }, z: { min: -2.5, max: 2.5, unit: 'inch' } },
+    rotary: { a: { min: -35, max: 135, unit: 'deg' }, b: { min: -360, max: 360, unit: 'deg', continuous: true } },
+    pivots: { a_to_table: { x: 0, y: 0, z: 0.5 }, b_to_a: { x: 0, y: 0, z: 0 }, spindle_to_a: { x: 0, y: 0, z: 2.5 } },
+    home: { x: 0, y: 0, z: 0, a: 0, b: 0 },
+    spindle: { min_rpm: 2000, max_rpm: 40000, type: 'ER20' },
+    defaultUnits: 'inch',
+    stock: { x: 3.0, y: 2.0, z: 1.0, unit: 'inch' },
+    color: 0x15B573
+  },
+  'v2-10': {
+    id: 'v2-10', name: 'Pentamachine V2-10',
+    linear: { x: { min: -3.25, max: 3.25, unit: 'inch' }, y: { min: -2.25, max: 2.25, unit: 'inch' }, z: { min: -1.75, max: 1.75, unit: 'inch' } },
+    rotary: { a: { min: -35, max: 135, unit: 'deg' }, b: { min: -360, max: 360, unit: 'deg', continuous: true } },
+    pivots: { a_to_table: { x: 0, y: 0, z: 0.4 }, b_to_a: { x: 0, y: 0, z: 0 }, spindle_to_a: { x: 0, y: 0, z: 2.0 } },
+    home: { x: 0, y: 0, z: 0, a: 0, b: 0 },
+    spindle: { min_rpm: 2000, max_rpm: 24000, type: 'ER11' },
+    defaultUnits: 'inch',
+    stock: { x: 2.0, y: 1.5, z: 0.75, unit: 'inch' },
+    color: 0x2E90E8
+  },
+  'v1': {
+    id: 'v1', name: 'Pentamachine V1 (legacy)',
+    linear: { x: { min: -3, max: 3, unit: 'inch' }, y: { min: -2, max: 2, unit: 'inch' }, z: { min: -1.5, max: 1.5, unit: 'inch' } },
+    rotary: { a: { min: -35, max: 135, unit: 'deg' }, b: { min: -360, max: 360, unit: 'deg', continuous: true } },
+    pivots: { a_to_table: { x: 0, y: 0, z: 0.4 }, b_to_a: { x: 0, y: 0, z: 0 }, spindle_to_a: { x: 0, y: 0, z: 2.0 } },
+    home: { x: 0, y: 0, z: 0, a: 0, b: 0 },
+    spindle: { min_rpm: 2000, max_rpm: 24000, type: 'ER11' },
+    defaultUnits: 'inch',
+    stock: { x: 1.5, y: 1.0, z: 0.5, unit: 'inch' },
+    color: 0xA290FF
+  },
+  'solo': {
+    id: 'solo', name: 'Pentamachine Solo',
+    linear: { x: { min: -4, max: 4, unit: 'inch' }, y: { min: -3, max: 3, unit: 'inch' }, z: { min: -2, max: 2, unit: 'inch' } },
+    rotary: { a: { min: -35, max: 135, unit: 'deg' }, b: { min: -360, max: 360, unit: 'deg', continuous: true } },
+    pivots: { a_to_table: { x: 0, y: 0, z: 0.5 }, b_to_a: { x: 0, y: 0, z: 0 }, spindle_to_a: { x: 0, y: 0, z: 2.3 } },
+    home: { x: 0, y: 0, z: 0, a: 0, b: 0 },
+    spindle: { min_rpm: 2000, max_rpm: 30000, type: 'ER16' },
+    defaultUnits: 'inch',
+    stock: { x: 2.5, y: 2.0, z: 1.0, unit: 'inch' },
+    color: 0xF5A623
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EXAMPLE PROGRAMS
+// ═══════════════════════════════════════════════════════════════════════════
+
+const EXAMPLES = [
+  {
+    id: 'face-mill',
+    title: 'Face-mill a 40×30mm pocket top',
+    desc: 'Simple 3-axis face-mill. 1/4" flat endmill, 15000 RPM, 30 ipm, 0.05" stepdown.',
+    units: 'inch',
+    code: `( Pentacad example: face-mill 40x30mm top )
+G20 G90 G94 G17 G40 G54
+( Tool 1: 1/4" flat endmill )
+T1 M6
+S15000 M3
+G0 Z0.2
+G0 X-0.9 Y-0.6
+G1 Z-0.05 F30
+G1 X0.9
+G1 Y-0.4
+G1 X-0.9
+G1 Y-0.2
+G1 X0.9
+G1 Y0
+G1 X-0.9
+G1 Y0.2
+G1 X0.9
+G1 Y0.4
+G1 X-0.9
+G1 Y0.6
+G1 X0.9
+G0 Z0.5
+M5
+M30
+`
+  },
+  {
+    id: 'pocket-drill',
+    title: 'Pocket + drill — cover plate',
+    desc: 'Contour pocket followed by 4 corner holes with peck drilling (G83). 1/8" endmill → 3mm drill.',
+    units: 'inch',
+    code: `( Pentacad example: cover plate 1.5x1.0 with 4 holes )
+G20 G90 G94 G17 G40 G54
+
+( Op 1: pocket contour, 1/8" endmill )
+T2 M6
+S20000 M3
+G0 X-0.7 Y-0.45 Z0.1
+G1 Z-0.1 F15
+G1 X0.7 F25
+G1 Y0.45
+G1 X-0.7
+G1 Y-0.45
+G0 Z0.5
+
+( Op 2: drill 4 corners, 3mm drill, peck G83 )
+T5 M6
+S3500 M3
+G0 X-0.55 Y-0.35
+G83 X-0.55 Y-0.35 Z-0.2 R0.1 Q0.05 F4
+G83 X0.55 Y-0.35 Z-0.2 R0.1 Q0.05 F4
+G83 X0.55 Y0.35 Z-0.2 R0.1 Q0.05 F4
+G83 X-0.55 Y0.35 Z-0.2 R0.1 Q0.05 F4
+G80
+G0 Z0.5
+M5
+M30
+`
+  },
+  {
+    id: 'bottle-opener',
+    title: 'Bottle-opener ring (Matt reference)',
+    desc: 'The Pentamachine demo part — full 5-axis pocket + chamfer + contour using B-rotary indexing. ~380 lines.',
+    units: 'inch',
+    code: `( Pentacad: bottle-opener-ring — abridged 5-axis demo )
+( Based on Pentamachine reference part — uses A0 B0, then B indexing )
+G20 G90 G94 G17 G40 G54
+T2 M6
+S18000 M3
+
+( Setup: face top at B=0 )
+G0 A0 B0
+G0 X-0.6 Y0 Z0.2
+G1 Z-0.02 F10
+G2 X-0.6 Y0 I0.6 J0 F20 ( full circle )
+
+( Rotate B by 90 degrees to machine flat )
+G93 ( inverse-time feed for 5-axis )
+G1 B90 F2
+G94
+G0 Z0.2
+
+( Drill hanging hole )
+T5 M6
+S3500 M3
+G83 X0 Y0.4 Z-0.1 R0.05 Q0.03 F4
+G80
+
+( Chamfer edge )
+T4 M6
+S18000 M3
+G0 X-0.58 Y0 Z0.05
+G1 Z-0.015 F8
+G2 X-0.58 Y0 I0.58 J0 F15
+G0 Z0.5
+M5 M30
+`
+  },
+  {
+    id: 'thread-mill',
+    title: 'Thread-mill M6 × 1.0',
+    desc: '3-axis helical interpolation to cut an M6 internal thread with a single-tooth thread mill.',
+    units: 'inch',
+    code: `( Pentacad example: M6 x 1.0 thread mill )
+( Single-tooth, Ø0.12" thread mill, pitch 1mm = 0.03937" )
+G21 ( switching to mm for this example )
+G90 G94 G17 G40 G54
+T6 M6
+S12000 M3
+G0 X0 Y0 Z2
+G0 Z-6
+( Approach with tangent arc )
+G1 X1.5 Y0 F80
+( Helical: 6 turns @ 1mm pitch = 6mm climb )
+G3 X1.5 Y0 I-1.5 J0 Z-5 F100
+G3 X1.5 Y0 I-1.5 J0 Z-4 F100
+G3 X1.5 Y0 I-1.5 J0 Z-3 F100
+G3 X1.5 Y0 I-1.5 J0 Z-2 F100
+G3 X1.5 Y0 I-1.5 J0 Z-1 F100
+G3 X1.5 Y0 I-1.5 J0 Z0 F100
+G1 X0 Y0 F200
+G0 Z5
+M5 M30
+`
+  },
+  {
+    id: 'adaptive',
+    title: 'Adaptive-clear a 30mm slot',
+    desc: 'Constant-engagement roughing — concentric-ring approximation from the Pentacad CAM module.',
+    units: 'inch',
+    code: `( Pentacad: adaptive-clear approximation — 30x10x5mm slot )
+G20 G90 G94 G17 G40 G54
+T2 M6
+S24000 M3
+G0 X-0.55 Y-0.15 Z0.1
+G1 Z-0.04 F10
+( Ring 1 )
+G1 X0.55 F35
+G1 Y0.15
+G1 X-0.55
+G1 Y-0.15
+( Ring 2 - inner )
+G1 X-0.45 Y-0.08
+G1 X0.45
+G1 Y0.08
+G1 X-0.45
+G1 Y-0.08
+( Stepdown )
+G1 Z-0.08
+( Repeat rings )
+G1 X0.55 Y-0.15
+G1 Y0.15
+G1 X-0.55
+G1 Y-0.15
+G0 Z0.5
+M5 M30
+`
+  },
+  {
+    id: 'five-axis-indexing',
+    title: '3+2 indexing — 4 faces of a cube',
+    desc: 'Rotate B by 90° between faces, face-mill each side. Demonstrates G93 inverse-time rotary moves.',
+    units: 'inch',
+    code: `( Pentacad: 3+2 indexing demo — cube, 4 faces )
+G20 G90 G94 G17 G40 G54
+T1 M6
+S15000 M3
+
+( Face 1: B=0 )
+G0 A0 B0 Z0.2
+G0 X-0.55 Y0
+G1 Z-0.03 F15
+G1 X0.55 F25
+G0 Z0.2
+
+( Rotate to B=90, inverse-time )
+G93
+G1 B90 F3
+G94
+G0 X-0.55 Y0 Z0.2
+G1 Z-0.03 F15
+G1 X0.55 F25
+G0 Z0.2
+
+( B=180 )
+G93
+G1 B180 F3
+G94
+G0 X-0.55 Y0 Z0.2
+G1 Z-0.03 F15
+G1 X0.55 F25
+G0 Z0.2
+
+( B=270 )
+G93
+G1 B270 F3
+G94
+G0 X-0.55 Y0 Z0.2
+G1 Z-0.03 F15
+G1 X0.55 F25
+G0 Z0.5
+G0 B0
+M5 M30
+`
+  },
+  {
+    id: 'limits-test',
+    title: 'Soft-limit test (intentional over-travel)',
+    desc: 'Intentionally requests moves outside the X/Y envelope. Watch the Limits tab turn red.',
+    units: 'inch',
+    code: `( Pentacad: deliberate soft-limit violation for testing )
+G20 G90 G94 G17 G40 G54
+T1 M6
+S10000 M3
+G0 X0 Y0 Z0.1
+G1 X10 Y6 Z-5 F20
+G0 X-10 Y-6
+M5 M30
+`
+  }
+];
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SIMULATOR APP
+// ═══════════════════════════════════════════════════════════════════════════
+
+const sim = window.CycleCAD.PentacadSim;
+if (!sim) {
+  document.body.innerHTML = '<div style="padding:40px; color:#E04444; font-family:monospace;">Failed to load pentacad-sim.js — check that app/js/modules/pentacad-sim.js is reachable.</div>';
+  throw new Error('pentacad-sim.js not loaded');
+}
+
+const app = {
+  machine: MACHINES['v2-50'],
+  gcode: '',
+  parsed: null,       // { lines, errors }
+  moves: [],          // from executor
+  currentMove: -1,
+  playing: false,
+  speed: 1,
+  lastTime: 0,
+  elapsed: 0,
+  totalTime: 0,
+  three: null,        // three.js state
+  viz: {
+    machine: true,
+    stock: true,
+    toolpath: true,
+    rapids: false,
+    grid: true,
+    axes: false,
+    origin: true
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// G-CODE HIGHLIGHTING
+// ═══════════════════════════════════════════════════════════════════════════
+
+function highlightGcode(text, errorLineSet) {
+  const lines = text.split(/\r?\n/);
+  const fragments = lines.map((raw, i) => {
+    const lineNumber = i + 1;
+    const isError = errorLineSet && errorLineSet.has(lineNumber);
+    const escape = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    // Split comments first
+    let body = raw;
+    let commentHTML = '';
+    const parenMatch = body.match(/\([^)]*\)/g);
+    if (parenMatch) {
+      parenMatch.forEach(c => { body = body.replace(c, ''); });
+      commentHTML = parenMatch.map(c => `<span class="tok-cmt">${escape(c)}</span>`).join('');
+    }
+    const semiIx = body.indexOf(';');
+    let semiCmt = '';
+    if (semiIx >= 0) {
+      semiCmt = `<span class="tok-cmt">${escape(body.slice(semiIx))}</span>`;
+      body = body.slice(0, semiIx);
+    }
+
+    // Tokenise word codes
+    const tokenised = escape(body).replace(/([A-Z])\s*([-+]?\d*\.?\d+)/g, (m, letter, value) => {
+      let cls = 'tok-xyz';
+      if (letter === 'G') cls = 'tok-g';
+      else if (letter === 'M') cls = 'tok-m';
+      else if (letter === 'N') cls = 'tok-n';
+      else if (letter === 'F') cls = 'tok-f';
+      else if (letter === 'S') cls = 'tok-s';
+      else if (letter === 'T') cls = 'tok-t';
+      else if (letter === 'A' || letter === 'B' || letter === 'C') cls = 'tok-abc';
+      return `<span class="${cls}">${letter}${value}</span>`;
+    });
+
+    const errClass = isError ? ' error' : '';
+    return `<span class="gc-line${errClass}" data-ln="${lineNumber}"><span class="lno">${lineNumber}</span>${tokenised}${commentHTML}${semiCmt}</span>`;
+  });
+  return fragments.join('\n');
+}
+
+function setGcode(text, fileName) {
+  app.gcode = text;
+  app.parsed = sim.parseGCode(text);
+  const errorSet = new Set((app.parsed.errors || []).map(e => e.line));
+  document.getElementById('editor-pre').innerHTML = highlightGcode(text, errorSet);
+  document.getElementById('file-name').textContent = fileName || 'untitled.ngc';
+  document.getElementById('line-count').textContent = `${app.parsed.lines.length} lines`;
+
+  runExecutor();
+  renderStats();
+  renderWarnings();
+  renderLimits();
+  resetPlayback();
+}
+
+function runExecutor() {
+  try {
+    const exec = sim.createExecutor({ kinematics: app.machine, home: app.machine.home });
+    for (const line of app.parsed.lines) {
+      exec.step(line);
+    }
+    app.moves = exec.getMoves ? exec.getMoves() : (exec.moves || []);
+    // summariseMoves if available
+    app.summary = sim.summariseMoves ? sim.summariseMoves(app.moves) : null;
+    app.totalTime = app.summary?.totalTime ?? estimateTime(app.moves);
+  } catch (err) {
+    console.warn('executor error', err);
+    app.moves = [];
+    app.totalTime = 0;
+  }
+}
+
+function estimateTime(moves) {
+  // Fallback if summariseMoves not available
+  let t = 0;
+  for (const mv of moves) t += (mv.duration ?? 0.1);
+  return t;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// THREE.JS SCENE
+// ═══════════════════════════════════════════════════════════════════════════
+
+function initThree() {
+  const canvas = document.getElementById('viewport-canvas');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x1F2A33);
+  scene.fog = new THREE.Fog(0x1F2A33, 50, 200);
+
+  const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 5000);
+  camera.position.set(12, 10, 14);
+
+  const controls = new OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.target.set(0, 2, 0);
+
+  // Lights
+  const ambient = new THREE.AmbientLight(0xffffff, 0.45);
+  const key = new THREE.DirectionalLight(0xffffff, 0.7);
+  key.position.set(10, 20, 10);
+  const rim = new THREE.DirectionalLight(0x63E8D0, 0.25);
+  rim.position.set(-10, 5, -10);
+  scene.add(ambient, key, rim);
+
+  // Groups — inch units, scale 10x for legibility in the viewport
+  const root = new THREE.Group();
+  root.scale.setScalar(10);
+  scene.add(root);
+
+  // Grid
+  const grid = new THREE.GridHelper(20, 20, 0x3A4A54, 0x2A3A44);
+  grid.rotation.x = 0; // keep on XZ plane
+  grid.position.y = 0;
+  scene.add(grid);
+
+  // World axes helper
+  const axes = new THREE.AxesHelper(3);
+  scene.add(axes);
+
+  // Machine structure (simplified proxy until Matt's GLB loads)
+  const machine = buildMachineProxy(app.machine);
+  root.add(machine);
+
+  // Stock block
+  const stock = buildStock(app.machine);
+  root.add(stock);
+
+  // Tool cone + tip marker
+  const tool = buildTool();
+  root.add(tool);
+
+  // Toolpath lines (rebuilt each time a program loads)
+  const toolpathGroup = new THREE.Group();
+  toolpathGroup.name = 'toolpath';
+  root.add(toolpathGroup);
+
+  // Origin marker
+  const origin = buildOriginMarker();
+  root.add(origin);
+
+  app.three = {
+    renderer, scene, camera, controls,
+    root, grid, axes,
+    machine, stock, tool, toolpathGroup, origin
+  };
+
+  applyVizToggles();
+
+  // Resize
+  const resize = () => {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const w = rect.width;
+    const h = rect.height - 52; // minus playback bar
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  };
+  window.addEventListener('resize', resize);
+  new ResizeObserver(resize).observe(canvas.parentElement);
+  resize();
+
+  // Render loop
+  const clock = new THREE.Clock();
+  (function loop() {
+    requestAnimationFrame(loop);
+    const dt = clock.getDelta();
+    if (app.playing) advancePlayback(dt);
+    controls.update();
+    renderer.render(scene, camera);
+  })();
+}
+
+function buildMachineProxy(m) {
+  const g = new THREE.Group();
+
+  // Base plate
+  const base = new THREE.Mesh(
+    new THREE.BoxGeometry(12, 0.4, 8),
+    new THREE.MeshStandardMaterial({ color: 0x2A3A44, metalness: 0.4, roughness: 0.7 })
+  );
+  base.position.y = -0.2;
+  g.add(base);
+
+  // Column at back
+  const column = new THREE.Mesh(
+    new THREE.BoxGeometry(3, 8, 1.5),
+    new THREE.MeshStandardMaterial({ color: 0x3A4A54, metalness: 0.45, roughness: 0.6 })
+  );
+  column.position.set(0, 4, -3.5);
+  g.add(column);
+
+  // Spindle head (sits at top of column)
+  const spindle = new THREE.Mesh(
+    new THREE.BoxGeometry(1.6, 2, 1.8),
+    new THREE.MeshStandardMaterial({ color: m.color || 0x15B573, metalness: 0.6, roughness: 0.4 })
+  );
+  spindle.position.set(0, 6.5, -2.5);
+  spindle.name = 'spindleHead';
+  g.add(spindle);
+
+  // A-axis trunnion proxy (A-tilt of table)
+  const trunnion = new THREE.Group();
+  trunnion.name = 'trunnion';
+  const trBase = new THREE.Mesh(
+    new THREE.BoxGeometry(4, 0.6, 3),
+    new THREE.MeshStandardMaterial({ color: 0x4A5A64, metalness: 0.45, roughness: 0.55 })
+  );
+  trBase.position.y = 0.3;
+  trunnion.add(trBase);
+
+  // B-rotary table
+  const tableGroup = new THREE.Group();
+  tableGroup.name = 'tableB';
+  const table = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.5, 1.5, 0.25, 32),
+    new THREE.MeshStandardMaterial({ color: 0x5A6A74, metalness: 0.5, roughness: 0.4 })
+  );
+  table.position.y = 0.7;
+  tableGroup.add(table);
+  trunnion.add(tableGroup);
+
+  trunnion.position.set(0, 0, 0);
+  g.add(trunnion);
+
+  return g;
+}
+
+function buildStock(m) {
+  const sx = m.stock.x * 10;
+  const sz = m.stock.y * 10; // note: sim uses Y as depth, three uses Z
+  const sy = m.stock.z * 10;
+  const stock = new THREE.Mesh(
+    new THREE.BoxGeometry(sx, sy, sz),
+    new THREE.MeshStandardMaterial({
+      color: 0xD7B36F,
+      metalness: 0.1,
+      roughness: 0.85,
+      transparent: true,
+      opacity: 0.5
+    })
+  );
+  stock.position.y = sy / 2 + 0.7; // sit on top of the rotary table
+  stock.name = 'stock';
+  return stock;
+}
+
+function buildTool() {
+  const g = new THREE.Group();
+  g.name = 'tool';
+
+  // Holder
+  const holder = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.4, 0.55, 1.2, 16),
+    new THREE.MeshStandardMaterial({ color: 0x2A3A44, metalness: 0.7, roughness: 0.3 })
+  );
+  holder.position.y = 1.0;
+  g.add(holder);
+
+  // Flute (default 1/4" endmill = 0.125" radius × 10 scale = 1.25)
+  const flute = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.125, 0.125, 1.0, 16),
+    new THREE.MeshStandardMaterial({ color: 0xA0B0BA, metalness: 0.85, roughness: 0.15 })
+  );
+  flute.position.y = 0.4;
+  flute.name = 'flute';
+  g.add(flute);
+
+  // Tip marker
+  const tip = new THREE.Mesh(
+    new THREE.SphereGeometry(0.05, 8, 8),
+    new THREE.MeshStandardMaterial({ color: 0x15B573, emissive: 0x15B573, emissiveIntensity: 0.5 })
+  );
+  g.add(tip);
+
+  // Initial spindle position (above home)
+  g.position.set(0, 5, 0);
+  return g;
+}
+
+function buildOriginMarker() {
+  const g = new THREE.Group();
+  g.name = 'origin';
+  const axisX = new THREE.ArrowHelper(new THREE.Vector3(1,0,0), new THREE.Vector3(0,0,0), 1.2, 0xE04444, 0.3, 0.18);
+  const axisY = new THREE.ArrowHelper(new THREE.Vector3(0,1,0), new THREE.Vector3(0,0,0), 1.2, 0x15B573, 0.3, 0.18);
+  const axisZ = new THREE.ArrowHelper(new THREE.Vector3(0,0,1), new THREE.Vector3(0,0,0), 1.2, 0x2E90E8, 0.3, 0.18);
+  g.add(axisX, axisY, axisZ);
+  g.position.set(0, 0.7, 0);
+  return g;
+}
+
+function rebuildToolpath() {
+  if (!app.three) return;
+  const g = app.three.toolpathGroup;
+  while (g.children.length) g.remove(g.children[0]);
+
+  if (!app.moves.length) return;
+
+  const feedPoints = [];
+  const rapidPoints = [];
+  let cursor = { x: 0, y: 0, z: 0 };
+
+  for (const mv of app.moves) {
+    const from = mv.from || cursor;
+    const to = mv.to || cursor;
+    // Scale inch → viewport units
+    const a = new THREE.Vector3(from.x * 10 / 25.4, (from.z * 10 / 25.4) + 0.7, from.y * 10 / 25.4);
+    const b = new THREE.Vector3(to.x * 10 / 25.4,   (to.z * 10 / 25.4)   + 0.7, to.y * 10 / 25.4);
+    if (mv.mode === 'rapid') {
+      rapidPoints.push(a, b);
+    } else {
+      feedPoints.push(a, b);
+    }
+    cursor = to;
+  }
+
+  if (feedPoints.length) {
+    const geom = new THREE.BufferGeometry().setFromPoints(feedPoints);
+    const mat = new THREE.LineBasicMaterial({ color: 0x15B573, linewidth: 2 });
+    g.add(new THREE.LineSegments(geom, mat));
+  }
+  if (rapidPoints.length && app.viz.rapids) {
+    const geom = new THREE.BufferGeometry().setFromPoints(rapidPoints);
+    const mat = new THREE.LineDashedMaterial({ color: 0x8A949D, dashSize: 0.2, gapSize: 0.1 });
+    const lines = new THREE.LineSegments(geom, mat);
+    lines.computeLineDistances();
+    g.add(lines);
+  }
+  g.name = 'toolpath';
+  g.visible = app.viz.toolpath;
+}
+
+function applyVizToggles() {
+  if (!app.three) return;
+  const t = app.three;
+  t.machine.visible = app.viz.machine;
+  t.stock.visible   = app.viz.stock;
+  t.grid.visible    = app.viz.grid;
+  t.axes.visible    = app.viz.axes;
+  t.origin.visible  = app.viz.origin;
+  t.toolpathGroup.visible = app.viz.toolpath;
+  rebuildToolpath();
+
+  document.querySelectorAll('.vp-vis-toggles .btn').forEach(b => {
+    const key = b.id.replace('vis-', '');
+    if (app.viz[key]) b.classList.remove('off');
+    else b.classList.add('off');
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PLAYBACK
+// ═══════════════════════════════════════════════════════════════════════════
+
+function resetPlayback() {
+  app.currentMove = -1;
+  app.elapsed = 0;
+  app.playing = false;
+  document.getElementById('pb-play').textContent = '▶';
+  updateDRO({ x: 0, y: 0, z: 0, a: 0, b: 0 }, null);
+  updateTimeline();
+  highlightCurrentLine(null);
+  if (app.three) {
+    app.three.tool.position.set(0, 5, 0);
+    // reset B-rotary
+    const tableB = app.three.machine.getObjectByName('tableB');
+    if (tableB) tableB.rotation.y = 0;
+    const trunnion = app.three.machine.getObjectByName('trunnion');
+    if (trunnion) trunnion.rotation.x = 0;
+  }
+  rebuildToolpath();
+}
+
+function advancePlayback(dt) {
+  if (!app.moves.length) { app.playing = false; return; }
+  app.elapsed += dt * app.speed;
+
+  if (app.elapsed >= app.totalTime) {
+    app.elapsed = app.totalTime;
+    app.playing = false;
+    document.getElementById('pb-play').textContent = '▶';
+  }
+  applyStateAtTime(app.elapsed);
+}
+
+function applyStateAtTime(t) {
+  // Walk moves accumulating duration
+  let acc = 0;
+  let idx = -1;
+  let interp = 0;
+  for (let i = 0; i < app.moves.length; i++) {
+    const mv = app.moves[i];
+    const d = mv.duration ?? 0.01;
+    if (t <= acc + d) {
+      idx = i;
+      interp = (t - acc) / d;
+      break;
+    }
+    acc += d;
+  }
+  if (idx === -1) idx = app.moves.length - 1;
+
+  app.currentMove = idx;
+  const mv = app.moves[idx];
+  if (!mv) return;
+
+  const from = mv.from || { x: 0, y: 0, z: 0, a: 0, b: 0 };
+  const to   = mv.to   || from;
+  const pos = {
+    x: from.x + (to.x - from.x) * interp,
+    y: from.y + (to.y - from.y) * interp,
+    z: from.z + (to.z - from.z) * interp,
+    a: from.a + (to.a - from.a) * interp,
+    b: from.b + (to.b - from.b) * interp
+  };
+
+  updateTool3D(pos);
+  updateDRO(pos, mv);
+  updateTimeline();
+  highlightCurrentLine(mv.lineNumber);
+  updateStatusBar(mv, pos);
+}
+
+function updateTool3D(pos) {
+  if (!app.three) return;
+  // Position (inch → viewport units, mm→in conversion if needed)
+  const x = (pos.x / 25.4) * 10;
+  const y = (pos.z / 25.4) * 10 + 2.5; // Z is vertical in our viewport
+  const z = (pos.y / 25.4) * 10;
+  app.three.tool.position.set(x, y, z);
+
+  // Rotate trunnion + table
+  const trunnion = app.three.machine.getObjectByName('trunnion');
+  if (trunnion) trunnion.rotation.x = (pos.a * Math.PI) / 180;
+  const tableB = app.three.machine.getObjectByName('tableB');
+  if (tableB) tableB.rotation.y = (pos.b * Math.PI) / 180;
+}
+
+function updateDRO(pos, mv) {
+  document.getElementById('dro-x').textContent = (pos.x / 25.4).toFixed(4);
+  document.getElementById('dro-y').textContent = (pos.y / 25.4).toFixed(4);
+  document.getElementById('dro-z').textContent = (pos.z / 25.4).toFixed(4);
+  document.getElementById('dro-a').textContent = pos.a.toFixed(3);
+  document.getElementById('dro-b').textContent = pos.b.toFixed(3);
+
+  if (mv) {
+    document.getElementById('feed-val').textContent = `${(mv.feed || 0).toFixed(2)} mm/min`;
+  }
+}
+
+function updateTimeline() {
+  const tl = document.getElementById('timeline');
+  if (app.totalTime > 0) {
+    tl.value = Math.round((app.elapsed / app.totalTime) * 1000);
+  } else {
+    tl.value = 0;
+  }
+  document.getElementById('t-elapsed').textContent = `${app.elapsed.toFixed(2)} s`;
+  document.getElementById('t-total').textContent = `${app.totalTime.toFixed(2)} s`;
+  document.getElementById('status-progress').textContent = `${Math.round(100 * (app.totalTime > 0 ? app.elapsed / app.totalTime : 0))}%`;
+}
+
+function updateStatusBar(mv, pos) {
+  const dot = document.getElementById('status-dot');
+  dot.className = 'dot ' + (app.playing ? 'run' : 'ok');
+  document.getElementById('status-text').textContent = app.playing ? 'Running' : 'Paused';
+  document.getElementById('status-mode').textContent = mv?.mode === 'rapid' ? 'RAPID' : 'FEED';
+  document.getElementById('status-pos').innerHTML = `X ${(pos.x/25.4).toFixed(4)}  Y ${(pos.y/25.4).toFixed(4)}  Z ${(pos.z/25.4).toFixed(4)}  A ${pos.a.toFixed(1)}  B ${pos.b.toFixed(1)}`;
+  if (mv) document.getElementById('status-line').textContent = `line ${mv.lineNumber || '—'}`;
+}
+
+function highlightCurrentLine(lineNumber) {
+  document.querySelectorAll('.gc-line.current').forEach(el => el.classList.remove('current'));
+  if (!lineNumber) return;
+  const el = document.querySelector(`.gc-line[data-ln="${lineNumber}"]`);
+  if (el) {
+    el.classList.add('current');
+    // Auto-scroll only if not visible
+    const body = document.getElementById('editor-body');
+    const elTop = el.offsetTop;
+    const elBot = elTop + el.offsetHeight;
+    if (elTop < body.scrollTop || elBot > body.scrollTop + body.clientHeight) {
+      el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STATS / LIMITS / WARNINGS PANELS
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderStats() {
+  const s = app.summary || { totalMoves: app.moves.length, totalTime: app.totalTime };
+  document.getElementById('stat-lines').textContent = app.parsed?.lines.length || 0;
+  document.getElementById('stat-moves').textContent = app.moves.length;
+
+  let rapid = 0, feed = 0, m6 = 0;
+  let feedDist = 0, rapidDist = 0;
+  const ranges = {
+    x: [Infinity, -Infinity], y: [Infinity, -Infinity], z: [Infinity, -Infinity],
+    a: [Infinity, -Infinity], b: [Infinity, -Infinity]
+  };
+  for (const mv of app.moves) {
+    if (mv.mode === 'rapid') rapid++; else feed++;
+    const d = mv.distance || 0;
+    if (mv.mode === 'rapid') rapidDist += d; else feedDist += d;
+    if (mv.to) {
+      for (const axis of ['x','y','z','a','b']) {
+        if (typeof mv.to[axis] === 'number') {
+          ranges[axis][0] = Math.min(ranges[axis][0], mv.to[axis]);
+          ranges[axis][1] = Math.max(ranges[axis][1], mv.to[axis]);
+        }
+      }
+    }
+  }
+  for (const l of app.parsed?.lines || []) {
+    if (l.words?.some(w => w.letter === 'M' && Math.abs(w.value - 6) < 1e-6)) m6++;
+  }
+
+  document.getElementById('stat-rapid').textContent = rapid;
+  document.getElementById('stat-feed').textContent = feed;
+  document.getElementById('stat-m6').textContent = m6;
+  document.getElementById('stat-dist').textContent = `${(feedDist / 25.4).toFixed(2)} in`;
+  document.getElementById('stat-dist-rapid').textContent = `${(rapidDist / 25.4).toFixed(2)} in`;
+  document.getElementById('stat-time').textContent = `${(app.totalTime / 60).toFixed(2)} min`;
+
+  const fmtRange = (r, div = 25.4) => r[0] === Infinity ? '—' : `${(r[0]/div).toFixed(3)} → ${(r[1]/div).toFixed(3)}`;
+  document.getElementById('stat-x-range').textContent = fmtRange(ranges.x);
+  document.getElementById('stat-y-range').textContent = fmtRange(ranges.y);
+  document.getElementById('stat-z-range').textContent = fmtRange(ranges.z);
+  document.getElementById('stat-a-range').textContent = fmtRange(ranges.a, 1) + '°';
+  document.getElementById('stat-b-range').textContent = fmtRange(ranges.b, 1) + '°';
+}
+
+function renderLimits() {
+  const panel = document.getElementById('limits-list');
+  const env = document.getElementById('envelope-info');
+  const m = app.machine;
+
+  env.innerHTML = [
+    `X: ${m.linear.x.min} → ${m.linear.x.max} ${m.linear.x.unit}`,
+    `Y: ${m.linear.y.min} → ${m.linear.y.max} ${m.linear.y.unit}`,
+    `Z: ${m.linear.z.min} → ${m.linear.z.max} ${m.linear.z.unit}`,
+    `A: ${m.rotary.a.min}° → ${m.rotary.a.max}°`,
+    `B: ${m.rotary.b.min}° → ${m.rotary.b.max}°${m.rotary.b.continuous ? ' (continuous)' : ''}`
+  ].join('<br>');
+
+  // Per-axis check
+  const violations = { x: 0, y: 0, z: 0, a: 0, b: 0 };
+  const extremes = { x: [Infinity, -Infinity], y: [Infinity,-Infinity], z: [Infinity,-Infinity], a: [Infinity,-Infinity], b: [Infinity,-Infinity] };
+
+  for (const mv of app.moves) {
+    if (!mv.to) continue;
+    const p = mv.to;
+    for (const axis of ['x','y','z']) {
+      if (typeof p[axis] !== 'number') continue;
+      const posInInch = p[axis] / 25.4;
+      extremes[axis][0] = Math.min(extremes[axis][0], posInInch);
+      extremes[axis][1] = Math.max(extremes[axis][1], posInInch);
+      if (posInInch < m.linear[axis].min || posInInch > m.linear[axis].max) violations[axis]++;
+    }
+    for (const axis of ['a','b']) {
+      if (typeof p[axis] !== 'number') continue;
+      extremes[axis][0] = Math.min(extremes[axis][0], p[axis]);
+      extremes[axis][1] = Math.max(extremes[axis][1], p[axis]);
+      if (!m.rotary[axis].continuous) {
+        if (p[axis] < m.rotary[axis].min || p[axis] > m.rotary[axis].max) violations[axis]++;
+      }
+    }
+  }
+
+  const rows = [];
+  for (const axis of ['x','y','z']) {
+    const v = violations[axis];
+    const e = extremes[axis];
+    const cls = v > 0 ? 'fail' : 'ok';
+    const rangeText = e[0] === Infinity ? '—' : `${e[0].toFixed(3)} → ${e[1].toFixed(3)} in`;
+    const status = v > 0 ? `${v} violations` : 'within envelope';
+    rows.push(`<div class="limit-row ${cls}"><span>${axis.toUpperCase()}</span><span class="mono">${rangeText}</span><span>${status}</span></div>`);
+  }
+  for (const axis of ['a','b']) {
+    const v = violations[axis];
+    const e = extremes[axis];
+    const cls = v > 0 ? 'fail' : 'ok';
+    const rangeText = e[0] === Infinity ? '—' : `${e[0].toFixed(1)}° → ${e[1].toFixed(1)}°`;
+    const status = v > 0 ? `${v} violations` : 'within envelope';
+    rows.push(`<div class="limit-row ${cls}"><span>${axis.toUpperCase()}</span><span class="mono">${rangeText}</span><span>${status}</span></div>`);
+  }
+  panel.innerHTML = rows.join('');
+}
+
+function renderWarnings() {
+  const list = document.getElementById('warn-list');
+  const hudWarn = document.getElementById('hud-warn-card');
+  const hudList = document.getElementById('hud-warn-list');
+  const errors = app.parsed?.errors || [];
+
+  const items = [];
+  for (const e of errors) {
+    items.push(`<div class="item error"><div>${e.message}</div><div class="line-hint">line ${e.line}</div></div>`);
+  }
+
+  // Envelope violations warning
+  let envViol = 0;
+  const m = app.machine;
+  for (const mv of app.moves) {
+    if (!mv.to) continue;
+    for (const axis of ['x','y','z']) {
+      const p = mv.to[axis] / 25.4;
+      if (p < m.linear[axis].min || p > m.linear[axis].max) { envViol++; break; }
+    }
+  }
+  if (envViol > 0) {
+    items.push(`<div class="item error"><div>${envViol} move(s) outside machine envelope — see Limits tab.</div></div>`);
+  }
+
+  // No spindle-on warning
+  const hasSpindleOn = app.parsed?.lines.some(l => l.words?.some(w => w.letter === 'M' && (w.value === 3 || w.value === 4)));
+  const hasFeedMove = app.moves.some(mv => mv.mode !== 'rapid');
+  if (hasFeedMove && !hasSpindleOn) {
+    items.push(`<div class="item"><div>Feed moves present but no M3/M4 spindle-on command. Tool will crash.</div></div>`);
+  }
+
+  // No program end
+  const hasEnd = app.parsed?.lines.some(l => l.words?.some(w => w.letter === 'M' && (w.value === 2 || w.value === 30)));
+  if (app.parsed?.lines.length && !hasEnd) {
+    items.push(`<div class="item"><div>No M2 or M30 program-end marker.</div></div>`);
+  }
+
+  if (items.length) {
+    list.innerHTML = items.join('');
+    hudWarn.style.display = '';
+    hudList.innerHTML = items.slice(0, 2).map(s => s.replace(/<div class="item[^"]*"><div>/, '• ').replace(/<\/div><\/div>/, '').replace(/<div class="line-hint">[^<]*<\/div>/, '')).join('<br>');
+  } else {
+    list.innerHTML = '<div style="color:var(--kc-text-3); font-size:12px;">No issues — program looks clean.</div>';
+    hudWarn.style.display = 'none';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// UI WIRING
+// ═══════════════════════════════════════════════════════════════════════════
+
+function wireUI() {
+  // Tabs
+  document.querySelectorAll('.tabs .tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const key = tab.dataset.tab;
+      document.querySelectorAll('.tabs .tab').forEach(t => t.classList.toggle('active', t === tab));
+      document.querySelectorAll('.tab-body').forEach(b => b.classList.toggle('hidden', b.dataset.tab !== key));
+    });
+  });
+
+  // Machine picker
+  document.getElementById('machine-picker').addEventListener('change', e => {
+    app.machine = MACHINES[e.target.value];
+    document.getElementById('hud-machine').textContent = app.machine.name;
+    // Rebuild stock
+    if (app.three) {
+      app.three.root.remove(app.three.stock);
+      app.three.stock = buildStock(app.machine);
+      app.three.root.add(app.three.stock);
+      app.three.stock.visible = app.viz.stock;
+    }
+    renderLimits();
+    renderWarnings();
+  });
+
+  // Topbar
+  document.getElementById('btn-open').addEventListener('click', () => document.getElementById('file-input').click());
+  document.getElementById('file-input').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => setGcode(ev.target.result, file.name);
+    reader.readAsText(file);
+  });
+
+  document.getElementById('btn-examples').addEventListener('click', () => openModal('modal-examples'));
+  document.getElementById('btn-help').addEventListener('click', () => openModal('modal-help'));
+  document.getElementById('btn-share').addEventListener('click', () => {
+    // Put gcode in a hash URL (compressed)
+    try {
+      const compressed = btoa(encodeURIComponent(app.gcode));
+      const url = `${location.origin}${location.pathname}#m=${app.machine.id}&g=${compressed}`;
+      navigator.clipboard.writeText(url);
+      alert('Link copied to clipboard.');
+    } catch (e) {
+      alert('Program too big for a URL; download instead.');
+    }
+  });
+
+  // Close modals
+  document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => closeModal(b.dataset.close)));
+  document.querySelectorAll('.modal-overlay').forEach(o => {
+    o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+  });
+
+  // Examples
+  const examplesList = document.getElementById('example-list');
+  for (const ex of EXAMPLES) {
+    const b = document.createElement('button');
+    b.className = 'example-btn';
+    b.innerHTML = `<div class="title">${ex.title}</div><div class="desc">${ex.desc}</div>`;
+    b.addEventListener('click', () => {
+      setGcode(ex.code, `${ex.id}.ngc`);
+      closeModal('modal-examples');
+    });
+    examplesList.appendChild(b);
+  }
+
+  // Editor actions
+  document.getElementById('btn-edit').addEventListener('click', () => {
+    const text = prompt('Edit G-code:', app.gcode);
+    if (text !== null) setGcode(text, document.getElementById('file-name').textContent);
+  });
+  document.getElementById('btn-clear').addEventListener('click', () => setGcode('', 'untitled.ngc'));
+  document.getElementById('btn-copy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(app.gcode); alert('Copied'); } catch (e) { alert('Clipboard blocked'); }
+  });
+  document.getElementById('btn-download').addEventListener('click', () => {
+    const blob = new Blob([app.gcode], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = document.getElementById('file-name').textContent || 'program.ngc';
+    a.click();
+  });
+
+  // Playback
+  document.getElementById('pb-play').addEventListener('click', togglePlay);
+  document.getElementById('pb-stop').addEventListener('click', resetPlayback);
+  document.getElementById('pb-step').addEventListener('click', stepOne);
+  document.getElementById('timeline').addEventListener('input', e => {
+    const pct = e.target.value / 1000;
+    app.elapsed = pct * app.totalTime;
+    applyStateAtTime(app.elapsed);
+  });
+  document.getElementById('speed-chip').addEventListener('change', e => app.speed = parseFloat(e.target.value));
+
+  // Visibility toggles
+  document.querySelectorAll('.vp-vis-toggles .btn').forEach(b => {
+    b.addEventListener('click', () => {
+      const key = b.id.replace('vis-', '');
+      app.viz[key] = !app.viz[key];
+      applyVizToggles();
+    });
+  });
+
+  // Drag-drop
+  const dz = document.getElementById('dropzone');
+  window.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('active'); });
+  window.addEventListener('dragleave', e => { if (e.target === document.body || !e.relatedTarget) dz.classList.remove('active'); });
+  window.addEventListener('drop', e => {
+    e.preventDefault();
+    dz.classList.remove('active');
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => setGcode(ev.target.result, file.name);
+    reader.readAsText(file);
+  });
+
+  // Keyboard
+  window.addEventListener('keydown', e => {
+    const tag = e.target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if (e.key === ' ') { e.preventDefault(); togglePlay(); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); stepOne(); }
+    else if (e.key === 'ArrowLeft')  { e.preventDefault(); stepOne(-1); }
+    else if (e.key === 'Home')       { e.preventDefault(); resetPlayback(); }
+    else if (e.key === 'End')        { e.preventDefault(); app.elapsed = app.totalTime; applyStateAtTime(app.elapsed); }
+    else if (e.key === 'f' || e.key === 'F') { fitView(); }
+    else if (e.key === 'r' || e.key === 'R') { resetCamera(); }
+    else if (e.key === '1') setCameraView('front');
+    else if (e.key === '3') setCameraView('right');
+    else if (e.key === '7') setCameraView('top');
+    else if ((e.metaKey || e.ctrlKey) && e.key === 'o') { e.preventDefault(); document.getElementById('file-input').click(); }
+    else if ((e.metaKey || e.ctrlKey) && e.key === 'e') { e.preventDefault(); openModal('modal-examples'); }
+  });
+
+  // Parse URL hash for #m=machine&g=base64_gcode
+  if (location.hash) {
+    const params = new URLSearchParams(location.hash.slice(1));
+    if (params.get('m') && MACHINES[params.get('m')]) {
+      document.getElementById('machine-picker').value = params.get('m');
+      app.machine = MACHINES[params.get('m')];
+    }
+    if (params.get('g')) {
+      try { setGcode(decodeURIComponent(atob(params.get('g'))), 'shared.ngc'); } catch (e) {}
+    }
+  }
+}
+
+function togglePlay() {
+  if (!app.moves.length) return;
+  if (app.elapsed >= app.totalTime) { app.elapsed = 0; app.currentMove = -1; }
+  app.playing = !app.playing;
+  document.getElementById('pb-play').textContent = app.playing ? '⏸' : '▶';
+}
+
+function stepOne(dir = 1) {
+  if (!app.moves.length) return;
+  app.playing = false;
+  document.getElementById('pb-play').textContent = '▶';
+  app.currentMove = Math.max(-1, Math.min(app.moves.length - 1, app.currentMove + dir));
+  // Compute elapsed for this move end
+  let t = 0;
+  for (let i = 0; i <= app.currentMove; i++) t += app.moves[i]?.duration ?? 0.01;
+  app.elapsed = t;
+  applyStateAtTime(app.elapsed);
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function resetCamera() {
+  if (!app.three) return;
+  app.three.camera.position.set(12, 10, 14);
+  app.three.controls.target.set(0, 2, 0);
+  app.three.controls.update();
+}
+function setCameraView(v) {
+  if (!app.three) return;
+  if (v === 'front') { app.three.camera.position.set(0, 4, 18); app.three.controls.target.set(0, 2, 0); }
+  if (v === 'right') { app.three.camera.position.set(18, 4, 0); app.three.controls.target.set(0, 2, 0); }
+  if (v === 'top')   { app.three.camera.position.set(0, 20, 0.01); app.three.controls.target.set(0, 0, 0); }
+  app.three.controls.update();
+}
+function fitView() {
+  resetCamera();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════════════════════
+
+initThree();
+wireUI();
+
+// Load first example so the page isn't empty
+setGcode(EXAMPLES[0].code, `${EXAMPLES[0].id}.ngc`);
+
+// Expose for debugging
+window.app = app;
+
+</script>
+
+</body>
+</html>

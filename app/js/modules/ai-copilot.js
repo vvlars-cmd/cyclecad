@@ -1,4 +1,4 @@
-/* AI Copilot v1.1 — multi-step CAD generation from natural language */
+/* AI Copilot v1.2 — multi-step CAD generation from natural language. 3.10.5 adds sketch.polyline support + templates for ball bearings (ISO 15/DIN 625), bearing housings, T-slot aluminum extrusions (2020–8080), and U-brackets. */
 (function(){
   'use strict';
   window.CycleCAD = window.CycleCAD || {};
@@ -93,6 +93,7 @@
     '- sketch.start {plane:"XY"}',
     '- sketch.rect {width, height}  — rectangle centered at current origin',
     '- sketch.circle {radius}  — OR diameter',
+    '- sketch.polyline {points:[[x,z],[x,z],...]}  — closed polygon in XZ plane (for custom shapes, gear teeth, T-slot profiles, cams)',
     '- sketch.end',
     '- ops.extrude {depth, position:[x,y,z], subtract:bool}  — create solid. subtract:true carves from last body.',
     '- ops.hole {position:[x,y,z], depth, radius OR width+height}  — carves cylinder OR rectangular hole through last body.',
@@ -255,6 +256,14 @@
     if (method === 'sketch.start') { miniState.currentSketch = { plane: params.plane||'XY', origin: getPos(params) }; return {ok:true}; }
     if (method === 'sketch.rect')  { miniState.currentSketch = Object.assign(miniState.currentSketch||{}, { shape:'rect', width: params.width||params.w||50, height: params.height||params.h||30, origin: getPos(params) }); return {ok:true}; }
     if (method === 'sketch.circle'){ miniState.currentSketch = Object.assign(miniState.currentSketch||{}, { shape:'circle', radius: params.radius||params.r||(params.diameter?params.diameter/2:25), origin: getPos(params) }); return {ok:true}; }
+    if (method === 'sketch.polyline' || method === 'sketch.polygon') {
+      // Points arrive as [[x,z],[x,z],...] in world XZ plane. Min 3 pts for a valid polygon.
+      const raw = Array.isArray(params.points) ? params.points : [];
+      const pts = raw.filter(p => Array.isArray(p) && p.length >= 2).map(p => [Number(p[0])||0, Number(p[1])||0]);
+      if (pts.length < 3) return {ok:false, note:'polyline needs at least 3 points'};
+      miniState.currentSketch = Object.assign(miniState.currentSketch||{}, { shape:'polyline', points: pts, origin: getPos(params) });
+      return {ok:true};
+    }
     if (method === 'sketch.line' || method === 'sketch.end') return {ok:true};
     if (method === 'ops.extrude') {
       const d = params.depth||params.height||params.distance||20;
@@ -264,6 +273,20 @@
       let g;
       if (sk.shape==='rect')         g = new THREE.BoxGeometry(sk.width, d, sk.height);
       else if (sk.shape==='circle')  g = new THREE.CylinderGeometry(sk.radius, sk.radius, d, 48);
+      else if (sk.shape==='polyline' && Array.isArray(sk.points) && sk.points.length >= 3) {
+        // Build Shape from [x,z] points. RotateX(-PI/2) maps:
+        //   Shape-X -> world X, Shape-Y -> world -Z, extrude Z -> world +Y.
+        // To preserve user's intent that points[i][1] is world Z, negate Y into Shape.
+        const shape = new THREE.Shape();
+        const pts = sk.points;
+        shape.moveTo(pts[0][0], -pts[0][1]);
+        for (let i = 1; i < pts.length; i++) shape.lineTo(pts[i][0], -pts[i][1]);
+        shape.closePath();
+        g = new THREE.ExtrudeGeometry(shape, { depth: d, bevelEnabled: false, curveSegments: 24 });
+        g.translate(0, 0, -d/2);  // center along extrude axis BEFORE rotating
+        g.rotateX(-Math.PI/2);
+        // After rotation: geometry spans world Y:[-d/2, d/2] centered at origin. Matches BoxGeometry/CylinderGeometry convention.
+      }
       else                           g = new THREE.BoxGeometry(50, d, 30);
       const isSubtract = params.subtract === true || params.operation === 'cut' || params.operation === 'subtract';
       const mat = new THREE.MeshStandardMaterial({color: isSubtract?0x1a1a1a:0x4a90e2, metalness:0.35, roughness:0.45});
@@ -591,6 +614,176 @@
         {method:'view.fit', params:{}}
       ];
     }
+    // Ball bearing (ISO 15 / DIN 625 deep-groove) — simplified solid ring.
+    // Designations: 60x (light), 62x (medium), 63x (heavy), 6x (small single-digit), 625, 608 etc.
+    const bearingDesignations = {
+      '608':  {d:8,  D:22, B:7},
+      '625':  {d:5,  D:16, B:5},
+      '6000': {d:10, D:26, B:8},
+      '6001': {d:12, D:28, B:8},
+      '6002': {d:15, D:32, B:9},
+      '6003': {d:17, D:35, B:10},
+      '6004': {d:20, D:42, B:12},
+      '6005': {d:25, D:47, B:12},
+      '6006': {d:30, D:55, B:13},
+      '6200': {d:10, D:30, B:9},
+      '6201': {d:12, D:32, B:10},
+      '6202': {d:15, D:35, B:11},
+      '6203': {d:17, D:40, B:12},
+      '6204': {d:20, D:47, B:14},
+      '6205': {d:25, D:52, B:15},
+      '6206': {d:30, D:62, B:16},
+      '6300': {d:10, D:35, B:11},
+      '6301': {d:12, D:37, B:12},
+      '6302': {d:15, D:42, B:13},
+      '6303': {d:17, D:47, B:14},
+      '6304': {d:20, D:52, B:15}
+    };
+    const bearingCodeM = p.match(/\b(6[023]0[0-6]|608|625)\b/);
+    // Housing/pocket/seat keywords take priority — a "bearing pocket for 6204" is a housing, not a bearing body.
+    const isHousingIntent = /bearing\s*(?:housing|pocket|seat|recess|mount)/.test(p);
+    if (bearingCodeM && /bearing/.test(p) && !isHousingIntent) {
+      const spec = bearingDesignations[bearingCodeM[1]];
+      if (spec) {
+        const code = bearingCodeM[1];
+        return [
+          {method:'sketch.start', params:{plane:'XY'}},
+          {method:'sketch.circle', params:{radius: spec.D/2}},
+          {method:'ops.extrude', params:{depth: spec.B, position:[0,0,0]}, note:'bearing '+code+' OD Ø'+spec.D+' x width '+spec.B},
+          {method:'ops.hole', params:{position:[0,0,0], radius: spec.d/2, depth: spec.B + 2}, note:code+' bore Ø'+spec.d+' (ISO 15 — simplified ring, real bearing has balls + races)'},
+          {method:'view.set', params:{view:'iso'}},
+          {method:'view.fit', params:{}}
+        ];
+      }
+    }
+    // Generic ball bearing with explicit bore ("ball bearing 10mm bore")
+    const genBearingM = p.match(/(?:ball|deep[- ]?groove|roller)\s*bearing/);
+    if (genBearingM) {
+      const boreM = p.match(/(\d+)\s*mm\s*bore|bore\s+(\d+)|Ø\s*(\d+)/);
+      const bore = boreM ? parseInt(boreM[1]||boreM[2]||boreM[3]) : 10;
+      // Rough approximation matching 62xx series: OD ≈ 2.5*bore + 10, width ≈ 0.4*bore + 4
+      const OD = Math.round(bore * 2.5 + 10);
+      const B = Math.max(5, Math.round(bore * 0.4 + 4));
+      return [
+        {method:'sketch.start', params:{plane:'XY'}},
+        {method:'sketch.circle', params:{radius: OD/2}},
+        {method:'ops.extrude', params:{depth: B, position:[0,0,0]}, note:'ball bearing Ø'+OD+' x '+B+'mm (approx 62xx series)'},
+        {method:'ops.hole', params:{position:[0,0,0], radius: bore/2, depth: B+2}, note:'bore Ø'+bore+' (look up ISO 15 for exact OD)'},
+        {method:'view.set', params:{view:'iso'}},
+        {method:'view.fit', params:{}}
+      ];
+    }
+    // Bearing housing / pocket — block with recess and clearance through-hole
+    if (/bearing\s*(?:housing|pocket|seat|recess|mount)/.test(p)) {
+      const odM = p.match(/(\d+)\s*mm\s*(?:od|outer|outside)|for\s+(?:a\s+)?(\d+)\s*mm|bearing\s+(\d+)\s*mm/);
+      // If the user named a bearing designation, look up its OD
+      const housingBearingCode = p.match(/\b(6[023]0[0-6]|608|625)\b/);
+      const codeSpec = housingBearingCode ? bearingDesignations[housingBearingCode[1]] : null;
+      const OD = odM ? parseInt(odM[1]||odM[2]||odM[3]) : (codeSpec ? codeSpec.D : 32);
+      const pocketDepth = Math.max(6, Math.round(OD * 0.3));
+      const wall = 8;
+      const blockW = OD + 2*wall;
+      const blockH = OD + 2*wall;
+      const blockD = pocketDepth + 5;
+      const throughR = Math.max(3, OD/2 - 4);
+      return [
+        {method:'sketch.start', params:{plane:'XY'}},
+        {method:'sketch.rect', params:{width: blockW, height: blockH}},
+        {method:'ops.extrude', params:{depth: blockD, position:[0,0,0]}, note:'housing block '+blockW+'×'+blockH+'×'+blockD+' for Ø'+OD+' bearing'},
+        {method:'ops.hole', params:{position:[0, blockD - pocketDepth, 0], radius: OD/2, depth: pocketDepth + 0.5}, note:'bearing pocket Ø'+OD+' × '+pocketDepth+'mm deep'},
+        {method:'ops.hole', params:{position:[0,0,0], radius: throughR, depth: blockD + 2}, note:'shaft clearance bore Ø'+(throughR*2).toFixed(0)},
+        // 4 mounting holes at corners
+        {method:'ops.hole', params:{position:[-blockW/2 + 6, 0, -blockH/2 + 6], radius: 2.5, depth: blockD + 2}, note:'mounting hole 1/4'},
+        {method:'ops.hole', params:{position:[ blockW/2 - 6, 0, -blockH/2 + 6], radius: 2.5, depth: blockD + 2}, note:'mounting hole 2/4'},
+        {method:'ops.hole', params:{position:[-blockW/2 + 6, 0,  blockH/2 - 6], radius: 2.5, depth: blockD + 2}, note:'mounting hole 3/4'},
+        {method:'ops.hole', params:{position:[ blockW/2 - 6, 0,  blockH/2 - 6], radius: 2.5, depth: blockD + 2}, note:'mounting hole 4/4'},
+        {method:'view.set', params:{view:'iso'}},
+        {method:'view.fit', params:{}}
+      ];
+    }
+    // T-slot aluminum extrusion (2020/3030/4040/4080 profiles — Bosch/Item/80/20 style)
+    const tSlotKw = /\bt-?slot|aluminum\s*(?:extrusion|profile)|\b80[- ]?20\b|\bitem\s*profile|\bmisumi\s*extrusion|\bbosch\s*extrusion|structural\s*extrusion/.test(p);
+    const codeM = p.match(/\b(20|25|30|40|45|50|60|80|100)\s*(?:x|×)\s*(20|25|30|40|45|50|60|80|100)\b/);
+    const fourDigitM = p.match(/\b(2020|2040|2080|3030|3060|4040|4080|4545|6060|8080)\b/);
+    if (tSlotKw || codeM || (fourDigitM && /extrusion|profile|t-?slot/.test(p))) {
+      let W = 40, H = 40;
+      if (codeM)           { W = parseInt(codeM[1]);        H = parseInt(codeM[2]); }
+      else if (fourDigitM) {
+        const c = fourDigitM[1];
+        W = parseInt(c.slice(0, c.length/2));
+        H = parseInt(c.slice(c.length/2));
+      }
+      const lenM = p.match(/(\d{2,5})\s*mm\s*(?:long|length)|length\s+(\d{2,5})|\b(\d{3,4})\s*mm\s+(?:rail|bar|stick|piece)/);
+      let length = lenM ? parseInt(lenM[1]||lenM[2]||lenM[3]) : 0;
+      if (!length) {
+        // Fallback: take the largest \d+mm value that isn't the profile code itself (e.g. "4040 extrusion 1000mm")
+        const allMm = [...p.matchAll(/\b(\d{2,5})\s*mm\b/g)].map(m => parseInt(m[1]))
+          .filter(n => n !== W && n !== H && n !== W*100 + H && n !== W*10 + H);
+        length = allMm.length ? Math.max(...allMm) : 500;
+      }
+      // Slot geometry scales with profile size — approximation of real T-slot
+      const slotW = W <= 25 ? 6 : W <= 40 ? 8 : 10;   // slot opening (across inward axis)
+      const slotD = Math.max(6, W/3);                  // slot depth
+      const yMargin = 2;  // covers Y range [0, length]
+      const plan = [
+        {method:'sketch.start', params:{plane:'XY'}},
+        {method:'sketch.rect', params:{width: W, height: H}},
+        {method:'ops.extrude', params:{depth: length, position:[0,0,0]}, note:W+'×'+H+' T-slot extrusion, '+length+'mm long (simplified — real profile has T-grooves + hollow center)'},
+        // +X face slot
+        {method:'ops.hole', params:{position:[W/2 - slotD/2, 0, 0], width: slotD, height: slotW, depth: length + yMargin}, note:'+X T-slot'},
+        // -X face slot
+        {method:'ops.hole', params:{position:[-W/2 + slotD/2, 0, 0], width: slotD, height: slotW, depth: length + yMargin}, note:'-X T-slot'},
+        // +Z face slot
+        {method:'ops.hole', params:{position:[0, 0,  H/2 - slotD/2], width: slotW, height: slotD, depth: length + yMargin}, note:'+Z T-slot'},
+        // -Z face slot
+        {method:'ops.hole', params:{position:[0, 0, -H/2 + slotD/2], width: slotW, height: slotD, depth: length + yMargin}, note:'-Z T-slot'},
+        {method:'view.set', params:{view:'iso'}},
+        {method:'view.fit', params:{}}
+      ];
+      // For double-wide profiles (e.g. 4080), the longer face gets two T-slots per side
+      if (Math.max(W, H) >= 2 * Math.min(W, H)) {
+        const longSide = W > H ? 'x' : 'z';
+        const longDim = Math.max(W, H);
+        const offset = longDim / 4;
+        if (longSide === 'x') {
+          // Add extra slots on top/bottom (Z faces) since X-axis is longer
+          plan.splice(-2, 0,
+            {method:'ops.hole', params:{position:[ offset, 0,  H/2 - slotD/2], width: slotW, height: slotD, depth: length + yMargin}, note:'+Z T-slot (extra)'},
+            {method:'ops.hole', params:{position:[-offset, 0,  H/2 - slotD/2], width: slotW, height: slotD, depth: length + yMargin}, note:'+Z T-slot (extra)'},
+            {method:'ops.hole', params:{position:[ offset, 0, -H/2 + slotD/2], width: slotW, height: slotD, depth: length + yMargin}, note:'-Z T-slot (extra)'},
+            {method:'ops.hole', params:{position:[-offset, 0, -H/2 + slotD/2], width: slotW, height: slotD, depth: length + yMargin}, note:'-Z T-slot (extra)'}
+          );
+        }
+      }
+      return plan;
+    }
+    // U-bracket / channel bracket
+    if (/u-?bracket|u-?channel|channel\s*bracket|mounting\s*channel/.test(p)) {
+      const wM = p.match(/(\d+)\s*mm\s*(?:wide|width)|width\s+(\d+)/);
+      const width = wM ? parseInt(wM[1]||wM[2]) : 60;
+      const hM = p.match(/(\d+)\s*mm\s*(?:high|height|tall)|height\s+(\d+)/);
+      const height = hM ? parseInt(hM[1]||hM[2]) : 40;
+      const lM = p.match(/(\d+)\s*mm\s*(?:long|length)|length\s+(\d+)/);
+      const length = lM ? parseInt(lM[1]||lM[2]) : 100;
+      const wall = Math.max(3, Math.round(Math.min(width, height) / 12));
+      const holesM = p.match(/(\d+)\s*holes?/);
+      const nHoles = holesM ? parseInt(holesM[1]) : 2;
+      const plan = [
+        {method:'sketch.start', params:{plane:'XY'}},
+        {method:'sketch.rect', params:{width: width, height: length}},
+        {method:'ops.extrude', params:{depth: height, position:[0,0,0]}, note:'U-bracket blank '+width+'×'+height+'×'+length+'mm'},
+        // Pocket cut from top down to wall thickness above base. Final Y span: [wall-0.5, height+1.5], intersects body at [wall, height].
+        {method:'ops.hole', params:{position:[0, wall, 0], width: width - 2*wall, height: length + 2, depth: height - wall + 2}, note:'U-bracket pocket ('+(width - 2*wall)+'×'+(height - wall)+' leaves base + 2 side walls)'}
+      ];
+      // Mounting holes through the base plate
+      for (let i = 0; i < nHoles; i++) {
+        const y = (nHoles === 1) ? 0 : -length/2 + 12 + i * ((length - 24) / Math.max(1, nHoles - 1));
+        plan.push({method:'ops.hole', params:{position:[0, 0, y], radius: 3, depth: wall + 2}, note:'base mounting hole '+(i+1)+'/'+nHoles});
+      }
+      plan.push({method:'view.set', params:{view:'iso'}});
+      plan.push({method:'view.fit', params:{}});
+      return plan;
+    }
     return null;
   }
   async function run(){
@@ -723,5 +916,5 @@
     abort: () => abort(),
     getState: () => ({ running:S.running, stepIndex:S.stepIndex, results:S.results.length, errors:S.errors.length, model:S.els.model?.value })
   };
-  console.log('AI Copilot v1.1 module loaded');
+  console.log('AI Copilot v1.2 module loaded');
 })();

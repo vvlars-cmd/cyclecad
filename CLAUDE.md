@@ -1417,3 +1417,58 @@ Marketing kit + installation guides + ONE real technical artifact: bottle-opener
 - `~/cyclecad/HANDOFF-2026-04-24-session-2.md` (this session — Pentacad + Matt + mockup)
 
 Both should be read together when resuming.
+
+## Session 2026-04-24 (session 3) — cyclecad 3.10.5 ship + AI Engineering Analyst v1
+
+### Sprint executed (per session-2 handoff recommendation)
+
+**Task #14 — Polyline support in mini-executor** ✅
+- `app/js/modules/ai-copilot.js` `sketch.polyline` method: accepts `{points:[[x,z],[x,z],...]}`, min 3 points
+- `ops.extrude` now handles `shape==='polyline'` via `THREE.Shape` + `THREE.ExtrudeGeometry`
+- Coordinate math: `Shape.moveTo(x, -z)` compensates for `rotateX(-π/2)` so user input `[x,z]` maps to world X,Z correctly
+- `g.translate(0, 0, -d/2)` before rotate to center along extrude axis, matching `BoxGeometry` / `CylinderGeometry` convention
+- `SYSTEM_PROMPT` updated so LLM knows about the method
+- Unblocks true involute gear teeth, real T-slot cross-sections, custom 2D cams/profiles
+
+**Task #13 — More AI Copilot templates** ✅
+Added 4 new templates to `matchTemplate()` in `app/js/modules/ai-copilot.js`:
+1. **Ball bearing (ISO 15 / DIN 625)** — lookup table of 20 standard deep-groove designations (608, 625, 6000-6006, 6200-6206, 6300-6304). Matches `"6200 bearing"`, `"6203 deep-groove bearing"`, `"608 bearing"`, etc.
+2. **Generic ball bearing with bore** — matches `"ball bearing 15mm bore"`. Uses approximation `OD ≈ 2.5·bore + 10, B ≈ 0.4·bore + 4` for 62xx-series sizing.
+3. **Bearing housing / pocket** — matches `"bearing housing"`, `"bearing pocket for 6204"`, `"bearing seat"`. Block with recess, shaft clearance bore, 4 mounting holes at corners. If a bearing designation is present, looks up its OD automatically.
+4. **T-slot aluminum extrusion** — matches `"2020 t-slot extrusion"`, `"4040 aluminum extrusion 1000mm"`, `"4080 profile"`, `"40x40 extrusion"`. Solid rect extrusion with 4 slot cuts (one per face). Double-wide profiles (4080) get extra slots on the long faces.
+5. **U-bracket / channel bracket** — matches `"U-bracket 60mm wide 40mm high 120mm long"`, `"channel bracket 80mm long"`. Box with rectangular pocket cut from top, leaves base + 2 side walls. Includes configurable mounting holes through base.
+
+Priority/ordering details:
+- Housing keyword detection (`bearing housing|pocket|seat|recess|mount`) runs BEFORE the bearing code regex so `"bearing pocket for 6204"` routes to the housing template with OD=47 looked up from the 6204 spec, not built as a bearing body.
+- T-slot length fallback: if no `"Nmm long"` keyword, take the largest `\d+mm` value that isn't the profile code (handles `"4040 extrusion 1000mm"`).
+
+### Smoke tests (run via `node /tmp/smoke.js` with stubbed globals)
+All 15 prompts match/reject correctly:
+- Specific bearing designations: `6200`, `6203`, `608` → bearing body w/ looked-up dims
+- Generic bearing w/ bore: `"ball bearing 15mm bore"` → approximated Ø48×10
+- Housing w/ explicit OD: `"bearing housing for a 32mm OD bearing"` → 48×48×15 block
+- Housing w/ designation: `"bearing pocket for 6204"` → 63×63×19 block (OD=47 from lookup)
+- T-slot variants: `2020`, `4040` (with 500mm, 1000mm, 600mm lengths)
+- U-bracket with/without dims and hole counts
+- Regression: spur gear + M8 nut still work
+- Unrelated prompt correctly returns `null`
+
+### Key files changed in 3.10.5
+| File | Delta | Notes |
+|------|-------|-------|
+| `app/js/modules/ai-copilot.js` | +190 lines | 4 templates + polyline support + docs |
+| `package.json` | version 3.10.4 → 3.10.5 | |
+| `CLAUDE.md` | This block | Session 3 notes |
+
+### Next: #10 — AI Engineering Analyst v1
+
+Target file: `app/js/modules/ai-engineer.js`
+
+Architecture:
+- **Analytical core** (pure JS math, 0 deps) — `boltedJointAnalysis({boltCount, grade, thread, preload, shearForce, axialForce, moment, bcd, friction, safetyFactor})` returns `{slipResistance:{…}, tensionCheck:{…}, combinedStress:{…}, verdict}`. Unit-tested against MecAgent screenshot: F_friction=24960N, F_max_tensile=6687.5N, σ_vm=558MPa.
+- **Bolt/thread spec tables** — stress area `A_s` per DIN 13: M8=36.6, M10=58.0, M12=84.3, M16=157, M20=245 mm². Proof stress: 4.6=240, 5.6=300, 8.8=640, 10.9=940, 12.9=1100 MPa.
+- **LLM prompt layer** — parses user's natural language into structured `boltedJointParams`, calls analytical core (no fabrication), narrates results in markdown with KaTeX.
+- **KaTeX rendering** — load from CDN on panel open, render equations inline.
+- **UI** — new "Engineer" tab in right panel. Input form OR free-text prompt. Result panel with pass/fail badges + LaTeX math + step-by-step narrative.
+
+Scope v1: bolted-joint only. v2 (task #11) adds gear/shaft/bearing/weld. v3 (task #12) adds RAG citations.

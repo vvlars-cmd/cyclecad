@@ -1,0 +1,104 @@
+{
+  "$schema": "../../docs/pentacad/machine-config-schema.json",
+  "_note": "Pentamachine V1. Board revision key: v1revH (used by generateINI.py). This is the Kickstarter-era 5-axis machine. Still supported by Rockhopper — PocketNC/Settings ships versions/v1revH/PocketNC.ini.",
+  "machineId": "v1",
+  "vendor": "Penta Machine Company",
+  "productUrl": "https://www.pentamachine.com/v1",
+  "family": "V1",
+  "variant": "revH",
+  "displayName": "Pentamachine V1 (legacy)",
+  "type": "5-axis-AB-table",
+  "description": "Original Pocket NC 5-axis desktop CNC (2013 Kickstarter-era, revision H). Still machinable; Pentacad supports it for owners of older hardware.",
+
+  "linux_cnc": {
+    "boardRevision": "v1revH",
+    "iniTemplatePath": "/opt/pocketnc/Settings/versions/v1revH/PocketNC.ini",
+    "calibrationOverlayPath": "/var/opt/pocketnc/CalibrationOverlay.inc",
+    "kinematicsFeature": "five_axis_kinematics"
+  },
+
+  "linear": {
+    "x": { "min": -5.0, "max": 5.0, "unit": "inch", "_confirmed": false },
+    "y": { "min": -3.5, "max": 3.5, "unit": "inch", "_confirmed": false },
+    "z": { "min": -2.5, "max": 2.5, "unit": "inch", "_confirmed": false }
+  },
+
+  "rotary": {
+    "a": { "min": -35, "max": 135, "unit": "deg", "axis": "X", "_confirmed": false },
+    "b": { "min": -360, "max": 360, "unit": "deg", "axis": "Z", "continuous": true, "_confirmed": false }
+  },
+
+  "home": { "x": 0, "y": 0, "z": 0, "a": 0, "b": 0 },
+  "tool_length_zero": 2.0,
+
+  "spindle": {
+    "type": "ER11",
+    "min_rpm": 3000,
+    "max_rpm": 24000,
+    "_confirmed": false,
+    "_source": "V1 marketing — ER11 spindle, lower RPM ceiling than V2-50"
+  },
+
+  "max_feed": {
+    "rapid_linear": { "value": 3000, "unit": "inch/min", "_confirmed": false },
+    "rapid_rotary": { "value": 3600, "unit": "deg/min",  "_confirmed": false },
+    "cut":          { "value": 40,   "unit": "inch/min", "_confirmed": false }
+  },
+
+  "coolant": {
+    "mist":  { "m_code": 7, "supported": true },
+    "flood": { "m_code": 8, "supported": false },
+    "off":   { "m_code": 9 }
+  },
+
+  "controller": {
+    "platform": "LinuxCNC (pocketnc fork) on BeagleBone Black",
+    "os": "Debian Buster",
+    "kineticControlVersion": "5.8.4 (2025-04-01)",
+    "_confirmed": true
+  },
+
+  "viewer": {
+    "glbPath":   "/opt/penta-ui-builds/gltf/v1.glb",
+    "glbPathKS": "/opt/penta-ui-builds/gltf/v1kickstarter.glb",
+    "_note": "Two GLB variants: v1.glb for standard revH, v1kickstarter.glb for the original crowd-funded units."
+  },
+
+  "rockhopper": {
+    "wsUrl": "ws://<machine>:8000/websocket/",
+    "subprotocol": "linuxcnc",
+    "defaultUser": "default",
+    "defaultPassword": "default"
+  },
+
+  "post": {
+    "dialect": "Pentamachine V2",
+    "units": "inch",
+    "planeCode": "G17",
+    "distanceCode": "G90",
+    "wcsDefault": "G54",
+    "feedModeDefault": "G94",
+    "feedModeFor5Axis": "G93",
+    "cutterComp": "G40",
+    "decimalPlacesLinear": 4,
+    "decimalPlacesRotary": 3
+  },
+
+  "tools": [
+    { "id": 1, "description": "1/4\" flat endmill 2FL", "type": "flat", "dia_in": 0.25,  "dia_mm": 6.35,  "flutes": 2, "max_rpm": 18000 },
+    { "id": 2, "description": "1/8\" flat endmill 2FL", "type": "flat", "dia_in": 0.125, "dia_mm": 3.175, "flutes": 2, "max_rpm": 24000 },
+    { "id": 3, "description": "1/8\" ballnose 2FL",     "type": "ball", "dia_in": 0.125, "dia_mm": 3.175, "flutes": 2, "max_rpm": 24000 },
+    { "id": 4, "description": "3 mm HSS-Co drill",      "type": "drill","dia_in": 0.118, "dia_mm": 3.0,   "flutes": 2, "max_rpm": 3500 }
+  ],
+
+  "singularity_notes": [
+    "Same A-at-zero gimbal issue as V2 family.",
+    "V1 uses older BeagleBone cape hardware — some features (high_speed_spindle, wrapped_rotary) may not be available."
+  ],
+
+  "safety": {
+    "estop": { "hardware": true, "m_code": 0 },
+    "probing": { "supported": true, "g_code": "G38.2", "default_feed_in_per_min": 2 },
+    "wcs": ["G54","G55","G56","G57","G58","G59"]
+  }
+}

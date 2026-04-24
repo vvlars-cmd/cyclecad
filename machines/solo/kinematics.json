@@ -1,0 +1,85 @@
+{
+  "$schema": "../../docs/pentacad/machine-config-schema.json",
+  "_note": "Pentamachine Solo. Confirmed as a real Pentamachine product from the v5.8.4 disk image — GLB model /opt/penta-ui-builds/gltf/solo.glb (7.9 MB) ships on the controller. Board revision key is unknown until we see a Solo-specific ini template in Settings. For now, Pentacad treats it as a separate machine class and emits a generic Pentamachine V2 .ngc dialect.",
+  "machineId": "solo",
+  "vendor": "Penta Machine Company",
+  "productUrl": "https://www.pentamachine.com/solo",
+  "family": "Solo",
+  "variant": "(unknown revision)",
+  "displayName": "Pentamachine Solo",
+  "type": "3-axis-enclosed",
+  "_typeUncertain": true,
+  "description": "Pentamachine Solo — newer SKU. Exact kinematics + rotary-axis presence to be confirmed. Disk image + Kinetic Control code treat Solo as a distinct machine class (separate probing routines, separate GLB model, separate feature set).",
+
+  "linux_cnc": {
+    "boardRevision": "(to-confirm)",
+    "iniTemplatePath": "/opt/pocketnc/Settings/versions/<unknown>/PocketNC.ini",
+    "_note": "Solo-specific version directory not present in PocketNC/Settings master as of 2026-04-24. May be in a private fork Pentamachine ships on the machine itself."
+  },
+
+  "linear": {
+    "x": { "min": -6.0, "max": 6.0, "unit": "inch", "_confirmed": false, "_estimation": "placeholder — need Solo spec sheet" },
+    "y": { "min": -4.0, "max": 4.0, "unit": "inch", "_confirmed": false },
+    "z": { "min": -3.0, "max": 3.0, "unit": "inch", "_confirmed": false }
+  },
+
+  "rotary": {
+    "_note": "Solo may or may not have A/B axes. Disk image mentions 'door' + 'beta_solo_door' features, suggesting an enclosure with interlocked door, but nothing explicitly rules out 5-axis kinematics. Confirm before production."
+  },
+
+  "home":             { "x": 0, "y": 0, "z": 0 },
+  "tool_length_zero": 2.5,
+
+  "spindle": {
+    "type": "(unknown)",
+    "_confirmed": false
+  },
+
+  "coolant": {
+    "_note": "Confirm from Solo product spec."
+  },
+
+  "controller": {
+    "platform": "LinuxCNC (pocketnc fork) on BeagleBone Black",
+    "os": "Debian Buster",
+    "kineticControlVersion": "5.8.4 (2025-04-01)"
+  },
+
+  "viewer": {
+    "glbPath": "/opt/penta-ui-builds/gltf/solo.glb",
+    "glbSizeBytes": 7885460,
+    "_note": "Largest GLB of the family — Solo model is more detailed than V1/V2."
+  },
+
+  "rockhopper": {
+    "wsUrl": "ws://<machine>:8000/websocket/",
+    "subprotocol": "linuxcnc",
+    "defaultUser": "default",
+    "defaultPassword": "default"
+  },
+
+  "features": {
+    "_note": "From PYTHONPATH env in pocketnc_env:",
+    "known_features": ["solo_door", "beta_solo_door"]
+  },
+
+  "post": {
+    "dialect": "Pentamachine V2",
+    "units": "inch",
+    "planeCode": "G17",
+    "distanceCode": "G90",
+    "wcsDefault": "G54",
+    "feedModeDefault": "G94",
+    "cutterComp": "G40",
+    "decimalPlacesLinear": 4
+  },
+
+  "singularity_notes": [
+    "Solo door interlock — Pentacad `coolant({flood:true})` may be blocked by the interlock in certain door states. Check `interlock` status before commanding coolant."
+  ],
+
+  "safety": {
+    "estop": { "hardware": true, "m_code": 0 },
+    "door_interlock": { "_note": "Solo has an interlocked door — see Settings/features/interlock/ for behaviour." }
+  }
+}

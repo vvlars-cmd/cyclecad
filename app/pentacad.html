@@ -4,237 +4,1445 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <title>Pentacad — cycleCAD Suite</title>
-  <meta name="description" content="Pentacad — browser-based CAM, 5-axis simulator, and machine control for the Pentamachine V2 line. Part of the cycleCAD Suite." />
+  <title>Pentacad Workspace — cycleCAD Suite</title>
+  <meta name="description" content="Pentacad browser-native 5-axis CAM workspace. Machine digital twin, 3+2 setup manager, G-code simulator, Kinetic Control bridge." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
 
   <style>
     :root {
-      --bg: #0f172a;
-      --panel: #1e293b;
-      --panel-2: #334155;
-      --text: #f1f5f9;
-      --muted: #94a3b8;
-      --border: #334155;
-      --accent: #10b981;
-      --accent-2: #0ea5e9;
-      --warn: #f59e0b;
-      --danger: #ef4444;
+      --bg:         #0A1628;
+      --bg-alt:     #122240;
+      --bg-card:    #1A2D50;
+      --bg-panel:   #0F1D36;
+      --border:     #1E3A5F;
+      --border-hi:  #2A4F80;
+      --text:       #F0F0E8;
+      --text-2:     #8B9AB5;
+      --text-3:     #5A6B85;
+      --emerald:    #10B981;
+      --emerald-2:  #34D399;
+      --emerald-dim: rgba(16,185,129,0.12);
+      --amber:      #F59E0B;
+      --red:        #EF4444;
+      --blue:       #2E86DE;
+      --mono: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
     }
     * { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: var(--bg); color: var(--text); font-size: 14px; }
+    html, body {
+      margin: 0; padding: 0; height: 100%; overflow: hidden;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg); color: var(--text); font-size: 13px;
+      -webkit-font-smoothing: antialiased;
+    }
+    button { font-family: inherit; }
 
+    /* ────────── LAYOUT ────────── */
     #app {
       display: grid;
-      grid-template-rows: 48px 1fr 28px;
-      grid-template-columns: 320px 1fr 340px;
+      grid-template-rows: 52px 1fr 30px;
+      grid-template-columns: 72px 1fr 360px;
       grid-template-areas:
-        "header header header"
-        "left   main   right"
-        "footer footer footer";
+        "top  top  top"
+        "tabs main side"
+        "stat stat stat";
       height: 100vh;
     }
-    header {
-      grid-area: header; background: var(--panel);
+
+    /* ────────── TOP BAR ────────── */
+    #topbar {
+      grid-area: top;
+      display: flex; align-items: center; gap: 16px;
+      padding: 0 16px;
+      background: var(--bg-alt);
       border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; padding: 0 16px; gap: 12px;
     }
-    .suite-mark {
-      font-size: 10px; color: var(--muted); letter-spacing: 3px;
-      border-right: 1px solid var(--border); padding-right: 12px;
+    .brand {
+      display: inline-flex; align-items: center; gap: 10px;
+      font-weight: 700; font-size: 1rem; letter-spacing: 0.02em;
+      color: var(--text); text-decoration: none;
     }
-    .suite-mark a { color: inherit; text-decoration: none; }
-    .brand { font-weight: 700; letter-spacing: 3px; color: var(--accent); font-size: 14px; }
-    .tagline { color: var(--muted); font-size: 12px; margin-left: 4px; }
-    nav { margin-left: 24px; display: flex; gap: 4px; }
-    nav button { background: transparent; color: var(--muted);
-      border: 1px solid transparent; padding: 6px 12px; border-radius: 4px;
-      cursor: pointer; font-size: 13px; }
-    nav button.active { background: var(--panel-2); color: var(--text); border-color: var(--border); }
-    nav button:hover { color: var(--text); }
+    .brand-logo {
+      display: inline-grid; place-items: center;
+      width: 28px; height: 28px; border-radius: 7px;
+      background: linear-gradient(135deg, var(--emerald), var(--blue));
+      color: var(--bg); font-weight: 800; font-size: 0.95rem;
+    }
+    .brand-sub {
+      font-size: 10px; letter-spacing: 2px; color: var(--text-3);
+      border-left: 1px solid var(--border); padding-left: 12px; margin-left: 4px;
+    }
+    .brand-sub a { color: inherit; text-decoration: none; }
+    .brand-sub a:hover { color: var(--emerald-2); }
 
-    #left-panel  { grid-area: left;  background: var(--panel); border-right: 1px solid var(--border); overflow-y: auto; padding: 0; }
-    #viewport    { grid-area: main;  position: relative; background: radial-gradient(ellipse at center, #1e293b 0%, #0f172a 70%); }
+    .top-picker {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      padding: 6px 10px; border-radius: 6px;
+      font-size: 12px; color: var(--text-2);
+      cursor: pointer; transition: border-color 0.15s;
+    }
+    .top-picker:hover { border-color: var(--emerald); color: var(--text); }
+    .top-picker .chip { color: var(--emerald-2); font-weight: 600; font-family: var(--mono); }
+    .top-picker .arrow { color: var(--text-3); font-size: 10px; }
+    .top-spacer { flex: 1; }
+
+    .icon-btn {
+      background: transparent; color: var(--text-2);
+      border: 1px solid transparent; padding: 6px 10px; border-radius: 6px;
+      cursor: pointer; font-size: 15px;
+    }
+    .icon-btn:hover { background: var(--bg-card); color: var(--text); border-color: var(--border); }
+
+    /* ────────── LEFT TABS ────────── */
+    #tabs {
+      grid-area: tabs;
+      background: var(--bg-panel); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; align-items: stretch;
+      padding: 10px 6px; gap: 4px;
+    }
+    .tab {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 3px; padding: 10px 4px; border-radius: 8px;
+      background: transparent; color: var(--text-3);
+      border: 1px solid transparent; cursor: pointer;
+      font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .tab .ico { font-size: 20px; line-height: 1; }
+    .tab:hover { background: var(--bg-card); color: var(--text-2); }
+    .tab.active { background: var(--emerald-dim); color: var(--emerald-2); border-color: rgba(16,185,129,0.35); }
+
+    /* ────────── MAIN VIEWPORT ────────── */
+    #viewport {
+      grid-area: main; position: relative; background: #0A1628;
+    }
     #viewport canvas { display: block; width: 100%; height: 100%; }
-    #right-panel { grid-area: right; background: var(--panel); border-left: 1px solid var(--border); overflow-y: auto; padding: 12px; }
-    footer       { grid-area: footer; background: var(--panel); border-top: 1px solid var(--border);
-                   display: flex; align-items: center; justify-content: space-between;
-                   padding: 0 16px; font-size: 11px; color: var(--muted); }
+    .vp-overlay {
+      position: absolute; bottom: 10px; left: 12px;
+      font-family: var(--mono); font-size: 10px; color: var(--text-3);
+      pointer-events: none; line-height: 1.6;
+    }
 
-    .phase-banner {
-      background: rgba(245,158,11,0.12);
-      border: 1px solid rgba(245,158,11,0.45);
-      color: var(--warn); padding: 10px 12px; border-radius: 6px;
-      font-size: 12px; line-height: 1.5; margin: 12px;
+    /* ────────── RIGHT SIDE PANEL ────────── */
+    #side {
+      grid-area: side;
+      background: var(--bg-panel); border-left: 1px solid var(--border);
+      display: flex; flex-direction: column; overflow: hidden;
     }
+    .side-head {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: baseline; justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .side-head h2 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: 0.03em; }
+    .side-head .hint { font-size: 10px; color: var(--text-3); letter-spacing: 0.08em; text-transform: uppercase; }
+    .side-body {
+      flex: 1; overflow-y: auto; padding: 14px 16px;
+    }
+    .side-body::-webkit-scrollbar { width: 8px; }
+    .side-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .section { margin-bottom: 18px; }
     .section-title {
-      font-size: 10px; font-weight: 700; letter-spacing: 2px;
-      color: var(--muted); margin: 16px 12px 8px 12px;
-      text-transform: uppercase;
+      font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--text-3); margin-bottom: 8px; font-weight: 600;
     }
-    #bridge-status {
-      padding: 4px 10px; border-radius: 4px; font-size: 11px;
-      background: rgba(239,68,68,0.18); color: var(--danger);
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 12px; margin-bottom: 6px;
     }
-    #bridge-status.connected { background: rgba(16,185,129,0.18); color: var(--accent); }
-    .stat { padding: 8px 12px; color: var(--muted); font-size: 11px; }
-    .stat strong { color: var(--text); font-weight: 600; }
+    .card.active { border-color: var(--emerald); box-shadow: 0 0 0 1px rgba(16,185,129,0.35); }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .row + .row { margin-top: 4px; }
+    .muted { color: var(--text-3); font-size: 11px; }
+    .kv { font-family: var(--mono); font-size: 11px; color: var(--text-2); }
+    .kv b { color: var(--emerald-2); font-weight: 500; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      background: var(--bg-card); color: var(--text);
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 7px 12px; font-size: 12px; cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .btn:hover { border-color: var(--border-hi); background: var(--bg-alt); }
+    .btn.primary {
+      background: var(--emerald); color: #05271B; border-color: var(--emerald);
+      font-weight: 600;
+    }
+    .btn.primary:hover { background: var(--emerald-2); }
+    .btn.danger { border-color: rgba(239,68,68,0.5); color: var(--red); }
+    .btn.danger:hover { background: rgba(239,68,68,0.12); }
+    .btn.full { width: 100%; }
+    .btn-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    input, select, textarea {
+      width: 100%;
+      background: var(--bg); color: var(--text);
+      border: 1px solid var(--border); border-radius: 5px;
+      padding: 6px 8px; font-size: 12px; font-family: inherit;
+    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--emerald); }
+    textarea { resize: vertical; min-height: 60px; font-family: var(--mono); font-size: 11px; }
+    label {
+      display: block; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--text-3); margin-bottom: 3px; margin-top: 8px;
+    }
+    .field-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+    .field-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+
+    /* ────────── STATUS STRIP ────────── */
+    #status {
+      grid-area: stat;
+      background: var(--bg-alt); border-top: 1px solid var(--border);
+      display: flex; align-items: center; gap: 16px;
+      padding: 0 14px; font-size: 11px; font-family: var(--mono);
+      color: var(--text-2); overflow: hidden;
+    }
+    #status .seg { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+    #status .seg b { color: var(--text); font-weight: 500; }
+    #status .sep { width: 1px; height: 14px; background: var(--border); flex-shrink: 0; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); flex-shrink: 0; }
+    .dot.amber { background: var(--amber); animation: pulse 1.2s ease-in-out infinite; }
+    .dot.green { background: var(--emerald); }
+    .dot.red { background: var(--red); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    .status-event {
+      margin-left: auto; color: var(--text-3); font-size: 10px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 360px;
+    }
+
+    /* ────────── JOG PAD ────────── */
+    .jog-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 6px; }
+    .jog-btn {
+      background: var(--bg-card); color: var(--text); border: 1px solid var(--border);
+      border-radius: 4px; padding: 8px; font-family: var(--mono);
+      font-size: 11px; font-weight: 600; cursor: pointer;
+    }
+    .jog-btn:hover { background: var(--bg-alt); border-color: var(--emerald); }
+    .jog-btn.empty { background: transparent; border: none; cursor: default; }
+
+    /* ────────── MODAL ────────── */
+    .modal-bg {
+      position: fixed; inset: 0; background: rgba(5,10,20,0.7); z-index: 100;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .modal {
+      background: var(--bg-panel); border: 1px solid var(--border-hi);
+      border-radius: 10px; padding: 20px;
+      width: min(520px, 90vw); max-height: 80vh; overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .modal h3 { margin: 0 0 12px 0; font-size: 15px; }
+    .modal .close { float: right; cursor: pointer; color: var(--text-3); font-size: 18px; line-height: 1; background:none; border:none; }
+
+    /* ────────── DROPDOWN MENU ────────── */
+    .menu {
+      position: absolute; background: var(--bg-panel);
+      border: 1px solid var(--border-hi); border-radius: 6px;
+      min-width: 180px; padding: 4px; z-index: 200;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+    .menu-item {
+      padding: 6px 10px; cursor: pointer; border-radius: 4px;
+      font-size: 12px; color: var(--text-2);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .menu-item:hover { background: var(--bg-card); color: var(--text); }
+    .menu-item .tag { font-size: 9px; color: var(--text-3); letter-spacing: 0.08em; text-transform: uppercase; }
+
+    .timeline {
+      width: 100%; margin: 8px 0; height: 6px; background: var(--bg);
+      border-radius: 3px; cursor: pointer; position: relative; overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .timeline-fill { height: 100%; background: linear-gradient(90deg, var(--emerald), var(--blue)); width: 0%; transition: width 0.1s linear; }
+
+    .pill {
+      display: inline-block; padding: 2px 7px; border-radius: 10px;
+      font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase;
+      background: var(--emerald-dim); color: var(--emerald-2); font-weight: 600;
+    }
+    .pill.warn { background: rgba(245,158,11,0.15); color: var(--amber); }
+    .pill.err { background: rgba(239,68,68,0.15); color: var(--red); }
+
+    .footer-links { font-size: 10px; color: var(--text-3); }
+    .footer-links a { color: var(--text-2); text-decoration: none; margin-left: 12px; }
+    .footer-links a:hover { color: var(--emerald-2); }
+
+    @media (max-width: 1100px) {
+      #side { display: none; }
+      #app { grid-template-columns: 72px 1fr; grid-template-areas: "top top" "tabs main" "stat stat"; }
+    }
   </style>
 </head>
 <body>
   <div id="app">
-    <header>
-      <span class="suite-mark"><a href="/">cycleCAD SUITE</a></span>
-      <span class="brand">PENTACAD</span>
-      <span class="tagline">v0.1.0 · Phase 0 scaffold</span>
-      <nav id="workspace-tabs">
-        <button data-ws="machine" class="active">Machine</button>
-        <button data-ws="design">Design</button>
-        <button data-ws="cam">CAM</button>
-        <button data-ws="simulate">Simulate</button>
-        <button data-ws="control">Control</button>
-      </nav>
-      <span style="flex:1"></span>
-      <span id="bridge-status" title="Controller bridge status">Bridge: disconnected</span>
+    <!-- ============ TOP BAR ============ -->
+    <header id="topbar">
+      <a href="/app/" class="brand" title="Back to cycleCAD">
+        <span class="brand-logo">P</span>
+        Pentacad
+      </a>
+      <span class="brand-sub"><a href="/">cycleCAD SUITE</a></span>
+
+      <button class="top-picker" id="machine-picker">
+        <span class="muted">Machine:</span>
+        <span class="chip" id="machine-chip">—</span>
+        <span class="arrow">▼</span>
+      </button>
+
+      <button class="top-picker" id="setup-picker">
+        <span class="muted">Setup:</span>
+        <span class="chip" id="setup-chip">—</span>
+        <span class="arrow">▼</span>
+      </button>
+
+      <span class="top-spacer"></span>
+      <span class="muted footer-links">
+        <a href="/pentacad.html" target="_blank">Marketing page ↗</a>
+      </span>
+      <button class="icon-btn" id="settings-btn" title="Settings">⚙</button>
     </header>
 
-    <aside id="left-panel">
-      <div class="phase-banner">
-        <strong>Phase 0 scaffold.</strong><br />
-        UI shell is live. Machine selector works once machine JSON files exist under <code>/machines/</code>.
+    <!-- ============ LEFT TABS ============ -->
+    <nav id="tabs">
+      <button class="tab active" data-ws="machine"><span class="ico">🛠</span>Machine</button>
+      <button class="tab" data-ws="design"><span class="ico">📐</span>Design</button>
+      <button class="tab" data-ws="cam"><span class="ico">✂️</span>CAM</button>
+      <button class="tab" data-ws="sim"><span class="ico">▶</span>Simulate</button>
+      <button class="tab" data-ws="control"><span class="ico">⚡</span>Control</button>
+    </nav>
+
+    <!-- ============ VIEWPORT ============ -->
+    <main id="viewport">
+      <div class="vp-overlay" id="vp-overlay">loading…</div>
+    </main>
+
+    <!-- ============ RIGHT SIDE PANEL ============ -->
+    <aside id="side">
+      <div class="side-head">
+        <h2 id="side-title">Machine</h2>
+        <span class="hint" id="side-hint">digital twin</span>
       </div>
-      <div id="pentacad-panel-mount"><!-- window.CycleCAD.Pentacad.getUI() renders here --></div>
-    </aside>
-
-    <main id="viewport"><!-- Three.js canvas injected --></main>
-
-    <aside id="right-panel">
-      <h3 class="section-title">Workspace</h3>
-      <div id="workspace-content">
-        <div id="ws-machine" class="stat">
-          Pick a machine from the left panel. The digital twin renders in the viewport once the machine definition loads.
-        </div>
-        <div id="ws-design" class="stat" hidden>
-          <strong>Design</strong> — delegates to cycleCAD modelling (sketch, solid, assembly). Workpiece becomes the input for CAM.
-        </div>
-        <div id="ws-cam" class="stat" hidden>
-          <strong>CAM</strong> — Phase 2. 3+2 setup manager, 12 strategies, Pentamachine post-processor. See <code>pentacad-cam.js</code>.
-        </div>
-        <div id="ws-simulate" class="stat" hidden>
-          <strong>Simulate</strong> — Phase 1. G-code replay with forward kinematics, collision check, material removal. See <code>pentacad-sim.js</code>.
-        </div>
-        <div id="ws-control" class="stat" hidden>
-          <strong>Control</strong> — Phase 3. Stream G-code to Kinetic Control via WebSocket bridge, live DRO readback. See <code>pentacad-bridge.js</code>.
-        </div>
-      </div>
-
-      <h3 class="section-title">Agent API</h3>
-      <div class="stat">
-        <code style="color:var(--accent-2);font-size:11px">window.CycleCAD.Pentacad.execute({...})</code><br /><br />
-        Namespaces: <strong>machine.*</strong>, <strong>cam.*</strong>, <strong>sim.*</strong>, <strong>bridge.*</strong>
+      <div class="side-body" id="side-body">
+        <!-- dynamic content per tab -->
       </div>
     </aside>
 
-    <footer>
-      <span>Pentacad · part of the cycleCAD Suite · AGPL-3.0</span>
-      <span><span id="fps">60</span> fps · <span id="tri-count">0</span> tris</span>
+    <!-- ============ STATUS STRIP ============ -->
+    <footer id="status">
+      <span class="seg"><span class="muted">X</span><b id="dro-x">0.0000</b></span>
+      <span class="seg"><span class="muted">Y</span><b id="dro-y">0.0000</b></span>
+      <span class="seg"><span class="muted">Z</span><b id="dro-z">0.0000</b></span>
+      <span class="sep"></span>
+      <span class="seg"><span class="muted">A</span><b id="dro-a">0.00°</b></span>
+      <span class="seg"><span class="muted">B</span><b id="dro-b">0.00°</b></span>
+      <span class="sep"></span>
+      <span class="seg"><span class="muted">Feed</span><b id="dro-feed">0</b></span>
+      <span class="seg"><span class="muted">S</span><b id="dro-rpm">0</b></span>
+      <span class="sep"></span>
+      <span class="seg"><span class="dot" id="bridge-dot"></span><span id="bridge-label">disconnected</span></span>
+      <span class="status-event" id="status-event">Pentacad v0.1.0 ready</span>
     </footer>
   </div>
 
-  <!-- Three.js -->
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"
-      }
-    }
-  </script>
-
-  <!-- Pentacad sub-modules — load before the coordinator -->
+  <!-- Pentacad sub-modules (load before coordinator) -->
+  <script>window.CycleCAD = window.CycleCAD || {}; window.CycleCAD.SkipPentacadInit = true;</script>
   <script src="./js/modules/pentacad-cam.js"></script>
   <script src="./js/modules/pentacad-sim.js"></script>
+  <!-- Rockhopper native client (preferred bridge — ships on every Pentamachine) -->
+  <script src="./js/modules/rockhopper-client.js"></script>
+  <!-- pentacad-bridge: fallback for LinuxCNC installs without Rockhopper -->
   <script src="./js/modules/pentacad-bridge.js"></script>
   <script src="./js/modules/pentacad.js"></script>
 
+  <!-- Three.js bootstrap via ES module, assign to window.THREE so modules can reach it -->
   <script type="module">
     import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    window.THREE = THREE;
+    window.OrbitControls = OrbitControls;
+    window.dispatchEvent(new Event('three-ready'));
+  </script>
 
-    const viewportEl = document.getElementById('viewport');
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(viewportEl.clientWidth, viewportEl.clientHeight);
-    renderer.setClearColor(0x0f172a, 1);
-    viewportEl.appendChild(renderer.domElement);
+  <!-- Workspace app logic -->
+  <script>
+  (() => {
+    'use strict';
 
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(40, viewportEl.clientWidth / viewportEl.clientHeight, 0.1, 10000);
-    camera.position.set(18, 12, 18);
-    camera.lookAt(0, 4, 0);
-
-    scene.add(new THREE.GridHelper(20, 20, 0x475569, 0x1e293b));
-    const axes = new THREE.AxesHelper(3); axes.position.y = 0.01; scene.add(axes);
-    scene.add(new THREE.HemisphereLight(0xeef2ff, 0x334155, 0.9));
-    const key = new THREE.DirectionalLight(0xffffff, 0.7); key.position.set(10, 15, 8); scene.add(key);
-
-    // Placeholder for the machine
-    const placeholder = new THREE.Group();
-    placeholder.add(new THREE.Mesh(
-      new THREE.BoxGeometry(6, 0.2, 4),
-      new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.4, roughness: 0.7 })
-    ));
-    placeholder.children[0].position.y = 0.1;
-    scene.add(placeholder);
-
-    // Mount the Pentacad panel into the left side
-    const mount = document.getElementById('pentacad-panel-mount');
-    if (window.CycleCAD?.Pentacad?.getUI) mount.appendChild(window.CycleCAD.Pentacad.getUI());
-
-    // Workspace tab wiring
-    const tabs = document.querySelectorAll('#workspace-tabs button');
-    const panels = {
-      machine: document.getElementById('ws-machine'),
-      design: document.getElementById('ws-design'),
-      cam: document.getElementById('ws-cam'),
-      simulate: document.getElementById('ws-simulate'),
-      control: document.getElementById('ws-control'),
+    // ─────────────────────────────────────────────────────────────
+    // WORKSPACE STATE
+    // ─────────────────────────────────────────────────────────────
+    const WS = {
+      activeTab: 'machine',
+      machineId: null,
+      machineDef: null,
+      setups: [],           // [{ id, name, stock: {x,y,z}, material, wcs:{x,y,z,a,b}, fixtureNotes }]
+      activeSetupId: null,
+      operations: [],       // [{ id, setupId, strategyId, tool:{number,rpm,diameter,name}, feed, region }]
+      toolpaths: [],        // generated
+      gcode: null,
+      sim: { playing: false, speed: 1, cursor: 0, moves: [], animHandle: null },
+      bridgeUrl: localStorage.getItem('pentacad_bridge_url') || 'ws://localhost:7777',
+      dro: { x: 0, y: 0, z: 0, a: 0, b: 0, feed: 0, rpm: 0 },
     };
-    tabs.forEach(btn => btn.addEventListener('click', () => {
-      tabs.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      Object.values(panels).forEach(p => p.hidden = true);
-      panels[btn.dataset.ws].hidden = false;
-    }));
 
-    // Expose for debugging
-    window._scene = scene; window._camera = camera; window._renderer = renderer;
+    const $ = (sel, root = document) => root.querySelector(sel);
+    const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+    const e = (tag, attrs = {}, ...children) => {
+      const el = document.createElement(tag);
+      for (const [k, v] of Object.entries(attrs)) {
+        if (k === 'class') el.className = v;
+        else if (k === 'html') el.innerHTML = v;
+        else if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2), v);
+        else if (v !== undefined && v !== null) el.setAttribute(k, v);
+      }
+      for (const c of children) {
+        if (c == null) continue;
+        el.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+      }
+      return el;
+    };
 
-    // FPS + tri counter
-    let frames = 0, lastFps = performance.now();
-    const fpsEl = document.getElementById('fps');
-    const triEl = document.getElementById('tri-count');
+    const setEvent = (msg) => {
+      const el = $('#status-event');
+      if (el) el.textContent = msg;
+    };
+
+    // ─────────────────────────────────────────────────────────────
+    // THREE.JS SCENE (waits for module script to publish window.THREE)
+    // ─────────────────────────────────────────────────────────────
+    let THREE, OrbitControls, renderer, scene, camera, controls;
+    let machineGroup, stockMesh, toolpathGroup, toolMarker;
+
+    function bootScene() {
+      THREE = window.THREE;
+      OrbitControls = window.OrbitControls;
+      if (!THREE) return false;
+
+      const vp = $('#viewport');
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(vp.clientWidth, vp.clientHeight);
+      renderer.setClearColor(0x0a1628, 1);
+      vp.appendChild(renderer.domElement);
+
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(42, vp.clientWidth / vp.clientHeight, 0.1, 5000);
+      camera.position.set(220, 170, 220);
+      camera.lookAt(0, 30, 0);
+
+      controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.08;
+      controls.target.set(0, 30, 0);
+
+      // Grid + axes
+      const grid = new THREE.GridHelper(400, 40, 0x2a4f80, 0x1e3a5f);
+      scene.add(grid);
+
+      addAxis('X', new THREE.Vector3(100, 0, 0), 0xef4444);
+      addAxis('Y', new THREE.Vector3(0, 100, 0), 0x10b981);
+      addAxis('Z', new THREE.Vector3(0, 0, 100), 0x2e86de);
+
+      scene.add(new THREE.HemisphereLight(0xccdcff, 0x142238, 0.9));
+      const key = new THREE.DirectionalLight(0xffffff, 0.7);
+      key.position.set(150, 200, 100); scene.add(key);
+
+      // Machine base
+      machineGroup = new THREE.Group();
+      const base = new THREE.Mesh(
+        new THREE.BoxGeometry(260, 8, 200),
+        new THREE.MeshStandardMaterial({ color: 0x1a2d50, metalness: 0.6, roughness: 0.4 })
+      );
+      base.position.y = -4; machineGroup.add(base);
+
+      // Column
+      const col = new THREE.Mesh(
+        new THREE.BoxGeometry(30, 160, 30),
+        new THREE.MeshStandardMaterial({ color: 0x243a62, metalness: 0.5, roughness: 0.5 })
+      );
+      col.position.set(-100, 80, -80); machineGroup.add(col);
+
+      // Spindle head
+      const sp = new THREE.Mesh(
+        new THREE.CylinderGeometry(12, 12, 50, 24),
+        new THREE.MeshStandardMaterial({ color: 0x34d399, metalness: 0.7, roughness: 0.3, emissive: 0x0c3d2b })
+      );
+      sp.position.set(0, 130, 0); machineGroup.add(sp);
+
+      // Tool marker (cone)
+      toolMarker = new THREE.Mesh(
+        new THREE.ConeGeometry(4, 14, 12),
+        new THREE.MeshStandardMaterial({ color: 0xe8c065, metalness: 0.8, roughness: 0.2 })
+      );
+      toolMarker.rotation.x = Math.PI;
+      toolMarker.position.set(0, 98, 0);
+      scene.add(toolMarker);
+
+      // A/B table indicators
+      const aArrow = new THREE.ArrowHelper(new THREE.Vector3(1,0,0), new THREE.Vector3(60,10,0), 30, 0xef4444, 6, 4);
+      const bArrow = new THREE.ArrowHelper(new THREE.Vector3(0,1,0), new THREE.Vector3(0,10,60), 30, 0x2e86de, 6, 4);
+      machineGroup.add(aArrow); machineGroup.add(bArrow);
+
+      scene.add(machineGroup);
+
+      toolpathGroup = new THREE.Group();
+      scene.add(toolpathGroup);
+
+      window.addEventListener('resize', onResize);
+
+      // Expose for debug
+      window._scene = scene; window._camera = camera; window._renderer = renderer;
+
+      animate();
+      return true;
+    }
+
+    function addAxis(label, vec, color) {
+      const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0.05,0), vec]);
+      const m = new THREE.LineBasicMaterial({ color });
+      scene.add(new THREE.Line(g, m));
+    }
+
+    function onResize() {
+      const vp = $('#viewport');
+      if (!renderer || !vp) return;
+      renderer.setSize(vp.clientWidth, vp.clientHeight);
+      camera.aspect = vp.clientWidth / vp.clientHeight;
+      camera.updateProjectionMatrix();
+    }
+
+    let frameCount = 0, lastFpsCheck = performance.now(), fpsDisplay = 60;
     function animate() {
       requestAnimationFrame(animate);
-      renderer.render(scene, camera);
-      frames++;
+      controls?.update();
+      renderer?.render(scene, camera);
+      frameCount++;
       const now = performance.now();
-      if (now - lastFps > 500) {
-        fpsEl.textContent = Math.round((frames * 1000) / (now - lastFps));
-        triEl.textContent = renderer.info.render.triangles.toLocaleString();
-        frames = 0; lastFps = now;
+      if (now - lastFpsCheck > 500) {
+        fpsDisplay = Math.round(frameCount * 1000 / (now - lastFpsCheck));
+        const tris = renderer?.info.render.triangles || 0;
+        $('#vp-overlay').textContent = `${fpsDisplay} fps · ${tris.toLocaleString()} tris · ${WS.machineId || 'no machine'}`;
+        frameCount = 0; lastFpsCheck = now;
       }
     }
-    animate();
 
-    window.addEventListener('resize', () => {
-      const w = viewportEl.clientWidth, h = viewportEl.clientHeight;
-      renderer.setSize(w, h);
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
+    // ─────────────────────────────────────────────────────────────
+    // STOCK + TOOLPATH RENDERING
+    // ─────────────────────────────────────────────────────────────
+    function renderStock(setup) {
+      if (!THREE) return;
+      if (stockMesh) { scene.remove(stockMesh); stockMesh.geometry.dispose(); stockMesh.material.dispose(); stockMesh = null; }
+      if (!setup) return;
+      const { x, y, z } = setup.stock;
+      stockMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(x, y, z),
+        new THREE.MeshStandardMaterial({
+          color: 0xb8c2d6, metalness: 0.6, roughness: 0.35,
+          transparent: true, opacity: 0.55,
+        })
+      );
+      stockMesh.position.set(0, y/2 + 2, 0);
+      scene.add(stockMesh);
+    }
+
+    function renderToolpaths(toolpaths, kinematics) {
+      if (!THREE) return;
+      toolpathGroup.clear();
+      for (const tp of toolpaths) {
+        const moves = tp.moves || [];
+        if (!moves.length) continue;
+        const pts = [];
+        let last = { x: 0, y: 0, z: 0 };
+        let rapid = true;
+        const colors = [];
+        for (const m of moves) {
+          const to = { x: m.x ?? last.x, y: m.y ?? last.y, z: m.z ?? last.z };
+          const violates = kinematics ? !isWithinLimits(to, kinematics) : false;
+          const color = violates ? [1,0.2,0.2] : (m.type === 'rapid' ? [0.3,0.85,0.5] : [0.3,0.6,0.95]);
+          pts.push(last.x, last.y, last.z);
+          pts.push(to.x, to.y, to.z);
+          colors.push(...color, ...color);
+          last = to;
+          rapid = m.type === 'rapid';
+        }
+        const geom = new THREE.BufferGeometry();
+        geom.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+        geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        const mat = new THREE.LineBasicMaterial({ vertexColors: true });
+        toolpathGroup.add(new THREE.LineSegments(geom, mat));
+      }
+    }
+
+    function isWithinLimits(pos, kin) {
+      if (!kin?.linear) return true;
+      for (const ax of ['x','y','z']) {
+        const r = kin.linear[ax]; if (!r) continue;
+        // scale inch limits up to mm for rendering comparison
+        const scale = r.unit === 'inch' ? 25.4 : 1;
+        if (pos[ax] < r.min * scale || pos[ax] > r.max * scale) return false;
+      }
+      return true;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // DEMO DATA — ensures the viewport shows something on first load
+    // ─────────────────────────────────────────────────────────────
+    function seedDemoSetup() {
+      if (WS.setups.length) return;
+      const setup = {
+        id: 'setup-1',
+        name: 'Bottle-opener ring',
+        stock: { x: 100, y: 10, z: 100 },
+        material: 'Aluminium 6061',
+        wcs: { x: 0, y: 0, z: 0, a: 0, b: 0 },
+        fixtureNotes: 'Vacuum table, align along +X',
+      };
+      WS.setups.push(setup);
+      WS.activeSetupId = setup.id;
+
+      const op = {
+        id: 'op-1',
+        setupId: setup.id,
+        strategyId: 'pocket',
+        tool: { number: 1, rpm: 18000, diameter: 3.175, name: '1/8" flat endmill' },
+        feed: 800,
+        stepover: 0.4,
+        stepdown: 0.6,
+        depth: 4,
+        region: { type: 'circle', cx: 0, cy: 0, r: 35 },
+      };
+      WS.operations.push(op);
+    }
+
+    // Generate a simple pocket toolpath purely for viewport preview
+    // (real CAM module fills this in in Phase 2)
+    function generatePreviewToolpaths() {
+      WS.toolpaths = WS.operations.map(op => {
+        const setup = WS.setups.find(s => s.id === op.setupId);
+        if (!setup) return null;
+        const moves = [];
+        if (op.strategyId === 'pocket' && op.region?.type === 'circle') {
+          const r = op.region.r;
+          const stepover = op.tool.diameter * (op.stepover || 0.4);
+          const stepdown = op.stepdown || 0.6;
+          const depth = op.depth || 4;
+          // Concentric circles at each depth
+          for (let d = stepdown; d <= depth + 0.0001; d += stepdown) {
+            const z = setup.stock.y - d;
+            let first = true;
+            for (let curR = r; curR >= stepover; curR -= stepover) {
+              const segs = Math.max(24, Math.ceil(curR * 2));
+              for (let i = 0; i <= segs; i++) {
+                const t = (i / segs) * Math.PI * 2;
+                moves.push({
+                  type: first && i === 0 ? 'rapid' : 'linear',
+                  x: Math.cos(t) * curR, y: z, z: Math.sin(t) * curR,
+                  feed: op.feed,
+                });
+                first = false;
+              }
+            }
+          }
+        }
+        return {
+          strategy: op.strategyId,
+          name: `${op.strategyId} — ${setup.name}`,
+          tool: op.tool,
+          moves,
+        };
+      }).filter(Boolean);
+
+      renderToolpaths(WS.toolpaths, WS.machineDef?.kinematics);
+
+      // Build a flat moves list for the sim timeline
+      WS.sim.moves = WS.toolpaths.flatMap(tp => tp.moves || []);
+      WS.sim.cursor = 0;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // TAB SWITCHING
+    // ─────────────────────────────────────────────────────────────
+    $$('.tab').forEach(btn => {
+      btn.addEventListener('click', () => switchTab(btn.dataset.ws));
     });
 
-    console.log('%cPentacad · cycleCAD Suite', 'color:#10b981;font-weight:bold;font-size:14px');
-    console.log('Available: window.CycleCAD.Pentacad.{getUI, execute, loadMachine, SUPPORTED_MACHINES}');
+    function switchTab(ws) {
+      WS.activeTab = ws;
+      $$('.tab').forEach(b => b.classList.toggle('active', b.dataset.ws === ws));
+      const titles = { machine: 'Machine', design: 'Design', cam: 'CAM', sim: 'Simulate', control: 'Control' };
+      const hints  = { machine: 'digital twin', design: 'stock & WCS', cam: 'setups · strategies', sim: 'replay · limits', control: 'bridge · jog · stream' };
+      $('#side-title').textContent = titles[ws];
+      $('#side-hint').textContent = hints[ws];
+      renderSidePanel();
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // SIDE PANEL RENDERERS (one per tab)
+    // ─────────────────────────────────────────────────────────────
+    function renderSidePanel() {
+      const body = $('#side-body');
+      body.innerHTML = '';
+      const renderer = {
+        machine: renderMachinePanel,
+        design:  renderDesignPanel,
+        cam:     renderCAMPanel,
+        sim:     renderSimPanel,
+        control: renderControlPanel,
+      }[WS.activeTab];
+      if (renderer) renderer(body);
+    }
+
+    function renderMachinePanel(body) {
+      const def = WS.machineDef;
+      if (!def) {
+        body.appendChild(e('div', { class: 'muted' }, 'No machine loaded. Use the Machine dropdown in the top bar.'));
+        return;
+      }
+      const kin = def.kinematics || {};
+      const linHTML = kin.linear ? Object.entries(kin.linear).map(([ax, r]) =>
+        `<div class="row"><span>${ax.toUpperCase()}</span><span class="kv"><b>${r.min}</b> … <b>${r.max}</b> ${r.unit} ${r._confirmed ? '' : '<span class="pill warn">template</span>'}</span></div>`
+      ).join('') : '<div class="muted">no linear data</div>';
+      const rotHTML = kin.rotary ? Object.entries(kin.rotary).map(([ax, r]) =>
+        `<div class="row"><span>${ax.toUpperCase()}</span><span class="kv"><b>${r.min}</b> … <b>${r.max}</b> ${r.unit} ${r.continuous ? '<span class="pill">∞</span>' : ''}</span></div>`
+      ).join('') : '<div class="muted">no rotary data</div>';
+
+      body.innerHTML = `
+        <div class="section">
+          <div class="section-title">Identity</div>
+          <div class="card">
+            <div class="row"><span>ID</span><span class="kv">${def.id}</span></div>
+            <div class="row"><span>Vendor</span><span class="kv">${kin.vendor || '—'}</span></div>
+            <div class="row"><span>Type</span><span class="kv">${kin.type || '—'}</span></div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-title">Linear axes</div>
+          <div class="card">${linHTML}</div>
+        </div>
+        <div class="section">
+          <div class="section-title">Rotary axes</div>
+          <div class="card">${rotHTML}</div>
+        </div>
+        <div class="section">
+          <div class="section-title">Kinematics offsets</div>
+          <div class="card">
+            <div class="row"><span>A → Table</span><span class="kv">${fmtVec(kin.pivots?.a_to_table)}</span></div>
+            <div class="row"><span>B → A</span><span class="kv">${fmtVec(kin.pivots?.b_to_a)}</span></div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="btn-row">
+            <button class="btn" id="edit-kin-btn">Edit _confirmed flags</button>
+            <button class="btn" id="reload-machine-btn">Reload</button>
+          </div>
+        </div>
+      `;
+      $('#edit-kin-btn')?.addEventListener('click', () => openModal(editKinematicsDialog()));
+      $('#reload-machine-btn')?.addEventListener('click', () => loadMachine(WS.machineId));
+    }
+
+    function fmtVec(p) {
+      if (!p) return '—';
+      return `${p.x ?? 0}, ${p.y ?? 0}, ${p.z ?? 0}`;
+    }
+
+    function editKinematicsDialog() {
+      const c = e('div');
+      c.innerHTML = `
+        <h3>Confirmed flags <button class="close" data-close>×</button></h3>
+        <p class="muted">Tick axes whose limits you have verified against the real Pentamachine V2-50CHB specs (from Matt).</p>
+        <div id="confirm-list" style="margin: 12px 0;"></div>
+        <div class="btn-row">
+          <button class="btn primary" id="save-confirm">Save to localStorage</button>
+        </div>
+      `;
+      const list = c.querySelector('#confirm-list');
+      const kin = WS.machineDef?.kinematics;
+      if (kin) {
+        for (const group of ['linear', 'rotary']) {
+          for (const [ax, r] of Object.entries(kin[group] || {})) {
+            const row = e('label', { style: 'display:flex;gap:8px;align-items:center;margin-top:6px;' });
+            const cb = e('input', { type: 'checkbox', style: 'width:auto;' });
+            cb.checked = !!r._confirmed;
+            cb.dataset.axis = ax; cb.dataset.group = group;
+            row.appendChild(cb);
+            row.appendChild(e('span', {}, `${group}.${ax.toUpperCase()} (${r.min}…${r.max} ${r.unit})`));
+            list.appendChild(row);
+          }
+        }
+      }
+      c.querySelector('#save-confirm').addEventListener('click', () => {
+        const confirmed = {};
+        list.querySelectorAll('input[type=checkbox]').forEach(cb => {
+          if (cb.checked) confirmed[`${cb.dataset.group}.${cb.dataset.axis}`] = true;
+        });
+        localStorage.setItem(`pentacad_confirmed_${WS.machineId}`, JSON.stringify(confirmed));
+        setEvent('Confirmed flags saved');
+        closeModal();
+      });
+      return c;
+    }
+
+    function renderDesignPanel(body) {
+      body.innerHTML = `
+        <div class="section">
+          <div class="section-title">Workpiece</div>
+          <div class="card">
+            <div class="muted" style="margin-bottom:8px;">Import a 3D model to machine.</div>
+            <div class="btn-row">
+              <button class="btn" id="import-step">STEP / STP</button>
+              <button class="btn" id="import-iam">IAM</button>
+              <button class="btn" id="import-stl">STL</button>
+            </div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-title">Stock</div>
+          <div class="card">
+            <label>Dimensions (mm)</label>
+            <div class="field-grid">
+              <input id="stock-x" type="number" step="0.1" value="100" />
+              <input id="stock-y" type="number" step="0.1" value="10" />
+              <input id="stock-z" type="number" step="0.1" value="100" />
+            </div>
+            <label>Material</label>
+            <select id="stock-mat">
+              <option>Aluminium 6061</option>
+              <option>Aluminium 7075</option>
+              <option>Steel 1018</option>
+              <option>Stainless 304</option>
+              <option>Brass C360</option>
+              <option>Titanium Grade 5</option>
+              <option>Wax / foam</option>
+            </select>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-title">Work coordinate system</div>
+          <div class="card">
+            <label>Origin (X Y Z mm)</label>
+            <div class="field-grid">
+              <input id="wcs-x" type="number" step="0.01" value="0" />
+              <input id="wcs-y" type="number" step="0.01" value="0" />
+              <input id="wcs-z" type="number" step="0.01" value="0" />
+            </div>
+            <label>Rotation (A B deg)</label>
+            <div class="field-grid-2">
+              <input id="wcs-a" type="number" step="0.1" value="0" />
+              <input id="wcs-b" type="number" step="0.1" value="0" />
+            </div>
+          </div>
+        </div>
+        <div class="section">
+          <label>Fixture notes</label>
+          <textarea id="fixture-notes" placeholder="e.g. Vacuum table, align along +X">${
+            WS.setups[0]?.fixtureNotes || ''
+          }</textarea>
+        </div>
+        <button class="btn primary full" id="apply-design">Apply to active setup</button>
+      `;
+
+      $('#import-step')?.addEventListener('click', () => openFilePicker('.step,.stp'));
+      $('#import-iam')?.addEventListener('click', () => openFilePicker('.iam'));
+      $('#import-stl')?.addEventListener('click', () => openFilePicker('.stl'));
+
+      $('#apply-design')?.addEventListener('click', () => {
+        const setup = WS.setups.find(s => s.id === WS.activeSetupId);
+        if (!setup) return;
+        setup.stock = {
+          x: parseFloat($('#stock-x').value) || 100,
+          y: parseFloat($('#stock-y').value) || 10,
+          z: parseFloat($('#stock-z').value) || 100,
+        };
+        setup.material = $('#stock-mat').value;
+        setup.wcs = {
+          x: parseFloat($('#wcs-x').value) || 0,
+          y: parseFloat($('#wcs-y').value) || 0,
+          z: parseFloat($('#wcs-z').value) || 0,
+          a: parseFloat($('#wcs-a').value) || 0,
+          b: parseFloat($('#wcs-b').value) || 0,
+        };
+        setup.fixtureNotes = $('#fixture-notes').value;
+        renderStock(setup);
+        setEvent(`Setup "${setup.name}" updated`);
+      });
+    }
+
+    function openFilePicker(accept) {
+      const i = e('input', { type: 'file', accept, style: 'display:none;' });
+      document.body.appendChild(i);
+      i.addEventListener('change', () => {
+        const f = i.files?.[0];
+        if (f) setEvent(`Imported ${f.name} (${(f.size/1024).toFixed(1)} KB) — parser stub, real model loader arrives with cycleCAD STEP integration`);
+        i.remove();
+      });
+      i.click();
+    }
+
+    function renderCAMPanel(body) {
+      const strategies = window.CycleCAD?.PentacadCAM?.STRATEGIES || [];
+
+      body.innerHTML = `
+        <div class="section">
+          <div class="section-title">Setups</div>
+          <div id="setup-list"></div>
+          <button class="btn full" id="add-setup" style="margin-top:6px;">+ Add setup</button>
+        </div>
+        <div class="section">
+          <div class="section-title">Operations</div>
+          <div id="op-list"></div>
+          <button class="btn full" id="add-op" style="margin-top:6px;">+ Add operation</button>
+        </div>
+        <div class="section">
+          <button class="btn primary full" id="gen-paths">Generate toolpaths</button>
+        </div>
+      `;
+
+      const sul = $('#setup-list');
+      WS.setups.forEach(s => {
+        const card = e('div', { class: 'card' + (s.id === WS.activeSetupId ? ' active' : ''), onclick: () => {
+          WS.activeSetupId = s.id; renderSidePanel(); renderStock(s);
+        }});
+        card.innerHTML = `<div class="row"><b>${s.name}</b><span class="pill">${s.material || '—'}</span></div>
+          <div class="muted">${s.stock.x}×${s.stock.y}×${s.stock.z} mm · WCS ${s.wcs.x},${s.wcs.y},${s.wcs.z}</div>`;
+        sul.appendChild(card);
+      });
+
+      const oul = $('#op-list');
+      const ops = WS.operations.filter(o => o.setupId === WS.activeSetupId);
+      if (!ops.length) oul.appendChild(e('div', { class: 'muted' }, 'No operations in this setup yet.'));
+      ops.forEach(op => {
+        const card = e('div', { class: 'card' });
+        const strat = strategies.find(s => s.id === op.strategyId);
+        card.innerHTML = `<div class="row"><b>${strat?.name || op.strategyId}</b><span class="pill">T${op.tool.number}</span></div>
+          <div class="muted">${op.tool.name} · ${op.tool.rpm} rpm · feed ${op.feed} mm/min</div>`;
+        oul.appendChild(card);
+      });
+
+      $('#add-setup')?.addEventListener('click', () => {
+        const s = {
+          id: 'setup-' + (WS.setups.length + 1),
+          name: `Setup ${WS.setups.length + 1}`,
+          stock: { x: 100, y: 10, z: 100 },
+          material: 'Aluminium 6061',
+          wcs: { x: 0, y: 0, z: 0, a: 0, b: 0 },
+          fixtureNotes: '',
+        };
+        WS.setups.push(s); WS.activeSetupId = s.id;
+        renderSidePanel(); renderStock(s);
+      });
+
+      $('#add-op')?.addEventListener('click', () => openModal(addOperationDialog(strategies)));
+
+      $('#gen-paths')?.addEventListener('click', () => {
+        generatePreviewToolpaths();
+        // Also ping the real CAM module in case it's wired up
+        try { window.CycleCAD.PentacadCAM?.execute?.({ method: 'cam.generate' }); } catch (_) {}
+        setEvent(`${WS.toolpaths.length} toolpath(s) generated · ${WS.sim.moves.length} moves`);
+      });
+    }
+
+    function addOperationDialog(strategies) {
+      const c = e('div');
+      c.innerHTML = `
+        <h3>Add operation <button class="close" data-close>×</button></h3>
+        <label>Strategy</label>
+        <select id="op-strat">${
+          strategies.map(s => `<option value="${s.id}">${s.name} (${s.kind})</option>`).join('')
+        }</select>
+        <label>Tool</label>
+        <div class="field-grid-2">
+          <input id="op-tool-n" type="number" value="1" placeholder="T number"/>
+          <input id="op-tool-dia" type="number" step="0.01" value="3.175" placeholder="Ø mm"/>
+        </div>
+        <input id="op-tool-name" placeholder="Tool name" style="margin-top:6px;" value="1/8&quot; flat endmill"/>
+        <label>Feeds & speeds</label>
+        <div class="field-grid-2">
+          <input id="op-rpm" type="number" value="18000" placeholder="rpm"/>
+          <input id="op-feed" type="number" value="800" placeholder="feed mm/min"/>
+        </div>
+        <div class="btn-row" style="margin-top:8px;">
+          <button class="btn" id="auto-fs">Auto (from material)</button>
+        </div>
+        <div class="btn-row" style="margin-top:14px;">
+          <button class="btn primary" id="create-op">Create</button>
+        </div>
+      `;
+
+      c.querySelector('#auto-fs')?.addEventListener('click', () => {
+        // Best-effort call to CAM module; otherwise heuristic
+        let fs = { rpm: 18000, feed: 800 };
+        try {
+          const r = window.CycleCAD.PentacadCAM?.recommendFeeds?.({
+            material: WS.setups.find(s => s.id === WS.activeSetupId)?.material || 'Aluminium 6061',
+            toolDiameter: parseFloat(c.querySelector('#op-tool-dia').value) || 3,
+          });
+          if (r && r.rpm) fs = r;
+        } catch (_) {}
+        c.querySelector('#op-rpm').value = fs.rpm;
+        c.querySelector('#op-feed').value = fs.feed;
+      });
+
+      c.querySelector('#create-op').addEventListener('click', () => {
+        const op = {
+          id: 'op-' + (WS.operations.length + 1),
+          setupId: WS.activeSetupId,
+          strategyId: c.querySelector('#op-strat').value,
+          tool: {
+            number: parseInt(c.querySelector('#op-tool-n').value) || 1,
+            rpm: parseInt(c.querySelector('#op-rpm').value) || 12000,
+            diameter: parseFloat(c.querySelector('#op-tool-dia').value) || 3.175,
+            name: c.querySelector('#op-tool-name').value || 'endmill',
+          },
+          feed: parseInt(c.querySelector('#op-feed').value) || 600,
+          stepover: 0.4,
+          stepdown: 0.6,
+          depth: 4,
+          region: { type: 'circle', cx: 0, cy: 0, r: 30 },
+        };
+        WS.operations.push(op);
+        closeModal();
+        renderSidePanel();
+        setEvent(`Added ${op.strategyId} operation`);
+      });
+      return c;
+    }
+
+    function renderSimPanel(body) {
+      body.innerHTML = `
+        <div class="section">
+          <div class="btn-row">
+            <button class="btn" id="sim-play">▶ Play</button>
+            <button class="btn" id="sim-pause">❚❚ Pause</button>
+            <button class="btn" id="sim-stop">■ Stop</button>
+          </div>
+          <div class="timeline" id="sim-timeline"><div class="timeline-fill" id="sim-fill"></div></div>
+          <div class="row">
+            <span class="muted">Move <span id="sim-idx">0</span> / <span id="sim-total">${WS.sim.moves.length}</span></span>
+            <span class="kv" id="sim-pct">0%</span>
+          </div>
+        </div>
+        <div class="section">
+          <label>Speed: <span id="speed-label">1×</span></label>
+          <input type="range" id="sim-speed" min="0.25" max="8" step="0.25" value="${WS.sim.speed}" />
+        </div>
+        <div class="section">
+          <div class="section-title">Soft-limit check</div>
+          <div class="card" id="limit-check"><div class="muted">Ready</div></div>
+        </div>
+        <div class="section">
+          <div class="section-title">Motion summary</div>
+          <div class="card" id="motion-summary"><div class="muted">No toolpath generated yet.</div></div>
+        </div>
+      `;
+
+      $('#sim-play')?.addEventListener('click', simPlay);
+      $('#sim-pause')?.addEventListener('click', simPause);
+      $('#sim-stop')?.addEventListener('click', simStop);
+      $('#sim-speed')?.addEventListener('input', (ev) => {
+        WS.sim.speed = parseFloat(ev.target.value);
+        $('#speed-label').textContent = WS.sim.speed + '×';
+      });
+      $('#sim-timeline')?.addEventListener('click', (ev) => {
+        const rect = ev.currentTarget.getBoundingClientRect();
+        const frac = (ev.clientX - rect.left) / rect.width;
+        WS.sim.cursor = Math.floor(frac * WS.sim.moves.length);
+        updateSimUI();
+        applySimCursor();
+      });
+
+      // Motion summary (uses sim module if available)
+      const parsed = window.CycleCAD?.PentacadSim?.parse?.(WS.gcode || '');
+      const summary = $('#motion-summary');
+      if (WS.sim.moves.length) {
+        summary.innerHTML = `
+          <div class="row"><span>Total moves</span><b>${WS.sim.moves.length}</b></div>
+          <div class="row"><span>Rapids</span><b>${WS.sim.moves.filter(m => m.type === 'rapid').length}</b></div>
+          <div class="row"><span>Feeds</span><b>${WS.sim.moves.filter(m => m.type === 'linear').length}</b></div>
+          <div class="row"><span>Machines</span><b>${WS.machineId || '—'}</b></div>
+        `;
+      }
+
+      runSoftLimitCheck();
+      updateSimUI();
+    }
+
+    function runSoftLimitCheck() {
+      const el = $('#limit-check'); if (!el) return;
+      const kin = WS.machineDef?.kinematics;
+      if (!kin || !WS.sim.moves.length) {
+        el.innerHTML = '<div class="muted">No kinematics or no toolpath.</div>'; return;
+      }
+      let violations = 0, samples = 0;
+      for (const m of WS.sim.moves) {
+        if (m.x === undefined && m.y === undefined && m.z === undefined) continue;
+        samples++;
+        if (!isWithinLimits({x: m.x ?? 0, y: m.y ?? 0, z: m.z ?? 0}, kin)) violations++;
+      }
+      if (violations === 0) {
+        el.innerHTML = `<div class="row"><span class="pill">OK</span><span class="muted">${samples} positions within envelope</span></div>`;
+      } else {
+        el.innerHTML = `<div class="row"><span class="pill err">${violations} violations</span><span class="muted">of ${samples} checked — shown red in viewport</span></div>`;
+      }
+    }
+
+    function simPlay() {
+      if (!WS.sim.moves.length) { setEvent('No toolpath to simulate — generate one first'); return; }
+      WS.sim.playing = true;
+      if (WS.sim.animHandle) cancelAnimationFrame(WS.sim.animHandle);
+      const tick = () => {
+        if (!WS.sim.playing) return;
+        WS.sim.cursor = Math.min(WS.sim.cursor + Math.max(1, Math.round(WS.sim.speed)), WS.sim.moves.length);
+        applySimCursor();
+        updateSimUI();
+        if (WS.sim.cursor >= WS.sim.moves.length) { WS.sim.playing = false; setEvent('Simulation complete'); return; }
+        WS.sim.animHandle = requestAnimationFrame(tick);
+      };
+      tick();
+    }
+    function simPause() { WS.sim.playing = false; }
+    function simStop()  { WS.sim.playing = false; WS.sim.cursor = 0; applySimCursor(); updateSimUI(); }
+
+    function applySimCursor() {
+      const m = WS.sim.moves[Math.min(WS.sim.cursor, WS.sim.moves.length - 1)];
+      if (!m || !toolMarker) return;
+      const x = m.x ?? WS.dro.x, y = m.y ?? WS.dro.y, z = m.z ?? WS.dro.z;
+      // In our viewport, Y is up. Toolpath moves are in stock frame so:
+      toolMarker.position.set(x, Math.max(y + 14, 14), z);
+      WS.dro.x = x; WS.dro.y = y; WS.dro.z = z;
+      WS.dro.feed = m.feed || 0;
+      updateDRO();
+    }
+
+    function updateSimUI() {
+      const total = WS.sim.moves.length;
+      const pct = total ? (WS.sim.cursor / total) * 100 : 0;
+      const fill = $('#sim-fill'); if (fill) fill.style.width = pct + '%';
+      const idx = $('#sim-idx'); if (idx) idx.textContent = WS.sim.cursor;
+      const tot = $('#sim-total'); if (tot) tot.textContent = total;
+      const pctEl = $('#sim-pct'); if (pctEl) pctEl.textContent = pct.toFixed(1) + '%';
+    }
+
+    function renderControlPanel(body) {
+      body.innerHTML = `
+        <div class="section">
+          <div class="section-title">Post-process</div>
+          <div class="btn-row">
+            <button class="btn" id="post-btn">Post → G-code</button>
+            <button class="btn" id="download-btn">⬇ Download .ngc</button>
+          </div>
+          <textarea id="gcode-preview" readonly style="margin-top:8px;height:120px;" placeholder="G-code appears here after posting."></textarea>
+        </div>
+        <div class="section">
+          <div class="section-title">Bridge</div>
+          <div class="card">
+            <label>WebSocket URL</label>
+            <input id="bridge-url" value="${WS.bridgeUrl}" />
+            <div class="btn-row" style="margin-top:8px;">
+              <button class="btn primary" id="bridge-connect">Connect</button>
+              <button class="btn" id="bridge-disconnect">Disconnect</button>
+            </div>
+            <div class="muted" style="margin-top:8px;">Status: <span id="bridge-detail">${WS.bridgeStatus || 'disconnected'}</span></div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-title">Jog</div>
+          <div class="card">
+            <label>Step (mm or deg)</label>
+            <select id="jog-step">
+              <option value="0.01">0.01</option>
+              <option value="0.1">0.1</option>
+              <option value="1" selected>1</option>
+              <option value="10">10</option>
+            </select>
+            <div class="jog-pad" style="margin-top:10px;">
+              <button class="jog-btn empty"></button>
+              <button class="jog-btn" data-jog="y+">Y+</button>
+              <button class="jog-btn empty"></button>
+              <button class="jog-btn" data-jog="x-">X−</button>
+              <button class="jog-btn" data-jog="home">⌂</button>
+              <button class="jog-btn" data-jog="x+">X+</button>
+              <button class="jog-btn empty"></button>
+              <button class="jog-btn" data-jog="y-">Y−</button>
+              <button class="jog-btn empty"></button>
+            </div>
+            <div class="jog-pad" style="margin-top:6px;">
+              <button class="jog-btn" data-jog="z+">Z+</button>
+              <button class="jog-btn" data-jog="a+">A+</button>
+              <button class="jog-btn" data-jog="b+">B+</button>
+              <button class="jog-btn" data-jog="z-">Z−</button>
+              <button class="jog-btn" data-jog="a-">A−</button>
+              <button class="jog-btn" data-jog="b-">B−</button>
+            </div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-title">Stream</div>
+          <div class="btn-row">
+            <button class="btn primary" id="stream-start">▶ Stream</button>
+            <button class="btn" id="stream-pause">❚❚ Pause</button>
+            <button class="btn" id="stream-resume">⏵ Resume</button>
+            <button class="btn danger" id="stream-abort">■ Abort</button>
+          </div>
+          <label>Feed override: <span id="fo-label">100%</span></label>
+          <input type="range" id="fo-slider" min="10" max="200" value="100" />
+        </div>
+      `;
+
+      $('#post-btn')?.addEventListener('click', () => {
+        try {
+          const gcode = window.CycleCAD.PentacadCAM?.emitGCode?.(WS.toolpaths, WS.machineDef) || '(no CAM module)';
+          WS.gcode = gcode;
+          $('#gcode-preview').value = gcode;
+          setEvent(`Posted ${gcode.split('\n').length} G-code lines`);
+        } catch (err) {
+          setEvent('Post failed: ' + err.message);
+        }
+      });
+
+      $('#download-btn')?.addEventListener('click', () => {
+        if (!WS.gcode) { setEvent('No G-code — click Post first'); return; }
+        const blob = new Blob([WS.gcode], { type: 'text/plain' });
+        const a = e('a', { href: URL.createObjectURL(blob), download: 'pentacad.ngc' });
+        document.body.appendChild(a); a.click(); a.remove();
+      });
+
+      $('#bridge-connect')?.addEventListener('click', () => {
+        const url = $('#bridge-url').value.trim();
+        WS.bridgeUrl = url; localStorage.setItem('pentacad_bridge_url', url);
+        window.CycleCAD.PentacadBridge?.connect?.(url);
+        setEvent(`Bridge connecting to ${url}…`);
+      });
+      $('#bridge-disconnect')?.addEventListener('click', () => {
+        window.CycleCAD.PentacadBridge?.disconnect?.();
+      });
+
+      $$('.jog-btn').forEach(b => b.addEventListener('click', () => {
+        const dir = b.dataset.jog; if (!dir) return;
+        const step = parseFloat($('#jog-step').value);
+        if (dir === 'home') {
+          setEvent('Jog: home');
+          window.CycleCAD.PentacadBridge?.execute?.({ method: 'bridge.jog', params: { axis: 'home', delta: 0, feed: 1000 } });
+          return;
+        }
+        const axis = dir[0]; const sign = dir[1] === '+' ? 1 : -1;
+        window.CycleCAD.PentacadBridge?.jog?.(axis, sign * step, 600);
+        setEvent(`Jog ${axis.toUpperCase()}${sign>0?'+':'-'}${step}`);
+      }));
+
+      $('#stream-start')?.addEventListener('click', () => {
+        if (!WS.gcode) { setEvent('No G-code — post first'); return; }
+        window.CycleCAD.PentacadBridge?.streamGCode?.(WS.gcode);
+        setEvent('Streaming G-code…');
+      });
+      $('#stream-pause')?.addEventListener('click', () => window.CycleCAD.PentacadBridge?.pause?.());
+      $('#stream-resume')?.addEventListener('click', () => window.CycleCAD.PentacadBridge?.resume?.());
+      $('#stream-abort')?.addEventListener('click', () => { window.CycleCAD.PentacadBridge?.abort?.(); setEvent('Stream aborted'); });
+
+      $('#fo-slider')?.addEventListener('input', (ev) => {
+        const v = parseInt(ev.target.value);
+        $('#fo-label').textContent = v + '%';
+        window.CycleCAD.PentacadBridge?.feedOverride?.(v);
+      });
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // TOP-BAR DROPDOWNS
+    // ─────────────────────────────────────────────────────────────
+    function openDropdown(anchor, items, onPick) {
+      closeDropdown();
+      const menu = e('div', { class: 'menu' });
+      items.forEach(it => {
+        const m = e('div', { class: 'menu-item', onclick: () => { onPick(it); closeDropdown(); } },
+          e('span', {}, it.label),
+          it.tag ? e('span', { class: 'tag' }, it.tag) : null
+        );
+        menu.appendChild(m);
+      });
+      const r = anchor.getBoundingClientRect();
+      menu.style.left = r.left + 'px';
+      menu.style.top  = (r.bottom + 4) + 'px';
+      menu.id = 'active-menu';
+      document.body.appendChild(menu);
+      setTimeout(() => document.addEventListener('click', closeDropdown, { once: true }), 50);
+    }
+    function closeDropdown() {
+      const m = $('#active-menu'); if (m) m.remove();
+    }
+
+    $('#machine-picker').addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const machines = window.CycleCAD?.Pentacad?.SUPPORTED_MACHINES || [];
+      openDropdown(ev.currentTarget, machines.map(m => ({ label: m.name, value: m.id, tag: m.status })),
+        (pick) => loadMachine(pick.value));
+    });
+
+    $('#setup-picker').addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const items = WS.setups.map(s => ({ label: s.name, value: s.id, tag: `${s.stock.x}×${s.stock.y}×${s.stock.z}` }));
+      items.push({ label: '+ New setup', value: '__new' });
+      openDropdown(ev.currentTarget, items, (pick) => {
+        if (pick.value === '__new') {
+          const n = WS.setups.length + 1;
+          WS.setups.push({ id: 'setup-' + n, name: 'Setup ' + n, stock: { x: 100, y: 10, z: 100 }, material: 'Aluminium 6061', wcs: { x:0,y:0,z:0,a:0,b:0 }, fixtureNotes: '' });
+          WS.activeSetupId = 'setup-' + n;
+        } else {
+          WS.activeSetupId = pick.value;
+        }
+        const s = WS.setups.find(s => s.id === WS.activeSetupId);
+        $('#setup-chip').textContent = s?.name || '—';
+        renderStock(s); renderSidePanel();
+      });
+    });
+
+    $('#settings-btn').addEventListener('click', () => openModal(settingsDialog()));
+
+    function settingsDialog() {
+      const c = e('div');
+      c.innerHTML = `
+        <h3>Settings <button class="close" data-close>×</button></h3>
+        <label>Default bridge URL</label>
+        <input id="s-bridge" value="${WS.bridgeUrl}" />
+        <label>Default units</label>
+        <select id="s-units"><option value="mm">mm</option><option value="inch">inch</option></select>
+        <label>Grid size (mm)</label>
+        <input id="s-grid" type="number" value="400" />
+        <div class="btn-row" style="margin-top:14px;">
+          <button class="btn primary" id="s-save">Save</button>
+        </div>
+      `;
+      c.querySelector('#s-save').addEventListener('click', () => {
+        WS.bridgeUrl = c.querySelector('#s-bridge').value.trim();
+        localStorage.setItem('pentacad_bridge_url', WS.bridgeUrl);
+        setEvent('Settings saved');
+        closeModal();
+      });
+      return c;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // MODAL
+    // ─────────────────────────────────────────────────────────────
+    function openModal(contentEl) {
+      closeModal();
+      const bg = e('div', { class: 'modal-bg', id: 'modal-bg', onclick: (ev) => { if (ev.target === bg) closeModal(); } });
+      const modal = e('div', { class: 'modal' });
+      modal.appendChild(contentEl);
+      bg.appendChild(modal);
+      document.body.appendChild(bg);
+      modal.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeModal));
+    }
+    function closeModal() {
+      const m = $('#modal-bg'); if (m) m.remove();
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // MACHINE LOAD
+    // ─────────────────────────────────────────────────────────────
+    async function loadMachine(id) {
+      if (!id) return;
+      setEvent(`Loading ${id}…`);
+      try {
+        const def = await window.CycleCAD.Pentacad.loadMachine(id);
+        WS.machineId = id;
+        WS.machineDef = def;
+        $('#machine-chip').textContent = id;
+        setEvent(`Machine ${id} loaded`);
+        renderSidePanel();
+        renderToolpaths(WS.toolpaths, def.kinematics);
+      } catch (err) {
+        setEvent(`Failed to load ${id}: ${err.message}`);
+        console.error(err);
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // BRIDGE STATUS + DRO EVENTS
+    // ─────────────────────────────────────────────────────────────
+    window.addEventListener('pentacad:bridge-status', (ev) => {
+      WS.bridgeStatus = ev.detail.status;
+      updateBridgeUI();
+      const detail = $('#bridge-detail'); if (detail) detail.textContent = ev.detail.status;
+    });
+    window.addEventListener('pentacad:dro', (ev) => {
+      Object.assign(WS.dro, ev.detail);
+      updateDRO();
+    });
+    window.addEventListener('pentacad:spindle', (ev) => {
+      WS.dro.rpm = ev.detail.rpm || WS.dro.rpm;
+      updateDRO();
+    });
+    window.addEventListener('pentacad:alarm', (ev) => {
+      setEvent('ALARM: ' + JSON.stringify(ev.detail));
+    });
+
+    function updateBridgeUI() {
+      const dot = $('#bridge-dot'); const label = $('#bridge-label');
+      const map = { disconnected: '', connecting: 'amber', connected: 'green', error: 'red' };
+      if (dot) dot.className = 'dot ' + (map[WS.bridgeStatus] || '');
+      if (label) label.textContent = WS.bridgeStatus || 'disconnected';
+    }
+
+    function updateDRO() {
+      $('#dro-x').textContent = (WS.dro.x || 0).toFixed(4);
+      $('#dro-y').textContent = (WS.dro.y || 0).toFixed(4);
+      $('#dro-z').textContent = (WS.dro.z || 0).toFixed(4);
+      $('#dro-a').textContent = (WS.dro.a || 0).toFixed(2) + '°';
+      $('#dro-b').textContent = (WS.dro.b || 0).toFixed(2) + '°';
+      $('#dro-feed').textContent = Math.round(WS.dro.feed || 0);
+      $('#dro-rpm').textContent = Math.round(WS.dro.rpm || 0);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // BOOT
+    // ─────────────────────────────────────────────────────────────
+    async function boot() {
+      // Init pentacad coordinator + sub-modules
+      if (window.CycleCAD?.Pentacad?.init) window.CycleCAD.Pentacad.init();
+
+      // Wait for Three.js
+      if (!window.THREE) await new Promise(r => window.addEventListener('three-ready', r, { once: true }));
+      bootScene();
+
+      // Seed demo data, load default machine, render first paint
+      seedDemoSetup();
+      $('#setup-chip').textContent = WS.setups[0].name;
+      renderStock(WS.setups[0]);
+
+      await loadMachine('v2-50-chb');
+      generatePreviewToolpaths();
+      updateBridgeUI();
+      updateDRO();
+      renderSidePanel();
+      setEvent('Pentacad workspace ready · Phase 0 scaffold');
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', boot);
+    } else {
+      boot();
+    }
+
+    // Expose for debugging
+    window.PentacadWS = WS;
+  })();
   </script>
 </body>
 </html>

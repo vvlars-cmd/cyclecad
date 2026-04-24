@@ -1,0 +1,65 @@
+{
+  "_note": "Registry of Pentamachine variants supported by Pentacad. Identifiers match the real PocketNC product line — V1, V2-10, V2-50, Solo — as confirmed against the Kinetic Control v5.8.4 disk image and the public PocketNC/Settings repo. Earlier 'V2-50CHB' / 'V2-50CHK' entries were fabricated in a prior draft and have been retired (their folders still exist as redirects; `rm -rf machines/v2-50-chb machines/v2-50-chk` is safe).",
+  "_confirmedFrom": {
+    "image": "kinetic-control-v5.8.4-20250401-bbb.img",
+    "settingsRepo": "https://github.com/PocketNC/Settings",
+    "rockhopperRepo": "https://github.com/PocketNC/Rockhopper",
+    "date": "2026-04-24"
+  },
+  "machines": [
+    {
+      "id": "v1",
+      "displayName": "Pentamachine V1",
+      "family": "Pentamachine V1",
+      "boardRevision": "v1revH",
+      "status": "legacy-supported",
+      "description": "Original Pocket NC (Kickstarter-era). 24k RPM ER11. A-tilt + B-rotary table.",
+      "confirmed": true,
+      "glbModel": "/opt/penta-ui-builds/gltf/v1.glb"
+    },
+    {
+      "id": "v2-10",
+      "displayName": "Pentamachine V2-10",
+      "family": "Pentamachine V2",
+      "boardRevision": "v2revP",
+      "status": "production",
+      "description": "Compact 5-axis desktop. Smaller envelope than V2-50.",
+      "confirmed": true,
+      "glbModel": "/opt/penta-ui-builds/gltf/v2-10.glb"
+    },
+    {
+      "id": "v2-50",
+      "displayName": "Pentamachine V2-50",
+      "family": "Pentamachine V2",
+      "boardRevision": "v2revR",
+      "status": "production",
+      "description": "Larger-envelope 5-axis. 40k RPM ER20. Current flagship.",
+      "confirmed": true,
+      "glbModel": "/opt/penta-ui-builds/gltf/v2-50.glb"
+    },
+    {
+      "id": "solo",
+      "displayName": "Pentamachine Solo",
+      "family": "Pentamachine Solo",
+      "boardRevision": "(to-confirm)",
+      "status": "phase-0",
+      "description": "Newer SKU. Enclosed, likely 3-axis. Spec confirmation needed.",
+      "confirmed": false,
+      "glbModel": "/opt/penta-ui-builds/gltf/solo.glb"
+    }
+  ],
+  "deprecatedAliases": [
+    {
+      "id": "v2-50-chb",
+      "redirectTo": "v2-50",
+      "reason": "Fabricated sub-variant from earlier session",
+      "removeAt": "next-release"
+    },
+    {
+      "id": "v2-50-chk",
+      "redirectTo": "v2-50",
+      "reason": "Fabricated sub-variant from earlier session",
+      "removeAt": "next-release"
+    }
+  ]
+}

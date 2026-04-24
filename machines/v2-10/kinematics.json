@@ -1,0 +1,103 @@
+{
+  "$schema": "../../docs/pentacad/machine-config-schema.json",
+  "_note": "V2-10 — entry-level Pentamachine 5-axis. Values estimated from public marketing. Mark 'confirmed: true' as Matt confirms.",
+  "machineId": "v2-10",
+  "vendor": "Penta Machine Company",
+  "productUrl": "https://www.pentamachine.com/v2-10",
+  "family": "V2",
+  "variant": "10",
+  "displayName": "Pentamachine V2-10",
+  "type": "5-axis-AB-table",
+  "description": "Entry 5-axis desktop CNC with A-tilt + B-rotary table. 24,000 RPM ER11 spindle. Compact footprint.",
+
+  "linear": {
+    "x": { "min": -5.0, "max": 5.0, "unit": "inch", "_confirmed": false, "_source": "marketing spec ~10 in X travel" },
+    "y": { "min": -3.5, "max": 3.5, "unit": "inch", "_confirmed": false, "_source": "marketing spec ~7 in Y travel" },
+    "z": { "min": -2.5, "max": 2.5, "unit": "inch", "_confirmed": false, "_source": "marketing spec ~5 in Z travel" }
+  },
+
+  "rotary": {
+    "a": { "min": -35, "max": 135, "unit": "deg", "axis": "X", "_confirmed": false,
+           "_note": "Same A-range as V2-50 family. Confirm." },
+    "b": { "min": -360, "max": 360, "unit": "deg", "axis": "Z", "continuous": true, "_confirmed": false }
+  },
+
+  "pivots": {
+    "a_to_table":   { "x": 0, "y": 0, "z": 0.4, "_note": "Smaller stack than V2-50. Guess." },
+    "b_to_a":       { "x": 0, "y": 0, "z": 0 },
+    "spindle_to_a": { "x": 0, "y": 0, "z": 2.0 }
+  },
+
+  "home":             { "x": 0, "y": 0, "z": 0, "a": 0, "b": 0 },
+  "tool_length_zero": 2.0,
+
+  "spindle": {
+    "type": "ER11",
+    "min_rpm": 3000,
+    "max_rpm": 24000,
+    "_confirmed": false,
+    "_source": "marketing — ER11 collet, entry spindle",
+    "recommended_warmup_seconds": 45
+  },
+
+  "max_feed": {
+    "rapid_linear": { "value": 3000, "unit": "inch/min", "_confirmed": false },
+    "rapid_rotary": { "value": 3600, "unit": "deg/min",  "_confirmed": false },
+    "cut":          { "value": 40,   "unit": "inch/min", "_confirmed": false }
+  },
+
+  "coolant": {
+    "mist":  { "m_code": 7, "supported": true },
+    "flood": { "m_code": 8, "supported": false, "_note": "Entry variant typically mist-only." },
+    "off":   { "m_code": 9 }
+  },
+
+  "controller": {
+    "platform": "LinuxCNC (pocketnc fork) on BeagleBone Black",
+    "os": "Debian Buster",
+    "kineticControlVersion": "5.8.4 (2025-04-01)",
+    "linuxcncSourceRoot": "/opt/source/pocketnc/emcapplication",
+    "pentamachineUiRoot": "/opt/penta-ui-builds",
+    "machineGlbModel": "/opt/penta-ui-builds/gltf/v2-10.glb",
+    "kinematicsModule": "5axiskins",
+    "calibration": {
+      "probingBallDiameter": "12.7mm (1/2 inch)",
+      "_note": "Per Kinetic Control source: V2-10 uses a 1/2\" probing ball, different from V2-50."
+    },
+    "_confirmed": true,
+    "_source": "Kinetic Control v5.8.4-20250401-bbb disk image"
+  },
+
+  "post": {
+    "dialect": "Pentamachine V2",
+    "units": "inch",
+    "planeCode": "G17",
+    "distanceCode": "G90",
+    "wcsDefault": "G54",
+    "feedModeDefault": "G94",
+    "feedModeFor5Axis": "G93",
+    "cutterComp": "G40",
+    "decimalPlacesLinear": 4,
+    "decimalPlacesRotary": 3
+  },
+
+  "tools": [
+    { "id": 1, "description": "1/4\" flat endmill 2FL",  "type": "flat", "dia_in": 0.25,   "dia_mm": 6.35,  "flutes": 2, "max_rpm": 18000 },
+    { "id": 2, "description": "1/8\" flat endmill 2FL",  "type": "flat", "dia_in": 0.125,  "dia_mm": 3.175, "flutes": 2, "max_rpm": 24000 },
+    { "id": 3, "description": "1/16\" flat endmill 2FL", "type": "flat", "dia_in": 0.0625, "dia_mm": 1.588, "flutes": 2, "max_rpm": 24000 },
+    { "id": 4, "description": "1/8\" ballnose 2FL",      "type": "ball", "dia_in": 0.125,  "dia_mm": 3.175, "flutes": 2, "max_rpm": 24000 },
+    { "id": 5, "description": "3 mm HSS-Co drill",       "type": "drill","dia_in": 0.118,  "dia_mm": 3.0,   "flutes": 2, "max_rpm": 3500 }
+  ],
+
+  "singularity_notes": [
+    "Same A-at-zero gimbal issue as V2-50.",
+    "Smaller work envelope — keep G0 rapid rates conservative until confirmed."
+  ],
+
+  "safety": {
+    "estop": { "hardware": true, "m_code": 0 },
+    "toolBreakDetection": false,
+    "probing": { "supported": true, "g_code": "G38.2", "default_feed_in_per_min": 2 },
+    "wcs": ["G54","G55","G56","G57","G58","G59"]
+  }
+}

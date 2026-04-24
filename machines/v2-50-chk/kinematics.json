@@ -1,0 +1,15 @@
+{
+  "$schema": "../../docs/pentacad/machine-config-schema.json",
+  "_note": "⚠️  DEPRECATED. CHK variant was a fabrication from earlier Pentacad drafts. Pentamachine has never shipped a V2-50CHK. Real product line confirmed against PocketNC/Settings GitHub + Kinetic Control disk image: V1 (v1revH), V2-10 (v2revP), V2-50 (v2revR), Solo. Use machines/v2-50/kinematics.json.",
+  "machineId": "v2-50-chk",
+  "redirectTo": "v2-50",
+  "deprecated": true,
+  "deprecationDate": "2026-04-24",
+  "deprecationReason": "CHK variant was a fabrication; not in Pentamachine's actual product line.",
+  "displayName": "(removed)",
+  "family": "V2",
+  "variant": "(fabrication)",
+  "type": "5-axis-AB-table",
+  "description": "Kept only to avoid 404s in older links. Will be deleted next release.",
+  "_action": "To remove this folder cleanly: rm -rf machines/v2-50-chk"
+}

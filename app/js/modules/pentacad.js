@@ -7,10 +7,22 @@
  *              (pentacad-cam, pentacad-sim, pentacad-bridge) and exposes
  *              the unified Pentacad API surface on window.CycleCAD.Pentacad.
  *
- * @version 0.1.0
+ * @version 1.0.0
  * @author  Sachin Kumar <vvlars@googlemail.com>
  * @license AGPL-3.0-only (dual-licensed: commercial available)
  * @module  pentacad
+ *
+ * Phase 1A shipped 2026-04-24:
+ *   - pentacad-cam.js: real toolpath generation (2D Contour, Pocket, Drill, Face)
+ *     + Pentamachine V2 .ngc post-processor. 8/8 self-tests pass.
+ *   - pentacad-sim.js: full G-code parser + modal executor + A/B forward
+ *     kinematics + soft-limit check + Three.js animation helper. 11/11 tests.
+ *   - pentacad-bridge.js: JSON-over-WS protocol v1.0, mock mode for dev,
+ *     reconnect with exponential backoff, streaming window flow control.
+ *   - machines/: v2-10, v2-50-chb, v2-50-chk JSON definitions with estimated
+ *     specs (marked _confirmed: false pending Matt's measurements).
+ *   - server/pentabridge.py: reference daemon implementation (~350 lines).
+ *   - docs/pentacad/bridge-protocol.md: full protocol spec.
  */
 
 'use strict';
@@ -19,14 +31,14 @@ window.CycleCAD = window.CycleCAD || {};
 
 window.CycleCAD.Pentacad = (() => {
   const MODULE_NAME = 'pentacad';
-  const VERSION = '0.1.0';
+  const VERSION = '1.0.0';
 
   // ============================================================================
   // STATE
   // ============================================================================
 
   const state = {
-    phase: 'scaffold',          // scaffold | phase-0 | phase-1 | phase-2 | phase-3
+    phase: 'phase-1a',          // scaffold | phase-0 | phase-1a | phase-1 | phase-2 | phase-3
     machine: null,              // loaded machine definition (kinematics, spindle, etc.)
     activeMachineId: null,      // 'v2-10' | 'v2-50-chb' | 'v2-50-chk'
     workpiece: null,            // reference to cycleCAD model being machined
@@ -37,10 +49,15 @@ window.CycleCAD.Pentacad = (() => {
     bridgeStatus: 'disconnected',
   };
 
+  // Real Pentamachine product line — confirmed 2026-04-24 against the Kinetic
+  // Control v5.8.4 disk image + https://github.com/PocketNC/Settings. Earlier
+  // 'V2-50CHB' / 'V2-50CHK' sub-variants were fabricated; they've been retired.
+  // Board revisions (v1revH / v2revP / v2revR) are the keys Rockhopper uses.
   const SUPPORTED_MACHINES = [
-    { id: 'v2-10',       name: 'Pentamachine V2-10',      status: 'template' },
-    { id: 'v2-50-chb',   name: 'Pentamachine V2-50CHB',   status: 'primary' },
-    { id: 'v2-50-chk',   name: 'Pentamachine V2-50CHK',   status: 'template' },
+    { id: 'v1',     name: 'Pentamachine V1 (legacy)', boardRevision: 'v1revH', status: 'legacy-supported', spindle: '24k RPM ER11',  type: '5-axis AB-table', glb: '/opt/penta-ui-builds/gltf/v1.glb' },
+    { id: 'v2-10',  name: 'Pentamachine V2-10',       boardRevision: 'v2revP', status: 'production',       spindle: '24k RPM ER11',  type: '5-axis AB-table', glb: '/opt/penta-ui-builds/gltf/v2-10.glb' },
+    { id: 'v2-50',  name: 'Pentamachine V2-50',       boardRevision: 'v2revR', status: 'production',       spindle: '40k RPM ER20',  type: '5-axis AB-table', glb: '/opt/penta-ui-builds/gltf/v2-50.glb' },
+    { id: 'solo',   name: 'Pentamachine Solo',        boardRevision: '(tbd)',  status: 'phase-0',          spindle: '(tbd)',          type: '(tbd — enclosed)', glb: '/opt/penta-ui-builds/gltf/solo.glb' }
   ];
 
   // ============================================================================
@@ -80,19 +97,25 @@ window.CycleCAD.Pentacad = (() => {
   function init(options = {}) {
     const Cam = window.CycleCAD.PentacadCAM;
     const Sim = window.CycleCAD.PentacadSim;
-    const Bridge = window.CycleCAD.PentacadBridge;
+    // Prefer Rockhopper (ships on every Pentamachine). Fall back to our own
+    // pentabridge.py daemon only if the user is running LinuxCNC without
+    // Rockhopper — a rare case outside Pentamachine hardware.
+    const Rockhopper = window.CycleCAD.Rockhopper;
+    const PentaBridge = window.CycleCAD.PentacadBridge;
 
     if (Cam?.init) Cam.init({ state, onEvent: emit });
     if (Sim?.init) Sim.init({ state, onEvent: emit });
-    if (Bridge?.init) Bridge.init({ state, onEvent: emit });
+    if (Rockhopper?.init)   Rockhopper.init({ state, onEvent: emit });
+    if (PentaBridge?.init)  PentaBridge.init({ state, onEvent: emit });
 
     console.log(
       `%cPentacad v${VERSION} initialized`,
       'color:#10b981;font-weight:bold'
     );
-    console.log(`  CAM:    ${Cam ? 'loaded' : 'missing (pentacad-cam.js)'}`);
-    console.log(`  Sim:    ${Sim ? 'loaded' : 'missing (pentacad-sim.js)'}`);
-    console.log(`  Bridge: ${Bridge ? 'loaded' : 'missing (pentacad-bridge.js)'}`);
+    console.log(`  CAM:          ${Cam         ? 'loaded' : 'missing (pentacad-cam.js)'}`);
+    console.log(`  Sim:          ${Sim         ? 'loaded' : 'missing (pentacad-sim.js)'}`);
+    console.log(`  Rockhopper:   ${Rockhopper  ? 'loaded (preferred bridge)' : 'missing (rockhopper-client.js)'}`);
+    console.log(`  PentaBridge:  ${PentaBridge ? 'loaded (fallback for non-Rockhopper LinuxCNC installs)' : 'missing (pentacad-bridge.js)'}`);
     return { version: VERSION, phase: state.phase };
   }
 
@@ -200,7 +223,15 @@ window.CycleCAD.Pentacad = (() => {
         return window.CycleCAD.PentacadCAM?.execute?.(request) ?? { error: 'cam_not_loaded' };
       case 'sim':
         return window.CycleCAD.PentacadSim?.execute?.(request) ?? { error: 'sim_not_loaded' };
+      case 'rockhopper': {
+        // New preferred bridge — direct Rockhopper client
+        const rh = window.CycleCAD.Rockhopper;
+        if (!rh) return { error: 'rockhopper_not_loaded' };
+        if (typeof rh[fn] === 'function') return rh[fn](params);
+        return { error: 'unknown_rockhopper_method', method };
+      }
       case 'bridge':
+        // Legacy fallback: our own WS daemon (pentabridge.py)
         return window.CycleCAD.PentacadBridge?.execute?.(request) ?? { error: 'bridge_not_loaded' };
     }
     return { error: 'unknown_method', method };

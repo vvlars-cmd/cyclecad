@@ -534,7 +534,7 @@ button { font-family: inherit; font-size: inherit; cursor: pointer; border: 0; b
 /* CAM / Simulate / Design tabs share a viewport layout */
 .ws-layout {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 1fr 360px;
   gap: 18px;
   height: calc(100vh - 180px);
 }
@@ -550,15 +550,109 @@ button { font-family: inherit; font-size: inherit; cursor: pointer; border: 0; b
   position: absolute;
   top: 12px; left: 12px;
   background: rgba(26,40,40,0.9);
-  color: white;
+  color: var(--kc-green);
   padding: 6px 12px;
   font-size: 11px;
   border-radius: 4px;
   font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.5px;
+  z-index: 2;
 }
+.ws-viewport .view-legend {
+  position: absolute;
+  bottom: 12px; right: 12px;
+  background: rgba(26,40,40,0.88);
+  padding: 6px 12px;
+  font-size: 10px;
+  border-radius: 4px;
+  color: var(--kc-status-text);
+  display: flex; align-items: center; gap: 10px;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.5px;
+  z-index: 2;
+}
+.ws-viewport .view-legend .lg {
+  display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px;
+}
+.ws-viewport .view-legend .lg.green { background: var(--kc-green); }
+.ws-viewport .view-legend .lg.blue  { background: var(--kc-info-blue); }
+.ws-viewport .view-legend .lg.red   { background: var(--kc-red); }
+.ws-viewport .view-legend .lg.gold  { background: #D4A843; }
+
 .ws-side {
   display: flex; flex-direction: column; gap: 12px;
+  overflow-y: auto;
+  padding-right: 4px;
 }
+.ws-side::-webkit-scrollbar { width: 6px; }
+.ws-side::-webkit-scrollbar-thumb { background: var(--kc-border-dark); border-radius: 3px; }
+
+/* Operation list — numbered rows with dot indicators */
+.op-list { display: flex; flex-direction: column; gap: 8px; }
+.op-item {
+  display: grid;
+  grid-template-columns: 22px 1fr 10px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--kc-bg-soft);
+  border-radius: 4px;
+  border-left: 3px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.op-item:hover { border-left-color: var(--kc-green); background: var(--kc-bg); }
+.op-item .op-num {
+  font-size: 11px; font-weight: 800;
+  color: var(--kc-text-3);
+  letter-spacing: 1px;
+}
+.op-item .op-body { min-width: 0; }
+.op-item .op-name {
+  font-size: 12px; font-weight: 700;
+  color: var(--kc-text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.op-item .op-tool {
+  font-size: 10px; color: var(--kc-text-3);
+  font-family: 'JetBrains Mono', monospace;
+  margin-top: 2px;
+}
+.op-item .op-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--kc-green);
+}
+
+/* Setup / summary KV rows */
+.setup-grid { display: flex; flex-direction: column; gap: 6px; }
+.kv {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--kc-border);
+  font-size: 12px;
+}
+.kv:last-child { border-bottom: 0; }
+.kv .k { color: var(--kc-text-3); letter-spacing: 0.5px; }
+.kv .v { color: var(--kc-text); font-weight: 600; }
+
+/* Soft-limit rows */
+.limits { display: flex; flex-direction: column; gap: 4px; }
+.lim-row {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  padding: 6px 10px;
+  background: var(--kc-bg-soft);
+  border-radius: 3px;
+  font-size: 12px;
+}
+.lim-row .k { font-weight: 800; color: var(--kc-text-2); }
+.lim-row .v { font-family: 'JetBrains Mono', monospace; color: var(--kc-text); text-align: right; }
+.lim-row .v.pass { color: var(--kc-green); font-weight: 700; }
+.lim-row .v.fail { color: var(--kc-red); font-weight: 700; }
+
+.ctrl-row { display: flex; gap: 8px; }
+.ctrl-row + .ctrl-row { margin-top: 8px; }
 
 /* ──────────────────────────────────────────────────────────
    RESPONSIVE
@@ -790,20 +884,52 @@ button { font-family: inherit; font-size: inherit; cursor: pointer; border: 0; b
   <!-- ───────────────── MACHINE TAB ───────────────── -->
   <section class="kc-tabview" data-tabview="machine">
     <h2>Machine</h2>
+
     <div class="card">
       <h3>Active machine</h3>
       <div id="machine-summary" style="font-size:14px;color:var(--kc-text-2);line-height:1.7">
-        Select a machine from the dropdown in the top-right to load its kinematics + INI template.
+        V2-50 loaded (boardRevision v2revR). Change via the dropdown in the top-right.
       </div>
     </div>
+
     <div class="card">
-      <h3>Rockhopper connection</h3>
+      <h3>Connect to your Pentamachine</h3>
+      <p style="font-size:13px;color:var(--kc-text-2);margin-bottom:14px;line-height:1.55">
+        USB cable plugged in? The BeagleBone Black inside your machine exposes itself as a USB-Ethernet gadget on
+        <code class="mono" style="padding:2px 6px;background:var(--kc-bg);border-radius:3px">192.168.7.2</code>
+        (Linux/Windows) or
+        <code class="mono" style="padding:2px 6px;background:var(--kc-bg);border-radius:3px">192.168.6.2</code>
+        (macOS). Pentacad talks to Rockhopper at <code class="mono">ws://&lt;ip&gt;:8000/websocket/</code>.
+      </p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+        <button class="ctrl-btn step" id="rh-usb-mac" style="flex:0 0 auto;padding:10px 18px">🔌 Detect via USB (macOS · 192.168.6.2)</button>
+        <button class="ctrl-btn step" id="rh-usb-linux" style="flex:0 0 auto;padding:10px 18px">🔌 Detect via USB (Linux/Windows · 192.168.7.2)</button>
+        <button class="ctrl-btn hold" id="rh-usb-both" style="flex:0 0 auto;padding:10px 18px">🔍 Scan all BBB USB addresses</button>
+      </div>
       <div style="display:flex;gap:10px;margin-bottom:10px">
-        <input id="rh-url" style="flex:1;padding:8px;border:1px solid var(--kc-border);border-radius:4px" placeholder="ws://<machine-ip>:8000/websocket/" value="ws://localhost:8000/websocket/" />
+        <input id="rh-url"
+               style="flex:1;padding:8px 12px;border:1px solid var(--kc-border);border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:12px"
+               placeholder="ws://&lt;machine-ip&gt;:8000/websocket/"
+               value="ws://192.168.7.2:8000/websocket/" />
+        <input id="rh-user" style="width:100px;padding:8px;border:1px solid var(--kc-border);border-radius:4px;font-size:12px" value="default" placeholder="user"/>
+        <input id="rh-pass" type="password" style="width:100px;padding:8px;border:1px solid var(--kc-border);border-radius:4px;font-size:12px" value="default" placeholder="password"/>
         <button id="rh-connect" class="home-all-btn">CONNECT</button>
         <button id="rh-mock" class="warm-up-btn">Use mock</button>
       </div>
-      <div id="rh-status" class="mono" style="font-size:12px;color:var(--kc-text-2)">idle</div>
+      <div id="rh-status" class="mono" style="font-size:12px;color:var(--kc-text-2);padding:8px 12px;background:var(--kc-bg-soft);border-radius:4px;min-height:28px">Not connected.</div>
+    </div>
+
+    <div class="card">
+      <h3>Machine 3D model</h3>
+      <p style="font-size:13px;color:var(--kc-text-2);margin-bottom:12px;line-height:1.55">
+        Every Pentamachine ships with a detailed GLB model of itself at
+        <code class="mono" style="padding:2px 6px;background:var(--kc-bg);border-radius:3px">/opt/penta-ui-builds/gltf/&lt;variant&gt;.glb</code>.
+        When connected over USB, Pentacad can fetch the exact model for your machine.
+      </p>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button id="glb-fetch" class="home-all-btn">↓ Fetch V2-50 model from connected machine</button>
+        <div id="glb-status" class="mono" style="font-size:12px;color:var(--kc-text-2)"></div>
+      </div>
     </div>
   </section>
 
@@ -831,40 +957,138 @@ button { font-family: inherit; font-size: inherit; cursor: pointer; border: 0; b
 
   <!-- ───────────────── CAM TAB ───────────────── -->
   <section class="kc-tabview" data-tabview="cam">
-    <h2>CAM</h2>
     <div class="ws-layout">
       <div class="ws-viewport" id="cam-viewport">
-        <div class="floaty">CAM viewport · toolpaths render here</div>
+        <div class="floaty" id="cam-floaty">CAM viewport · Three.js initialising…</div>
+        <div class="view-legend">
+          <span class="lg green"></span>Rapid
+          <span class="lg blue"></span>Feed
+          <span class="lg red"></span>Over-limit
+          <span class="lg gold"></span>Stock
+        </div>
       </div>
       <div class="ws-side">
-        <div class="card"><h3>Operations</h3><div id="op-list" style="font-size:12px;color:var(--kc-text-2)">No operations yet.</div></div>
-        <button class="home-all-btn">+ Add operation</button>
-        <button class="warm-up-btn">Generate toolpaths</button>
+        <div class="card">
+          <h3>Setup 1</h3>
+          <div class="setup-grid">
+            <div class="kv"><span class="k">Stock</span><span class="v">100 × 100 × 10 mm</span></div>
+            <div class="kv"><span class="k">Material</span><span class="v">Aluminum</span></div>
+            <div class="kv"><span class="k">WCS</span><span class="v">G54 · centre-top</span></div>
+            <div class="kv"><span class="k">Plane</span><span class="v">XY (A=0, B=0)</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Operations</h3>
+          <div id="op-list" class="op-list">
+            <div class="op-item">
+              <span class="op-num">1</span>
+              <div class="op-body"><div class="op-name">Face</div><div class="op-tool">T1 · Ø6.35mm flat · 18000 rpm</div></div>
+              <span class="op-dot"></span>
+            </div>
+            <div class="op-item">
+              <span class="op-num">2</span>
+              <div class="op-body"><div class="op-name">Adaptive Clear</div><div class="op-tool">T2 · Ø3.175mm flat · 22000 rpm</div></div>
+              <span class="op-dot"></span>
+            </div>
+            <div class="op-item">
+              <span class="op-num">3</span>
+              <div class="op-body"><div class="op-name">Pocket</div><div class="op-tool">T2 · Ø3.175mm flat · 22000 rpm</div></div>
+              <span class="op-dot"></span>
+            </div>
+            <div class="op-item">
+              <span class="op-num">4</span>
+              <div class="op-body"><div class="op-name">Drill (4× corner holes)</div><div class="op-tool">T3 · Ø3mm drill · 3500 rpm</div></div>
+              <span class="op-dot"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="ctrl-row">
+          <button class="ctrl-btn cycle" id="btn-add-op">+ Add operation</button>
+        </div>
+        <div class="ctrl-row">
+          <button class="ctrl-btn step" id="btn-gen-toolpaths">▶ Generate toolpaths</button>
+        </div>
+        <div class="ctrl-row">
+          <button class="ctrl-btn hold" id="btn-post-gcode">↓ Post to G-code</button>
+        </div>
+
+        <div class="card">
+          <h3>Posted</h3>
+          <div class="kv"><span class="k">Lines</span><span class="v mono" id="post-lines">—</span></div>
+          <div class="kv"><span class="k">Move count</span><span class="v mono" id="post-moves">—</span></div>
+          <div class="kv"><span class="k">Cut distance</span><span class="v mono" id="post-dist">—</span></div>
+          <div class="kv"><span class="k">Est. time</span><span class="v mono" id="post-time">—</span></div>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- ───────────────── SIMULATE TAB ───────────────── -->
   <section class="kc-tabview" data-tabview="simulate">
-    <h2>Simulate</h2>
     <div class="ws-layout">
       <div class="ws-viewport" id="sim-viewport">
-        <div class="floaty">Simulator · A/B forward kinematics + toolpath animation</div>
+        <div class="floaty" id="sim-floaty">Simulator · A/B forward kinematics</div>
+        <div class="view-legend">
+          <span class="lg green"></span>Rapid
+          <span class="lg blue"></span>Feed
+          <span class="lg red"></span>Violation
+        </div>
       </div>
       <div class="ws-side">
+
         <div class="card">
           <h3>Playback</h3>
-          <div style="display:flex;gap:8px;margin-bottom:10px">
-            <button class="ctrl-btn step" style="flex:1">▶ Play</button>
-            <button class="ctrl-btn hold" style="flex:1">❚❚ Pause</button>
+          <div class="ctrl-row">
+            <button class="ctrl-btn step" id="sim-play">▶ Play</button>
+            <button class="ctrl-btn hold" id="sim-pause">❚❚ Pause</button>
+            <button class="ctrl-btn cycle" id="sim-stop">◼ Stop</button>
           </div>
-          <label style="font-size:11px;color:var(--kc-text-3);letter-spacing:1.5px;text-transform:uppercase">Speed</label>
-          <input type="range" min="0.25" max="8" step="0.25" value="1" style="width:100%"/>
+          <div class="slider-row">
+            <div class="head">
+              <span class="k">Speed</span>
+              <span class="v" id="sim-speed-v">1.0 ×</span>
+            </div>
+            <input type="range" min="0.25" max="8" step="0.25" value="1" id="sim-speed"/>
+          </div>
+          <div class="slider-row">
+            <div class="head">
+              <span class="k">Timeline</span>
+              <span class="v"><span id="sim-elapsed">00:00.0</span> / <span id="sim-total">—</span></span>
+            </div>
+            <input type="range" min="0" max="1000" value="0" step="1" id="sim-scrub"/>
+          </div>
         </div>
+
+        <div class="card">
+          <h3>Motion summary</h3>
+          <div class="kv"><span class="k">Total distance</span><span class="v mono" id="sim-dist">—</span></div>
+          <div class="kv"><span class="k">Rapid moves</span><span class="v mono" id="sim-rapid">—</span></div>
+          <div class="kv"><span class="k">Cut moves</span><span class="v mono" id="sim-cut">—</span></div>
+          <div class="kv"><span class="k">5-axis moves</span><span class="v mono" id="sim-5ax">—</span></div>
+          <div class="kv"><span class="k">Est. run time</span><span class="v mono" id="sim-eta">—</span></div>
+        </div>
+
         <div class="card">
           <h3>Soft-limit check</h3>
-          <div class="mono" style="font-size:12px;color:var(--kc-green);font-weight:700">PASS</div>
+          <div id="sim-limits" class="limits">
+            <div class="lim-row"><span class="k">X</span><span class="v pass">OK</span></div>
+            <div class="lim-row"><span class="k">Y</span><span class="v pass">OK</span></div>
+            <div class="lim-row"><span class="k">Z</span><span class="v pass">OK</span></div>
+            <div class="lim-row"><span class="k">A</span><span class="v pass">OK</span></div>
+            <div class="lim-row"><span class="k">B</span><span class="v pass">OK · continuous</span></div>
+          </div>
         </div>
+
+        <div class="card">
+          <h3>Current move</h3>
+          <div class="kv"><span class="k">Line</span><span class="v mono" id="sim-line">N—</span></div>
+          <div class="kv"><span class="k">Mode</span><span class="v mono" id="sim-mode">—</span></div>
+          <div class="kv"><span class="k">Feed</span><span class="v mono" id="sim-feed">—</span></div>
+          <div class="kv"><span class="k">Note</span><span class="v" id="sim-note" style="font-family:Inter,sans-serif;font-size:11px">—</span></div>
+        </div>
+
       </div>
     </div>
   </section>
@@ -1171,7 +1395,408 @@ button { font-family: inherit; font-size: inherit; cursor: pointer; border: 0; b
   }
 
   console.log('[pentacad-ui] Kinetic-Control-style UI ready. Click "Use mock" on the Machine tab for a demo run.');
+
+  // =====================================================================
+  // USB AUTO-DETECT — BeagleBone Black USB-Ethernet gadget addresses
+  // =====================================================================
+  const USB_IPS = [
+    { ip: '192.168.7.2', os: 'Linux/Windows' },
+    { ip: '192.168.6.2', os: 'macOS' }
+  ];
+
+  async function probeMachineAt(ip, timeoutMs = 1500) {
+    // We can't poll TCP directly from the browser, but we can try fetch on
+    // Rockhopper's HTTP endpoint (same port 8000 serves a static index)
+    // or Pentaui's port 80. A cross-origin fetch failing silently tells us
+    // *nothing*, but a successful fetch (even a 404) proves the host is alive.
+    return new Promise((resolve) => {
+      const t = setTimeout(() => resolve(false), timeoutMs);
+      const img = new Image();
+      img.onload = () => { clearTimeout(t); resolve(true); };
+      img.onerror = () => { clearTimeout(t); resolve(true); };   // onerror still fires = host reached
+      // Cache-bust + fallback endpoints
+      img.src = `http://${ip}/icon.png?_=${Date.now()}`;
+    });
+  }
+
+  async function autoConnectUSB(ip) {
+    const url = `ws://${ip}:8000/websocket/`;
+    document.getElementById('rh-url').value = url;
+    rhStatus.textContent = `Probing ${ip}…`;
+    const reachable = await probeMachineAt(ip);
+    if (!reachable) {
+      rhStatus.textContent = `${ip} not reachable — is the USB cable plugged in and BBB booted?`;
+      return;
+    }
+    rhStatus.textContent = `${ip} reachable. Connecting Rockhopper…`;
+    document.getElementById('rh-connect').click();
+  }
+
+  document.getElementById('rh-usb-mac').addEventListener('click', () => autoConnectUSB('192.168.6.2'));
+  document.getElementById('rh-usb-linux').addEventListener('click', () => autoConnectUSB('192.168.7.2'));
+  document.getElementById('rh-usb-both').addEventListener('click', async () => {
+    rhStatus.textContent = 'Scanning typical BBB USB addresses…';
+    for (const { ip, os } of USB_IPS) {
+      rhStatus.textContent = `Trying ${ip} (${os})…`;
+      const ok = await probeMachineAt(ip, 1200);
+      if (ok) { rhStatus.textContent = `Found machine at ${ip}. Connecting…`; autoConnectUSB(ip); return; }
+    }
+    rhStatus.textContent = 'No Pentamachine found on USB. Check cable + `ifconfig` to confirm a 192.168.6.x or .7.x interface exists.';
+  });
+
+  // Enhance the connect button to use user + pass fields
+  const origConnect = document.getElementById('rh-connect').onclick;
+  document.getElementById('rh-connect').onclick = null;
+  document.getElementById('rh-connect').addEventListener('click', async (e) => {
+    e.preventDefault();
+    const rh = window.CycleCAD.Rockhopper;
+    if (!rh) { rhStatus.textContent = 'rockhopper module not loaded'; return; }
+    const url = document.getElementById('rh-url').value.trim();
+    const user = document.getElementById('rh-user').value.trim() || 'default';
+    const pass = document.getElementById('rh-pass').value || 'default';
+    rhStatus.textContent = `Connecting to ${url} as ${user}…`;
+    try {
+      await rh.connect({ url, username: user, password: pass });
+      state.connected = true;
+      rhStatus.textContent = `Connected as ${user}. ${rh.DEFAULT_WATCH.length} status items subscribed.`;
+      render();
+      rh.on('status', ({ name, data }) => {
+        if (name === 'actual_position' && Array.isArray(data)) {
+          state.pos.x = data[0] || 0; state.pos.y = data[1] || 0; state.pos.z = data[2] || 0;
+          state.pos.a = data[3] || 0; state.pos.b = data[4] || 0;
+        } else if (name === 'spindle' && data) {
+          state.spindleRPM = Math.round(data.speed || 0);
+          state.spindleLoad = Number(data.load || 0);
+        } else if (name === 'current_vel') {
+          state.feedIPM = Number(data) || 0;
+        }
+        render();
+      });
+    } catch (err) {
+      state.connected = false;
+      rhStatus.textContent = `ERROR: ${err.message}. If this is CORS, see docs/pentacad/kinetic-control-facts.md for workarounds.`;
+      render();
+    }
+  }, true);
+
+  // =====================================================================
+  // GLB MODEL FETCH — pull real Pentamachine 3D model at runtime
+  // =====================================================================
+  let cachedMachineGlbUrl = null;
+  document.getElementById('glb-fetch').addEventListener('click', async () => {
+    const status = document.getElementById('glb-status');
+    const url = document.getElementById('rh-url').value.replace(/^ws/, 'http').replace(/:8000\/websocket\/?/, '/gltf/v2-50.glb');
+    status.textContent = `Fetching ${url}…`;
+    try {
+      const r = await fetch(url, { mode: 'cors' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const blob = await r.blob();
+      cachedMachineGlbUrl = URL.createObjectURL(blob);
+      status.innerHTML = `✓ Cached ${(blob.size / 1024 / 1024).toFixed(2)} MB — ready for CAM/Simulate viewports.`;
+      status.style.color = 'var(--kc-green)';
+      // Notify viewports to re-load
+      window.dispatchEvent(new CustomEvent('pentacad:machine-glb-ready', { detail: { url: cachedMachineGlbUrl } }));
+    } catch (err) {
+      status.innerHTML = `⚠ ${err.message}. CORS likely blocked — if on USB, ensure 192.168.x.2 is reachable in a browser tab first.`;
+      status.style.color = 'var(--kc-amber)';
+    }
+  });
+
+  // =====================================================================
+  // CAM TAB — post to G-code button
+  // =====================================================================
+  document.getElementById('btn-gen-toolpaths').addEventListener('click', () => {
+    const cam = window.CycleCAD.PentacadCAM;
+    if (!cam) return;
+    try {
+      // Demo run using the default setup — PentacadCAM handles the real work
+      const pocket = cam.generatePocket({
+        boundary: [[0,0],[40,0],[40,30],[0,30]],
+        depth: 3, stepdown: 1, stepover: 1.5,
+        tool: { dia: 3.175 },
+        feeds: { cut: 800, plunge: 200, rapid: 5000 }
+      });
+      window._lastToolpaths = [pocket];
+      document.getElementById('cam-floaty').textContent = `CAM ready · ${pocket.toolpath.length} pts`;
+    } catch (err) { console.warn(err); }
+  });
+
+  document.getElementById('btn-post-gcode').addEventListener('click', () => {
+    const cam = window.CycleCAD.PentacadCAM;
+    const sim = window.CycleCAD.PentacadSim;
+    if (!cam || !sim || !window._lastToolpaths) return;
+    const machine = { post: { units: 'mm' }, kinematics: {} };
+    const gcode = cam.emitGCode(window._lastToolpaths, machine);
+    const parsed = sim.parseGCode(gcode);
+    const exec = sim.createExecutor(machine);
+    const result = exec.run(gcode);
+    const summary = sim.summariseMoves(result.moves);
+
+    document.getElementById('post-lines').textContent = gcode.split('\n').length.toLocaleString();
+    document.getElementById('post-moves').textContent = result.moves.length.toLocaleString();
+    document.getElementById('post-dist').textContent = (summary.totalDistance || 0).toFixed(1) + ' mm';
+    document.getElementById('post-time').textContent = (summary.estimatedTimeMin || 0).toFixed(2) + ' min';
+
+    document.getElementById('sim-dist').textContent = (summary.totalDistance || 0).toFixed(1) + ' mm';
+    document.getElementById('sim-rapid').textContent = ((summary.rapidDistance || 0)).toFixed(1) + ' mm';
+    document.getElementById('sim-cut').textContent = (summary.cutDistance || 0).toFixed(1) + ' mm';
+    document.getElementById('sim-5ax').textContent = result.moves.filter(m => m.from && m.to && (m.from.a !== m.to.a || m.from.b !== m.to.b)).length.toLocaleString();
+    document.getElementById('sim-eta').textContent = (summary.estimatedTimeMin || 0).toFixed(2) + ' min';
+    const total = (summary.estimatedTimeMin || 0) * 60;
+    document.getElementById('sim-total').textContent = Math.floor(total / 60).toString().padStart(2,'0') + ':' + (total % 60).toFixed(1).padStart(4,'0');
+
+    window._lastPostedGcode = gcode;
+    window._lastSimMoves = result.moves;
+    // Offer download
+    const blob = new Blob([gcode], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'pentacad-output.ngc';
+    a.click();
+  });
+
+  document.getElementById('btn-add-op').addEventListener('click', () => {
+    alert('Operation picker modal — Phase 2. For now, the 4-op demo setup runs via Generate toolpaths.');
+  });
+
+  // =====================================================================
+  // SIMULATE TAB — playback controller wiring
+  // =====================================================================
+  const simState = { playing: false, speed: 1, elapsed: 0, total: 0, rafId: 0, lastTs: 0 };
+
+  document.getElementById('sim-speed').addEventListener('input', (e) => {
+    simState.speed = Number(e.target.value);
+    document.getElementById('sim-speed-v').textContent = simState.speed.toFixed(2) + ' ×';
+  });
+
+  function tick(ts) {
+    if (!simState.playing) return;
+    if (simState.lastTs) simState.elapsed += ((ts - simState.lastTs) / 1000) * simState.speed;
+    simState.lastTs = ts;
+    // Cap at total (from sim summary)
+    const total = simState.total || 1;
+    if (simState.elapsed >= total) { simState.elapsed = total; simState.playing = false; }
+    const mm = Math.floor(simState.elapsed / 60).toString().padStart(2,'0');
+    const ss = (simState.elapsed % 60).toFixed(1).padStart(4,'0');
+    document.getElementById('sim-elapsed').textContent = mm + ':' + ss;
+    document.getElementById('sim-scrub').value = Math.round((simState.elapsed / total) * 1000);
+    if (simState.playing) simState.rafId = requestAnimationFrame(tick);
+  }
+  document.getElementById('sim-play').addEventListener('click', () => {
+    const sim = window.CycleCAD.PentacadSim;
+    if (window._lastSimMoves && sim) {
+      simState.total = sim.summariseMoves(window._lastSimMoves).estimatedTimeMin * 60 || 360;
+    } else { simState.total = 360; }
+    simState.playing = true; simState.lastTs = 0;
+    simState.rafId = requestAnimationFrame(tick);
+  });
+  document.getElementById('sim-pause').addEventListener('click', () => { simState.playing = false; });
+  document.getElementById('sim-stop').addEventListener('click', () => {
+    simState.playing = false; simState.elapsed = 0; simState.lastTs = 0;
+    document.getElementById('sim-elapsed').textContent = '00:00.0';
+    document.getElementById('sim-scrub').value = 0;
+  });
+  document.getElementById('sim-scrub').addEventListener('input', (e) => {
+    if (!simState.total) return;
+    simState.elapsed = (Number(e.target.value) / 1000) * simState.total;
+    const mm = Math.floor(simState.elapsed / 60).toString().padStart(2,'0');
+    const ss = (simState.elapsed % 60).toFixed(1).padStart(4,'0');
+    document.getElementById('sim-elapsed').textContent = mm + ':' + ss;
+  });
 })();
+</script>
+
+<!-- =====================================================================
+     THREE.JS VIEWPORTS — loaded as ES module. Lazy-initialised when
+     the user first opens the CAM or Simulate tab.
+     ===================================================================== -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+// Publish for any IIFE modules that want at window.THREE
+window.THREE = THREE;
+
+/**
+ * Create a Three.js viewport inside the given container element.
+ * @param {HTMLElement} container
+ * @returns {{scene, camera, renderer, controls, setGlb, setToolpath, markToolAt, resize, render}}
+ */
+function createViewport(container) {
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x1A2828);
+  scene.fog = new THREE.Fog(0x1A2828, 400, 1000);
+
+  const rect = container.getBoundingClientRect();
+  const camera = new THREE.PerspectiveCamera(45, rect.width / rect.height, 1, 2000);
+  camera.position.set(200, 180, 260);
+  camera.lookAt(0, 0, 0);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(rect.width, rect.height);
+  renderer.setPixelRatio(window.devicePixelRatio);
+  container.appendChild(renderer.domElement);
+
+  // Lighting — neutral, bright enough for green/amber toolpaths to pop
+  const hemi = new THREE.HemisphereLight(0xFFFFFF, 0x1A2828, 0.75);
+  scene.add(hemi);
+  const dir = new THREE.DirectionalLight(0xFFFFFF, 0.65);
+  dir.position.set(150, 250, 100);
+  scene.add(dir);
+
+  // Grid + axes reference
+  const grid = new THREE.GridHelper(400, 40, 0x2A4F4F, 0x1F3939);
+  grid.material.opacity = 0.45; grid.material.transparent = true;
+  scene.add(grid);
+  scene.add(new THREE.AxesHelper(60));
+
+  // Orbit controls
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.target.set(0, 20, 0);
+
+  // Stock box placeholder
+  const stockMat = new THREE.MeshStandardMaterial({
+    color: 0xD4A843, metalness: 0.35, roughness: 0.55, transparent: true, opacity: 0.72
+  });
+  const stock = new THREE.Mesh(new THREE.BoxGeometry(100, 10, 100), stockMat);
+  stock.position.y = 5;
+  scene.add(stock);
+
+  // Tool marker — cone that follows the current move
+  const toolMat = new THREE.MeshStandardMaterial({ color: 0x15B573, metalness: 0.1, roughness: 0.35 });
+  const tool = new THREE.Mesh(new THREE.ConeGeometry(3, 12, 18), toolMat);
+  tool.position.set(0, 30, 0);
+  scene.add(tool);
+
+  // Machine GLB slot
+  let machineGroup = null;
+  async function setGlb(url) {
+    if (machineGroup) { scene.remove(machineGroup); machineGroup = null; }
+    if (!url) return;
+    const loader = new GLTFLoader();
+    try {
+      const gltf = await loader.loadAsync(url);
+      machineGroup = gltf.scene;
+      // Normalise: Pocket NC GLBs are typically in inches — scale up for visibility
+      machineGroup.scale.setScalar(25);
+      machineGroup.position.set(0, 0, 0);
+      scene.add(machineGroup);
+      return true;
+    } catch (err) {
+      console.warn('[pentacad-viewport] GLB load failed:', err && err.message);
+      return false;
+    }
+  }
+
+  // Toolpath slot — array of line segments, color-coded
+  let toolpathGroup = null;
+  function setToolpath(toolpath) {
+    if (toolpathGroup) { scene.remove(toolpathGroup); toolpathGroup = null; }
+    if (!toolpath || toolpath.length < 2) return;
+    toolpathGroup = new THREE.Group();
+    const matFeed  = new THREE.LineBasicMaterial({ color: 0x2E90E8, linewidth: 2 });
+    const matRapid = new THREE.LineBasicMaterial({ color: 0x15B573, linewidth: 2 });
+    let currentGeom = [];
+    let lastMode = 'feed';
+    for (let i = 1; i < toolpath.length; i++) {
+      const p0 = toolpath[i - 1], p1 = toolpath[i];
+      const mode = (p1.mode === 'rapid') ? 'rapid' : 'feed';
+      if (mode !== lastMode && currentGeom.length > 0) {
+        // flush
+        const g = new THREE.BufferGeometry().setFromPoints(currentGeom);
+        const line = new THREE.Line(g, lastMode === 'rapid' ? matRapid : matFeed);
+        toolpathGroup.add(line);
+        currentGeom = [];
+      }
+      if (currentGeom.length === 0) {
+        currentGeom.push(new THREE.Vector3(p0.x || 0, p0.y || 0, p0.z || 0));
+      }
+      currentGeom.push(new THREE.Vector3(p1.x || 0, p1.y || 0, p1.z || 0));
+      lastMode = mode;
+    }
+    if (currentGeom.length > 0) {
+      const g = new THREE.BufferGeometry().setFromPoints(currentGeom);
+      const line = new THREE.Line(g, lastMode === 'rapid' ? matRapid : matFeed);
+      toolpathGroup.add(line);
+    }
+    scene.add(toolpathGroup);
+  }
+
+  function markToolAt(x, y, z) { tool.position.set(x, y + 6, z); }
+
+  function resize() {
+    const r = container.getBoundingClientRect();
+    renderer.setSize(r.width, r.height);
+    camera.aspect = r.width / r.height;
+    camera.updateProjectionMatrix();
+  }
+
+  function render() {
+    controls.update();
+    renderer.render(scene, camera);
+  }
+
+  (function loop() { requestAnimationFrame(loop); render(); })();
+  window.addEventListener('resize', resize);
+
+  return { scene, camera, renderer, controls, tool, setGlb, setToolpath, markToolAt, resize };
+}
+
+// --- Lazy init the viewports when tabs first show ---
+let camViewport = null;
+let simViewport = null;
+
+function initCamViewport() {
+  if (camViewport) return;
+  const host = document.getElementById('cam-viewport');
+  if (!host) return;
+  camViewport = createViewport(host);
+  document.getElementById('cam-floaty').textContent = 'CAM viewport · click Generate toolpaths to render a path';
+  if (window._cachedGlbUrl) camViewport.setGlb(window._cachedGlbUrl);
+}
+function initSimViewport() {
+  if (simViewport) return;
+  const host = document.getElementById('sim-viewport');
+  if (!host) return;
+  simViewport = createViewport(host);
+  document.getElementById('sim-floaty').textContent = 'Simulate viewport · load G-code in CAM tab';
+  if (window._cachedGlbUrl) simViewport.setGlb(window._cachedGlbUrl);
+}
+
+// Listen for tab switches and GLB-ready events
+document.querySelectorAll('.kc-tab').forEach((t) => {
+  t.addEventListener('click', () => {
+    if (t.dataset.tab === 'cam')      setTimeout(initCamViewport, 30);
+    if (t.dataset.tab === 'simulate') setTimeout(initSimViewport, 30);
+  });
+});
+window.addEventListener('pentacad:machine-glb-ready', (e) => {
+  window._cachedGlbUrl = e.detail.url;
+  if (camViewport) camViewport.setGlb(e.detail.url);
+  if (simViewport) simViewport.setGlb(e.detail.url);
+});
+
+// Push toolpath into viewports when "Generate toolpaths" clicks
+document.getElementById('btn-gen-toolpaths').addEventListener('click', () => {
+  setTimeout(() => {
+    if (window._lastToolpaths && camViewport) {
+      camViewport.setToolpath(window._lastToolpaths[0].toolpath);
+    }
+  }, 50);
+});
+
+console.log('[pentacad-viewport] Three.js viewport module loaded');
 </script>
 
 </body>

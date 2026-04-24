@@ -248,17 +248,54 @@ button { font-family: inherit; font-size: inherit; cursor: pointer; border: 0; b
 .gauge-footer .k { font-size: 9px; font-weight: 700; letter-spacing: 2px; color: var(--kc-text-3); text-transform: uppercase; }
 .gauge-footer .v { font-size: 18px; font-weight: 700; color: var(--kc-text); margin-top: 2px; }
 
-.pressure-badge {
-  position: absolute;
-  top: 18px; left: 18px;
-  width: 56px; height: 56px;
-  border-radius: 50%;
-  border: 3px solid var(--kc-green);
-  display: grid; place-items: center;
-  background: var(--kc-surface);
+/* Two-column footer for Pressure + Temperature side-by-side */
+.gauge-footer-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: center;
 }
-.pressure-badge .k { font-size: 7px; font-weight: 700; letter-spacing: 1px; color: var(--kc-text-3); }
-.pressure-badge .v { font-size: 10px; font-weight: 700; color: var(--kc-text); }
+.gauge-footer-row .gauge-footer-cell {
+  text-align: center;
+  padding: 0 6px;
+}
+.gauge-footer-row .gauge-footer-cell + .gauge-footer-cell {
+  border-left: 1px solid var(--kc-border);
+}
+.gauge-footer-cell--clickable {
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+.gauge-footer-cell--clickable:hover {
+  background: var(--kc-bg);
+}
+.unit-toggle-hint {
+  margin-left: 4px;
+  font-size: 8px;
+  color: var(--kc-text-3);
+  font-weight: 500;
+  opacity: 0.7;
+}
+
+/* Link to the standalone pentacad-sim.html (Simulate tab → Playback card header) */
+.standalone-sim-link {
+  float: right;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--kc-green);
+  text-decoration: none;
+  padding: 2px 8px;
+  border: 1px solid var(--kc-green);
+  border-radius: 10px;
+  margin-top: -2px;
+  white-space: nowrap;
+}
+.standalone-sim-link:hover {
+  background: var(--kc-green);
+  color: #fff;
+}
 
 .warm-up-btn {
   margin-top: 10px;
@@ -719,12 +756,6 @@ button { font-family: inherit; font-size: inherit; cursor: pointer; border: 0; b
         </div>
         <div class="gauge-wrap">
           <div class="gauge-ring">
-            <!-- Pressure mini-badge top-left -->
-            <div class="pressure-badge">
-              <div class="k">PRESSURE</div>
-              <div class="v" id="g-pressure">0.00 psi</div>
-            </div>
-
             <svg viewBox="0 0 200 200" aria-hidden="true">
               <!-- Background ring -->
               <circle class="g-track" cx="100" cy="100" r="80" stroke-width="12"/>
@@ -754,9 +785,17 @@ button { font-family: inherit; font-size: inherit; cursor: pointer; border: 0; b
             </div>
           </div>
 
-          <div class="gauge-footer">
-            <div class="k">Temperature</div>
-            <div class="v" id="g-spindle-temp">— °F</div>
+          <div class="gauge-footer gauge-footer-row">
+            <div class="gauge-footer-cell">
+              <div class="k">Pressure</div>
+              <div class="v" id="g-pressure">0.00 psi</div>
+            </div>
+            <div class="gauge-footer-cell gauge-footer-cell--clickable"
+                 onclick="toggleTempUnit()"
+                 title="Click to toggle °C / °F">
+              <div class="k">Temperature <span class="unit-toggle-hint">°C / °F ⇄</span></div>
+              <div class="v" id="g-spindle-temp">— °C</div>
+            </div>
           </div>
 
           <button class="warm-up-btn">WARM UP</button>
@@ -1039,7 +1078,13 @@ button { font-family: inherit; font-size: inherit; cursor: pointer; border: 0; b
       <div class="ws-side">
 
         <div class="card">
-          <h3>Playback</h3>
+          <h3>Playback
+            <a href="/app/pentacad-sim.html" target="_blank" rel="noopener"
+               class="standalone-sim-link"
+               title="Open the full-screen standalone simulator (styled to match sim.pentamachine.com)">
+              Open standalone sim&nbsp;↗
+            </a>
+          </h3>
           <div class="ctrl-row">
             <button class="ctrl-btn step" id="sim-play">▶ Play</button>
             <button class="ctrl-btn hold" id="sim-pause">❚❚ Pause</button>
@@ -1169,7 +1214,8 @@ button { font-family: inherit; font-size: inherit; cursor: pointer; border: 0; b
     spindleRPM: 0,
     spindleLoad: 0,
     spindleWatt: 0,
-    spindleTemp: 0,
+    spindleTemp: 0,       // canonical storage: °Celsius (SI)
+    tempUnit: (localStorage.getItem('pentacad.tempUnit') === 'F') ? 'F' : 'C',
     pressure: 0,
     feedIPM: 0,
     feedWatt: 0,
@@ -1183,12 +1229,26 @@ button { font-family: inherit; font-size: inherit; cursor: pointer; border: 0; b
     errorCount: 0
   };
 
+  // Click the temperature cell to toggle °C / °F. Persisted in localStorage.
+  function toggleTempUnit() {
+    state.tempUnit = (state.tempUnit === 'C') ? 'F' : 'C';
+    localStorage.setItem('pentacad.tempUnit', state.tempUnit);
+    render();
+  }
+  window.toggleTempUnit = toggleTempUnit;
+
   function render() {
     // Spindle
     document.getElementById('g-spindle-rpm').textContent = state.spindleRPM.toLocaleString();
     document.getElementById('g-spindle-w').textContent = `${state.spindleWatt.toFixed(0)} W`;
     document.getElementById('g-spindle-load').textContent = `${state.spindleLoad.toFixed(1)} %`;
-    document.getElementById('g-spindle-temp').textContent = `${state.spindleTemp.toFixed(1)} °F`;
+    // Temperature — stored in °C, displayed per state.tempUnit (click to toggle)
+    {
+      const t = state.tempUnit === 'F'
+        ? state.spindleTemp * 9/5 + 32
+        : state.spindleTemp;
+      document.getElementById('g-spindle-temp').textContent = `${t.toFixed(1)} °${state.tempUnit}`;
+    }
     document.getElementById('g-pressure').textContent = `${state.pressure.toFixed(2)} psi`;
     setArc('arc-spindle-power', state.spindleWatt / 500);      // scale 0..500W -> 0..1
     setArc('arc-spindle-load',  state.spindleLoad / 100);
@@ -1342,7 +1402,7 @@ button { font-family: inherit; font-size: inherit; cursor: pointer; border: 0; b
     state.spindleRPM = 42853;
     state.spindleLoad = 24;
     state.spindleWatt = 180;
-    state.spindleTemp = 94.2;
+    state.spindleTemp = 34.6;  /* 94.2 °F ≈ 34.6 °C — canonical SI storage, display-converted */
     state.pressure = 19.77;
     state.feedIPM = 28;
     state.feedWatt = 120;
@@ -1770,7 +1830,8 @@ function initSimViewport() {
   const host = document.getElementById('sim-viewport');
   if (!host) return;
   simViewport = createViewport(host);
-  document.getElementById('sim-floaty').textContent = 'Simulate viewport · load G-code in CAM tab';
+  document.getElementById('sim-floaty').innerHTML = 'Simulate viewport · load G-code in CAM tab · '
+    + '<a href="/app/pentacad-sim.html" target="_blank" rel="noopener" style="color:var(--kc-green);text-decoration:underline;">or open standalone sim ↗</a>';
   if (window._cachedGlbUrl) simViewport.setGlb(window._cachedGlbUrl);
 }
 

@@ -1119,3 +1119,151 @@ import { startSketch, endSketch, setTool, getEntities, clearSketch, entitiesToGe
 
 # currentDate
 Today's date is 2026-04-01.
+
+## Session 2026-04-23 — AI Copilot Template Library + Real CSG
+
+### What shipped
+- **cyclecad@3.10.2** (live on npm): AI Copilot v1.1 with template library, real CSG booleans, draggable dialogs, click-pin menus
+- **cyclecad@3.10.3** (pending/retry): template expansion with 5 more shapes (washer, flange, threaded rod, mounting plate, box)
+
+### Key files
+- `app/js/modules/ai-copilot.js` (~900 lines) — multi-step CAD copilot. IIFE that sets `window.CycleCAD.AICopilot`. Key internals: `matchTemplate()`, `miniExecute()` (async), `subtractFromBody()` (CSG), `loadCSG()` (lazy import vendored lib), `run()` (orchestrator), `buildUI()`
+- `app/js/vendor/three-bvh-csg.js` (3892 lines) — vendored three-bvh-csg@0.0.17 with bare imports rewritten: `'three'` and `'three-mesh-bvh'` → CDN URLs (`cdn.jsdelivr.net/npm/three@0.170.0/...` and `three-mesh-bvh@0.7.8`)
+- `app/index.html` — has `<script src="/app/js/modules/ai-copilot.js?v=HASH">` (cache-busted) and menu entry `data-action="tools-ai-copilot"`
+
+### Template library (8 shapes) — `matchTemplate(prompt)` in ai-copilot.js
+All templates bypass LLM and output a fixed JSON plan with correct DIN/ISO coordinates:
+| Prompt pattern | Shape | Notes |
+|---|---|---|
+| `raspberry pi \| rpi \| pi 4` + `case` | Pi case | Case body 89×14×60, 4 mounting posts at ±38.75, y=14, ±26. Optional USB/HDMI/Ethernet ops.hole cutouts |
+| `M(n) nut` | Hex nut (DIN 934) | Cylinder with correct across-flats + thickness by M-size |
+| `L-bracket` + `Nmm` + `N holes` + `Nmm centers` | L-bracket | Rect plate + N CSG holes |
+| `M(n) washer` or `DIN 125 M(n)` | Washer | Disk + center hole, DIN 125 spec |
+| `flange` + `Nmm` + `N bolt holes` + `PCD N` | Flange | Disk + bolt circle + center bore |
+| `threaded rod` + `M(n)` + `Nmm` | Threaded rod | Cylinder by M-size + length |
+| `mounting plate` + `NxN` + `N holes` | Mounting plate | Rect + N holes (4-hole = corners, else evenly spaced) |
+| `box NxNxN` | Generic box | Box extrude |
+
+### Coordinate system (for mini-executor)
+- X = left/right, Y = up, Z = front/back
+- All solids centered at origin: rect W×H → [-W/2,W/2] × [-H/2,H/2]
+- ops.extrude depth=D → Y spans [0, D]
+- Params `position:[x,y,z]` places the centerpoint of the extruded solid
+
+### Mini-executor API (handles these methods)
+- `sketch.start/rect/circle/line/end`
+- `ops.extrude {depth, position, subtract}` — subtract:true does CSG cut
+- `ops.hole {position, depth, radius OR width+height}` — CSG subtraction from body
+- `ops.revolve/fillet/chamfer/shell/pattern` (fillet/chamfer/shell are visual-approx only)
+- `view.set/fit`, `query.*`, `validate.*`
+
+### State (IIFE-local `miniState`)
+- `miniState.group` — THREE.Group with name 'AICopilotBuild' (wiped on every `run()` via `miniReset()`)
+- `miniState.body` — first solid mesh; ALL `ops.hole` subtractions target this (not lastMesh)
+- `miniState.lastMesh` — last added mesh; used by `ops.pattern` for cloning
+- `miniState.currentSketch` — `{shape, width, height, radius, origin}` consumed by next `ops.extrude`
+
+### Critical bug patterns fixed this session
+1. **Single-quote apostrophe in SYSTEM_PROMPT** — `isn't` closed the JS string. Use `is not` or escape.
+2. **Module not loading** — `window.CycleCAD.AICopilot` was undefined because wrapped import had syntax error. Always `node --check` the file before push.
+3. **Base64 2-chunk delivery corrupts file** — large files clipboard-split and concatenated via bash can lose the first half. Prefer single `cat > file << 'EOF'` heredoc.
+4. **Scene accumulates between runs** — `miniReset()` must be called at start of `run()`. This call was dropped twice in earlier patches.
+5. **ops.hole eating posts instead of body** — `subtractFromLast` targeted whatever was most recently added. Fixed by tracking `miniState.body` separately and calling `subtractFromBody`.
+6. **Posts landing at origin** — `ops.extrude` was ignoring `params.position` and only reading `sketch.origin`. Fixed to read params first.
+7. **Bare imports in vendored library** — `'three-mesh-bvh'` also needed rewriting, not just `'three'`.
+8. **Cmd+C hijacking Copy** — killer-features.js shortcuts had no Shift modifier. Changed to Cmd+Shift+C/K/P/G/T.
+
+### Click-pin menu (in index.html)
+CSS: `.menu-item.open .menu-dropdown { display: flex !important; }`. JS initMenuPin() wires click-to-toggle + click-outside-to-close. File still has the `:hover` fallback for quick hover.
+
+### Dialog drag (in index.html)
+Pointer events on `#dialog-title` drag the whole dialog container via `position: fixed; left/top` — set once on pointerdown, updated on pointermove.
+
+### UX niceties
+- Banner: `Ready: <model>` (green) or `No <provider> key — click the key icon` (red)
+- Low-credit errors auto-offer "Switch to Gemini (free)" button
+- Multi-goal prompts: detect `N` quoted strings, run first, log others to "paste one at a time"
+- Gemini 404 fallback: `gemini-2.0-flash` → `gemini-1.5-flash` → `gemini-1.5-flash-latest`
+- Cache-bust: `?v=HASH` query param on script tags, auto-bumped by MD5 of mtime
+
+### Supported models
+- Claude Sonnet 4.6 (paid, default when anthropic key present)
+- Claude Haiku 4.5 / Opus 4.6 (paid)
+- Gemini 2.0 Flash (free, 10 RPM)
+- Groq Llama 3.3 70B (free, 30 RPM — better for repeat prompts)
+
+### Pending
+- The `block-only-in-chrome` user report — needs repro with actual prompt
+
+### Collaboration notes
+- User on Mac, tests in Chrome/Safari private
+- Git user is `sachin@sachins-MacBook-Air.fritz.box` (not configured globally; harmless warning)
+- Clipboard delivery via `write_clipboard` — user pastes in Terminal
+- Verification via Claude-in-Chrome MCP (navigate → execute → screenshot → dom inspect)
+- Terminal is tier-click, so clipboard write is BLOCKED while Terminal is frontmost — switch to Chrome first
+
+## Session 2026-04-24 — GitHub Pages Pipeline Fix + Template Library Expansion
+
+### What shipped
+- **cyclecad@3.10.3** confirmed live on npm (earlier interrupted publish actually went through)
+- **cyclecad@3.10.4 patch prepared** (delivery command sent via clipboard heredoc, user ran it): 3 new AI Copilot templates
+  - `spur gear 20 teeth module 2 bore 10mm` → cylinder blank at OD with bore, correct DIN pitch math (`pitchDia = m*z`, `outsideDia = m*(z+2)`, default face width 10mm, default bore 8mm)
+  - `pulley 80mm bore 12mm` or `v-belt pulley 100mm` or `timing pulley 60mm` → disc with center bore, V-groove noted as next step (true groove needs revolve)
+  - `shaft 20mm dia 150mm long`, `stepped shaft 25mm 120mm`, `axle 16mm 200mm`, `spindle Ø10 80mm long` → simple or 2-step cylinder with fallback heuristic for bare `Nmm` values (smaller=dia, larger=length)
+- **GitHub Pages deploy pipeline migrated** — from auto-generated "Deploy from a branch" to explicit GitHub Actions workflow with `cancel-in-progress: true`
+
+### Pages deploy fix details
+- **Root cause of failed runs #151/#152**: concurrent deployment conflict. Commit `ccacf45` pushed while `746008a` was mid-deploy → HTTP 400 "in progress deployment". Build succeeded (31s) but deploy step failed in 3s with 3 annotations.
+- Self-resolved for subsequent runs (#153-#166 all green) but would recur on future rapid pushes.
+- **Fix shipped**: Added `.github/workflows/pages.yml` with:
+  ```yaml
+  permissions: { contents: read, pages: write, id-token: write }
+  concurrency: { group: pages, cancel-in-progress: true }
+  ```
+  Uses `actions/checkout@v4`, `actions/configure-pages@v5`, `actions/upload-pages-artifact@v3`, `actions/deploy-pages@v4`.
+- Added `.nojekyll` at repo root (harmless, prevents future Jekyll issues).
+- **Pages source setting flipped manually** via GitHub UI (via Chrome MCP): Settings → Pages → Source → "GitHub Actions" (was "Deploy from a branch"). Confirmed with "GitHub Pages source saved." banner.
+- Triggered manual `workflow_dispatch` run → Deploy #2 succeeded in 20s (13s deploy step). Deploy step output URL = `https://cyclecad.com/` confirming new pipeline is authoritative.
+- Old `pages build and deployment` workflow automatically stops firing once source is "GitHub Actions".
+- One remaining harmless warning: "Node.js 20 actions are deprecated" — affects the whole actions ecosystem, will resolve when major versions bump.
+
+### Template patching pattern (for future template additions)
+Templates go in `matchTemplate(prompt)` in `app/js/modules/ai-copilot.js`, inserted before `return null;` (currently ~line 594, was line 514 before gear/pulley/shaft block). Each template:
+1. Matches user prompt with regex
+2. Parses params with sensible defaults
+3. Returns array of plan steps: `sketch.start` → `sketch.circle/rect` → `ops.extrude` → optional `ops.hole` → `view.set iso` → `view.fit`
+4. All solids centered at origin, Y is extrude axis
+
+### Tested template prompts (all passing via Node eval)
+- `spur gear 20 teeth module 2` → m=2, Z=20, pitch Ø40, OD Ø44 ✓
+- `gear m=3 z=40 bore 10mm` → m=3, Z=40, pitch Ø120, OD Ø126, bore Ø10 ✓
+- `v-belt pulley 80mm bore 12` → Ø80x20 with bore Ø12 ✓
+- `shaft 20mm dia 150mm long` → Ø20 x 150mm ✓
+- `stepped shaft 25mm dia 120mm long` → main Ø25x72mm + reduced Ø21x48mm ✓ (60/40 split)
+- `axle 16mm 200mm` (bare Nmm heuristic) → dia=16 (min), len=200 (max) ✓
+- `spindle Ø10 80mm long` → Ø10 x 80mm ✓
+
+### ExplodeView AI Render diagnostic (cross-reference)
+User reported Nano Banana v2 renders ignoring source CAD object. Three stacked problems in `docs/demo/app.js` `buildPrompt()` (line 6595):
+1. Prompt wrapper `Photorealistic render of an industrial/mechanical product in ${scene}...` nests user's preservation intent grammatically, weakening it
+2. Nano Banana v2 is generative not inpainting — reference image is style guidance, not pixel-level preservation
+3. Product Photo preset suffix "studio lighting, minimal shadows" fights outdoor scene prompts
+Fix delivered as prompt rewrite (preservation-first pattern). Code fix as v304 prepared but NOT YET SHIPPED. See explodeview CLAUDE.md for full details.
+
+### Pending (next session)
+- Confirm cyclecad@3.10.4 publish went through (user ran command; verify with `curl -s https://registry.npmjs.org/cyclecad/latest | python3 -c 'import json,sys; print(json.load(sys.stdin)["version"])'`)
+- Ship ExplodeView v304 (buildPrompt fix for AI Render prompt hijacking)
+- Add more AI Copilot templates: mounting bracket variations, T-slot extrusions, bearing cutouts, ball/roller bearings
+- Eventually: true involute gear teeth via `sketch.polyline` (would require mini-executor support for polyline → geometry, currently polyline is a no-op)
+- Post viral LinkedIn draft (user approval pending) — see `~/explodeview/linkedin-post-viral.md`
+- Push ExplodeView route redirects (explodeview.com/docs/demo/ currently 404)
+- The `block-only-in-chrome` user report — still needs repro
+
+### Collaboration lessons learned this session
+- **GitHub Pages 3-annotation failures** ("Failed to create deployment status: 400" + "Deployment request failed...due to in progress deployment" + "Creating Pages deployment failed") = concurrent deploy conflict, NOT build failure. Fix: explicit workflow with `concurrency: group: pages, cancel-in-progress: true`.
+- **GitHub API path for Pages source**: `PUT /repos/{owner}/{repo}/pages` with `-f build_type=workflow` (workflow) or `legacy` (branch). Good fallback when Chrome MCP auth is unavailable — user just runs `gh api --method PUT /repos/vvlars-cmd/cyclecad/pages -f build_type=workflow` on Mac where `gh` is authenticated.
+- **Password entry via Chrome MCP is prohibited** — Claude will not sign in on user's behalf under any circumstance. User must sign in themselves; Claude can then operate in authenticated sessions.
+- **Chrome tier "read"** blocks `computer_use` clicks in the browser itself, but Claude-in-Chrome MCP tools (`mcp__Claude_in_Chrome__*`) DO work — they go through the extension.
+- **Use `find` tool with aria role** (e.g., `menuitemradio "GitHub Actions"`) rather than guessing pixel coordinates — much more reliable. First click attempt at (585, 452) missed the dropdown option, second via `ref_311` landed perfectly.
+- **After Pages source flip**, trigger `workflow_dispatch` immediately to prove the new pipeline actually serves traffic (the existing run only built the artifact — it didn't serve until source was flipped).
+- **Successful Pages deploy step** shows the deploy environment URL (e.g. `https://cyclecad.com/`) as a link under the job name — that's the tell that it worked end-to-end, not just a green check.

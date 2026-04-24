@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pentacad — Browser-native 5-axis CAM for Pentamachine · cycleCAD Suite</title>
+<meta name="description" content="Pentacad: browser-native 5-axis CAM, G-code simulator, and Kinetic Control bridge — purpose-built for Pentamachine V2 desktop CNC. Part of the cycleCAD Suite." />
+<meta name="keywords" content="Pentacad, Pentamachine, 5-axis CAM, browser CAM, desktop CNC, Kinetic Control, cycleCAD Suite, CAM software, toolpath" />
+<meta name="author" content="Sachin Kumar" />
+<link rel="canonical" href="https://cyclecad.com/pentacad.html" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="cycleCAD Suite" />
+<meta property="og:title" content="Pentacad — Browser-native 5-axis CAM" />
+<meta property="og:description" content="CAM + simulator + post-processor + Kinetic Control bridge, all in one browser tab. Built for Pentamachine V2 desktop CNC." />
+<meta property="og:url" content="https://cyclecad.com/pentacad.html" />
+<meta property="og:image" content="https://cyclecad.com/screenshot.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Pentacad — Browser-native 5-axis CAM" />
+<meta name="twitter:description" content="CAM + simulator + post-processor + Kinetic Control bridge, all in one browser tab." />
+<meta name="twitter:image" content="https://cyclecad.com/screenshot.png" />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<style>
+/* ─────────────────────────────────────────────
+   DESIGN TOKENS — shared with suite landing
+   ───────────────────────────────────────────── */
+:root {
+  --bg:         #0A1628;
+  --bg-alt:     #122240;
+  --bg-card:    #1A2D50;
+  --border:     #1E3A5F;
+  --border-hi:  #2A4F80;
+  --text:       #F0F0E8;
+  --text-2:     #8B9AB5;
+  --text-3:     #5A6B85;
+  --gold:       #D4A843;
+  --gold-2:     #E8C065;
+  --blue:       #2E86DE;
+  --teal:       #3AAFA9;
+  --emerald:    #10B981;
+  --emerald-2:  #34D399;
+  --emerald-3:  rgba(16,185,129,0.12);
+  --purple:     #8B6FC0;
+  --amber:      #F59E0B;
+  --red:        #EF4444;
+  --t-fast: 0.18s;
+  --t-med:  0.35s;
+  --t-slow: 0.8s;
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 400;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.65;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4 { font-family: 'Fraunces', Georgia, serif; font-weight: 700; line-height: 1.15; letter-spacing: -0.015em; color: var(--text); }
+em { font-style: italic; color: var(--emerald-2); font-weight: 700; }
+code, pre { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+.wrap { max-width: 1280px; margin: 0 auto; padding: 0 32px; }
+
+/* ─────────────────────────────────────────────
+   NAV — matches suite landing
+   ───────────────────────────────────────────── */
+nav {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(10, 22, 40, 0.72);
+  backdrop-filter: blur(20px) saturate(1.5);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 0;
+}
+nav .wrap { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.brand { display: inline-flex; align-items: center; gap: 10px; font-family: 'Fraunces', serif; font-weight: 700; font-size: 1.12rem; color: var(--text); text-decoration: none; }
+.brand .logo { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, var(--gold), var(--emerald)); color: var(--bg); font-size: 0.9rem; }
+.brand em { color: var(--gold); font-style: italic; }
+nav .links { display: flex; align-items: center; gap: 24px; font-size: 0.95rem; }
+nav .links a { color: var(--text-2); text-decoration: none; transition: color var(--t-fast); }
+nav .links a:hover { color: var(--text); }
+nav .links a.cta {
+  background: linear-gradient(135deg, var(--emerald), var(--teal));
+  color: var(--bg); padding: 8px 16px; border-radius: 24px;
+  font-weight: 600; transition: transform var(--t-fast), box-shadow var(--t-fast);
+}
+nav .links a.cta:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(16,185,129,0.32); }
+@media (max-width: 720px) { nav .links a:not(.cta) { display: none; } }
+
+/* ─────────────────────────────────────────────
+   HERO
+   ───────────────────────────────────────────── */
+.hero {
+  position: relative;
+  padding: 120px 0 100px;
+  background:
+    radial-gradient(ellipse 1000px 450px at 20% 0%, rgba(16,185,129,0.14), transparent 60%),
+    radial-gradient(ellipse 800px 350px at 80% 30%, rgba(58,175,169,0.1),  transparent 60%),
+    var(--bg);
+  overflow: hidden;
+}
+.hero::before {
+  content: ''; position: absolute; inset: 0;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><circle cx='1' cy='1' r='0.6' fill='%232A4F80'/></svg>");
+  opacity: 0.35; pointer-events: none;
+}
+.hero .wrap { position: relative; z-index: 1; display: grid; grid-template-columns: 1.1fr 1fr; gap: 72px; align-items: center; }
+.hero .kicker {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 14px; border-radius: 24px; font-size: 0.78rem; font-weight: 600;
+  color: var(--emerald-2); background: var(--emerald-3); border: 1px solid rgba(16,185,129,0.35);
+  letter-spacing: 0.6px; text-transform: uppercase; margin-bottom: 24px;
+}
+.hero .kicker .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--emerald-2); animation: dotPulse 1.8s ease-in-out infinite; box-shadow: 0 0 12px var(--emerald); }
+@keyframes dotPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.hero h1 { font-size: clamp(2.6rem, 5vw, 4.2rem); max-width: 660px; margin-bottom: 24px; font-weight: 900; }
+.hero p.lead { font-size: 1.2rem; color: var(--text-2); max-width: 620px; margin-bottom: 36px; }
+.hero .ctas { display: flex; gap: 14px; flex-wrap: wrap; }
+.btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 14px 26px; border-radius: 30px; font-weight: 600; font-size: 0.98rem;
+  text-decoration: none; transition: transform var(--t-fast), box-shadow var(--t-fast), background var(--t-fast);
+}
+.btn-primary { background: linear-gradient(135deg, var(--emerald), var(--teal)); color: var(--bg); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(16,185,129,0.35); }
+.btn-secondary { background: transparent; color: var(--text); border: 1px solid var(--border-hi); }
+.btn-secondary:hover { background: rgba(255,255,255,0.04); border-color: var(--emerald); color: var(--emerald-2); }
+.btn .arrow { transition: transform var(--t-fast); }
+.btn:hover .arrow { transform: translateX(4px); }
+
+/* Hero visual — 5-axis machine schematic */
+.hero-visual {
+  position: relative; aspect-ratio: 1 / 1; max-width: 440px; justify-self: end;
+  background: radial-gradient(circle at 50% 40%, rgba(16,185,129,0.08), transparent 70%);
+  border-radius: 50%;
+}
+.hero-visual svg { width: 100%; height: 100%; }
+.hero-visual .ring { transform-origin: 50% 50%; animation: slowSpin 26s linear infinite; }
+.hero-visual .spindle { animation: drillBob 2.4s ease-in-out infinite; transform-origin: 50% 35%; }
+@keyframes slowSpin { to { transform: rotate(360deg); } }
+@keyframes drillBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
+.hero-visual .stock-ring { stroke-dasharray: 8 4; animation: dashMove 18s linear infinite; }
+@keyframes dashMove { to { stroke-dashoffset: -200; } }
+
+@media (max-width: 920px) {
+  .hero { padding: 80px 0 60px; }
+  .hero .wrap { grid-template-columns: 1fr; gap: 40px; }
+  .hero-visual { max-width: 360px; justify-self: center; }
+}
+
+/* ─────────────────────────────────────────────
+   PROBLEM STRIP
+   ───────────────────────────────────────────── */
+.problem {
+  padding: 70px 0;
+  background: var(--bg-alt);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.problem h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); max-width: 720px; margin: 0 auto 14px; text-align: center; }
+.problem .sub { color: var(--text-2); text-align: center; max-width: 720px; margin: 0 auto 40px; }
+.problem-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+.problem-card {
+  padding: 18px 16px; border-radius: 12px;
+  background: var(--bg); border: 1px solid var(--border);
+  text-align: center;
+}
+.problem-card .icon {
+  width: 38px; height: 38px; display: grid; place-items: center; margin: 0 auto 10px;
+  border-radius: 10px; background: rgba(239,68,68,0.12); color: var(--red); font-size: 1.2rem;
+}
+.problem-card .ttl { font-weight: 600; font-size: 0.95rem; margin-bottom: 4px; color: var(--text); }
+.problem-card .sub { font-size: 0.78rem; color: var(--text-3); margin-bottom: 0; }
+@media (max-width: 900px) { .problem-grid { grid-template-columns: repeat(3, 1fr); } .problem-card:nth-child(4), .problem-card:nth-child(5) { grid-column: span 1; } }
+@media (max-width: 560px) { .problem-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.vs-line {
+  position: relative; margin: 40px 0 0; text-align: center;
+  font-family: 'Fraunces', serif; font-style: italic; font-size: 1.15rem; color: var(--text-2);
+}
+.vs-line::before, .vs-line::after {
+  content: ''; display: inline-block; width: 64px; height: 1px;
+  background: linear-gradient(to right, transparent, var(--border-hi));
+  vertical-align: middle; margin: 0 12px;
+}
+.vs-line::after { background: linear-gradient(to left, transparent, var(--border-hi)); }
+
+/* ─────────────────────────────────────────────
+   SOLUTION — pentagon split into 5 modules
+   ───────────────────────────────────────────── */
+.solution { padding: 100px 0; }
+.solution .header-block { text-align: center; max-width: 760px; margin: 0 auto 60px; }
+.section-kicker {
+  display: inline-block; font-size: 0.72rem; letter-spacing: 2.5px; text-transform: uppercase;
+  color: var(--emerald-2); font-weight: 700; margin-bottom: 16px;
+}
+.solution h2 { font-size: clamp(2rem, 4vw, 3rem); margin-bottom: 16px; }
+.solution p.sub { color: var(--text-2); font-size: 1.08rem; }
+
+.five-modules { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; }
+.mod-card {
+  position: relative;
+  padding: 28px 22px; border-radius: 16px;
+  background: var(--bg-alt); border: 1px solid var(--border);
+  transition: transform var(--t-med), border-color var(--t-med), box-shadow var(--t-med);
+}
+.mod-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(16,185,129,0.4);
+  box-shadow: 0 12px 32px rgba(16,185,129,0.15);
+}
+.mod-num {
+  display: inline-block; width: 28px; height: 28px; border-radius: 8px;
+  background: var(--emerald-3); color: var(--emerald-2);
+  font: 700 0.82rem 'JetBrains Mono'; display: grid; place-items: center; margin-bottom: 14px;
+}
+.mod-card h3 { font-size: 1.05rem; font-family: 'Inter', sans-serif; font-weight: 700; margin-bottom: 8px; }
+.mod-card p { font-size: 0.88rem; color: var(--text-2); line-height: 1.55; }
+@media (max-width: 920px) { .five-modules { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 520px) { .five-modules { grid-template-columns: 1fr; } }
+
+/* ─────────────────────────────────────────────
+   STRATEGIES GRID
+   ───────────────────────────────────────────── */
+.strategies { padding: 100px 0; background: var(--bg-alt); }
+.strategies .header-block { text-align: center; max-width: 700px; margin: 0 auto 50px; }
+.strategies h2 { font-size: clamp(2rem, 4vw, 2.8rem); margin-bottom: 14px; }
+.strategies p.sub { color: var(--text-2); }
+.strat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.strat-card {
+  padding: 22px 20px; border-radius: 14px;
+  background: var(--bg); border: 1px solid var(--border);
+  transition: all var(--t-med);
+}
+.strat-card:hover { border-color: var(--emerald); transform: translateY(-3px); }
+.strat-card .icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: var(--emerald-3); margin-bottom: 14px;
+  display: grid; place-items: center;
+}
+.strat-card .icon svg { width: 20px; height: 20px; stroke: var(--emerald-2); stroke-width: 2; fill: none; }
+.strat-card h4 { font-size: 1rem; font-family: 'Inter', sans-serif; font-weight: 700; margin-bottom: 4px; }
+.strat-card .kind { font-size: 0.72rem; font-family: 'JetBrains Mono'; color: var(--text-3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.strat-card p { font-size: 0.84rem; color: var(--text-2); line-height: 1.5; }
+@media (max-width: 920px) { .strat-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 520px) { .strat-grid { grid-template-columns: 1fr; } }
+
+/* ─────────────────────────────────────────────
+   POST-PROCESSOR SECTION — side-by-side with G-code sample
+   ───────────────────────────────────────────── */
+.post-section { padding: 100px 0; }
+.post-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+.post-body h2 { font-size: clamp(1.9rem, 3.5vw, 2.6rem); margin-bottom: 16px; }
+.post-body p { color: var(--text-2); margin-bottom: 14px; font-size: 1.02rem; }
+.post-body .feature-list { list-style: none; margin-top: 26px; }
+.post-body .feature-list li {
+  position: relative; padding-left: 24px; margin-bottom: 10px;
+  color: var(--text); font-size: 0.95rem;
+}
+.post-body .feature-list li::before {
+  content: '✓'; position: absolute; left: 0; top: 0;
+  width: 16px; height: 16px; background: var(--emerald-3); color: var(--emerald-2);
+  border-radius: 4px; display: grid; place-items: center;
+  font-size: 0.78rem; font-weight: 700;
+}
+.post-body code.inline {
+  background: var(--bg-card); color: var(--emerald-2); padding: 2px 7px; border-radius: 4px;
+  font-size: 0.88em;
+}
+
+.ngc-block {
+  position: relative;
+  background: var(--bg-alt);
+  border: 1px solid var(--border); border-radius: 14px;
+  overflow: hidden;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.82rem;
+}
+.ngc-block .hd {
+  padding: 10px 16px; background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  color: var(--text-2); font-size: 0.78rem; letter-spacing: 1px; text-transform: uppercase;
+}
+.ngc-block .hd .dots { display: inline-flex; gap: 5px; }
+.ngc-block .hd .dots span { width: 9px; height: 9px; border-radius: 50%; background: var(--border-hi); }
+.ngc-block pre {
+  padding: 18px 18px 22px;
+  color: var(--text); line-height: 1.6;
+  overflow-x: auto; white-space: pre;
+}
+.ngc-block .kw  { color: var(--emerald-2); }
+.ngc-block .val { color: var(--gold-2); }
+.ngc-block .cm  { color: var(--text-3); font-style: italic; }
+.ngc-block .ax  { color: var(--blue); }
+@media (max-width: 900px) { .post-layout { grid-template-columns: 1fr; gap: 40px; } }
+
+/* ─────────────────────────────────────────────
+   SIMULATOR SECTION
+   ───────────────────────────────────────────── */
+.sim-section { padding: 100px 0; background: var(--bg-alt); }
+.sim-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+.sim-layout.rev > :first-child { order: 2; }
+.sim-visual {
+  aspect-ratio: 1.1 / 1;
+  background: radial-gradient(circle at 50% 50%, rgba(46,134,222,0.08), transparent 70%);
+  border-radius: 20px; border: 1px solid var(--border);
+  position: relative; overflow: hidden;
+}
+.sim-visual svg { width: 100%; height: 100%; }
+.sim-visual .a-rot { transform-origin: 50% 50%; animation: aRot 5.4s ease-in-out infinite; }
+.sim-visual .b-rot { transform-origin: 50% 50%; animation: bRot 7s linear infinite; }
+@keyframes aRot { 0%, 100% { transform: rotate(-22deg); } 50% { transform: rotate(22deg); } }
+@keyframes bRot { to { transform: rotate(360deg); } }
+.sim-visual .tp-path {
+  stroke: var(--emerald); stroke-width: 1.2; fill: none;
+  stroke-dasharray: 600; stroke-dashoffset: 600;
+  animation: tpDraw 4.2s ease-in-out infinite;
+}
+@keyframes tpDraw {
+  0% { stroke-dashoffset: 600; }
+  55%, 100% { stroke-dashoffset: 0; }
+}
+.sim-body h2 { font-size: clamp(1.9rem, 3.5vw, 2.6rem); margin-bottom: 16px; }
+.sim-body p { color: var(--text-2); margin-bottom: 14px; font-size: 1.02rem; }
+.sim-body .feature-list { list-style: none; margin-top: 22px; }
+.sim-body .feature-list li { position: relative; padding-left: 24px; margin-bottom: 10px; font-size: 0.95rem; }
+.sim-body .feature-list li::before {
+  content: '✓'; position: absolute; left: 0; top: 0;
+  width: 16px; height: 16px; background: var(--emerald-3); color: var(--emerald-2);
+  border-radius: 4px; display: grid; place-items: center;
+  font-size: 0.78rem; font-weight: 700;
+}
+@media (max-width: 900px) {
+  .sim-layout { grid-template-columns: 1fr; gap: 40px; }
+  .sim-layout.rev > :first-child { order: 0; }
+}
+
+/* ─────────────────────────────────────────────
+   BRIDGE SECTION — WebSocket flow diagram
+   ───────────────────────────────────────────── */
+.bridge { padding: 100px 0; }
+.bridge .header-block { text-align: center; max-width: 760px; margin: 0 auto 60px; }
+.bridge h2 { font-size: clamp(1.9rem, 3.8vw, 2.7rem); margin-bottom: 16px; }
+.bridge p.sub { color: var(--text-2); font-size: 1.05rem; }
+.bridge-diagram {
+  position: relative;
+  padding: 60px 40px;
+  border-radius: 20px;
+  background: var(--bg-alt); border: 1px solid var(--border);
+}
+.bridge-row { display: grid; grid-template-columns: 1fr 90px 1fr 90px 1fr; align-items: center; gap: 16px; }
+.bridge-node {
+  padding: 22px 18px; border-radius: 14px;
+  background: var(--bg); border: 1px solid var(--border);
+  text-align: center;
+}
+.bridge-node .icn { font-size: 1.6rem; margin-bottom: 8px; }
+.bridge-node h4 { font-size: 0.98rem; font-family: 'Inter', sans-serif; font-weight: 700; margin-bottom: 4px; }
+.bridge-node .ttag { display: inline-block; font-size: 0.72rem; font-family: 'JetBrains Mono'; color: var(--text-3); }
+.bridge-arrow { position: relative; height: 2px; background: linear-gradient(to right, var(--border-hi), var(--emerald), var(--border-hi)); border-radius: 2px; }
+.bridge-arrow::after {
+  content: ''; position: absolute; right: -2px; top: 50%; transform: translateY(-50%);
+  border-left: 8px solid var(--emerald); border-top: 5px solid transparent; border-bottom: 5px solid transparent;
+}
+.bridge-arrow .packet {
+  position: absolute; top: 50%; left: 0; transform: translateY(-50%);
+  width: 10px; height: 10px; border-radius: 50%; background: var(--emerald);
+  box-shadow: 0 0 14px var(--emerald);
+  animation: packetFly 2.2s ease-in-out infinite;
+}
+.bridge-arrow .packet.p2 { animation-delay: 0.8s; }
+@keyframes packetFly { 0% { left: 0; opacity: 0; } 10% { opacity: 1; } 80% { opacity: 1; } 100% { left: calc(100% - 10px); opacity: 0; } }
+.bridge-caption { text-align: center; margin-top: 30px; color: var(--text-2); font-size: 0.92rem; }
+.bridge-caption code { background: var(--bg-card); color: var(--emerald-2); padding: 2px 7px; border-radius: 4px; font-size: 0.88em; }
+
+.bridge-events {
+  margin-top: 36px;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+}
+.bridge-event {
+  padding: 14px 16px; border-radius: 10px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  font-family: 'JetBrains Mono', monospace; font-size: 0.82rem;
+}
+.bridge-event .evt-name { color: var(--emerald-2); }
+.bridge-event .evt-sub { color: var(--text-3); font-size: 0.76rem; margin-top: 2px; }
+@media (max-width: 900px) {
+  .bridge-row { grid-template-columns: 1fr; gap: 8px; }
+  .bridge-arrow { height: 36px; width: 2px; margin: 0 auto; background: linear-gradient(to bottom, var(--border-hi), var(--emerald), var(--border-hi)); }
+  .bridge-arrow::after { right: 50%; top: auto; bottom: -2px; transform: translateX(50%); border: 0; border-top: 8px solid var(--emerald); border-left: 5px solid transparent; border-right: 5px solid transparent; }
+  .bridge-arrow .packet { animation: packetFlyV 2.2s ease-in-out infinite; }
+  .bridge-events { grid-template-columns: 1fr; }
+}
+@keyframes packetFlyV { 0% { top: 0; opacity: 0; } 10% { opacity: 1; } 80% { opacity: 1; } 100% { top: calc(100% - 10px); opacity: 0; } }
+
+/* ─────────────────────────────────────────────
+   MACHINES SECTION
+   ───────────────────────────────────────────── */
+.machines { padding: 100px 0; background: var(--bg-alt); }
+.machines .header-block { text-align: center; max-width: 700px; margin: 0 auto 50px; }
+.machines h2 { font-size: clamp(1.9rem, 3.5vw, 2.6rem); margin-bottom: 14px; }
+.machines p.sub { color: var(--text-2); }
+
+.machine-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.machine-card {
+  padding: 26px 22px; border-radius: 16px;
+  background: var(--bg); border: 1px solid var(--border);
+  position: relative;
+  transition: transform var(--t-med), border-color var(--t-med);
+}
+.machine-card:hover { transform: translateY(-4px); border-color: var(--emerald); }
+.machine-card .status-tag {
+  position: absolute; top: 14px; right: 14px;
+  padding: 3px 10px; border-radius: 12px; font-size: 0.68rem;
+  font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
+}
+.machine-card .status-tag.phase0 { background: rgba(245,158,11,0.14); color: var(--amber); border: 1px solid rgba(245,158,11,0.3); }
+.machine-card .status-tag.phase1 { background: rgba(46,134,222,0.14); color: #7bafee; border: 1px solid rgba(46,134,222,0.3); }
+.machine-card h4 { font-size: 1.1rem; font-family: 'Inter', sans-serif; font-weight: 700; margin-bottom: 4px; }
+.machine-card .vendor { font-size: 0.82rem; color: var(--text-3); margin-bottom: 14px; font-family: 'JetBrains Mono'; letter-spacing: 0.5px; }
+.machine-card .specs {
+  margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);
+  font-size: 0.85rem; color: var(--text-2);
+}
+.machine-card .specs > div { display: flex; justify-content: space-between; padding: 4px 0; }
+.machine-card .specs > div > span:first-child { color: var(--text-3); }
+.machine-card .specs > div > span:last-child  { color: var(--text); font-family: 'JetBrains Mono'; font-size: 0.82rem; }
+@media (max-width: 900px) { .machine-grid { grid-template-columns: 1fr; } }
+
+/* ─────────────────────────────────────────────
+   ROADMAP — phased timeline
+   ───────────────────────────────────────────── */
+.roadmap { padding: 100px 0; }
+.roadmap .header-block { text-align: center; max-width: 720px; margin: 0 auto 60px; }
+.roadmap h2 { font-size: clamp(1.9rem, 3.5vw, 2.6rem); margin-bottom: 14px; }
+.roadmap p.sub { color: var(--text-2); }
+
+.phases { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; position: relative; }
+.phases::before {
+  content: ''; position: absolute; top: 45px; left: 8%; right: 8%; height: 2px;
+  background: linear-gradient(to right, var(--emerald), var(--amber), var(--border-hi), var(--border-hi));
+  z-index: 0;
+}
+.phase {
+  position: relative; z-index: 1;
+  padding: 24px 20px; border-radius: 14px;
+  background: var(--bg); border: 1px solid var(--border);
+}
+.phase-dot {
+  width: 18px; height: 18px; border-radius: 50%;
+  margin: 0 auto 12px; border: 3px solid var(--bg);
+  box-shadow: 0 0 0 2px var(--border-hi);
+}
+.phase.done .phase-dot   { background: var(--emerald); box-shadow: 0 0 0 2px var(--emerald); }
+.phase.active .phase-dot { background: var(--amber);   box-shadow: 0 0 0 2px var(--amber); animation: pulseDot 1.8s ease-in-out infinite; }
+.phase.next .phase-dot   { background: var(--bg-card); box-shadow: 0 0 0 2px var(--border-hi); }
+@keyframes pulseDot { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.22); } }
+.phase-num {
+  display: block; font-family: 'JetBrains Mono'; font-size: 0.78rem;
+  color: var(--text-3); letter-spacing: 1.5px; text-align: center; margin-bottom: 4px; text-transform: uppercase;
+}
+.phase h4 { text-align: center; font-size: 1rem; font-family: 'Inter', sans-serif; font-weight: 700; margin-bottom: 10px; }
+.phase ul { list-style: none; }
+.phase li { font-size: 0.82rem; color: var(--text-2); padding: 4px 0; border-bottom: 1px dashed var(--border); }
+.phase li:last-child { border-bottom: 0; }
+.phase.done    { border-color: rgba(16,185,129,0.35); }
+.phase.active  { border-color: rgba(245,158,11,0.4);  }
+@media (max-width: 920px) { .phases { grid-template-columns: repeat(2, 1fr); } .phases::before { display: none; } }
+@media (max-width: 520px) { .phases { grid-template-columns: 1fr; } }
+
+/* ─────────────────────────────────────────────
+   FINAL CTA
+   ───────────────────────────────────────────── */
+.cta-final {
+  padding: 110px 0;
+  background:
+    radial-gradient(ellipse 800px 400px at 50% 50%, rgba(16,185,129,0.14), transparent 60%),
+    var(--bg);
+  text-align: center;
+}
+.cta-final h2 { font-size: clamp(2rem, 4vw, 3rem); max-width: 780px; margin: 0 auto 16px; }
+.cta-final p { color: var(--text-2); max-width: 680px; margin: 0 auto 36px; font-size: 1.05rem; }
+.cta-final .ctas { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.cta-final .tiny {
+  margin-top: 26px;
+  color: var(--text-3); font-size: 0.82rem;
+}
+.cta-final .tiny a { color: var(--text-2); text-decoration: underline; text-decoration-color: var(--border-hi); }
+.cta-final .tiny a:hover { color: var(--emerald-2); }
+
+/* ─────────────────────────────────────────────
+   FOOTER — same as suite landing
+   ───────────────────────────────────────────── */
+footer {
+  padding: 70px 0 40px;
+  background: var(--bg-alt);
+  border-top: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+footer .row {
+  display: grid; grid-template-columns: 1.8fr 1fr 1fr 1fr 1fr; gap: 40px;
+  padding-bottom: 40px; border-bottom: 1px solid var(--border);
+}
+footer .brand-col p { color: var(--text-2); font-size: 0.92rem; margin-top: 14px; max-width: 320px; }
+footer .col h4 {
+  font-size: 0.78rem; font-family: 'Inter', sans-serif; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-3); margin-bottom: 14px;
+}
+footer .col a { display: block; color: var(--text-2); text-decoration: none; padding: 4px 0; transition: color var(--t-fast); }
+footer .col a:hover { color: var(--emerald-2); }
+footer .legal {
+  margin-top: 30px; display: flex; justify-content: space-between; gap: 16px;
+  color: var(--text-3); font-size: 0.82rem; flex-wrap: wrap;
+}
+@media (max-width: 900px) { footer .row { grid-template-columns: 1fr 1fr; } }
+
+/* ─────────────────────────────────────────────
+   SCROLL-TRIGGERED ANIMATION
+   ───────────────────────────────────────────── */
+[data-animate] { opacity: 0; transform: translateY(24px); transition: opacity var(--t-slow) var(--ease), transform var(--t-slow) var(--ease); }
+[data-animate].in-view { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a href="/" class="brand">
+      <span class="logo">⚙</span>
+      cycle<em>CAD</em> suite
+    </a>
+    <div class="links">
+      <a href="/">Suite</a>
+      <a href="/app/">cycleCAD</a>
+      <a href="https://explodeview.com/">ExplodeView</a>
+      <a href="#strategies">Features</a>
+      <a href="/app/pentacad.html" class="cta">Launch Pentacad →</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="wrap">
+    <div>
+      <div class="kicker">
+        <span class="dot"></span>
+        Phase 0 · Built for Pentamachine
+      </div>
+      <h1>
+        5-axis CAM in the <em>browser</em>.<br/>
+        Built for <em>Pentamachine</em>.
+      </h1>
+      <p class="lead">
+        Pentacad is CAM, simulator, post-processor, and machine-control bridge in one browser tab.
+        3+2 strategies tuned to the Pentamachine V2 kinematics, a real-time A/B axis simulator,
+        and a live WebSocket bridge to your Kinetic Control box.
+      </p>
+      <div class="ctas">
+        <a href="/app/pentacad.html" class="btn btn-primary">Launch Pentacad <span class="arrow">→</span></a>
+        <a href="#strategies" class="btn btn-secondary">See the strategies</a>
+      </div>
+    </div>
+
+    <div class="hero-visual" aria-hidden="true">
+      <svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="hero-core" cx="50%" cy="45%">
+            <stop offset="0%" stop-color="#10B981" stop-opacity="0.7"/>
+            <stop offset="70%" stop-color="#10B981" stop-opacity="0.06"/>
+            <stop offset="100%" stop-color="#10B981" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <!-- Outer A-axis ring -->
+        <g class="ring">
+          <circle cx="150" cy="150" r="120" fill="none" stroke="#2E86DE" stroke-width="1" stroke-dasharray="3 4" opacity="0.5"/>
+          <circle cx="150" cy="150" r="120" fill="none" stroke="#1E3A5F" stroke-width="0.6"/>
+          <text x="270" y="150" font-family="JetBrains Mono" font-size="9" fill="#2E86DE" opacity="0.8">A</text>
+        </g>
+        <!-- Inner B-axis ring -->
+        <circle cx="150" cy="150" r="88" fill="none" stroke="#3AAFA9" stroke-width="0.8" stroke-dasharray="2 3" opacity="0.55"/>
+        <text x="150" y="56" font-family="JetBrains Mono" font-size="9" fill="#3AAFA9" text-anchor="middle" opacity="0.8">B</text>
+        <!-- Stock (bottle-opener ring) -->
+        <circle cx="150" cy="150" r="64" class="stock-ring" fill="none" stroke="#D4A843" stroke-width="2" opacity="0.75"/>
+        <circle cx="150" cy="150" r="42" fill="none" stroke="#D4A843" stroke-width="1.2" opacity="0.4"/>
+        <!-- Center glow -->
+        <circle cx="150" cy="150" r="60" fill="url(#hero-core)"/>
+        <!-- Spindle -->
+        <g class="spindle">
+          <rect x="143" y="85"  width="14" height="30" fill="#5A6B85" stroke="#8B9AB5" stroke-width="0.5" rx="2"/>
+          <polygon points="146,115 154,115 150,122" fill="#F59E0B"/>
+          <circle cx="150" cy="124" r="9" fill="rgba(245,158,11,0.2)"/>
+        </g>
+        <!-- Axis labels -->
+        <text x="18"  y="156" font-family="JetBrains Mono" font-size="9" fill="#5A6B85">X</text>
+        <text x="148" y="286" font-family="JetBrains Mono" font-size="9" fill="#5A6B85">Y</text>
+        <text x="148" y="24"  font-family="JetBrains Mono" font-size="9" fill="#5A6B85">Z</text>
+      </svg>
+    </div>
+  </div>
+</header>
+
+<!-- PROBLEM STRIP -->
+<section class="problem" data-animate>
+  <div class="wrap">
+    <h2>Every CNC shop pays for the <em>same five tools</em>. Every day.</h2>
+    <p class="sub">SolidWorks or Fusion, Mastercam or HSM, a simulator if you can afford one, a post for your specific machine, and some patchwork control software. Five subscriptions. Four file exchanges. Hours of context switching per part.</p>
+    <div class="problem-grid">
+      <div class="problem-card"><div class="icon">$$</div><div class="ttt"></div><div class="ttl">CAD tool</div><div class="sub">$1,500 – $4,500/yr</div></div>
+      <div class="problem-card"><div class="icon">$$</div><div class="ttl">CAM tool</div><div class="sub">$2,000 – $12,000/yr</div></div>
+      <div class="problem-card"><div class="icon">$$</div><div class="ttl">Simulator</div><div class="sub">$1,500 – $8,000/yr</div></div>
+      <div class="problem-card"><div class="icon">$$</div><div class="ttl">Post-proc.</div><div class="sub">Custom, per machine</div></div>
+      <div class="problem-card"><div class="icon">$$</div><div class="ttl">Controller UI</div><div class="sub">Vendor-locked</div></div>
+    </div>
+    <div class="vs-line">Pentacad is what happens when you refuse to accept that.</div>
+  </div>
+</section>
+
+<!-- SOLUTION -->
+<section class="solution" data-animate>
+  <div class="wrap">
+    <div class="header-block">
+      <span class="section-kicker">The solution</span>
+      <h2>Five modules. <em>One</em> browser tab.</h2>
+      <p class="sub">Pentacad is the CAM stage of the cycleCAD Suite. It picks up where cycleCAD hands off a model and produces verified, posted, streamable G-code — without leaving the browser.</p>
+    </div>
+
+    <div class="five-modules">
+      <div class="mod-card">
+        <div class="mod-num">01</div>
+        <h3>Setup Manager</h3>
+        <p>3+2 tilt-plane selection, WCS alignment, stock definition, fixture offsets. Pull parts directly from cycleCAD — no STEP round-trip.</p>
+      </div>
+      <div class="mod-card">
+        <div class="mod-num">02</div>
+        <h3>CAM Strategies</h3>
+        <p>12 toolpath strategies covering 2D, 3D, drilling, and finishing. Adaptive clear, parallel, scallop, projection, flow — the core you'd expect from a pro CAM.</p>
+      </div>
+      <div class="mod-card">
+        <div class="mod-num">03</div>
+        <h3>A/B Simulator</h3>
+        <p>Forward-kinematics 5-axis replay. Soft-limit checking, stock removal, collision awareness. See the whole job before a chip flies.</p>
+      </div>
+      <div class="mod-card">
+        <div class="mod-num">04</div>
+        <h3>Post-Processor</h3>
+        <p>Pentamachine V2 <code>.ngc</code> dialect. G20 imperial, G93 inverse-time feed, A/B rotary, up to 40,000 RPM. Reverse-engineered from real sample files.</p>
+      </div>
+      <div class="mod-card">
+        <div class="mod-num">05</div>
+        <h3>Kinetic Bridge</h3>
+        <p>WebSocket client with live DRO, jog, stream, pause, abort, probe. Auto-reconnect on dropout. Browser talks to machine — no intermediate app.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STRATEGIES -->
+<section class="strategies" id="strategies" data-animate>
+  <div class="wrap">
+    <div class="header-block">
+      <span class="section-kicker">CAM Strategies</span>
+      <h2>Twelve strategies. <em>One</em> registry.</h2>
+      <p class="sub">Every strategy is a first-class module with its own parameters, parameter UI, and posting behaviour. Add your own — the registry is open.</p>
+    </div>
+
+    <div class="strat-grid">
+
+      <div class="strat-card">
+        <div class="icon"><svg viewBox="0 0 24 24"><path d="M3 12h18 M3 6h18 M3 18h18"/></svg></div>
+        <h4>2D Contour</h4>
+        <div class="kind">2D · Roughing</div>
+        <p>Offset-based contouring with ramp-in, lead-in/out and wear compensation.</p>
+      </div>
+
+      <div class="strat-card">
+        <div class="icon"><svg viewBox="0 0 24 24"><path d="M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z"/></svg></div>
+        <h4>Adaptive Clear</h4>
+        <div class="kind">2D · Roughing</div>
+        <p>Trochoidal material removal with constant chip load. High-feed friendly.</p>
+      </div>
+
+      <div class="strat-card">
+        <div class="icon"><svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"/></svg></div>
+        <h4>Pocket</h4>
+        <div class="kind">2D · Pocketing</div>
+        <p>Zig-zag, spiral, or adaptive pocketing with multiple islands.</p>
+      </div>
+
+      <div class="strat-card">
+        <div class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><circle cx="6"  cy="6"  r="1"/><circle cx="18" cy="6"  r="1"/><circle cx="6"  cy="18" r="1"/><circle cx="18" cy="18" r="1"/></svg></div>
+        <h4>Drill</h4>
+        <div class="kind">Drill · Hole ops</div>
+        <p>Peck, chip-break, deep-hole, tap, and spot-face canned cycles.</p>
+      </div>
+
+      <div class="strat-card">
+        <div class="icon"><svg viewBox="0 0 24 24"><path d="M4 20 L12 4 L20 20 M8 14h8"/></svg></div>
+        <h4>Parallel</h4>
+        <div class="kind">3D · Finishing</div>
+        <p>Axial pass pattern parallel to a chosen axis. Fast preview, clean walls.</p>
+      </div>
+
+      <div class="strat-card">
+        <div class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4 L12 20 M4 12 L20 12"/></svg></div>
+        <h4>Radial</h4>
+        <div class="kind">3D · Finishing</div>
+        <p>Radially-swept finishing around a spindle point — ideal for bowls, cups, profiles of revolution.</p>
+      </div>
+
+      <div class="strat-card">
+        <div class="icon"><svg viewBox="0 0 24 24"><path d="M4 18 Q12 4 20 18"/><path d="M4 14 Q12 2 20 14" opacity="0.4"/></svg></div>
+        <h4>Scallop</h4>
+        <div class="kind">3D · Finishing</div>
+        <p>Constant-scallop-height contour-parallel. Consistent surface finish on complex geometry.</p>
+      </div>
+
+      <div class="strat-card">
+        <div class="icon"><svg viewBox="0 0 24 24"><path d="M2 18 Q7 4 12 18 Q17 4 22 18"/></svg></div>
+        <h4>Projection</h4>
+        <div class="kind">3D · Engraving</div>
+        <p>Project a 2D curve onto the 3D model surface. Used for engraving and boundary finishing.</p>
+      </div>
+
+      <div class="strat-card">
+        <div class="icon"><svg viewBox="0 0 24 24"><path d="M3 6 C8 6 8 18 13 18 C18 18 18 6 22 6"/></svg></div>
+        <h4>Flow</h4>
+        <div class="kind">3D · Finishing</div>
+        <p>Flow-line / morph finishing between guide curves. Smooth, UV-parallel toolpaths.</p>
+      </div>
+
+      <div class="strat-card">
+        <div class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="3"/></svg></div>
+        <h4>Bore · Thread</h4>
+        <div class="kind">Drill · Precision</div>
+        <p>Single-pass bore, helical interpolate bore, and thread-mill canned cycles.</p>
+      </div>
+
+      <div class="strat-card">
+        <div class="icon"><svg viewBox="0 0 24 24"><path d="M4 20 L12 8 L20 20"/></svg></div>
+        <h4>Chamfer · Deburr</h4>
+        <div class="kind">2D · Finishing</div>
+        <p>Edge-following chamfer and deburr with V-bit or ball-endmill. Auto-detect sharp edges.</p>
+      </div>
+
+      <div class="strat-card">
+        <div class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="9" width="18" height="6" rx="1"/></svg></div>
+        <h4>Face</h4>
+        <div class="kind">2D · Facing</div>
+        <p>Stock-top facing with climb or conventional cut, configurable stepover.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- POST PROCESSOR -->
+<section class="post-section" data-animate>
+  <div class="wrap post-layout">
+    <div class="post-body">
+      <span class="section-kicker">Post-processor</span>
+      <h2>The <em>exact</em> Pentamachine dialect.</h2>
+      <p>Pentacad's post emits G-code in the exact Pentamachine V2 <code class="inline">.ngc</code> dialect — reverse-engineered from Matt's real sample files. No tweaking, no hand-editing, no guessing.</p>
+      <p>Generated programs run end-to-end on V2-10, V2-50CHB, and V2-50CHK without modification.</p>
+      <ul class="feature-list">
+        <li><code class="inline">G20</code> imperial units (and <code class="inline">G21</code> metric via config)</li>
+        <li><code class="inline">G17</code> XY workplane · <code class="inline">G90</code> absolute · <code class="inline">G54</code> WCS</li>
+        <li><code class="inline">G94</code> feed-per-minute and <code class="inline">G93</code> inverse-time for 5-axis</li>
+        <li>5 axes: <code class="inline">X Y Z A B</code> — A tilts, B rotates, up to 40,000 RPM spindle</li>
+        <li><code class="inline">M7</code> mist / <code class="inline">M8</code> flood / <code class="inline">M9</code> off · full tool-change with <code class="inline">Tn M6</code></li>
+      </ul>
+    </div>
+
+    <div class="ngc-block">
+      <div class="hd">
+        <span class="dots"><span></span><span></span><span></span></span>
+        <span>ring-outer-contour.ngc</span>
+      </div>
+<pre>%
+<span class="cm">(AXIS,stop)</span>
+<span class="cm">(PENTACAD GENERATED — Pentamachine V2 dialect)</span>
+<span class="cm">(OP: Adaptive Clear — Setup 1)</span>
+N10 <span class="kw">G20</span> <span class="kw">G17</span> <span class="kw">G90</span> <span class="kw">G40</span> <span class="kw">G54</span>
+N15 <span class="kw">G94</span>
+N20 <span class="kw">T</span><span class="val">1</span> <span class="kw">M6</span>  <span class="cm">(T1: 1/4" flat carbide)</span>
+N25 <span class="kw">M3</span> <span class="kw">S</span><span class="val">18000</span> <span class="kw">M7</span>
+N30 <span class="kw">G0</span> <span class="ax">X</span><span class="val">0.0</span> <span class="ax">Y</span><span class="val">0.0</span> <span class="ax">Z</span><span class="val">0.25</span>
+N35 <span class="kw">G0</span> <span class="ax">A</span><span class="val">22.5</span> <span class="ax">B</span><span class="val">0.0</span>  <span class="cm">(tilt plane)</span>
+N40 <span class="kw">G93</span>  <span class="cm">(inverse-time feed)</span>
+N45 <span class="kw">G1</span> <span class="ax">X</span><span class="val">0.052</span> <span class="ax">Y</span><span class="val">0.310</span> <span class="ax">Z</span><span class="val">0.118</span> <span class="ax">F</span><span class="val">28.3</span>
+N50 <span class="kw">G1</span> <span class="ax">X</span><span class="val">0.104</span> <span class="ax">Y</span><span class="val">0.612</span> <span class="ax">Z</span><span class="val">0.095</span> <span class="ax">F</span><span class="val">31.1</span>
+<span class="cm">... 4,238 lines of toolpath ...</span>
+N4290 <span class="kw">G94</span>
+N4295 <span class="kw">M5</span> <span class="kw">M9</span>
+N4300 <span class="kw">M30</span>
+%</pre>
+    </div>
+  </div>
+</section>
+
+<!-- SIMULATOR -->
+<section class="sim-section" data-animate>
+  <div class="wrap sim-layout">
+    <div class="sim-visual" aria-hidden="true">
+      <svg viewBox="0 0 300 270" xmlns="http://www.w3.org/2000/svg">
+        <!-- A-axis arc -->
+        <g class="a-rot">
+          <path d="M 80 200 A 90 90 0 0 1 220 200" fill="none" stroke="#2E86DE" stroke-width="0.6" stroke-dasharray="2 3" opacity="0.6"/>
+        </g>
+        <!-- B-axis circle (table) -->
+        <g class="b-rot">
+          <ellipse cx="150" cy="200" rx="75" ry="22" fill="none" stroke="#3AAFA9" stroke-width="0.8" stroke-dasharray="3 3" opacity="0.6"/>
+          <line x1="75" y1="200" x2="225" y2="200" stroke="#3AAFA9" stroke-width="0.4" opacity="0.3"/>
+        </g>
+        <!-- Table base -->
+        <ellipse cx="150" cy="205" rx="85" ry="26" fill="#1A2D50" stroke="#1E3A5F" stroke-width="1"/>
+        <!-- Stock (ring shape) -->
+        <ellipse cx="150" cy="195" rx="50" ry="16" fill="none" stroke="#D4A843" stroke-width="2" opacity="0.85"/>
+        <ellipse cx="150" cy="195" rx="32" ry="10" fill="#122240" stroke="#D4A843" stroke-width="1" opacity="0.7"/>
+        <!-- Toolpath -->
+        <path class="tp-path" d="M 100 195 C 120 175 180 175 200 195 C 180 215 120 215 100 195 Z"/>
+        <!-- Spindle with tool -->
+        <g transform="translate(150 90)">
+          <rect x="-14" y="-40" width="28" height="55" fill="#5A6B85" stroke="#8B9AB5" stroke-width="0.6" rx="3"/>
+          <rect x="-4" y="12" width="8" height="60" fill="#8B9AB5"/>
+          <polygon points="-4,72 4,72 0,82" fill="#F59E0B"/>
+          <circle cx="0" cy="85" r="10" fill="rgba(245,158,11,0.22)"/>
+        </g>
+        <!-- Axis labels -->
+        <text x="18"  y="210" font-family="JetBrains Mono" font-size="10" fill="#8B9AB5">Y</text>
+        <text x="275" y="210" font-family="JetBrains Mono" font-size="10" fill="#8B9AB5">X</text>
+        <text x="150" y="25"  font-family="JetBrains Mono" font-size="10" fill="#8B9AB5" text-anchor="middle">Z</text>
+        <text x="240" y="160" font-family="JetBrains Mono" font-size="9" fill="#2E86DE">A</text>
+        <text x="230" y="190" font-family="JetBrains Mono" font-size="9" fill="#3AAFA9">B</text>
+      </svg>
+    </div>
+
+    <div class="sim-body">
+      <span class="section-kicker">A/B Simulator</span>
+      <h2>Replay the whole job. <em>Before</em> a chip flies.</h2>
+      <p>A forward-kinematics simulator reads the generated G-code and animates the Pentamachine's exact A/B axis geometry. Tool head, A-tilt, B-rotary, and linear moves — all synchronised.</p>
+      <p>Soft-limit checking happens in real time, so a move that would crash the table stops the simulation with a line-number flag. Fix the strategy, re-post, re-simulate — no file export needed.</p>
+      <ul class="feature-list">
+        <li>Full 5-axis forward kinematics — modal G20/G90/G94/G93 tracked</li>
+        <li>Soft-limit flagging per axis with exact G-code line reference</li>
+        <li>Stock-removal rendering (Phase 2) — see material disappear</li>
+        <li>Collision detection against fixtures and table (Phase 2)</li>
+        <li>Adjustable playback speed · frame-scrub · bookmark key lines</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- BRIDGE -->
+<section class="bridge" data-animate>
+  <div class="wrap">
+    <div class="header-block">
+      <span class="section-kicker">Kinetic Control Bridge</span>
+      <h2>Your browser is the <em>controller UI</em>.</h2>
+      <p class="sub">Pentacad includes a WebSocket client that streams G-code line-by-line to a Kinetic Control box, reading DRO and status back in real time. No vendor app. No middleman.</p>
+    </div>
+
+    <div class="bridge-diagram">
+      <div class="bridge-row">
+        <div class="bridge-node">
+          <div class="icn">🌐</div>
+          <h4>Browser (Pentacad)</h4>
+          <div class="ttag">WebSocket client</div>
+        </div>
+        <div class="bridge-arrow"><div class="packet"></div><div class="packet p2"></div></div>
+        <div class="bridge-node">
+          <div class="icn">🔌</div>
+          <h4>Kinetic Bridge</h4>
+          <div class="ttag">WS ⇄ LinuxCNC IPC</div>
+        </div>
+        <div class="bridge-arrow"><div class="packet"></div><div class="packet p2"></div></div>
+        <div class="bridge-node">
+          <div class="icn">⚙️</div>
+          <h4>Pentamachine V2</h4>
+          <div class="ttag">A/B kinematics · 40k RPM</div>
+        </div>
+      </div>
+
+      <div class="bridge-caption">
+        Stream G-code over <code>ws://</code>. Events fire in both directions.
+      </div>
+
+      <div class="bridge-events">
+        <div class="bridge-event"><span class="evt-name">pentacad:jog</span><div class="evt-sub">X+ / X- / Y+ / Y- / Z+ / Z- / A+ / B-  · rapid or incremental</div></div>
+        <div class="bridge-event"><span class="evt-name">pentacad:stream</span><div class="evt-sub">line-by-line with backpressure · resumable on dropout</div></div>
+        <div class="bridge-event"><span class="evt-name">pentacad:dro</span><div class="evt-sub">machine position · work offset · feed rate · spindle RPM</div></div>
+        <div class="bridge-event"><span class="evt-name">pentacad:probe</span><div class="evt-sub">G38.x probing with result readback</div></div>
+        <div class="bridge-event"><span class="evt-name">pentacad:pause</span><div class="evt-sub">feed-hold · resume · optional-stop</div></div>
+        <div class="bridge-event"><span class="evt-name">pentacad:abort</span><div class="evt-sub">cycle-stop · safe Z · spindle off · coolant off</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MACHINES -->
+<section class="machines" data-animate>
+  <div class="wrap">
+    <div class="header-block">
+      <span class="section-kicker">Machines</span>
+      <h2>The <em>Pentamachine V2</em> family.</h2>
+      <p class="sub">Phase 0 supports the three primary V2 variants. Kinematics JSON is versioned and editable — the schema is open for community contributions.</p>
+    </div>
+
+    <div class="machine-grid">
+      <div class="machine-card">
+        <div class="status-tag phase0">Phase 0</div>
+        <h4>V2-10</h4>
+        <div class="vendor">Penta Machine Company</div>
+        <p>Entry 5-axis with A/B table geometry.</p>
+        <div class="specs">
+          <div><span>Travel X/Y/Z</span><span>~10 × 7 × 5 in</span></div>
+          <div><span>A / B range</span><span>-35° to 135° · ±360°</span></div>
+          <div><span>Spindle</span><span>24k RPM · ER11</span></div>
+          <div><span>Kinematics JSON</span><span>template</span></div>
+        </div>
+      </div>
+
+      <div class="machine-card">
+        <div class="status-tag phase0">Phase 0</div>
+        <h4>V2-50CHB</h4>
+        <div class="vendor">Penta Machine Company · CHB variant</div>
+        <p>Larger envelope, bigger collet, higher torque.</p>
+        <div class="specs">
+          <div><span>Travel X/Y/Z</span><span>~50 × 40 × 30 mm</span></div>
+          <div><span>A / B range</span><span>-35° to 135° · ±360°</span></div>
+          <div><span>Spindle</span><span>40k RPM · ER20</span></div>
+          <div><span>Kinematics JSON</span><span>template</span></div>
+        </div>
+      </div>
+
+      <div class="machine-card">
+        <div class="status-tag phase0">Phase 0</div>
+        <h4>V2-50CHK</h4>
+        <div class="vendor">Penta Machine Company · CHK variant</div>
+        <p>High-rigidity frame, tool-length probing.</p>
+        <div class="specs">
+          <div><span>Travel X/Y/Z</span><span>~50 × 40 × 30 mm</span></div>
+          <div><span>A / B range</span><span>-35° to 135° · ±360°</span></div>
+          <div><span>Spindle</span><span>40k RPM · ER20 + probe</span></div>
+          <div><span>Kinematics JSON</span><span>template</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ROADMAP -->
+<section class="roadmap" data-animate>
+  <div class="wrap">
+    <div class="header-block">
+      <span class="section-kicker">Roadmap</span>
+      <h2>Phased. <em>Honest</em> about where we are.</h2>
+      <p class="sub">Pentacad is young. The scaffold is in place. The strategies, post-processor, simulator, and bridge are each phased deliverables with clear exit criteria.</p>
+    </div>
+
+    <div class="phases">
+      <div class="phase done">
+        <div class="phase-dot"></div>
+        <span class="phase-num">Done</span>
+        <h4>Phase 0 · Foundations</h4>
+        <ul>
+          <li>Module scaffold</li>
+          <li>Machine JSON schema</li>
+          <li>G-code parser (G20/G90/G93/G94/G54)</li>
+          <li>Bridge protocol spec</li>
+          <li>Strategy registry (12)</li>
+        </ul>
+      </div>
+
+      <div class="phase active">
+        <div class="phase-dot"></div>
+        <span class="phase-num">In progress</span>
+        <h4>Phase 1 · CAM core</h4>
+        <ul>
+          <li>Setup manager UI</li>
+          <li>2D Contour + Adaptive + Pocket + Face</li>
+          <li>Drill canned cycles</li>
+          <li>Post-processor emission</li>
+          <li>Real Pentamachine kinematics (awaiting V2 specs)</li>
+        </ul>
+      </div>
+
+      <div class="phase next">
+        <div class="phase-dot"></div>
+        <span class="phase-num">Next</span>
+        <h4>Phase 2 · 3D + Sim</h4>
+        <ul>
+          <li>3D finishing strategies (parallel, scallop, projection, flow)</li>
+          <li>Forward-kinematics simulator</li>
+          <li>Soft-limit + stock-removal</li>
+          <li>Collision check</li>
+          <li>WCS probing workflow</li>
+        </ul>
+      </div>
+
+      <div class="phase next">
+        <div class="phase-dot"></div>
+        <span class="phase-num">Later</span>
+        <h4>Phase 3 · Live bridge</h4>
+        <ul>
+          <li>Kinetic Control WS bridge</li>
+          <li>Jog · stream · DRO · pause · abort</li>
+          <li>G38 probing</li>
+          <li>Offline queue with resume</li>
+          <li>Multi-machine dashboard</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="cta-final">
+  <div class="wrap">
+    <h2>Ship chips. <em>Not</em> file exchanges.</h2>
+    <p>Open Pentacad in the browser. Import a cycleCAD part. Generate a toolpath. Simulate. Post. Stream.</p>
+    <div class="ctas">
+      <a href="/app/pentacad.html" class="btn btn-primary">Launch Pentacad <span class="arrow">→</span></a>
+      <a href="https://github.com/vvlars-cmd/cyclecad" class="btn btn-secondary">View on GitHub</a>
+      <a href="mailto:sachin.kumar@cyclewash.com?subject=Pentacad%20pilot%20interest" class="btn btn-secondary">Talk about a pilot</a>
+    </div>
+    <div class="tiny">
+      Pentacad is licensed <strong>AGPL-3.0</strong> (commercial dual-license available). Part of the <a href="/">cycleCAD Suite</a>.
+      Built for the <a href="https://pentamachine.com/">Pentamachine V2</a> family of desktop 5-axis CNC.
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <div class="row">
+      <div class="col brand-col">
+        <span class="brand">cycle<em>CAD</em> suite</span>
+        <p>From idea to finished part, in one browser tab. Open-source CAD for designers, makers, and CNC shops.</p>
+      </div>
+      <div class="col">
+        <h4>Products</h4>
+        <a href="/app/">cycleCAD</a>
+        <a href="https://explodeview.com/">ExplodeView</a>
+        <a href="/pentacad.html">Pentacad</a>
+      </div>
+      <div class="col">
+        <h4>Resources</h4>
+        <a href="https://github.com/vvlars-cmd/cyclecad#readme">Documentation</a>
+        <a href="https://github.com/vvlars-cmd/cyclecad/blob/main/cycleCAD-Architecture.pptx">Architecture</a>
+        <a href="https://github.com/vvlars-cmd/cyclecad/blob/main/docs/API-REFERENCE.md">API reference</a>
+      </div>
+      <div class="col">
+        <h4>Developers</h4>
+        <a href="https://github.com/vvlars-cmd/cyclecad">GitHub</a>
+        <a href="https://www.npmjs.com/package/cyclecad">npm</a>
+        <a href="https://github.com/vvlars-cmd/cyclecad/blob/main/server/mcp-server.js">MCP server</a>
+      </div>
+      <div class="col">
+        <h4>Contact</h4>
+        <a href="mailto:sachin.kumar@cyclewash.com">Email</a>
+        <a href="https://cyclewash.de/en">cycleWASH</a>
+      </div>
+    </div>
+    <div class="legal">
+      <span>© 2026 cycleCAD Suite · Sachin Kumar</span>
+      <span>cycleCAD MIT · ExplodeView MIT · Pentacad AGPL-3.0</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(() => {
+  const els = document.querySelectorAll('[data-animate]');
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (e.isIntersecting) {
+        e.target.classList.add('in-view');
+        obs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  els.forEach((el) => obs.observe(el));
+})();
+</script>
+
+</body>
+</html>

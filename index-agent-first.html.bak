@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>cycleCAD — The Agent-First OS for Manufacturing</title>
+  <meta name="description" content="cycleCAD is the OS of Manufacturing — CAD built for AI agents. No GUI. No mouse. Agents are the only interface. The missing common language that connects design through end of life.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
+  <style>
+    /* ============================================================
+       RESET & BASE
+       ============================================================ */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root, [data-theme="dark"] {
+      --bg-primary: #0A1628;
+      --bg-card: #122240;
+      --bg-card-hover: #1A2D50;
+      --border-card: #1E3A5F;
+      --text-primary: #F0F0E8;
+      --text-secondary: #8B9AB5;
+      --text-muted: #5A6B85;
+      --accent-gold: #D4A843;
+      --accent-gold-light: #E8C065;
+      --accent-blue: #2E86DE;
+      --accent-purple: #8B6FC0;
+      --accent-teal: #3AAFA9;
+      --accent-warn: #E8963A;
+      --accent-coral: #E05555;
+      --accent-gradient: linear-gradient(135deg, #D4A843, #2E86DE);
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --max-width: 1200px;
+      --nav-bg: rgba(10, 22, 40, 0.9);
+      --btn-secondary-border: #1E3A5F;
+      --btn-secondary-hover-bg: rgba(255,255,255,0.05);
+      --mockup-bg: #0D1E38;
+      --mockup-toolbar: #122240;
+      --mockup-toolbar-border: #1E3A5F;
+      --mockup-sidebar: #0F1B32;
+      --mockup-sidebar-border: #1E3A5F;
+      --mockup-viewport-center: #0D1E38;
+      --mockup-viewport-edge: #0A1628;
+      --mockup-tree: #1E3A5F;
+      --mockup-grid-line: rgba(255,255,255,0.035);
+      --cube-border: rgba(212, 168, 67, 0.5);
+      --cube-bg: rgba(212, 168, 67, 0.06);
+    }
+
+    [data-theme="light"] {
+      --bg-primary: #f5f6f8;
+      --bg-card: #ffffff;
+      --bg-card-hover: #f0f1f3;
+      --border-card: #d8dae0;
+      --text-primary: #111128;
+      --text-secondary: #44445a;
+      --text-muted: #6e6e88;
+      --accent-gold: #B8860B;
+      --accent-gold-light: #D4A843;
+      --accent-blue: #2060B0;
+      --accent-gradient: linear-gradient(135deg, #B8860B, #2060B0);
+      --nav-bg: rgba(248, 249, 250, 0.9);
+      --btn-secondary-border: #d0d2d6;
+      --btn-secondary-hover-bg: rgba(0,0,0,0.03);
+      --mockup-bg: #ffffff;
+      --mockup-toolbar: #f0f0f4;
+      --mockup-toolbar-border: #e0e0e6;
+      --mockup-sidebar: #f5f5f8;
+      --mockup-sidebar-border: #e0e2e6;
+      --mockup-viewport-center: #eaeaf0;
+      --mockup-viewport-edge: #dddde4;
+      --mockup-tree: #d0d0da;
+      --mockup-grid-line: rgba(0,0,0,0.04);
+      --cube-border: rgba(184, 134, 11, 0.5);
+      --cube-bg: rgba(184, 134, 11, 0.08);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+    h1, h2, h3 { font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+
+    .gradient-text {
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    [data-theme="light"] .gradient-text {
+      background: linear-gradient(135deg, #8B6914, #184080);
+      -webkit-background-clip: text;
+      background-clip: text;
+    }
+
+    [data-theme="light"] .nav-cta { color: #fff !important; }
+    [data-theme="light"] .btn-primary { color: #fff; }
+    [data-theme="light"] .section-label { color: #B8860B; }
+    [data-theme="light"] .hero-badge { background: rgba(184,134,11,0.06); border-color: rgba(184,134,11,0.15); }
+    [data-theme="light"] .feature-card, [data-theme="light"] .problem-card, [data-theme="light"] .cap-item, [data-theme="light"] .persona-card, [data-theme="light"] .dna-card { box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+
+    .section-label {
+      font-size: 0.8rem; font-weight: 700; letter-spacing: 0.15em;
+      text-transform: uppercase; color: var(--accent-gold); margin-bottom: 16px;
+    }
+
+    /* ============================================================
+       LAYOUT
+       ============================================================ */
+    .container { max-width: var(--max-width); margin: 0 auto; padding: 0 24px; }
+    section { padding: 120px 0; }
+
+    /* ============================================================
+       NAVIGATION
+       ============================================================ */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      padding: 16px 0; background: var(--nav-bg);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-card); transition: all 0.3s;
+    }
+    nav .container { display: flex; justify-content: space-between; align-items: center; }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text-primary); font-size: 1.3rem; font-weight: 700; }
+    .nav-logo-icon { width: 32px; height: 32px; background: var(--accent-gradient); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .nav-logo .cycle { color: var(--text-secondary); font-weight: 400; }
+    .nav-logo .cad { color: var(--text-primary); font-weight: 800; }
+    .nav-links { display: flex; gap: 32px; align-items: center; list-style: none; }
+    .nav-links a { color: var(--text-secondary); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--text-primary); }
+    .nav-cta { padding: 8px 20px; background: var(--accent-gradient); color: #000 !important; border-radius: 8px; font-weight: 600 !important; font-size: 0.85rem !important; transition: opacity 0.2s !important; }
+    .nav-cta:hover { opacity: 0.9; }
+
+    /* ============================================================
+       HERO
+       ============================================================ */
+    .hero {
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; text-align: center;
+      padding-top: 80px; position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: ''; position: absolute; top: -200px; left: -200px;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(212,168,67,0.1) 0%, transparent 70%);
+      animation: pulse1 8s ease-in-out infinite;
+    }
+    .hero::after {
+      content: ''; position: absolute; bottom: -200px; right: -200px;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(46,134,222,0.08) 0%, transparent 70%);
+      animation: pulse2 10s ease-in-out infinite;
+    }
+    @keyframes pulse1 { 0%,100% { transform: scale(1); opacity: 0.6; } 50% { transform: scale(1.2); opacity: 1; } }
+    @keyframes pulse2 { 0%,100% { transform: scale(1.1); opacity: 0.5; } 50% { transform: scale(0.9); opacity: 0.8; } }
+
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px; padding: 8px 20px;
+      background: rgba(212,168,67,0.08); border: 1px solid rgba(212,168,67,0.2);
+      border-radius: 100px; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 32px;
+      position: relative; z-index: 1;
+    }
+    .hero-badge span { color: var(--accent-gold); font-weight: 600; }
+    .hero h1 { font-size: clamp(3rem, 7vw, 5rem); max-width: 900px; margin-bottom: 24px; position: relative; z-index: 1; }
+    .hero p { font-size: 1.2rem; color: var(--text-secondary); max-width: 640px; margin-bottom: 40px; line-height: 1.7; position: relative; z-index: 1; }
+    .hero-ctas { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; position: relative; z-index: 1; }
+
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px; padding: 14px 32px;
+      background: var(--accent-gradient); color: #000; border: none; border-radius: 10px;
+      font-size: 1rem; font-weight: 700; cursor: pointer; text-decoration: none; transition: all 0.2s;
+    }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 8px; padding: 14px 32px;
+      background: transparent; color: var(--text-primary); border: 1px solid var(--btn-secondary-border);
+      border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; text-decoration: none; transition: all 0.2s;
+    }
+    .btn-secondary:hover { border-color: var(--text-muted); background: var(--btn-secondary-hover-bg); }
+
+    .theme-toggle {
+      width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--border-card);
+      background: var(--bg-card); color: var(--text-secondary); font-size: 18px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: all 0.2s; margin-left: 8px;
+    }
+    .theme-toggle:hover { border-color: var(--accent-gold); color: var(--accent-gold); background: var(--bg-card-hover); }
+
+    /* Brand logos in hero */
+    .hero-brands {
+      display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;
+      position: relative; z-index: 1;
+    }
+    .hero-brands .brand { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em; }
+    .hero-brands .wash { color: var(--accent-blue); }
+    .hero-brands .times { color: var(--text-muted); font-weight: 300; font-size: 1.2rem; }
+    .hero-brands .cad { color: var(--accent-gold); }
+
+    /* Cycle symbol */
+    .cycle-symbol { width: 120px; height: 120px; margin-bottom: 1.5rem; position: relative; z-index: 1; animation: spinSlow 20s linear infinite; }
+    @keyframes spinSlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    /* ============================================================
+       BRAND STORY SECTION
+       ============================================================ */
+    .brand-story { text-align: center; }
+    .brand-story h2 { font-size: clamp(2rem, 4.5vw, 3.5rem); max-width: 800px; margin: 0 auto 20px; }
+    .brand-story > .container > .subtitle { color: var(--text-secondary); max-width: 700px; margin: 0 auto 60px; font-size: 1.1rem; }
+
+    .story-cards {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; max-width: 1000px; margin: 0 auto;
+    }
+    .story-card {
+      background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px;
+      padding: 2.5rem; text-align: left; transition: all 0.3s; position: relative; overflow: hidden;
+    }
+    .story-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+    }
+    .story-card.wash::before { background: var(--accent-blue); }
+    .story-card.cad::before { background: var(--accent-gold); }
+    .story-card:hover { border-color: rgba(212,168,67,0.2); background: var(--bg-card-hover); }
+    .story-card .card-brand { font-size: 1.6rem; font-weight: 800; margin-bottom: 0.5rem; }
+    .story-card .card-role { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 1rem; }
+    .story-card p { color: var(--text-secondary); font-size: 0.95rem; line-height: 1.7; }
+    .story-card p strong { color: var(--text-primary); }
+
+    .story-connector {
+      text-align: center; padding: 2rem 0; font-size: 0.85rem; color: var(--accent-gold);
+      font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+    }
+
+    /* ============================================================
+       DNA GRID
+       ============================================================ */
+    .dna-section { text-align: center; }
+    .dna-section h2 { font-size: clamp(2rem, 4.5vw, 3rem); max-width: 800px; margin: 0 auto 20px; }
+    .dna-section > .container > .subtitle { color: var(--text-secondary); max-width: 600px; margin: 0 auto 60px; font-size: 1.05rem; }
+    .dna-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+    .dna-card {
+      background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 14px;
+      padding: 2rem; text-align: left; transition: border-color 0.3s;
+    }
+    .dna-card:hover { border-color: var(--accent-gold); }
+    .dna-icon {
+      width: 48px; height: 48px; border-radius: 12px; display: flex;
+      align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 1rem;
+    }
+    .dna-card h4 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .dna-card p { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; }
+
+    /* ============================================================
+       PROBLEM & SOLUTION
+       ============================================================ */
+    .problem { text-align: center; }
+    .problem h2 { font-size: clamp(2rem, 4.5vw, 3.5rem); max-width: 800px; margin: 0 auto 60px; }
+    .problem-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; max-width: 900px; margin: 0 auto; }
+    .problem-card {
+      background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px;
+      padding: 32px; text-align: left; transition: all 0.3s;
+    }
+    .problem-card:hover { border-color: rgba(212,168,67,0.15); background: var(--bg-card-hover); }
+    .problem-card h3 { font-size: 1.25rem; font-weight: 700; margin-bottom: 12px; }
+    .problem-card p { color: var(--text-secondary); font-size: 0.95rem; line-height: 1.7; }
+
+    .solution { text-align: center; }
+    .solution h2 { font-size: clamp(2rem, 4.5vw, 3.5rem); max-width: 800px; margin: 0 auto 60px; }
+    .feature-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+    .feature-card {
+      background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px;
+      padding: 32px; text-align: left; transition: all 0.3s;
+    }
+    .feature-card:hover { border-color: rgba(212,168,67,0.15); background: var(--bg-card-hover); transform: translateY(-2px); }
+    .feature-icon {
+      width: 48px; height: 48px; border-radius: 12px; display: flex;
+      align-items: center; justify-content: center; font-size: 22px; margin-bottom: 20px;
+    }
+    .feature-icon.gold { background: rgba(212,168,67,0.12); }
+    .feature-icon.blue { background: rgba(46,134,222,0.12); }
+    .feature-icon.teal { background: rgba(58,175,169,0.12); }
+    .feature-icon.purple { background: rgba(139,111,192,0.12); }
+    .feature-icon.warn { background: rgba(232,150,58,0.12); }
+    .feature-icon.coral { background: rgba(224,85,85,0.12); }
+    .feature-card h3 { font-size: 1.15rem; font-weight: 700; margin-bottom: 12px; }
+    .feature-card p { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.7; }
+
+    /* ============================================================
+       EVERYONE IS A DESIGNER (PERSONAS)
+       ============================================================ */
+    .personas { text-align: center; }
+    .personas h2 { font-size: clamp(2rem, 4.5vw, 3rem); max-width: 800px; margin: 0 auto 20px; }
+    .personas > .container > .subtitle { color: var(--text-secondary); max-width: 600px; margin: 0 auto 60px; font-size: 1.05rem; }
+    .persona-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+    .persona-card {
+      background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 14px;
+      padding: 2rem; text-align: left; transition: all 0.3s;
+    }
+    .persona-card:hover { border-color: rgba(212,168,67,0.2); background: var(--bg-card-hover); }
+    .persona-card .persona-icon { font-size: 2rem; margin-bottom: 0.8rem; }
+    .persona-card h4 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .persona-card p { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; }
+
+    /* ============================================================
+       OS OF THINGS PIPELINE
+       ============================================================ */
+    .os-pipeline { text-align: center; position: relative; overflow: hidden; }
+    .os-pipeline::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background: radial-gradient(circle at 30% 50%, rgba(212,168,67,0.06) 0%, transparent 50%),
+                  radial-gradient(circle at 70% 50%, rgba(46,134,222,0.06) 0%, transparent 50%);
+    }
+    .os-pipeline h2 { font-size: clamp(2rem, 4.5vw, 3rem); max-width: 800px; margin: 0 auto 16px; position: relative; z-index: 1; }
+    .os-pipeline > .container > .subtitle { color: var(--text-secondary); max-width: 700px; margin: 0 auto 50px; font-size: 1.05rem; position: relative; z-index: 1; }
+
+    .pipeline-flow {
+      display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+      flex-wrap: wrap; position: relative; z-index: 1; max-width: 1000px; margin: 0 auto 3rem;
+    }
+    .pipeline-step {
+      background: var(--bg-card); border-radius: 14px; padding: 1.2rem 1.6rem;
+      border: 1px solid var(--border-card); text-align: center; min-width: 140px;
+      transition: all 0.3s;
+    }
+    .pipeline-step:hover { transform: translateY(-3px); border-color: var(--accent-gold); }
+    .pipeline-step .step-icon { font-size: 1.8rem; margin-bottom: 0.3rem; }
+    .pipeline-step .step-label { font-weight: 700; font-size: 0.95rem; }
+    .pipeline-step .step-desc { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem; }
+    .pipeline-arrow { color: var(--text-muted); font-size: 1.2rem; }
+
+    .os-pipeline .vision-text {
+      max-width: 700px; margin: 0 auto; font-size: 1.1rem; color: var(--text-secondary);
+      line-height: 1.7; position: relative; z-index: 1;
+    }
+    .os-pipeline .vision-text strong { color: var(--text-primary); }
+
+    /* ============================================================
+       MACHINES CREATING MACHINES
+       ============================================================ */
+    .machines-section { text-align: center; position: relative; overflow: hidden; }
+    .machines-section::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background: radial-gradient(circle at 50% 50%, rgba(139,111,192,0.06) 0%, transparent 60%);
+    }
+    .machines-section h2 { font-size: clamp(2rem, 4.5vw, 3rem); position: relative; z-index: 1; margin-bottom: 1.5rem; }
+    .machines-section p { position: relative; z-index: 1; }
+    .machines-flow {
+      display: flex; align-items: center; justify-content: center; gap: 0.8rem;
+      flex-wrap: wrap; position: relative; z-index: 1; max-width: 900px; margin: 2.5rem auto;
+    }
+    .machine-step {
+      text-align: center; padding: 1rem 1.5rem; background: var(--bg-card);
+      border-radius: 12px; border: 1px solid var(--border-card);
+    }
+    .machine-step .m-label { font-size: 1.3rem; font-weight: 800; }
+    .machine-step .m-desc { font-size: 0.8rem; color: var(--text-muted); }
+
+    /* ============================================================
+       CAPABILITIES GRID
+       ============================================================ */
+    .capabilities { text-align: center; }
+    .capabilities h2 { font-size: clamp(2rem, 4.5vw, 3.5rem); max-width: 800px; margin: 0 auto 20px; }
+    .capabilities > .container > p { color: var(--text-secondary); max-width: 600px; margin: 0 auto 60px; font-size: 1.1rem; }
+    .cap-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .cap-item {
+      background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 12px;
+      padding: 20px 16px; text-align: center; transition: all 0.2s;
+    }
+    .cap-item:hover { border-color: rgba(212,168,67,0.2); background: var(--bg-card-hover); }
+    .cap-item .cap-icon { font-size: 24px; margin-bottom: 10px; }
+    .cap-item h4 { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); }
+    .cap-item p { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+
+    /* ============================================================
+       PRICING SECTION
+       ============================================================ */
+    .pricing { text-align: center; }
+    .pricing h2 { font-size: clamp(2rem, 4.5vw, 3rem); max-width: 800px; margin: 0 auto 20px; }
+    .pricing > .container > .subtitle { color: var(--text-secondary); max-width: 600px; margin: 0 auto 60px; font-size: 1.05rem; }
+    .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; max-width: 960px; margin: 0 auto; }
+    .pricing-card {
+      background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px;
+      padding: 2.5rem 2rem; text-align: center; transition: all 0.3s; position: relative; overflow: hidden;
+    }
+    .pricing-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; }
+    .pricing-card.starter::before { background: var(--text-muted); }
+    .pricing-card.pro::before { background: var(--accent-blue); }
+    .pricing-card.enterprise::before { background: var(--accent-gold); }
+    .pricing-card.pro { border-color: rgba(46,134,222,0.3); }
+    .pricing-card:hover { transform: translateY(-3px); }
+    .pricing-card .tier-name { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .pricing-card .tier-price { font-size: 2.2rem; font-weight: 900; margin-bottom: 0.3rem; }
+    .pricing-card .tier-period { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem; }
+    .pricing-card .tier-features { list-style: none; text-align: left; }
+    .pricing-card .tier-features li {
+      padding: 0.5rem 0; font-size: 0.9rem; color: var(--text-secondary);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .pricing-card .tier-features li::before { content: ""; margin-right: 0.5rem; }
+    .launch-badge {
+      display: inline-block; padding: 0.4rem 1rem; background: rgba(232,150,58,0.15);
+      border: 1px solid rgba(232,150,58,0.3); border-radius: 20px;
+      font-size: 0.8rem; color: var(--accent-warn); font-weight: 600; margin-top: 1rem;
+    }
+
+    /* ============================================================
+       SHOWCASE
+       ============================================================ */
+    .showcase { text-align: center; }
+    .showcase h2 { font-size: clamp(2rem, 4.5vw, 3.5rem); max-width: 800px; margin: 0 auto 60px; }
+    .showcase-visual {
+      max-width: 900px; margin: 0 auto; aspect-ratio: 16/9;
+      background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 16px;
+      overflow: hidden; display: flex; align-items: center; justify-content: center; position: relative;
+    }
+    .showcase-visual .app-mockup { width: 100%; height: 100%; }
+
+    /* ============================================================
+       FINAL CTA
+       ============================================================ */
+    .final-cta { text-align: center; padding: 160px 0; position: relative; }
+    .final-cta::before {
+      content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 600px; height: 400px;
+      background: radial-gradient(ellipse, rgba(212,168,67,0.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .final-cta h2 { font-size: clamp(2.5rem, 5vw, 4rem); max-width: 800px; margin: 0 auto 24px; }
+    .final-cta p { color: var(--text-secondary); font-size: 1.1rem; max-width: 500px; margin: 0 auto 40px; }
+
+    /* ============================================================
+       FOOTER
+       ============================================================ */
+    footer { padding: 32px 0; border-top: 1px solid var(--border-card); text-align: center; }
+    footer .container { display: flex; justify-content: space-between; align-items: center; }
+    footer .nav-logo { font-size: 1rem; }
+    footer p { color: var(--text-muted); font-size: 0.8rem; }
+    footer .footer-links { display: flex; gap: 24px; list-style: none; }
+    footer .footer-links a { color: var(--text-muted); text-decoration: none; font-size: 0.8rem; transition: color 0.2s; }
+    footer .footer-links a:hover { color: var(--text-secondary); }
+
+    /* Mockup */
+    .hero-visual { margin-top: 60px; width: 100%; max-width: 900px; aspect-ratio: 16/9; background: radial-gradient(ellipse at center bottom, rgba(212,168,67,0.08) 0%, transparent 70%); border-radius: 16px; border: 1px solid var(--border-card); overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; z-index: 1; }
+    .app-mockup { width: 100%; height: 100%; background: var(--mockup-bg); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
+    .mockup-toolbar { height: 36px; background: var(--mockup-toolbar); border-bottom: 1px solid var(--mockup-toolbar-border); display: flex; align-items: center; padding: 0 12px; gap: 6px; }
+    .mockup-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .mockup-dot.red { background: #ff5f57; } .mockup-dot.yellow { background: #febc2e; } .mockup-dot.green { background: #28c840; }
+    .mockup-toolbar-items { display: flex; gap: 8px; margin-left: 16px; }
+    .mockup-toolbar-item { width: 40px; height: 6px; background: var(--mockup-tree); border-radius: 3px; }
+    .mockup-body { flex: 1; display: flex; }
+    .mockup-sidebar { width: 160px; background: var(--mockup-sidebar); border-right: 1px solid var(--mockup-sidebar-border); padding: 12px 8px; }
+    .mockup-tree-item { height: 5px; background: var(--mockup-tree); border-radius: 3px; margin-bottom: 6px; }
+    .mockup-tree-item.active { background: var(--accent-gold); opacity: 0.6; }
+    .mockup-tree-item.indent { margin-left: 12px; width: calc(100% - 12px); }
+    .mockup-viewport { flex: 1; background: radial-gradient(ellipse at center, var(--mockup-viewport-center) 0%, var(--mockup-viewport-edge) 100%); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+    .mockup-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px); background-size: 30px 30px; transform: perspective(600px) rotateX(45deg); transform-origin: center 70%; }
+    .mockup-3d-shape { position: relative; z-index: 1; }
+    .cube-container { width: 120px; height: 120px; perspective: 400px; }
+    .cube { width: 100%; height: 100%; transform-style: preserve-3d; transform: rotateX(-25deg) rotateY(40deg); animation: cubeRotate 20s linear infinite; }
+    @keyframes cubeRotate { 0% { transform: rotateX(-25deg) rotateY(40deg); } 100% { transform: rotateX(-25deg) rotateY(400deg); } }
+    .cube-face { position: absolute; width: 100px; height: 100px; border: 1.5px solid var(--cube-border); background: var(--cube-bg); display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--text-muted); }
+    .cube-face.front { transform: translateZ(50px) translateX(10px) translateY(10px); }
+    .cube-face.back { transform: rotateY(180deg) translateZ(50px) translateX(10px) translateY(10px); }
+    .cube-face.right { transform: rotateY(90deg) translateZ(50px) translateX(10px) translateY(10px); }
+    .cube-face.left { transform: rotateY(-90deg) translateZ(50px) translateX(10px) translateY(10px); }
+    .cube-face.top { transform: rotateX(90deg) translateZ(50px) translateX(10px) translateY(10px); }
+    .cube-face.bottom { transform: rotateX(-90deg) translateZ(50px) translateX(10px) translateY(10px); }
+    .mockup-props { width: 180px; background: var(--mockup-sidebar); border-left: 1px solid var(--mockup-sidebar-border); padding: 12px 8px; }
+    .mockup-prop-label { height: 4px; width: 40px; background: var(--mockup-tree); border-radius: 2px; margin-bottom: 8px; }
+    .mockup-prop-value { height: 4px; width: 70px; background: var(--mockup-tree); border-radius: 2px; margin-bottom: 12px; }
+
+    /* ============================================================
+       RESPONSIVE
+       ============================================================ */
+    @media (max-width: 900px) {
+      .story-cards { grid-template-columns: 1fr; }
+      .problem-cards { grid-template-columns: 1fr; }
+      .feature-cards { grid-template-columns: 1fr; }
+      .dna-grid { grid-template-columns: 1fr; }
+      .persona-grid { grid-template-columns: 1fr; }
+      .pricing-grid { grid-template-columns: 1fr; max-width: 400px; }
+      .cap-grid { grid-template-columns: repeat(2, 1fr); }
+      .mockup-props, .mockup-sidebar { display: none; }
+      nav .nav-links { display: none; }
+      .pipeline-flow { gap: 0.4rem; }
+      .pipeline-step { min-width: 100px; padding: 0.8rem 1rem; }
+      .pipeline-arrow { display: none; }
+    }
+    @media (max-width: 600px) {
+      section { padding: 80px 0; }
+      .cap-grid { grid-template-columns: 1fr 1fr; }
+      .hero-ctas { flex-direction: column; align-items: center; }
+      footer .container { flex-direction: column; gap: 16px; }
+      footer .footer-links { gap: 16px; }
+      .hero-brands .brand { font-size: 1.1rem; }
+    }
+
+    /* Animations */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-up { opacity: 0; animation: fadeUp 0.8s ease forwards; }
+    .fade-up.d1 { animation-delay: 0.1s; } .fade-up.d2 { animation-delay: 0.2s; }
+    .fade-up.d3 { animation-delay: 0.3s; } .fade-up.d4 { animation-delay: 0.4s; }
+    .fade-up.d5 { animation-delay: 0.5s; }
+    .reveal { opacity: 0; transform: translateY(30px); transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+  <!-- NAVIGATION -->
+  <nav>
+    <div class="container">
+      <a href="#" class="nav-logo">
+        <div class="nav-logo-icon">⚙</div>
+        <span class="cycle">cycle</span><span class="cad">CAD</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="#story">Story</a></li>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#vision">Vision</a></li>
+        <li><a href="#token-economy">Token Economy</a></li>
+        <li><a href="https://github.com/vvlars-cmd/cyclecad" target="_blank">GitHub</a></li>
+        <li><a href="/app/" class="nav-cta">Launch App</a></li>
+        <li><button class="theme-toggle" id="theme-toggle" title="Toggle dark/light mode" aria-label="Toggle theme">☀️</button></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- ============================================================
+       HERO — cycleWASH × cycleCAD
+       ============================================================ -->
+  <section class="hero" id="hero">
+    <div class="cycle-symbol fade-up d1">
+      <svg viewBox="0 0 200 200">
+        <defs>
+          <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#2E86DE;stop-opacity:1" />
+            <stop offset="50%" style="stop-color:#D4A843;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#3AAFA9;stop-opacity:1" />
+          </linearGradient>
+        </defs>
+        <path d="M 100 20 A 80 80 0 0 1 169 60" fill="none" stroke="url(#grad1)" stroke-width="4" stroke-linecap="round"/>
+        <polygon points="172,55 165,68 158,55" fill="#D4A843"/>
+        <path d="M 169 140 A 80 80 0 0 1 31 140" fill="none" stroke="url(#grad1)" stroke-width="4" stroke-linecap="round"/>
+        <polygon points="28,136 35,148 22,148" fill="#3AAFA9"/>
+        <path d="M 31 60 A 80 80 0 0 1 100 20" fill="none" stroke="url(#grad1)" stroke-width="4" stroke-linecap="round"/>
+        <polygon points="96,17 103,28 90,28" fill="#2E86DE"/>
+        <text x="100" y="95" text-anchor="middle" fill="#F0F0E8" font-family="Inter, sans-serif" font-weight="800" font-size="22">cycle</text>
+        <text x="100" y="118" text-anchor="middle" fill="#8B9AB5" font-family="Inter, sans-serif" font-weight="400" font-size="11" letter-spacing="3">ENGINEERING</text>
+      </svg>
+    </div>
+
+    <div class="hero-brands fade-up d2">
+      <span class="brand wash">cycleWASH</span>
+      <span class="times">&times;</span>
+      <span class="brand cad">cycleCAD</span>
+    </div>
+
+    <h1 class="fade-up d2">
+      <span class="gradient-text">The Agent-First OS for Manufacturing</span>
+    </h1>
+
+    <p class="fade-up d3">
+      CAD was built for humans with a mouse. We built it for AI agents.<br>
+      12 killer features. 46 modules. 52,000+ lines of code. Zero install.<br>
+      Every agent — from GPT to Claude to Gemini — designs, simulates, and manufactures through cycleCAD.
+    </p>
+
+    <div class="hero-ctas fade-up d4">
+      <a href="/app/" class="btn-primary">Explore the Platform</a>
+      <a href="#story" class="btn-secondary">Our Story</a>
+    </div>
+
+    <div class="hero-visual fade-up d5">
+      <div class="app-mockup">
+        <div class="mockup-toolbar">
+          <div class="mockup-dot red"></div>
+          <div class="mockup-dot yellow"></div>
+          <div class="mockup-dot green"></div>
+          <div class="mockup-toolbar-items">
+            <div class="mockup-toolbar-item"></div>
+            <div class="mockup-toolbar-item"></div>
+            <div class="mockup-toolbar-item" style="width:50px"></div>
+            <div class="mockup-toolbar-item"></div>
+            <div class="mockup-toolbar-item" style="width:30px"></div>
+            <div class="mockup-toolbar-item"></div>
+            <div class="mockup-toolbar-item" style="width:60px;background:rgba(212,168,67,0.3);"></div>
+          </div>
+        </div>
+        <div class="mockup-body">
+          <div class="mockup-sidebar">
+            <div style="height:4px;width:50px;background:#D4A843;opacity:0.5;border-radius:2px;margin-bottom:10px;"></div>
+            <div class="mockup-tree-item" style="width:80%"></div>
+            <div class="mockup-tree-item indent active"></div>
+            <div class="mockup-tree-item indent" style="width:60%"></div>
+            <div class="mockup-tree-item indent" style="width:70%"></div>
+            <div class="mockup-tree-item" style="width:75%"></div>
+            <div class="mockup-tree-item indent" style="width:55%"></div>
+            <div class="mockup-tree-item indent active" style="width:65%"></div>
+            <div class="mockup-tree-item" style="width:85%"></div>
+            <div class="mockup-tree-item indent" style="width:50%"></div>
+          </div>
+          <div class="mockup-viewport">
+            <div class="mockup-grid"></div>
+            <div class="mockup-3d-shape">
+              <div class="cube-container">
+                <div class="cube">
+                  <div class="cube-face front"></div>
+                  <div class="cube-face back"></div>
+                  <div class="cube-face right"></div>
+                  <div class="cube-face left"></div>
+                  <div class="cube-face top"></div>
+                  <div class="cube-face bottom"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mockup-props">
+            <div style="height:4px;width:50px;background:#2E86DE;opacity:0.4;border-radius:2px;margin-bottom:10px;"></div>
+            <div class="mockup-prop-label"></div>
+            <div class="mockup-prop-value"></div>
+            <div class="mockup-prop-label" style="width:50px"></div>
+            <div class="mockup-prop-value" style="width:55px"></div>
+            <div class="mockup-prop-label" style="width:35px"></div>
+            <div class="mockup-prop-value" style="width:60px"></div>
+            <div style="height:1px;background:var(--border-card);margin:16px 0;"></div>
+            <div class="mockup-prop-label" style="width:55px"></div>
+            <div class="mockup-prop-value" style="width:80px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       BRAND STORY — One Prefix. One Philosophy.
+       ============================================================ -->
+  <section class="brand-story" id="story">
+    <div class="container">
+      <div class="section-label reveal">OUR STORY</div>
+      <h2 class="reveal">One Prefix. <span class="gradient-text">One Philosophy.</span></h2>
+      <p class="subtitle reveal">The "cycle" in both brands isn't coincidence — it's the DNA of everything we build. Circular thinking applied to machines, and now to the tools that design them.</p>
+
+      <div class="story-cards">
+        <div class="story-card wash reveal">
+          <div class="card-brand" style="color:var(--accent-blue);">cycleWASH</div>
+          <div class="card-role">Circular Engineering</div>
+          <p>cycleWASH builds <strong>industrial bicycle washing machines</strong> — real hardware that keeps bikes in circulation longer. Complex machines with hundreds of precision-engineered parts across multiple sub-assemblies, designed in Autodesk Inventor and built in Germany.</p>
+          <p style="margin-top:1rem;">Every part is designed for <strong>disassembly, repair, and reuse</strong>. That's circular engineering — designing products that fight the throwaway economy from the first sketch.</p>
+        </div>
+        <div class="story-card cad reveal">
+          <div class="card-brand" style="color:var(--accent-gold);">cycleCAD</div>
+          <div class="card-role">Democratizing Design</div>
+          <p>Designing complex machines meant fighting <strong>$4,000/year CAD licenses</strong>, proprietary file formats, and tools that lock you into one vendor's ecosystem. We built cycleCAD to solve our own problem — and to power the <strong>circular economy</strong>.</p>
+          <p style="margin-top:1rem;"><strong>Browser-based, zero-install, AI-agent-ready.</strong> Built so AI agents can design autonomously, unskilled workers can build with confidence, and anyone with a browser can participate in the circular economy.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SHARED BRAND DNA
+       ============================================================ -->
+  <section class="dna-section" id="dna">
+    <div class="container">
+      <div class="section-label reveal">SHARED DNA</div>
+      <h2 class="reveal">What makes it a <span class="gradient-text">"cycle" product</span></h2>
+      <p class="subtitle reveal">Six principles that define everything we build.</p>
+
+      <div class="dna-grid">
+        <div class="dna-card reveal">
+          <div class="dna-icon" style="background:rgba(46,134,222,0.12);">🔄</div>
+          <h4>Circular by Design</h4>
+          <p>cycleWASH machines are built for disassembly and repair. cycleCAD's rebuild guides and maintenance tools encode that philosophy into software.</p>
+        </div>
+        <div class="dna-card reveal">
+          <div class="dna-icon" style="background:rgba(212,168,67,0.12);">🌍</div>
+          <h4>Accessible to All</h4>
+          <p>No gatekeeping. cycleWASH publishes its part data openly. cycleCAD runs in any browser — no download, no license key, no barrier to entry.</p>
+        </div>
+        <div class="dna-card reveal">
+          <div class="dna-icon" style="background:rgba(139,111,192,0.12);">🏭</div>
+          <h4>Real-World Proven</h4>
+          <p>cycleCAD isn't academic software — it's been tested with complex cycleWASH machines. Every feature exists because a real engineering team needed it.</p>
+        </div>
+        <div class="dna-card reveal">
+          <div class="dna-icon" style="background:rgba(232,150,58,0.12);">🧠</div>
+          <h4>AI-Native Intelligence</h4>
+          <p>Both products leverage AI: cycleWASH uses smart diagnostics for predictive maintenance. cycleCAD integrates AI for part identification, cost estimation, and natural-language modeling.</p>
+        </div>
+        <div class="dna-card reveal">
+          <div class="dna-icon" style="background:rgba(58,175,169,0.12);">👥</div>
+          <h4>Community-Driven</h4>
+          <p>cycleWASH grew from the bike community. cycleCAD grows from the maker community. Both believe the best products are built with their users, not just for them.</p>
+        </div>
+        <div class="dna-card reveal">
+          <div class="dna-icon" style="background:rgba(224,85,85,0.12);">🇩🇪</div>
+          <h4>German Engineering, Global Reach</h4>
+          <p>Designed in Germany, deployed everywhere. cycleWASH machines operate across Europe. cycleCAD runs in any browser, any country, 6 languages.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       THE PROBLEM
+       ============================================================ -->
+  <section class="problem" id="problem">
+    <div class="container">
+      <div class="section-label reveal">THE PROBLEM</div>
+      <h2 class="reveal">CAD software is <span class="gradient-text">stuck in the past</span></h2>
+      <div class="problem-cards">
+        <div class="problem-card reveal">
+          <h3>Requires screen, mouse, keyboard</h3>
+          <p>Traditional CAD demands a trained human sitting at a workstation. An AI agent can't use SolidWorks. An unskilled worker can't use Inventor. The interface IS the bottleneck.</p>
+        </div>
+        <div class="problem-card reveal">
+          <h3>$680 — $6,000 per year</h3>
+          <p>Professional CAD tools cost thousands per seat per year. Small teams, field workers, and developing nations are priced out of designing their own products.</p>
+        </div>
+        <div class="problem-card reveal">
+          <h3>No intelligence built in</h3>
+          <p>Traditional CAD is a dumb drawing tool. No AI analysis, no maintenance planning, no autonomous design. Every action requires a trained human operator.</p>
+        </div>
+        <div class="problem-card reveal">
+          <h3>Designed for the throwaway economy</h3>
+          <p>No tool helps you design for disassembly, repair, or reuse. No wear prediction, no maintenance scheduling, no circular economy thinking. Design once, throw away, repeat.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       THE SOLUTION / FEATURES
+       ============================================================ -->
+  <section class="solution" id="features">
+    <div class="container">
+      <div class="section-label reveal">THE PLATFORM</div>
+      <h2 class="reveal">12 killer features. <span class="gradient-text">Zero competition.</span></h2>
+      <p class="subtitle reveal">No other browser CAD has all of these. Most desktop tools don't either. v3.9.0 — 52,000+ lines of module code across 46 modules.</p>
+
+      <!-- Stats Bar -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:2.5rem 0;text-align:center;" class="reveal">
+        <div style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:12px;padding:20px;">
+          <div style="font-size:2rem;font-weight:800;background:var(--accent-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">12</div>
+          <div style="color:var(--text-secondary);font-size:0.85rem;margin-top:4px;">Killer Features</div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:12px;padding:20px;">
+          <div style="font-size:2rem;font-weight:800;background:var(--accent-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">52K+</div>
+          <div style="color:var(--text-secondary);font-size:0.85rem;margin-top:4px;">Lines of Code</div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:12px;padding:20px;">
+          <div style="font-size:2rem;font-weight:800;background:var(--accent-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">46</div>
+          <div style="color:var(--text-secondary);font-size:0.85rem;margin-top:4px;">JS Modules</div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:12px;padding:20px;">
+          <div style="font-size:2rem;font-weight:800;background:var(--accent-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">200+</div>
+          <div style="color:var(--text-secondary);font-size:0.85rem;margin-top:4px;">Standard Parts</div>
+        </div>
+      </div>
+
+      <div class="feature-cards" style="grid-template-columns:repeat(3,1fr);">
+        <!-- Row 1: AI-Powered Design -->
+        <div class="feature-card reveal">
+          <div class="feature-icon gold">⚡</div>
+          <h3>Text-to-CAD (AI)</h3>
+          <p>Type "flanged cylinder 50mm with 4 bolt holes on 70mm PCD" and watch it appear in real-time. 18 shape types, NLP parser, live ghost preview, multi-step builder.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon blue">📷</div>
+          <h3>Photo-to-CAD</h3>
+          <p>Take a photo of any part — edge detection, contour extraction, and 3D reconstruction. Sobel + Hough transforms, reference scaling, Gemini Vision AI enhancement.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon teal">🏭</div>
+          <h3>Manufacturability (DFM)</h3>
+          <p>Instant feedback for 9 processes: CNC, FDM, SLA, SLS, injection molding, sheet metal, sand/investment/die casting. 20+ materials database with cost estimator.</p>
+        </div>
+
+        <!-- Row 2: Simulation & Optimization -->
+        <div class="feature-card reveal">
+          <div class="feature-icon purple">🧬</div>
+          <h3>Generative Design</h3>
+          <p>SIMP topology optimization with live voxel visualization. Define loads and constraints, watch material dissolve away. Marching cubes isosurface, STL export.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon warn">🔬</div>
+          <h3>Multi-Physics Simulation</h3>
+          <p>Structural FEA (Von Mises), thermal analysis, modal frequency, drop test — all in-browser. Conjugate gradient solver, heatmap overlay, deformation visualization.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon coral">🔩</div>
+          <h3>Smart Parts Library</h3>
+          <p>200+ standard parts: ISO fasteners, bearings, linear rails, extrusions, motors, PCBs. AI-powered fuzzy search, BOM management, McMaster/Misumi/DigiKey cross-ref.</p>
+        </div>
+
+        <!-- Row 3: Assembly & Automation -->
+        <div class="feature-card reveal">
+          <div class="feature-icon gold">🧲</div>
+          <h3>Smart Assembly Mating</h3>
+          <p>Drag parts near each other — auto-detect 8 constraint types (coincident, concentric, tangent, gear). Motion study with joint animation, interference detection.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon blue">🤖</div>
+          <h3>Auto-Assemble Parts</h3>
+          <p>AI geometry fingerprinting matches shafts to holes, faces to faces, bolts to bores. One-click assembly with animated placement, collision detection, validation.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon teal">📊</div>
+          <h3>Parametric from Example</h3>
+          <p>Upload 2-5 design variants — AI infers which dimensions are parameters, detects relationships, generates a full parametric family with morphing animation.</p>
+        </div>
+
+        <!-- Row 4: Connected Manufacturing -->
+        <div class="feature-card reveal">
+          <div class="feature-icon purple">📡</div>
+          <h3>Digital Twin Live Data</h3>
+          <p>Connect IoT sensors (MQTT/REST/WebSocket) to your 3D model. Live temperature heatmaps, vibration animation, predictive maintenance, alert dashboard. cycleWASH-ready.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon warn">🖨️</div>
+          <h3>Machine Control (CNC/3DP)</h3>
+          <p>Built-in G-code generator for FDM, CNC milling, and laser cutting. Connect to OctoPrint, Klipper, or Moonraker. Jog controls, temp monitoring, job tracking.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon coral">📓</div>
+          <h3>Engineering Notebook</h3>
+          <p>Auto-logs every design action. Rich text entries, AI-powered summaries, version snapshots with visual diff, decision tracking. Export as HTML/Markdown/JSON report.</p>
+        </div>
+      </div>
+
+      <!-- Plus the foundations -->
+      <div style="margin-top:2rem;text-align:center;" class="reveal">
+        <p style="color:var(--text-secondary);font-size:0.95rem;max-width:700px;margin:0 auto;"><strong>Plus the foundations:</strong> Full parametric modeling, native Inventor file parsing, ExplodeView 3D viewer, MCP server + CLI + REST API, $CYCLE token economy, model marketplace, 30+ tutorials, and comprehensive documentation.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       EVERYONE IS A DESIGNER
+       ============================================================ -->
+  <section class="personas" id="personas">
+    <div class="container">
+      <div class="section-label reveal">AGENTS ARE THE INTERFACE</div>
+      <h2 class="reveal"><span class="gradient-text">CAD built for agents.</span> Used by everyone.</h2>
+      <p class="subtitle reveal">Everyone uses cycleCAD — but nobody opens it. Your AI agent is the interface. Tell it what you need. It designs through cycleCAD.</p>
+
+      <div class="persona-grid" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="persona-card reveal">
+          <div class="persona-icon">🤖</div>
+          <h4>Any AI Agent</h4>
+          <p>GPT, Claude, Gemini, Llama, Mistral — any LLM can design, validate, and manufacture through cycleCAD's API. The agent IS the interface.</p>
+        </div>
+        <div class="persona-card reveal">
+          <div class="persona-icon">🔧</div>
+          <h4>Field Technician</h4>
+          <p>"I need a replacement bracket for the DUO." Their agent designs it, validates DFM, sends G-code to the printer. No CAD skills needed.</p>
+        </div>
+        <div class="persona-card reveal">
+          <div class="persona-icon">💼</div>
+          <h4>Product Manager</h4>
+          <p>"Make the frame 10% lighter." Their agent runs topology optimization through cycleCAD, presents three options.</p>
+        </div>
+        <div class="persona-card reveal">
+          <div class="persona-icon">📊</div>
+          <h4>Sales Engineer</h4>
+          <p>"Configure this for the client's specs." Their agent modifies the parametric model, exports a spec sheet, shares a 3D link.</p>
+        </div>
+        <div class="persona-card reveal">
+          <div class="persona-icon">🏭</div>
+          <h4>Factory Floor</h4>
+          <p>Machine sensors detect wear. An agent designs the replacement, validates tolerances, generates G-code. No human touched a mouse.</p>
+        </div>
+        <div class="persona-card reveal">
+          <div class="persona-icon">🔬</div>
+          <h4>Researcher</h4>
+          <p>"Design a centrifuge mount for 12,000 RPM." Their agent runs stress analysis through cycleCAD, iterates until it passes.</p>
+        </div>
+        <div class="persona-card reveal">
+          <div class="persona-icon">♻️</div>
+          <h4>Circular Economy</h4>
+          <p>End-of-life agent scans a product, identifies reusable parts, redesigns what's worn, routes recycling. The loop closes automatically.</p>
+        </div>
+        <div class="persona-card reveal">
+          <div class="persona-icon">🌐</div>
+          <h4>Agent Swarms</h4>
+          <p>Hundreds of agents working in parallel — designing, validating, manufacturing, repairing. 24/7. No GUI. No breaks. Just $CYCLE tokens flowing.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       THE OS OF THINGS — Pipeline
+       ============================================================ -->
+  <section class="os-pipeline" id="vision">
+    <div class="container">
+      <div class="section-label reveal">THE VISION</div>
+      <h2 class="reveal"><span class="gradient-text">The Agent-First OS for Manufacturing</span></h2>
+      <p class="subtitle reveal">Just like a computer OS connects hardware, drivers, and applications — cycleCAD connects CAD, CAM, analysis, scanning, VR, drawings, manufacturing, and end of life into one system. AI agents are the users. The API is the interface. $CYCLE tokens are the currency.</p>
+
+      <!-- The disconnected islands — BEFORE -->
+      <p style="color:var(--accent-warn);font-weight:700;font-size:0.9rem;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:1.5rem;position:relative;z-index:1;" class="reveal">TODAY: DISCONNECTED ISLANDS</p>
+      <div class="pipeline-flow reveal" style="opacity:0.5;margin-bottom:3rem;">
+        <div class="pipeline-step" style="border-color:rgba(224,85,85,0.3);">
+          <div class="step-icon">📐</div>
+          <div class="step-label" style="color:var(--accent-coral);">CAD</div>
+        </div>
+        <div class="pipeline-arrow" style="color:var(--accent-coral);">✕</div>
+        <div class="pipeline-step" style="border-color:rgba(224,85,85,0.3);">
+          <div class="step-icon">⚙️</div>
+          <div class="step-label" style="color:var(--accent-coral);">CAM</div>
+        </div>
+        <div class="pipeline-arrow" style="color:var(--accent-coral);">✕</div>
+        <div class="pipeline-step" style="border-color:rgba(224,85,85,0.3);">
+          <div class="step-icon">🔬</div>
+          <div class="step-label" style="color:var(--accent-coral);">Analysis</div>
+        </div>
+        <div class="pipeline-arrow" style="color:var(--accent-coral);">✕</div>
+        <div class="pipeline-step" style="border-color:rgba(224,85,85,0.3);">
+          <div class="step-icon">📷</div>
+          <div class="step-label" style="color:var(--accent-coral);">Scanning</div>
+        </div>
+        <div class="pipeline-arrow" style="color:var(--accent-coral);">✕</div>
+        <div class="pipeline-step" style="border-color:rgba(224,85,85,0.3);">
+          <div class="step-icon">🥽</div>
+          <div class="step-label" style="color:var(--accent-coral);">VR</div>
+        </div>
+        <div class="pipeline-arrow" style="color:var(--accent-coral);">✕</div>
+        <div class="pipeline-step" style="border-color:rgba(224,85,85,0.3);">
+          <div class="step-icon">📄</div>
+          <div class="step-label" style="color:var(--accent-coral);">Drawings</div>
+        </div>
+      </div>
+
+      <!-- The unified OS — AFTER -->
+      <p style="color:var(--accent-gold);font-weight:700;font-size:0.9rem;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:1.5rem;position:relative;z-index:1;" class="reveal">cycleCAD: ONE OS, ONE LANGUAGE</p>
+      <div class="pipeline-flow reveal">
+        <div class="pipeline-step" style="border-color:rgba(139,111,192,0.3);">
+          <div class="step-icon">💬</div>
+          <div class="step-label" style="color:var(--accent-purple);">Intent</div>
+          <div class="step-desc">Human or<br>AI agent</div>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step" style="border-color:rgba(46,134,222,0.3);">
+          <div class="step-icon">📐</div>
+          <div class="step-label" style="color:var(--accent-blue);">Design</div>
+          <div class="step-desc">CAD + CAM<br>unified</div>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step" style="border-color:rgba(232,150,58,0.3);">
+          <div class="step-icon">🔬</div>
+          <div class="step-label" style="color:var(--accent-warn);">Validate</div>
+          <div class="step-desc">Analysis, DFM<br>cost, tolerance</div>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step" style="border-color:rgba(58,175,169,0.3);">
+          <div class="step-icon">🏭</div>
+          <div class="step-label" style="color:var(--accent-teal);">Manufacture</div>
+          <div class="step-desc">G-code, STEP<br>to factory</div>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step" style="border-color:rgba(212,168,67,0.3);">
+          <div class="step-icon">📦</div>
+          <div class="step-label" style="color:var(--accent-gold);">Product</div>
+          <div class="step-desc">Assembled &<br>delivered</div>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step" style="border-color:rgba(46,134,222,0.3);">
+          <div class="step-icon">♻️</div>
+          <div class="step-label" style="color:var(--accent-blue);">End of Life</div>
+          <div class="step-desc">Repair, recycle<br>redesign</div>
+        </div>
+      </div>
+
+      <p class="vision-text reveal" style="margin-top:2rem;">AI is the glue. Parametric modeling was the first right step — but to truly automate manufacturing, every component needs to speak the same language. cycleCAD provides that language. <strong>From intent to product to end of life — one continuous, AI-driven cycle.</strong></p>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       MACHINES CREATING MACHINES
+       ============================================================ -->
+  <section class="machines-section">
+    <div class="container">
+      <div class="section-label reveal">THE ONLY INTERFACE</div>
+      <h2 class="reveal"><span class="gradient-text">Machines Creating Machines</span></h2>
+      <p class="reveal" style="max-width:750px;margin:0 auto;font-size:1.1rem;color:var(--text-secondary);line-height:1.7;">
+        Traditional CAD has a GUI because it was designed for humans with a mouse. cycleCAD has no GUI because it was designed for AI agents with an API. A sensor detects wear. An agent designs the replacement. Another agent validates manufacturability. A third generates G-code and routes it to the factory floor. The machine improved itself. No human touched anything.
+      </p>
+
+      <div class="machines-flow reveal">
+        <div class="machine-step" style="border-color:rgba(139,111,192,0.3);">
+          <div class="m-label" style="color:var(--accent-purple);">AI Agent</div>
+          <div class="m-desc">detects need</div>
+        </div>
+        <span class="pipeline-arrow">→</span>
+        <div class="machine-step" style="border-color:rgba(212,168,67,0.3);">
+          <div class="m-label" style="color:var(--accent-gold);">cycleCAD</div>
+          <div class="m-desc">designs & validates</div>
+        </div>
+        <span class="pipeline-arrow">→</span>
+        <div class="machine-step" style="border-color:rgba(232,150,58,0.3);">
+          <div class="m-label" style="color:var(--accent-warn);">Factory</div>
+          <div class="m-desc">produces the parts</div>
+        </div>
+        <span class="pipeline-arrow">→</span>
+        <div class="machine-step" style="border-color:rgba(58,175,169,0.3);">
+          <div class="m-label" style="color:var(--accent-teal);">Product</div>
+          <div class="m-desc">assembled & delivered</div>
+        </div>
+        <span class="pipeline-arrow">→</span>
+        <div class="machine-step" style="border-color:rgba(46,134,222,0.3);">
+          <div class="m-label" style="color:var(--accent-blue);">♻️ Recycle</div>
+          <div class="m-desc">circular economy</div>
+        </div>
+      </div>
+
+      <p class="reveal" style="max-width:750px;margin:0 auto;font-size:1.05rem;color:var(--accent-gold);font-weight:600;position:relative;z-index:1;">
+        Every step consumes $CYCLE tokens. Every repaired part mints new ones. AI agents design. Factories produce. Products get repaired, not discarded. The token economy mirrors the circular economy — value flows in circles, forever.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       CAPABILITIES GRID
+       ============================================================ -->
+  <section class="capabilities" id="capabilities">
+    <div class="container">
+      <div class="section-label reveal">40+ API ENDPOINTS</div>
+      <h2 class="reveal">Everything an agent needs, <span class="gradient-text">nothing it doesn't</span></h2>
+      <p class="reveal">Every capability is agent-callable. Sketch, model, validate, export — all through one unified API.</p>
+      <div class="cap-grid">
+        <div class="cap-item reveal"><div class="cap-icon">✏️</div><h4>Sketch & Constrain</h4><p>Lines, arcs, rectangles, circles</p></div>
+        <div class="cap-item reveal"><div class="cap-icon">📦</div><h4>Extrude & Revolve</h4><p>Solid body creation</p></div>
+        <div class="cap-item reveal"><div class="cap-icon">✂️</div><h4>Boolean Ops</h4><p>Cut, union, intersect</p></div>
+        <div class="cap-item reveal"><div class="cap-icon">📏</div><h4>Measurement</h4><p>Distance, angle, 3-point</p></div>
+        <div class="cap-item reveal"><div class="cap-icon">🔍</div><h4>Smart Search</h4><p>Natural language queries</p></div>
+        <div class="cap-item reveal"><div class="cap-icon">🎯</div><h4>AI Identify</h4><p>Auto-classify parts</p></div>
+        <div class="cap-item reveal"><div class="cap-icon">📋</div><h4>Smart BOM</h4><p>AI-generated bill of materials</p></div>
+        <div class="cap-item reveal"><div class="cap-icon">🔥</div><h4>Maint. Heatmap</h4><p>Urgency color coding</p></div>
+        <div class="cap-item reveal"><div class="cap-icon">📖</div><h4>Auto Manual</h4><p>Step-by-step instructions</p></div>
+        <div class="cap-item reveal"><div class="cap-icon">📊</div><h4>Tech Reports</h4><p>Full HTML export</p></div>
+        <div class="cap-item reveal"><div class="cap-icon">🔩</div><h4>McMaster Links</h4><p>Direct part sourcing</p></div>
+        <div class="cap-item reveal"><div class="cap-icon">📸</div><h4>Screenshot Export</h4><p>High-res PNG capture</p></div>
+        <div class="cap-item reveal"><div class="cap-icon">🔄</div><h4>Section Cut</h4><p>X/Y/Z clipping planes</p></div>
+        <div class="cap-item reveal"><div class="cap-icon">📐</div><h4>Annotations</h4><p>Click-to-place pins</p></div>
+        <div class="cap-item reveal"><div class="cap-icon">🖨️</div><h4>3D Print Slicer</h4><p>G-code generation</p></div>
+        <div class="cap-item reveal"><div class="cap-icon">🌐</div><h4>6 Languages</h4><p>EN DE FR ES IT NL</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       PRICING
+       ============================================================ -->
+  <section class="pricing" id="pricing">
+    <div class="container">
+      <div class="section-label reveal">PRICING</div>
+      <h2 class="reveal">Simple, transparent <span class="gradient-text">pricing.</span></h2>
+      <p class="subtitle reveal">Start free. Upgrade when your team needs more power.</p>
+      <div class="pricing-grid">
+        <div class="pricing-card starter reveal">
+          <div class="tier-name">Free</div>
+          <div class="tier-price">€0</div>
+          <div class="tier-period">Forever</div>
+          <ul class="tier-features">
+            <li>All 12 killer features</li>
+            <li>Text-to-CAD + Photo-to-CAD</li>
+            <li>DFM analysis + cost estimator</li>
+            <li>Multi-physics simulation</li>
+            <li>200+ standard parts library</li>
+            <li>STL / OBJ / glTF export</li>
+            <li>Community support</li>
+          </ul>
+        </div>
+        <div class="pricing-card pro reveal">
+          <div class="tier-name" style="color:var(--accent-blue);">ExplodeView Pro</div>
+          <div class="tier-price" style="color:var(--accent-blue);">€49</div>
+          <div class="tier-period">per month</div>
+          <ul class="tier-features">
+            <li>Everything in Free</li>
+            <li>STEP import / export</li>
+            <li>Real-time collaboration</li>
+            <li>Cloud storage + versioning</li>
+            <li>Machine control (CNC/3DP)</li>
+            <li>Digital twin + IoT sensors</li>
+            <li>Priority support</li>
+          </ul>
+          <div class="launch-badge">Most Popular</div>
+        </div>
+        <div class="pricing-card enterprise reveal">
+          <div class="tier-name" style="color:var(--accent-gold);">ExplodeView Enterprise</div>
+          <div class="tier-price" style="color:var(--accent-gold);">€299</div>
+          <div class="tier-period">per month</div>
+          <ul class="tier-features">
+            <li>Everything in Pro</li>
+            <li>Self-hosted deployment</li>
+            <li>SSO / SAML authentication</li>
+            <li>SLA guarantee</li>
+            <li>MCP server + REST API</li>
+            <li>Custom agent integrations</li>
+            <li>Dedicated support</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       TOKEN ECONOMY
+       ============================================================ -->
+  <section class="pricing" id="token-economy">
+    <div class="container">
+      <div class="section-label reveal">TOKEN ECONOMY</div>
+      <h2 class="reveal">Consume tokens. <span class="gradient-text">Create value.</span></h2>
+      <p class="subtitle reveal">Dollars are legacy. cycleCAD runs on $CYCLE tokens — AI agents consume tokens to design, humans and machines earn them by creating value in the circular economy.</p>
+
+      <div class="pricing-grid">
+        <div class="pricing-card starter reveal" style="text-align:left;">
+          <div class="tier-name" style="color:var(--accent-teal);">Consume</div>
+          <div style="font-size:2.8rem;margin:0.5rem 0;">🪙</div>
+          <div class="tier-period" style="color:var(--accent-teal);font-weight:600;font-size:0.95rem;">Spend $CYCLE tokens</div>
+          <ul class="tier-features" style="margin-top:1rem;">
+            <li>AI agents pay tokens per design operation</li>
+            <li>Parametric modeling, AI analysis, validation</li>
+            <li>STEP export, G-code generation</li>
+            <li>Manufacturing routing & DFM checks</li>
+            <li>Usage-based — pay only for what you use</li>
+          </ul>
+        </div>
+        <div class="pricing-card pro reveal" style="text-align:left;border-color:rgba(212,168,67,0.3);">
+          <div class="tier-name" style="color:var(--accent-gold);">Create</div>
+          <div style="font-size:2.8rem;margin:0.5rem 0;">⛏️</div>
+          <div class="tier-period" style="color:var(--accent-gold);font-weight:600;font-size:0.95rem;">Earn $CYCLE coins</div>
+          <ul class="tier-features" style="margin-top:1rem;">
+            <li>Design reusable parts → earn tokens</li>
+            <li>Validate designs for others → earn tokens</li>
+            <li>Contribute to the circular economy → earn tokens</li>
+            <li>Repair/refurbish data → earn tokens</li>
+            <li>Value creation = value capture</li>
+          </ul>
+        </div>
+        <div class="pricing-card enterprise reveal" style="text-align:left;">
+          <div class="tier-name" style="color:var(--accent-purple);">The Cycle</div>
+          <div style="font-size:2.8rem;margin:0.5rem 0;">♻️</div>
+          <div class="tier-period" style="color:var(--accent-purple);font-weight:600;font-size:0.95rem;">Circular token flow</div>
+          <ul class="tier-features" style="margin-top:1rem;">
+            <li>AI agents design → tokens consumed</li>
+            <li>Manufactured products → tokens minted</li>
+            <li>Parts repaired/reused → tokens earned</li>
+            <li>Economy grows with every cycle</li>
+            <li>The more circular, the more valuable</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="margin-top:3rem;text-align:center;" class="reveal">
+        <p style="color:var(--accent-gold);font-weight:700;font-size:1.2rem;">$CYCLE — the currency of the circular economy</p>
+        <p style="color:var(--text-secondary);font-size:0.95rem;margin-top:0.5rem;max-width:600px;margin-left:auto;margin-right:auto;">Every design, every validation, every manufactured part, every repair — tokenized. AI agents and humans transact on the same network. No invoices. No subscriptions. Just value flowing in circles.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SHOWCASE — cycleWASH DUO
+       ============================================================ -->
+  <section class="showcase" id="showcase">
+    <div class="container">
+      <div class="section-label reveal">BUILT FOR REAL PRODUCTS</div>
+      <h2 class="reveal">Tested with <span class="gradient-text">complex cycleWASH machines</span></h2>
+      <div class="showcase-visual reveal">
+        <div class="app-mockup">
+          <div class="mockup-toolbar">
+            <div class="mockup-dot red"></div>
+            <div class="mockup-dot yellow"></div>
+            <div class="mockup-dot green"></div>
+            <div class="mockup-toolbar-items">
+              <div class="mockup-toolbar-item" style="width:32px"></div>
+              <div class="mockup-toolbar-item" style="width:32px"></div>
+              <div class="mockup-toolbar-item" style="width:32px"></div>
+              <div class="mockup-toolbar-item" style="width:24px"></div>
+              <div style="margin-left:auto;display:flex;gap:6px;">
+                <div class="mockup-toolbar-item" style="width:50px;background:rgba(212,168,67,0.3);"></div>
+                <div class="mockup-toolbar-item" style="width:50px;background:rgba(46,134,222,0.2);"></div>
+              </div>
+            </div>
+          </div>
+          <div class="mockup-body">
+            <div class="mockup-sidebar">
+              <div style="height:4px;width:70px;background:#D4A843;opacity:0.5;border-radius:2px;margin-bottom:12px;"></div>
+              <div style="font-size:8px;color:var(--text-muted);margin-bottom:4px;font-family:monospace;">Assembly Tree</div>
+              <div class="mockup-tree-item" style="width:90%;background:rgba(212,168,67,0.2);"></div>
+              <div class="mockup-tree-item indent" style="width:65%"></div>
+              <div class="mockup-tree-item indent" style="width:70%"></div>
+              <div class="mockup-tree-item indent active" style="width:55%"></div>
+              <div class="mockup-tree-item" style="width:80%"></div>
+              <div class="mockup-tree-item indent" style="width:60%"></div>
+              <div class="mockup-tree-item indent" style="width:65%"></div>
+              <div class="mockup-tree-item" style="width:85%"></div>
+              <div class="mockup-tree-item indent" style="width:50%"></div>
+              <div class="mockup-tree-item indent" style="width:70%"></div>
+              <div class="mockup-tree-item" style="width:75%"></div>
+              <div class="mockup-tree-item indent" style="width:55%"></div>
+              <div style="font-size:7px;color:var(--text-muted);margin-top:12px;font-family:monospace;">Parts loaded</div>
+            </div>
+            <div class="mockup-viewport">
+              <div class="mockup-grid"></div>
+              <div style="position:relative;z-index:1;text-align:center;">
+                <div style="font-size:48px;opacity:0.7;">🚲</div>
+                <div style="color:var(--text-muted);font-size:11px;margin-top:8px;">cycleWASH Machine — Hundreds of Parts, Multiple Assemblies</div>
+              </div>
+            </div>
+            <div class="mockup-props">
+              <div style="font-size:8px;color:#2E86DE;font-family:monospace;margin-bottom:8px;">AI Identified</div>
+              <div class="mockup-prop-label"></div>
+              <div class="mockup-prop-value" style="background:rgba(58,175,169,0.2);"></div>
+              <div class="mockup-prop-label" style="width:50px"></div>
+              <div class="mockup-prop-value" style="width:65px;background:rgba(212,168,67,0.2);"></div>
+              <div style="height:1px;background:var(--border-card);margin:12px 0;"></div>
+              <div style="font-size:8px;color:#2E86DE;font-family:monospace;margin-bottom:8px;">McMaster-Carr</div>
+              <div class="mockup-prop-value" style="background:rgba(46,134,222,0.15);width:80px;"></div>
+              <div class="mockup-prop-value" style="background:rgba(46,134,222,0.15);width:65px;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       FINAL CTA
+       ============================================================ -->
+  <section class="final-cta" id="try">
+    <div class="container">
+      <h2 class="reveal">Let your agents<br><span class="gradient-text">design through us.</span></h2>
+      <p class="reveal">The Agent-First OS for Manufacturing. Agents are the interface. $CYCLE tokens are the currency. The circular economy is the outcome.</p>
+      <div class="hero-ctas reveal">
+        <a href="/app/" class="btn-primary">Explore the Platform</a>
+        <a href="https://github.com/vvlars-cmd/cyclecad" target="_blank" class="btn-secondary">View on GitHub</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="container">
+      <a href="#" class="nav-logo">
+        <div class="nav-logo-icon" style="width:24px;height:24px;font-size:14px;border-radius:6px;">⚙</div>
+        <span class="cycle">cycle</span><span class="cad">CAD</span>
+      </a>
+      <ul class="footer-links">
+        <li><a href="https://cyclewash.de/en" target="_blank">cycleWASH</a></li>
+        <li><a href="https://github.com/vvlars-cmd/cyclecad" target="_blank">GitHub</a></li>
+        <li><a href="mailto:sachin.kumar@cyclewash.com">Contact</a></li>
+      </ul>
+      <p>&copy; 2026 cycleCAD by cycleWASH. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- SCRIPTS -->
+  <script>
+    // Scroll reveal
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    // Theme toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    const html = document.documentElement;
+    const savedTheme = (() => { try { return localStorage.getItem('cyclecad-theme'); } catch { return null; } })();
+    const initialTheme = savedTheme || 'dark';
+    html.setAttribute('data-theme', initialTheme);
+    themeToggle.textContent = initialTheme === 'dark' ? '☀️' : '🌙';
+
+    themeToggle.addEventListener('click', () => {
+      const current = html.getAttribute('data-theme') || 'dark';
+      const next = current === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      themeToggle.textContent = next === 'dark' ? '☀️' : '🌙';
+      try { localStorage.setItem('cyclecad-theme', next); } catch {}
+    });
+
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+      if (!localStorage.getItem('cyclecad-theme')) {
+        const theme = e.matches ? 'dark' : 'light';
+        html.setAttribute('data-theme', theme);
+        themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+      }
+    });
+  </script>
+
+</body>
+</html>

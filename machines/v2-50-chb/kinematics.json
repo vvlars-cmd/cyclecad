@@ -1,0 +1,51 @@
+{
+  "$schema": "../../docs/pentacad/machine-config-schema.json",
+  "_note": "TEMPLATE values. Replace with real Pentamachine V2-50CHB specs once Matt provides them.",
+  "machineId": "v2-50-chb",
+  "vendor": "Penta Machine Company",
+  "family": "V2",
+  "variant": "50CHB",
+  "type": "5-axis-AB-table",
+
+  "linear": {
+    "x": { "min": -3.0, "max": 3.0, "unit": "inch", "_confirmed": false },
+    "y": { "min": -2.0, "max": 2.0, "unit": "inch", "_confirmed": false },
+    "z": { "min": -1.5, "max": 1.5, "unit": "inch", "_confirmed": false }
+  },
+
+  "rotary": {
+    "a": {
+      "min": -35, "max": 135, "unit": "deg", "axis": "X",
+      "_note": "A-axis tilts the work around X. Pentamachine V2 convention; confirm limits with Matt.",
+      "_confirmed": false
+    },
+    "b": {
+      "min": -360, "max": 360, "unit": "deg", "axis": "Z", "continuous": true,
+      "_note": "B-axis rotates the work around Z. Often unlimited (continuous).",
+      "_confirmed": false
+    }
+  },
+
+  "pivots": {
+    "a_to_table": { "x": 0, "y": 0, "z": 0,
+      "_note": "Offset from A-axis rotation line to the top of the B-table."
+    },
+    "b_to_a":     { "x": 0, "y": 0, "z": 0,
+      "_note": "Offset from B-axis rotation line to the A-axis rotation line."
+    }
+  },
+
+  "home":             { "x": 0, "y": 0, "z": 0, "a": 0, "b": 0 },
+  "tool_length_zero": 2.5,
+
+  "max_feed": {
+    "rapid_linear":   { "value": 5000, "unit": "inch/min" },
+    "rapid_rotary":   { "value": 5000, "unit": "deg/min" },
+    "cut":            { "value": 60,   "unit": "inch/min" }
+  },
+
+  "singularity_notes": [
+    "A-axis near 0 deg causes B-axis gimbal behaviour; post-processor should favour small A rather than A=0 when reachable.",
+    "At A = 90 deg the tool is cutting parallel to the table — confirm this is within Pentamachine's acceptable posture."
+  ]
+}

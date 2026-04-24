@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <title>Pentacad — cycleCAD Suite</title>
+  <meta name="description" content="Pentacad — browser-based CAM, 5-axis simulator, and machine control for the Pentamachine V2 line. Part of the cycleCAD Suite." />
+
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --panel-2: #334155;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --border: #334155;
+      --accent: #10b981;
+      --accent-2: #0ea5e9;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg); color: var(--text); font-size: 14px; }
+
+    #app {
+      display: grid;
+      grid-template-rows: 48px 1fr 28px;
+      grid-template-columns: 320px 1fr 340px;
+      grid-template-areas:
+        "header header header"
+        "left   main   right"
+        "footer footer footer";
+      height: 100vh;
+    }
+    header {
+      grid-area: header; background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 16px; gap: 12px;
+    }
+    .suite-mark {
+      font-size: 10px; color: var(--muted); letter-spacing: 3px;
+      border-right: 1px solid var(--border); padding-right: 12px;
+    }
+    .suite-mark a { color: inherit; text-decoration: none; }
+    .brand { font-weight: 700; letter-spacing: 3px; color: var(--accent); font-size: 14px; }
+    .tagline { color: var(--muted); font-size: 12px; margin-left: 4px; }
+    nav { margin-left: 24px; display: flex; gap: 4px; }
+    nav button { background: transparent; color: var(--muted);
+      border: 1px solid transparent; padding: 6px 12px; border-radius: 4px;
+      cursor: pointer; font-size: 13px; }
+    nav button.active { background: var(--panel-2); color: var(--text); border-color: var(--border); }
+    nav button:hover { color: var(--text); }
+
+    #left-panel  { grid-area: left;  background: var(--panel); border-right: 1px solid var(--border); overflow-y: auto; padding: 0; }
+    #viewport    { grid-area: main;  position: relative; background: radial-gradient(ellipse at center, #1e293b 0%, #0f172a 70%); }
+    #viewport canvas { display: block; width: 100%; height: 100%; }
+    #right-panel { grid-area: right; background: var(--panel); border-left: 1px solid var(--border); overflow-y: auto; padding: 12px; }
+    footer       { grid-area: footer; background: var(--panel); border-top: 1px solid var(--border);
+                   display: flex; align-items: center; justify-content: space-between;
+                   padding: 0 16px; font-size: 11px; color: var(--muted); }
+
+    .phase-banner {
+      background: rgba(245,158,11,0.12);
+      border: 1px solid rgba(245,158,11,0.45);
+      color: var(--warn); padding: 10px 12px; border-radius: 6px;
+      font-size: 12px; line-height: 1.5; margin: 12px;
+    }
+    .section-title {
+      font-size: 10px; font-weight: 700; letter-spacing: 2px;
+      color: var(--muted); margin: 16px 12px 8px 12px;
+      text-transform: uppercase;
+    }
+    #bridge-status {
+      padding: 4px 10px; border-radius: 4px; font-size: 11px;
+      background: rgba(239,68,68,0.18); color: var(--danger);
+    }
+    #bridge-status.connected { background: rgba(16,185,129,0.18); color: var(--accent); }
+    .stat { padding: 8px 12px; color: var(--muted); font-size: 11px; }
+    .stat strong { color: var(--text); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header>
+      <span class="suite-mark"><a href="/">cycleCAD SUITE</a></span>
+      <span class="brand">PENTACAD</span>
+      <span class="tagline">v0.1.0 · Phase 0 scaffold</span>
+      <nav id="workspace-tabs">
+        <button data-ws="machine" class="active">Machine</button>
+        <button data-ws="design">Design</button>
+        <button data-ws="cam">CAM</button>
+        <button data-ws="simulate">Simulate</button>
+        <button data-ws="control">Control</button>
+      </nav>
+      <span style="flex:1"></span>
+      <span id="bridge-status" title="Controller bridge status">Bridge: disconnected</span>
+    </header>
+
+    <aside id="left-panel">
+      <div class="phase-banner">
+        <strong>Phase 0 scaffold.</strong><br />
+        UI shell is live. Machine selector works once machine JSON files exist under <code>/machines/</code>.
+      </div>
+      <div id="pentacad-panel-mount"><!-- window.CycleCAD.Pentacad.getUI() renders here --></div>
+    </aside>
+
+    <main id="viewport"><!-- Three.js canvas injected --></main>
+
+    <aside id="right-panel">
+      <h3 class="section-title">Workspace</h3>
+      <div id="workspace-content">
+        <div id="ws-machine" class="stat">
+          Pick a machine from the left panel. The digital twin renders in the viewport once the machine definition loads.
+        </div>
+        <div id="ws-design" class="stat" hidden>
+          <strong>Design</strong> — delegates to cycleCAD modelling (sketch, solid, assembly). Workpiece becomes the input for CAM.
+        </div>
+        <div id="ws-cam" class="stat" hidden>
+          <strong>CAM</strong> — Phase 2. 3+2 setup manager, 12 strategies, Pentamachine post-processor. See <code>pentacad-cam.js</code>.
+        </div>
+        <div id="ws-simulate" class="stat" hidden>
+          <strong>Simulate</strong> — Phase 1. G-code replay with forward kinematics, collision check, material removal. See <code>pentacad-sim.js</code>.
+        </div>
+        <div id="ws-control" class="stat" hidden>
+          <strong>Control</strong> — Phase 3. Stream G-code to Kinetic Control via WebSocket bridge, live DRO readback. See <code>pentacad-bridge.js</code>.
+        </div>
+      </div>
+
+      <h3 class="section-title">Agent API</h3>
+      <div class="stat">
+        <code style="color:var(--accent-2);font-size:11px">window.CycleCAD.Pentacad.execute({...})</code><br /><br />
+        Namespaces: <strong>machine.*</strong>, <strong>cam.*</strong>, <strong>sim.*</strong>, <strong>bridge.*</strong>
+      </div>
+    </aside>
+
+    <footer>
+      <span>Pentacad · part of the cycleCAD Suite · AGPL-3.0</span>
+      <span><span id="fps">60</span> fps · <span id="tri-count">0</span> tris</span>
+    </footer>
+  </div>
+
+  <!-- Three.js -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"
+      }
+    }
+  </script>
+
+  <!-- Pentacad sub-modules — load before the coordinator -->
+  <script src="./js/modules/pentacad-cam.js"></script>
+  <script src="./js/modules/pentacad-sim.js"></script>
+  <script src="./js/modules/pentacad-bridge.js"></script>
+  <script src="./js/modules/pentacad.js"></script>
+
+  <script type="module">
+    import * as THREE from 'three';
+
+    const viewportEl = document.getElementById('viewport');
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(viewportEl.clientWidth, viewportEl.clientHeight);
+    renderer.setClearColor(0x0f172a, 1);
+    viewportEl.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(40, viewportEl.clientWidth / viewportEl.clientHeight, 0.1, 10000);
+    camera.position.set(18, 12, 18);
+    camera.lookAt(0, 4, 0);
+
+    scene.add(new THREE.GridHelper(20, 20, 0x475569, 0x1e293b));
+    const axes = new THREE.AxesHelper(3); axes.position.y = 0.01; scene.add(axes);
+    scene.add(new THREE.HemisphereLight(0xeef2ff, 0x334155, 0.9));
+    const key = new THREE.DirectionalLight(0xffffff, 0.7); key.position.set(10, 15, 8); scene.add(key);
+
+    // Placeholder for the machine
+    const placeholder = new THREE.Group();
+    placeholder.add(new THREE.Mesh(
+      new THREE.BoxGeometry(6, 0.2, 4),
+      new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.4, roughness: 0.7 })
+    ));
+    placeholder.children[0].position.y = 0.1;
+    scene.add(placeholder);
+
+    // Mount the Pentacad panel into the left side
+    const mount = document.getElementById('pentacad-panel-mount');
+    if (window.CycleCAD?.Pentacad?.getUI) mount.appendChild(window.CycleCAD.Pentacad.getUI());
+
+    // Workspace tab wiring
+    const tabs = document.querySelectorAll('#workspace-tabs button');
+    const panels = {
+      machine: document.getElementById('ws-machine'),
+      design: document.getElementById('ws-design'),
+      cam: document.getElementById('ws-cam'),
+      simulate: document.getElementById('ws-simulate'),
+      control: document.getElementById('ws-control'),
+    };
+    tabs.forEach(btn => btn.addEventListener('click', () => {
+      tabs.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      Object.values(panels).forEach(p => p.hidden = true);
+      panels[btn.dataset.ws].hidden = false;
+    }));
+
+    // Expose for debugging
+    window._scene = scene; window._camera = camera; window._renderer = renderer;
+
+    // FPS + tri counter
+    let frames = 0, lastFps = performance.now();
+    const fpsEl = document.getElementById('fps');
+    const triEl = document.getElementById('tri-count');
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+      frames++;
+      const now = performance.now();
+      if (now - lastFps > 500) {
+        fpsEl.textContent = Math.round((frames * 1000) / (now - lastFps));
+        triEl.textContent = renderer.info.render.triangles.toLocaleString();
+        frames = 0; lastFps = now;
+      }
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      const w = viewportEl.clientWidth, h = viewportEl.clientHeight;
+      renderer.setSize(w, h);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    });
+
+    console.log('%cPentacad · cycleCAD Suite', 'color:#10b981;font-weight:bold;font-size:14px');
+    console.log('Available: window.CycleCAD.Pentacad.{getUI, execute, loadMachine, SUPPORTED_MACHINES}');
+  </script>
+</body>
+</html>

@@ -1267,3 +1267,153 @@ Fix delivered as prompt rewrite (preservation-first pattern). Code fix as v304 p
 - **Use `find` tool with aria role** (e.g., `menuitemradio "GitHub Actions"`) rather than guessing pixel coordinates — much more reliable. First click attempt at (585, 452) missed the dropdown option, second via `ref_311` landed perfectly.
 - **After Pages source flip**, trigger `workflow_dispatch` immediately to prove the new pipeline actually serves traffic (the existing run only built the artifact — it didn't serve until source was flipped).
 - **Successful Pages deploy step** shows the deploy environment URL (e.g. `https://cyclecad.com/`) as a link under the job name — that's the tell that it worked end-to-end, not just a green check.
+
+## Session 2026-04-24 (continued) — ExplodeView v304 shipped + new roadmap item
+
+### What shipped
+- **ExplodeView v1.0.22 / v304** published to npm and deployed (commit `b47d6a9`, then `41471f3` for the version bump). `buildPrompt()` in `docs/demo/app.js` rewritten with preservation-first logic:
+  - Detects explicit preservation cues ("do not change", "preserve", "keep exactly", "same shape", etc.) → leads with strong reference-image anchor
+  - Detects scene-descriptive prompts (>40 chars + spatial language) → passes them to the model directly with only the preamble in front, drops the rigid "render of a product in X" wrapper
+  - Suppresses Product Photo / Technical preset suffixes when the scene has outdoor cues (forest, trail, sunset, etc.) so the studio suffix doesn't fight the scene
+  - Adds a "No Style" preset (`presetSuffixes.none = ''`) that skips the suffix entirely; new dashed-border button in `docs/demo/index.html` at line ~2145
+  - Version badge updated: "ExplodeView v304 — preservation-first AI Render"
+
+### New roadmap item — AI Engineering Analyst (MecAgent-parity)
+
+**Source**: user shared MecAgent demo screenshots in `/Users/sachin/Desktop/mec` (12 screenshots, 2026-04-24 at 11:49-11:51). The demo runs inside Inventor via MecAgent's Copilot panel and solves a complete bolted joint problem:
+
+Problem statement (exact wording from screenshots):
+> A steel plate is secured using 4 × M12 bolts (property class 10.9) in a preloaded configuration. The joint is subjected to: a shear force of 18 kN, an axial separating force of 18 kN, an in plane moment of 420 Nm. Given: friction coefficient between contact surfaces μ = 0.16, preload per bolt 39 kN, bolt circle diameter: 96mm, required safety factor against slipping: 1.5. Question: Verify whether the joint is safe with respect to: 1. slip resistance, 2. maximum tensile load in the most loaded bolt, 3. combined tension and shear in the bolts.
+
+MecAgent's response walks through three checks with full equations:
+- **Slip resistance**: `F_friction = z·Q_F·μ = 4·39000·0.16 = 24960 N` vs required `F_required = K_s·F_shear = 1.5·26000 = 39000 N`
+- **Tension with moment**: `F_axial,bolt = F_axial,total/z = 18000/4 = 4500 N`; moment contribution `F_moment = M·r/Σr² = 420·1000·48/(4·48²) = 2187.5 N`; `F_max,tensile = 6687.5 N`
+- **Combined**: preload adds on top → `F_tensile,total = 45687.5 N`; tensile stress `σ = F/A = 45687.5/84.3 = 542 MPa`; shear stress `τ = 6500/84.3 = 77 MPa`; Von Mises `σ_vm = √(σ²+3τ²) = 558 MPa`
+- Compared against 10.9 proof strength (~936 MPa) → verdict "safe"
+- **Critical UX detail**: cites "Analysis and Design of Machine Elements" by Wei Jiang (Wiley), page 85, with clickable "Open Document" buttons showing the exact textbook page
+
+**Why this matters**: cycleCAD's existing `ai-copilot.js` generates geometry (templates for gears, bolts, flanges), `fusion-simulation.js` has stubbed FEA, and `validate.designReview` returns A-F scores from geometry heuristics. None of them answer a natural-language engineering question with analytical methods and cited sources. This is the single biggest competitive gap vs MecAgent's pitch, and closing it makes cycleCAD's "agent-first" positioning real.
+
+**Scope v1 — bolted joint analysis (VDI 2230 / Shigley)**:
+- Module: `app/js/modules/ai-engineer.js` (~800-1200 lines)
+- Inputs: bolt grade (4.6–12.9), bolt count, thread size, preload, external loads (shear/tension/moment + BCD), friction coefficient, safety factor target
+- Outputs: slip-resistance check, per-bolt tension with moment redistribution, combined Von Mises stress, proof-strength comparison, pass/fail verdict
+- Rendering: LaTeX equations via KaTeX (faster than MathJax), stepwise narrative, green/red badges per check
+
+**Scope v2 — other machine elements**: gear pair (AGMA bending + pitting), shaft fatigue (Goodman/Soderberg), rolling bearing L10 life, fillet weld sizing
+
+**RAG / citations**:
+- User uploads machine-element PDF → chunk + embed in IndexedDB (no server, runs locally with @xenova/transformers MiniLM)
+- Bundled fallback: public-domain machine-element references + excerpts from DIN/ISO standards we can legally redistribute
+- Every equation in the response cites page + source
+
+**LLM layer**:
+- Same provider stack as ai-copilot.js (Claude Sonnet 4.6 / Gemini 2.0 Flash / Groq Llama 3.3 70B)
+- Tool-use pattern: model writes narrative, calls deterministic analytical JS functions for every number, never fabricates results. Analytical core is pure math (no LLM) — LLM is only for problem parsing + narrative.
+
+**UI**:
+- New "Engineer" tab in right panel alongside Properties / Chat / Guide
+- Reuses selected-assembly context, materials, and bolt patterns from Fastener Wizard as implicit inputs (so user doesn't have to re-enter them)
+
+### Pending (next session, updated)
+- **AI Engineering Analyst module** (above) — the biggest pending feature
+- More AI Copilot templates: mounting bracket variations, T-slot extrusions, bearing cutouts, ball/roller bearings
+- Eventually: true involute gear teeth via `sketch.polyline` (requires mini-executor support for polyline → geometry, currently polyline is a no-op)
+- ExplodeView compositing render (true pixel preservation — render 3D with transparent bg, send only background region to Nano Banana, composite in canvas)
+- Run cyclecad test agent in Chrome (`app/test-agent.html`, 113 tests) and fix failures
+- Dynamic version badge in cyclecad status bar (currently hardcoded v0.9.0 but npm is 3.10.4)
+- Wire cyclecad splash buttons (New Sketch / Open-Import / Text-to-CAD / Inventor Project) to actually trigger their actions
+- 138MB STEP import — server-side conversion path (server/converter.py) is the safer route than opencascade.js v293
+- Text-to-CAD with live preview
+- Photo-to-CAD reverse engineering
+- Docker compose local test
+- The `block-only-in-chrome` user report — still needs repro
+
+## Session 2026-04-24 (session 2) — Pentamachine Collaboration + Suite Positioning + Pentacad Extension
+
+### Big strategic updates
+
+**Suite positioning locked in:**
+cyclecad.com is now an umbrella brand — **cycleCAD Suite** — covering three products:
+- **cycleCAD** (parametric CAD modeller, existing, MIT)
+- **ExplodeView** (3D viewer / AR / AI render, existing, MIT)
+- **Pentacad** (CAM + 5-axis simulator + Kinetic Control bridge, NEW, AGPL-3 / commercial dual)
+
+Pentacad is a **cycleCAD module**, NOT a separate repo. Lives at `app/js/modules/pentacad*.js` following the existing `window.CycleCAD.Pentacad` IIFE pattern.
+
+**Matt / Pentamachine status — CRITICAL:**
+Matt agreed to send files without NDA, but he explicitly stated: *"We do provide feedback for 4+ companies that are working on similar CAM concepts to yours."*
+
+Implication: Matt is a **neutral ecosystem supplier**, not a partner. JV ask is dead. Strategy is pilot-first: build in silence, ship polished demos (not source, not architecture), public launch before he asks for exclusivity. Commercial progression: Phase 0-1 silent, Phase 2 license discussion, Phase 3 exclusive EU resale if warranted, JV only if Matt raises equity first. Full tactical playbook at `~/Documents/Penta/pentacad-notes/pilot-intelligence-brief.md` (private).
+
+### Pentacad extension shipped (scaffold)
+
+Files added to cycleCAD repo:
+| File | Purpose |
+|---|---|
+| `app/js/modules/pentacad.js` | Coordinator — registers sub-modules, machine picker UI, loadMachine(id), public API |
+| `app/js/modules/pentacad-cam.js` | 12 CAM strategies (stubs), post-processor skeleton, emitGCode() matching Pentamachine dialect |
+| `app/js/modules/pentacad-sim.js` | G-code parser (works for G20/G90/G94/G93/G54, tracks modal state + A/B axes), forward-kinematics stub, soft-limit check |
+| `app/js/modules/pentacad-bridge.js` | WebSocket client for controller bridge — connect/disconnect/stream/jog/pause/abort, DRO event handling, auto-reconnect |
+| `app/pentacad.html` | Dedicated UI entry point with split-screen viewport + machine picker + workspace tabs (Machine / Design / CAM / Simulate / Control) |
+| `machines/v2-50-chb/kinematics.json` | Template values marked `_confirmed: false` pending Matt's real data |
+
+### Suite landing mockup
+
+`mockups/cyclecad-suite-mockup.html` — full animated wireframe (not yet in production).
+
+Page structure:
+1. **Hero** — "From idea to finished part. One browser tab." with staggered fade-up, drifting orb gradients, blinking cursor
+2. **Lifecycle strip** — 5 stages with rainbow gradient line drawing across all chips on scroll-into-view
+3. **End-to-End Journeys** — 3 animated product examples showing the full business lifecycle (idea → design → market → sell → manufacture → feedback):
+   - 🔔 Custom bike bell (consumer, 6 days, €345, 23 pre-orders)
+   - ⚙️ Precision flange (B2B, 3 days, €2,400, 50-unit PO)
+   - 🍺 Branded bottle-opener ring (promo, 2 days, €1,900, 100 units)
+   - 15s loop, 2.5s per step, rows offset by one step each, hover to pause, click step to jump
+4. **5 stage deep-dives** — each with SVG animations (typing terminal, line-draw CAD, exploded parts, toolpath tracing, data-flow arrows)
+5. **Products grid** (3 cards — gold/teal/emerald per product), stats, CTA, founder note, footer
+
+Old `index.html` backed up as `index-agent-first.html.bak`. Production index.html NOT yet written — mockup is the design spec.
+
+### Pentamachine deliverables at `~/Documents/Penta/pentacad-deliverables/`
+- `ARCHITECTURE.md` — full system architecture (repo doc, shareable with Matt)
+- `Pentacad-Complete.pptx` — 25-slide deck (16 public architecture + 8 private intelligence brief, clearly divided)
+- `Pentacad-Complete.pdf` — same, non-editable
+- `pilot-intelligence-brief.md` — full tactical playbook
+
+Plus standalone pentacad repo scaffold at `~/Documents/Penta/pentacad/` (superseded by extension approach, kept as reference).
+
+### What Matt has sent (in `~/Documents/Penta/`)
+Marketing kit + installation guides + ONE real technical artifact: bottle-opener ring Fusion archive + 3 `.ngc` files confirming A/B kinematics, G20 imperial, G93 inverse-time feed, 40000 RPM spindle.
+
+**Still blocking Phase 0**: native 3D models of V2-10/V2-50CHB/V2-50CHK + kinematics JSON per machine.
+
+### Pending task inbox (tasks #10-24)
+
+**AI Engineering Analyst** (biggest competitive gap vs MecAgent):
+- #10 v1 — bolted-joint analysis (VDI 2230 / Shigley), pure-math core tested against MecAgent numbers, KaTeX rendering, LLM tool-use, RAG
+- #11 v2 — gears (AGMA), shafts (Goodman/Soderberg), bearings (L10), welds (throat stress)
+- #12 — RAG + citations (@xenova/transformers MiniLM, IndexedDB, "Open Document" footnotes)
+
+**cycleCAD quick wins** (ship 3.10.5 next):
+- #13 — more AI Copilot templates (brackets, T-slots 40/40 + 80/40, bearings, cutouts)
+- #14 — polyline → geometry in mini-executor (unblocks involute gear teeth)
+
+**cycleCAD other**:
+- #15 dynamic version badge · #16 wire splash buttons · #17 run test-agent.html (113 tests) · #18 text-to-CAD live preview · #19 photo-to-CAD · #20 server-side 138MB STEP · #21 docker compose test
+
+**ExplodeView**:
+- #22 compositing render (transparent background + Nano Banana + canvas composite, bypasses "generative ≠ inpainting") · #23 killer-features-test · #24 block-only-in-chrome repro
+
+**Suite website**:
+- Port mockup into production index.html once motion is approved
+- Build dedicated /pentacad.html marketing page in same style
+
+### Recommended next sprint
+#13 + #14 as warm-ups (ship 3.10.5 fast), then #10 as the big strategic work.
+
+### Handoff files for next chat
+- `~/cyclecad/HANDOFF-2026-04-24.md` (earlier session — AI Render v304 + Pages workflow)
+- `~/cyclecad/HANDOFF-2026-04-24-session-2.md` (this session — Pentacad + Matt + mockup)
+
+Both should be read together when resuming.

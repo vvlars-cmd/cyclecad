@@ -1014,6 +1014,7 @@
       <button class="menu-item-link" data-action="tools-marketplace">Marketplace...</button>
       <div class="menu-separator"></div>
       <button class="menu-item-link" data-action="tools-ai-copilot">✨ AI Copilot (multi-step)</button>
+      <button class="menu-item-link" data-action="tools-ai-engineer">🔩 AI Engineering Analyst</button>
       <button class="menu-item-link" data-action="tools-text-to-cad">Text-to-CAD (AI)</button>
       <button class="menu-item-link" data-action="tools-photo-to-cad">Photo-to-CAD</button>
       <button class="menu-item-link" data-action="tools-dfm">Manufacturability Check</button>
@@ -1539,6 +1540,7 @@ window._dismissSplash = function(action) {
 <!-- Killer Feature Modules -->
 <script src="/app/js/agent-api.js?v=a41b98a5"></script>
 <script src="/app/js/modules/ai-copilot.js?v=14e5d5d7"></script>
+<script src="/app/js/modules/ai-engineer.js?v=20260424v1"></script>
 <script src="/app/js/modules/text-to-cad.js"></script>
 <script src="/app/js/modules/photo-to-cad.js"></script>
 <script src="/app/js/modules/manufacturability.js"></script>
@@ -1966,6 +1968,13 @@ window._dismissSplash = function(action) {
           const dbc = document.getElementById('dialog-body');
           if (dbc) { dbc.innerHTML = ''; dbc.appendChild(window.CycleCAD.AICopilot.getUI()); dbc.style.maxHeight = '620px'; dbc.style.overflow = 'auto'; }
         } else { showToast('AI Copilot module not loaded', 'error'); }
+        break;
+      case 'tools-ai-engineer':
+        if (window.CycleCAD && window.CycleCAD.AIEngineer) {
+          showDialog('🔩 AI Engineering Analyst — bolted-joint analysis (VDI 2230 / Shigley)', '');
+          const dbe = document.getElementById('dialog-body');
+          if (dbe) { dbe.innerHTML = ''; dbe.appendChild(window.CycleCAD.AIEngineer.getUI()); dbe.style.maxHeight = '680px'; dbe.style.overflow = 'auto'; }
+        } else { showToast('AI Engineering Analyst module not loaded', 'error'); }
         break;
       case 'tools-text-to-cad':
         if (window.CycleCAD && window.CycleCAD.TextToCAD) {

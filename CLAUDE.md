@@ -1460,15 +1460,92 @@ All 15 prompts match/reject correctly:
 | `package.json` | version 3.10.4 → 3.10.5 | |
 | `CLAUDE.md` | This block | Session 3 notes |
 
-### Next: #10 — AI Engineering Analyst v1
+### Task #10 — AI Engineering Analyst v1 ✅ SHIPPED (3.11.0)
 
-Target file: `app/js/modules/ai-engineer.js`
+**File**: `app/js/modules/ai-engineer.js` (~570 lines).
 
-Architecture:
-- **Analytical core** (pure JS math, 0 deps) — `boltedJointAnalysis({boltCount, grade, thread, preload, shearForce, axialForce, moment, bcd, friction, safetyFactor})` returns `{slipResistance:{…}, tensionCheck:{…}, combinedStress:{…}, verdict}`. Unit-tested against MecAgent screenshot: F_friction=24960N, F_max_tensile=6687.5N, σ_vm=558MPa.
-- **Bolt/thread spec tables** — stress area `A_s` per DIN 13: M8=36.6, M10=58.0, M12=84.3, M16=157, M20=245 mm². Proof stress: 4.6=240, 5.6=300, 8.8=640, 10.9=940, 12.9=1100 MPa.
-- **LLM prompt layer** — parses user's natural language into structured `boltedJointParams`, calls analytical core (no fabrication), narrates results in markdown with KaTeX.
-- **KaTeX rendering** — load from CDN on panel open, render equations inline.
-- **UI** — new "Engineer" tab in right panel. Input form OR free-text prompt. Result panel with pass/fail badges + LaTeX math + step-by-step narrative.
+**Architecture delivered:**
+- **Analytical core** (pure JS math, 0 deps) — `boltedJointAnalysis(params)` returns `{inputs, slipResistance, tensionCheck, combinedStress, verdict, verdictClass, notes}`. All numbers are computed deterministically — no LLM fabrication possible.
+- **Reference tables** (ISO/DIN data, frozen objects):
+  - `STEEL_GRADES` — 8 ISO 898-1 property classes (4.6 through 12.9) with R_m, R_p0.2, R_el
+  - `BOLT_STRESS_AREA` — DIN 13 A_s for 26 thread sizes M3–M56
+  - `BOLT_MAJOR_DIA` — nominal dia per thread
+  - `FRICTION_PRESETS` — VDI 2230 Table A6 surface conditions
+- **Natural-language parser** — `parseBoltedJointPrompt(text)` extracts boltCount, thread, grade, forces (kN/N), moment (Nm/kNm), preload, bcd, friction, safetyFactor. Tested against MecAgent's verbatim problem statement → all 10 params extracted correctly.
+- **UI** — dialog-mounted form with:
+  - Free-text prompt → "Parse" button that auto-fills all fields
+  - 11-field input grid with live recompute on any change
+  - 3 preset buttons (MecAgent demo, flange M8 light, heavy M20)
+  - Live report with verdict banner (green/yellow/red), 3 check sections (slip / tension / stress), KaTeX-rendered formulas, pass/fail messages per check
+  - Collapsible self-test panel showing the MecAgent reference comparison
+- **KaTeX integration** — loaded on demand from CDN (jsdelivr), 0.16.21. Non-blocking, falls back to LaTeX source text if CDN fails.
+- **Menu wiring** — Tools → `🔩 AI Engineering Analyst` opens the dialog.
 
-Scope v1: bolted-joint only. v2 (task #11) adds gear/shaft/bearing/weld. v3 (task #12) adds RAG citations.
+**Analytical verification (self-tests in module):**
+All 7 tests pass against MecAgent screenshot numbers within tolerance:
+```
+PASS: F_friction            actual=24960.00  expected≈24960
+PASS: F_moment/bolt         actual=2187.50   expected≈2187.5
+PASS: F_bolt_max_tang       actual=6687.50   expected≈6687.5
+PASS: F_bolt_total          actual=45687.50  expected≈45687.5
+PASS: σ (tensile)           actual=541.96    expected≈542
+PASS: τ (shear)             actual=79.33     expected≈79
+PASS: σ_vm                  actual=559.11    expected≈558
+overall: PASS
+```
+
+Self-tests run automatically on `init()` — warnings logged if any fail. Also available as `window.CycleCAD.AIEngineer.runSelfTests()`.
+
+**Verdict classification:**
+- `SAFE` — both slip and stress checks pass.
+- `SAFE (bearing-type)` — stress OK but slip fails. Bolts carry shear directly; common in practice.
+- `UNSAFE` — stress check fails. Bolt will yield.
+
+For the MecAgent problem with defaults it correctly returns "SAFE (bearing-type)" because σ_vm=559 < R_p0.2=830 but F_friction=24960 < F_required=39000.
+
+**Public API:**
+```js
+window.CycleCAD.AIEngineer = {
+  analyze(params),        // run analysis, returns structured result
+  parsePrompt(text),      // NL → params
+  runSelfTests(),         // {results[], allPass}
+  STEEL_GRADES, BOLT_STRESS_AREA, BOLT_MAJOR_DIA, FRICTION_PRESETS,
+  init(), getUI(),
+  execute(cmd, params)    // 'analyze' | 'parse' | 'show'
+};
+```
+
+**Scope v1 limits (to address in task #11 / #12):**
+- Load factor Φ simplified to 1 (conservative — real VDI 2230 uses 0.1–0.3 for gasketed joints).
+- Bolt-circle geometry assumes uniform spacing (moment redistribution formula M / (z·r) is exact for that case).
+- No fatigue check.
+- No ball-bearing / shaft / gear / weld analysis — v2 will add these.
+- No RAG / textbook citations — v3.
+
+### 3.11.0 files changed
+| File | Delta |
+|------|-------|
+| `app/js/modules/ai-engineer.js` | new, 570 lines |
+| `app/index.html` | +3 lines (menu entry, dispatch case, script tag) |
+| `package.json` | 3.10.5 → 3.11.0 |
+
+### Ship commands (both 3.10.5 + 3.11.0 in a single push)
+
+Commits landed in the VM:
+- `41d4862` — v3.10.5 (AI Copilot polyline + bearing / housing / T-slot / U-bracket templates)
+- HEAD (pending commit) — v3.11.0 (AI Engineering Analyst v1)
+
+Push + publish in one combined command (lock-file prefix handles the VM-generated `.git/*.lock` cruft):
+```bash
+rm -f ~/cyclecad/.git/HEAD.lock ~/cyclecad/.git/index.lock && \
+  cd ~/cyclecad && \
+  git push origin main && \
+  npm publish
+```
+
+If the 3.10.5 commit was also pending as of this handoff, `git push` covers both in one shot. The `npm publish` publishes 3.11.0 (latest version in `package.json`). 3.10.5 is not separately published to npm since 3.11.0 supersedes it — users bumping from 3.10.4 get both feature sets at once.
+
+### Pending after this session
+- #11 AI Engineering Analyst v2 — gears (AGMA bending + pitting), shafts (Goodman/Soderberg), bearings (L10), welds (throat stress)
+- #12 AI Engineering Analyst — RAG citations via `@xenova/transformers` MiniLM-L6-v2 + IndexedDB + "Open Document" footnote UI
+- All other pending tasks from session 2 handoff (#15-24)

@@ -453,6 +453,193 @@
   }
 
   // ===================================================================
+  // ROLLING-ELEMENT BEARING LIFE — ISO 281 / Shigley Ch. 11
+  // ===================================================================
+  // L_10 = (C / P)^a × 10^6 rev
+  //   a = 3 for ball bearings, 10/3 for roller bearings.
+  //   C = basic dynamic load rating (N), bearing-specific.
+  //   P = equivalent dynamic load (N), P = X·F_r + Y·F_a for combined loading.
+  // L_h = L_10 / (60 × N)  in hours at N rpm.
+  //
+  // Reference dynamic load ratings C (N) for deep-groove ball bearings (SKF catalogue).
+  const BEARING_CATALOGUE = Object.freeze({
+    '608':  { type: 'ball', d: 8,  D: 22, B: 7,  C: 3.45e3 },
+    '625':  { type: 'ball', d: 5,  D: 16, B: 5,  C: 1.85e3 },
+    '6200': { type: 'ball', d: 10, D: 30, B: 9,  C: 5.4e3 },
+    '6201': { type: 'ball', d: 12, D: 32, B: 10, C: 6.89e3 },
+    '6202': { type: 'ball', d: 15, D: 35, B: 11, C: 7.8e3 },
+    '6203': { type: 'ball', d: 17, D: 40, B: 12, C: 9.56e3 },
+    '6204': { type: 'ball', d: 20, D: 47, B: 14, C: 13.5e3 },
+    '6205': { type: 'ball', d: 25, D: 52, B: 15, C: 14.0e3 },
+    '6206': { type: 'ball', d: 30, D: 62, B: 16, C: 19.5e3 },
+    '6300': { type: 'ball', d: 10, D: 35, B: 11, C: 8.06e3 },
+    '6302': { type: 'ball', d: 15, D: 42, B: 13, C: 11.9e3 },
+    '6304': { type: 'ball', d: 20, D: 52, B: 15, C: 15.9e3 },
+    'NJ204':{ type: 'roller', d: 20, D: 47, B: 14, C: 25.1e3 },
+    'NJ206':{ type: 'roller', d: 30, D: 62, B: 16, C: 44e3 }
+  });
+
+  /**
+   * Rolling-element bearing L10 life analysis.
+   *
+   * Supports two input modes:
+   *   (a) Designation ("6204") — looks up C from catalogue.
+   *   (b) Explicit C override (N).
+   *
+   * Applies X/Y factors per ISO 281 to compute equivalent dynamic load P from radial F_r
+   * and axial F_a forces. Falls back to pure-radial (P = F_r) if F_a not given.
+   *
+   * @param {object} p
+   * @param {string} [p.designation]  Bearing code, e.g. '6204'.
+   * @param {number} [p.C]            Basic dynamic load rating override in N.
+   * @param {'ball'|'roller'} [p.type] Exponent selector (default 'ball').
+   * @param {number} p.radialLoad     F_r in N.
+   * @param {number} [p.axialLoad=0]  F_a in N.
+   * @param {number} p.rpm            Rotational speed N (rev/min).
+   * @param {number} [p.X=1]          Radial factor (0.56 for F_a/F_r > e; use default for pure radial).
+   * @param {number} [p.Y=0]          Thrust factor.
+   * @param {number} [p.reliability=0.90] Life adjustment reliability (0.90 ≡ L10).
+   * @returns {object}
+   */
+  function bearingLifeAnalysis(p) {
+    const catalog = p.designation ? BEARING_CATALOGUE[String(p.designation)] : null;
+    const type = (p.type || (catalog && catalog.type) || 'ball');
+    const a = type === 'roller' ? 10/3 : 3;
+    const C = Number(p.C) || (catalog ? catalog.C : 0);
+    const F_r = Math.max(0, Number(p.radialLoad) || 0);
+    const F_a = Math.max(0, Number(p.axialLoad) || 0);
+    const rpm = Math.max(1, Number(p.rpm) || 1);
+    const X = Number.isFinite(p.X) ? p.X : (F_a > 0 ? 0.56 : 1);
+    const Y = Number.isFinite(p.Y) ? p.Y : (F_a > 0 ? 1.2  : 0);
+    const R = Math.max(0.5, Math.min(0.999, Number(p.reliability) || 0.9));
+
+    if (!C || C <= 0) {
+      return {
+        inputs: { designation: p.designation, type, C: 0, F_r, F_a, rpm },
+        error: 'Missing or invalid dynamic load rating C — provide p.C in N or a recognised p.designation.',
+        verdict: 'INPUT ERROR', verdictClass: 'fail'
+      };
+    }
+
+    // Equivalent dynamic load P (N)
+    const P = X * F_r + Y * F_a;
+    // L10 life (millions of revolutions)
+    const L10_rev = Math.pow(C / Math.max(1, P), a);   // in 10^6 rev
+    // Convert to hours at rpm
+    const L10_h = (L10_rev * 1e6) / (60 * rpm);
+    // Life adjustment for reliability — Shigley Eq 11-12 (Weibull): L_R = L10 × (ln(1/R) / ln(1/0.9))^(1/1.483)
+    const a_R = Math.pow(Math.log(1/R) / Math.log(1/0.9), 1/1.483);
+    const L_R_rev = L10_rev * a_R;
+    const L_R_h   = L10_h   * a_R;
+
+    // Verdict benchmarks (hours):
+    //   • < 5 000 h  → short life
+    //   • 5 000–20 000 h → typical industrial
+    //   • > 20 000 h → long life
+    let verdict, verdictClass;
+    if (L_R_h >= 20000)       { verdict = 'LONG LIFE (> 20,000 h)';          verdictClass = 'pass'; }
+    else if (L_R_h >= 5000)   { verdict = 'TYPICAL INDUSTRIAL (5k–20k h)';   verdictClass = 'pass'; }
+    else if (L_R_h >= 1000)   { verdict = 'SHORT LIFE (< 5,000 h) — review'; verdictClass = 'warn'; }
+    else                       { verdict = 'VERY SHORT LIFE — resize bearing up'; verdictClass = 'fail'; }
+    const notes = [];
+    if (F_a > F_r && Y === 0) notes.push('Axial load ignored — explicit X/Y factors needed for thrust-dominated duty.');
+    if (P > C * 0.5) notes.push('Load exceeds 50% of C — consider a larger bearing to extend life dramatically.');
+
+    return {
+      inputs: { designation: p.designation, type, a, C, F_r, F_a, rpm, X, Y, reliability: R, catalog },
+      P,
+      L10_rev, L10_h,
+      L_R_rev, L_R_h, a_R,
+      verdict, verdictClass, notes
+    };
+  }
+
+  // ===================================================================
+  // FILLET WELD — AWS D1.1 / Shigley Ch. 9 throat-stress analysis
+  // ===================================================================
+  // Throat thickness t = 0.707 · h   (for 45° equal-leg fillet).
+  // Direct throat stress:     τ = F / (t · L)  for load perpendicular to weld line
+  // Shear + bending:          combined per load case; here we expose two modes:
+  //   'transverse' (load pulls perpendicular to weld):
+  //       σ = F / (0.707 · h · L)   with a 1/√2 conversion for nominal direct stress
+  //   'longitudinal' (load parallel to weld — pure shear):
+  //       τ = F / (0.707 · h · L)
+  // Allowable = 0.30 · S_ut_electrode (AWS D1.1 static).
+  // For cyclic loading: fatigue factor ~0.5 of static allowable (conservative).
+  //
+  // Reference electrode ultimate tensile strengths (MPa, converted from AWS E-class ksi):
+  const WELD_ELECTRODES = Object.freeze({
+    'E60':  { S_ut: 414, label: 'E60 (60 ksi UTS)',  standardClass: 'AWS D1.1 Table 2.5' },
+    'E70':  { S_ut: 482, label: 'E70 (70 ksi UTS — most common)', standardClass: 'AWS D1.1 Table 2.5' },
+    'E80':  { S_ut: 552, label: 'E80 (80 ksi UTS)',  standardClass: 'AWS D1.1 Table 2.5' },
+    'E90':  { S_ut: 620, label: 'E90 (90 ksi UTS)',  standardClass: 'AWS D1.1 Table 2.5' },
+    'E100': { S_ut: 689, label: 'E100 (100 ksi UTS)', standardClass: 'AWS D1.1 Table 2.5' },
+    'E110': { S_ut: 758, label: 'E110 (110 ksi UTS)', standardClass: 'AWS D1.1 Table 2.5' }
+  });
+
+  /**
+   * Fillet weld throat-stress analysis (AWS D1.1 static + optional cyclic derating).
+   *
+   * @param {object} p
+   * @param {number} p.legSize          h — fillet leg size in mm.
+   * @param {number} p.length           L — total weld length in mm (sum of all fillet segments carrying load).
+   * @param {number} p.force            F — applied load in N.
+   * @param {'transverse'|'longitudinal'|'combined'} [p.loadDirection='transverse'] — Direction relative to weld line.
+   * @param {string} [p.electrode='E70'] — AWS electrode class (E60/E70/E80/E90/E100/E110).
+   * @param {boolean} [p.cyclic=false]  — Apply 0.5× fatigue derate to the allowable.
+   * @param {number} [p.safetyFactor=1.0] — Additional user-specified SF on top of allowable.
+   * @returns {object}
+   */
+  function filletWeldAnalysis(p) {
+    const h = Math.max(1, Number(p.legSize) || 0);
+    const L = Math.max(1, Number(p.length) || 0);
+    const F = Math.max(0, Number(p.force) || 0);
+    const direction = (p.loadDirection || 'transverse').toLowerCase();
+    const elecKey = p.electrode || 'E70';
+    const elec = WELD_ELECTRODES[elecKey] || WELD_ELECTRODES.E70;
+    const cyclic = !!p.cyclic;
+    const sf = Math.max(1, Number(p.safetyFactor) || 1.0);
+
+    // Throat area (mm²)
+    const t = 0.707 * h;
+    const A = t * L;
+    // Throat stress (MPa = N/mm²). For combined, use resultant of longitudinal shear + transverse bending.
+    // For this v1 treat 'transverse' and 'longitudinal' identically (same throat area);
+    // the nominal allowable per AWS is direction-independent for static design.
+    const tau = A > 0 ? F / A : 0;
+
+    // Allowable strength — AWS D1.1 static allowable is 0.30 × S_ut_electrode for fillet welds in shear.
+    let allowable = 0.30 * elec.S_ut;
+    if (cyclic) allowable *= 0.5;  // fatigue derate (generic conservative)
+
+    const capacity = allowable * A;       // N
+    const utilisation = tau / allowable;  // 0..1 ideally
+    const safetyFactor = allowable / (tau * sf);
+
+    let verdict, verdictClass;
+    if (safetyFactor >= 2.0)      { verdict = 'SAFE (margin ≥ 2)';                  verdictClass = 'pass'; }
+    else if (safetyFactor >= 1.5) { verdict = 'SAFE (industry typical — margin ≥ 1.5)'; verdictClass = 'pass'; }
+    else if (safetyFactor >= 1.0) { verdict = 'MARGINAL (margin < 1.5)';            verdictClass = 'warn'; }
+    else                           { verdict = 'UNSAFE (weld will fail at design load)'; verdictClass = 'fail'; }
+    const notes = [];
+    if (cyclic) notes.push('Cyclic/fatigue derate applied — allowable reduced to 0.15 × S_ut (50% of static).');
+    if (direction === 'combined') notes.push('Combined direction treated as the more conservative of transverse/longitudinal for v1.');
+    if (utilisation > 0.9) notes.push('Utilisation > 90% — consider increasing leg size (h) to restore margin quickly; strength scales linearly with h.');
+
+    return {
+      inputs: { h, L, F, direction, electrode: elecKey, electrode_label: elec.label, S_ut_electrode: elec.S_ut,
+                cyclic, safetyFactor_user: sf },
+      throat: { t, A },
+      stress: { tau },
+      allowable,
+      capacity,
+      utilisation,
+      safetyFactor,
+      verdict, verdictClass, notes
+    };
+  }
+
+  // ===================================================================
   // UNIT TESTS — verify core against MecAgent screenshot values
   // ===================================================================
   function runSelfTests() {
@@ -517,6 +704,39 @@
     // Must be finite + positive
     test('shaft n_Goodman finite', Number.isFinite(sh.n_Goodman) && sh.n_Goodman > 0 ? 1 : 0, 1, 0);
     test('shaft n_Soderberg ≤ Goodman', (sh.n_Soderberg <= sh.n_Goodman + 1e-6) ? 1 : 0, 1, 0);
+
+    // ------- BEARING TEST — 6204 @ 1800 rpm, 4 kN radial -------
+    // C = 13500 N, P = F_r = 4000 N, a = 3
+    // L10 = (13500/4000)^3 = 38.44 × 10^6 rev
+    // L10_h = 38.44e6 / (60·1800) = 355.9 hours
+    const b = bearingLifeAnalysis({
+      designation: '6204', radialLoad: 4000, rpm: 1800
+    });
+    test('bearing C from catalog',    b.inputs.C,       13500, 10);
+    test('bearing exponent a',        b.inputs.a,       3,     0);
+    test('bearing L10 (rev × 10^6)',  b.L10_rev,        38.44, 0.5);
+    test('bearing L10 (hours)',       b.L10_h,          355.9, 2);
+    test('bearing R90 ≡ L10',         b.a_R,            1.0,   0.01);
+
+    // ------- WELD TEST — E70 fillet, h=6mm, L=120mm, 40 kN transverse -------
+    // A = 0.707·6·120 = 509.0 mm²
+    // τ = 40000 / 509.0 = 78.6 MPa
+    // allowable static = 0.30 × 482 = 144.6 MPa
+    // SF = 144.6 / 78.6 = 1.84
+    const w = filletWeldAnalysis({
+      legSize: 6, length: 120, force: 40000,
+      loadDirection: 'transverse', electrode: 'E70'
+    });
+    test('weld throat area',     w.throat.A,       509.04, 0.5);
+    test('weld τ',               w.stress.tau,     78.58,  0.5);
+    test('weld allowable E70',   w.allowable,      144.6,  0.5);
+    test('weld SF',              w.safetyFactor,   1.84,   0.1);
+    // Cyclic derate case — same loading, cyclic enabled → SF halves
+    const wc = filletWeldAnalysis({
+      legSize: 6, length: 120, force: 40000,
+      loadDirection: 'transverse', electrode: 'E70', cyclic: true
+    });
+    test('weld cyclic SF ≈ 0.92', wc.safetyFactor,  0.92,   0.05);
 
     return { results, allPass: results.every(r => r.pass) };
   }
@@ -618,12 +838,12 @@
   }
 
   // ===================================================================
-  // UI — form-based input with live recompute + formatted report
+  // UI — form-based input with tab switcher (bolted-joint / gears / shafts / bearings / welds)
   // ===================================================================
-  const S = { lastResult: null, els: {} };
+  const S = { lastResult: null, els: {}, currentTab: 'bolt' };
 
-  const INPUT_FIELDS = [
-    // [key, label, unit, default, min]
+  // Field schemas per analysis kind. Shape: [key, label, unit, default, min, type?, opts?]
+  const FIELDS_BOLT = [
     ['boltCount',       'Bolt count (z)',              '',     4,     1],
     ['thread',          'Thread',                       '',     'M12', null, 'select', Object.keys(BOLT_STRESS_AREA)],
     ['grade',           'Grade (ISO 898-1)',            '',     '8.8', null, 'select', Object.keys(STEEL_GRADES)],
@@ -636,6 +856,84 @@
     ['safetyFactor',    'Slip safety factor (K_s)',     '',     1.5,   1],
     ['frictionInterfaces','Friction interfaces (n)',    '',     1,     1]
   ];
+  const FIELDS_GEAR = [
+    ['pinionTeeth',  'Pinion teeth z_P',         '',     20,   12],
+    ['gearTeeth',    'Gear teeth z_G',           '',     40,   12],
+    ['module',       'Module m',                  'mm',   2,    0.5],
+    ['faceWidth',    'Face width F',              'mm',   25,   3],
+    ['torque',       'Pinion torque T_P',         'N·m',  10,   0],
+    ['pinionHB',     'Pinion hardness',           'HB',   240,  150],
+    ['gearHB',       'Gear hardness',             'HB',   240,  150],
+    ['overload',     'Overload K_o',              '',     1.0,  1],
+    ['dynamic',      'Dynamic K_v',               '',     1.1,  1],
+    ['loadDist',     'Load distribution K_m',     '',     1.3,  1],
+    ['reliability',  'Reliability K_R',           '',     1.0,  1],
+    ['pressureAngle','Pressure angle φ',          '°',    20,   0]
+  ];
+  const FIELDS_SHAFT = [
+    ['material',     'Material',                  '',     '1050_cd', null, 'select', Object.keys(SHAFT_MATERIALS)],
+    ['diameter',     'Diameter d',                'mm',   25,   5],
+    ['M_a',          'Alt. bending moment M_a',   'N·m',  100,  0],
+    ['M_m',          'Mean bending moment M_m',   'N·m',  0,    0],
+    ['T_a',          'Alt. torque T_a',           'N·m',  0,    0],
+    ['T_m',          'Mean torque T_m',           'N·m',  50,   0],
+    ['Kf',           'Fatigue K_f (bending)',     '',     2.0,  1],
+    ['Kfs',          'Fatigue K_fs (torsion)',    '',     1.5,  1],
+    ['surface',      'Surface finish',            '',     'machined', null, 'select', Object.keys(SURFACE_FACTORS)],
+    ['reliability',  'Reliability R',             '',     0.99, 0.5],
+    ['temperatureC', 'Temperature',               '°C',   25,   -50]
+  ];
+  const FIELDS_BEARING = [
+    ['designation',  'Designation',               '',     '6204', null, 'select', Object.keys(BEARING_CATALOGUE)],
+    ['radialLoad',   'Radial load F_r',           'N',    4000, 0],
+    ['axialLoad',    'Axial load F_a',            'N',    0,    0],
+    ['rpm',          'Speed',                      'rpm',  1800, 1],
+    ['X',            'Radial factor X',           '',     1,    0],
+    ['Y',            'Thrust factor Y',           '',     0,    0],
+    ['reliability',  'Reliability',                '',     0.9,  0.5]
+  ];
+  const FIELDS_WELD = [
+    ['legSize',       'Leg size h',                'mm',   6,    1],
+    ['length',        'Weld length L',             'mm',   120,  1],
+    ['force',         'Applied load F',            'N',    40000,0],
+    ['loadDirection', 'Direction',                 '',     'transverse', null, 'select', ['transverse','longitudinal','combined']],
+    ['electrode',     'Electrode',                 '',     'E70', null, 'select', Object.keys(WELD_ELECTRODES)],
+    ['cyclic',        'Cyclic? (1 = yes)',         '',     0,    0],
+    ['safetyFactor',  'User SF multiplier',        '',     1.0,  1]
+  ];
+
+  const PRESETS_BOLT = [
+    { label: 'MecAgent demo',  values: { boltCount:4, thread:'M12', grade:'10.9', preload:39000, shearForce:18000, axialForce:18000, moment:420000, bcd:96, friction:0.16, safetyFactor:1.5 } },
+    { label: 'Flange M8 light', values: { boltCount:8, thread:'M8', grade:'8.8', preload:15000, shearForce:5000, axialForce:2000, moment:50000, bcd:60, friction:0.15, safetyFactor:1.25 } },
+    { label: 'Heavy M20',      values: { boltCount:6, thread:'M20', grade:'8.8', preload:120000, shearForce:30000, axialForce:25000, moment:800000, bcd:200, friction:0.14, safetyFactor:1.5 } }
+  ];
+  const PRESETS_GEAR = [
+    { label: 'Shigley Ex 14-5', values: { pinionTeeth:17, gearTeeth:52, module:2, faceWidth:30, torque:13.26, pinionHB:240, gearHB:240, overload:1, dynamic:1, loadDist:1.3 } },
+    { label: 'Light duty',      values: { pinionTeeth:25, gearTeeth:75, module:1.5, faceWidth:18, torque:5, pinionHB:220, gearHB:220 } },
+    { label: 'Heavy industrial',values: { pinionTeeth:20, gearTeeth:60, module:5, faceWidth:50, torque:250, pinionHB:320, gearHB:310, overload:1.25, loadDist:1.4 } }
+  ];
+  const PRESETS_SHAFT = [
+    { label: 'Rotating-bending', values: { material:'1050_cd', diameter:25, M_a:100, M_m:0, T_a:0, T_m:50, Kf:2, Kfs:1.5, surface:'machined' } },
+    { label: 'Output shaft 4340',values: { material:'4340_Q&T', diameter:40, M_a:300, M_m:100, T_a:50, T_m:200, Kf:1.8, Kfs:1.3, surface:'ground' } }
+  ];
+  const PRESETS_BEARING = [
+    { label: '6204 / 4kN',     values: { designation:'6204', radialLoad:4000, rpm:1800 } },
+    { label: '6206 / 8kN',     values: { designation:'6206', radialLoad:8000, rpm:1500 } },
+    { label: 'NJ204 roller',   values: { designation:'NJ204', radialLoad:10000, rpm:1200 } }
+  ];
+  const PRESETS_WELD = [
+    { label: 'E70 6mm × 120mm', values: { legSize:6, length:120, force:40000, electrode:'E70', loadDirection:'transverse' } },
+    { label: 'Heavy bracket',   values: { legSize:10, length:200, force:120000, electrode:'E80', loadDirection:'transverse' } },
+    { label: 'Cyclic tie-down', values: { legSize:5, length:80, force:15000, electrode:'E70', loadDirection:'longitudinal', cyclic:1 } }
+  ];
+
+  const TABS = Object.freeze({
+    bolt:    { label: 'Bolted Joint', subtitle: 'VDI 2230 / Shigley',                    fields: FIELDS_BOLT,    presets: PRESETS_BOLT,    analyze: boltedJointAnalysis, hasPrompt: true,  kind: 'bolt' },
+    gear:    { label: 'Spur Gears',    subtitle: 'AGMA bending + pitting (Shigley Ch 14)', fields: FIELDS_GEAR,    presets: PRESETS_GEAR,    analyze: spurGearAnalysis,    hasPrompt: false, kind: 'gear' },
+    shaft:   { label: 'Shaft Fatigue', subtitle: 'Goodman / Soderberg (Shigley Ch 7)',    fields: FIELDS_SHAFT,   presets: PRESETS_SHAFT,   analyze: shaftFatigueAnalysis,hasPrompt: false, kind: 'shaft' },
+    bearing: { label: 'Bearing Life',  subtitle: 'L_10 (ISO 281) — Shigley Ch 11',        fields: FIELDS_BEARING, presets: PRESETS_BEARING, analyze: bearingLifeAnalysis, hasPrompt: false, kind: 'bearing' },
+    weld:    { label: 'Fillet Welds',  subtitle: 'Throat stress (AWS D1.1)',              fields: FIELDS_WELD,    presets: PRESETS_WELD,    analyze: filletWeldAnalysis,  hasPrompt: false, kind: 'weld' }
+  });
 
   function fmt(n, unit, digits) {
     if (!isFinite(n)) return '—';
@@ -644,25 +942,203 @@
     return unit ? s + ' ' + unit : s;
   }
 
+  function currentFields() { return (TABS[S.currentTab] || TABS.bolt).fields; }
+  function currentAnalyze() { return (TABS[S.currentTab] || TABS.bolt).analyze; }
+
   function collectInputs() {
     const out = {};
-    INPUT_FIELDS.forEach(([key,,,,, type]) => {
+    currentFields().forEach(([key,,,,, type]) => {
       const el = S.els['in_' + key];
       if (!el) return;
-      out[key] = (type === 'select') ? el.value : parseFloat(el.value);
+      if (type === 'select') {
+        out[key] = el.value;
+      } else {
+        // Boolean fields encoded as 0/1 numeric — map back to boolean where the function expects it
+        out[key] = parseFloat(el.value);
+      }
     });
+    // Weld's cyclic is encoded as 0/1 — convert to boolean
+    if (S.currentTab === 'weld' && 'cyclic' in out) out.cyclic = !!out.cyclic;
     return out;
   }
 
   function compute() {
     try {
       const params = collectInputs();
-      const r = boltedJointAnalysis(params);
+      const analyze = currentAnalyze();
+      const r = analyze(params);
       S.lastResult = r;
-      renderReport(r);
-    } catch(e) {
+      if (S.currentTab === 'bolt') {
+        renderReport(r);  // Full KaTeX-rich bolted-joint report
+      } else {
+        renderReportGeneric(r, S.currentTab);
+      }
+    } catch (e) {
       if (S.els.report) S.els.report.innerHTML = '<div class="aie-err">Error: ' + e.message + '</div>';
     }
+  }
+
+  /**
+   * Generic result renderer for v2 tabs (gear / shaft / bearing / weld).
+   * Outputs: verdict banner + key numbers table + notes list.
+   * KaTeX-rendered formulas can be added per-tab in a future pass.
+   * @param {object} r  Result object from the relevant analyze function.
+   * @param {string} kind  Tab key — 'gear' | 'shaft' | 'bearing' | 'weld'.
+   */
+  function renderReportGeneric(r, kind) {
+    const root = S.els.report;
+    if (!root) return;
+    root.innerHTML = '';
+    if (r.error) {
+      root.innerHTML = '<div class="aie-err" style="padding:10px;background:#7f1d1d;color:#fecaca;border-radius:6px;font-size:13px">' + r.error + '</div>';
+      return;
+    }
+
+    // Verdict banner
+    const vcls = r.verdictClass || 'pass';
+    const bg = vcls === 'pass' ? '#065f46' : vcls === 'warn' ? '#78350f' : '#7f1d1d';
+    const fg = vcls === 'pass' ? '#d1fae5' : vcls === 'warn' ? '#fed7aa' : '#fecaca';
+    const banner = document.createElement('div');
+    banner.style.cssText = 'padding:10px 14px;border-radius:6px;background:'+bg+';color:'+fg+';font-weight:600;font-size:14px;margin-bottom:12px;border:1px solid rgba(255,255,255,0.08)';
+    banner.textContent = 'Verdict: ' + r.verdict;
+    root.appendChild(banner);
+
+    // Notes
+    if (r.notes && r.notes.length) {
+      const ul = document.createElement('ul');
+      ul.style.cssText = 'margin:4px 0 14px 18px;font-size:12px;color:#94a3b8';
+      r.notes.forEach(n => { const li = document.createElement('li'); li.textContent = n; ul.appendChild(li); });
+      root.appendChild(ul);
+    }
+
+    // Kind-specific body
+    const body = document.createElement('div');
+    body.style.cssText = 'padding:10px 12px;background:#0f172a;border:1px solid #334155;border-radius:6px;font-size:13px;color:#cbd5e1;line-height:1.8';
+
+    if (kind === 'gear') {
+      body.innerHTML =
+        '<strong style="color:#f1f5f9">Geometry</strong><br>' +
+        'Pitch Ø pinion: ' + fmt(r.inputs.d_P, 'mm') + ' · Pitch Ø gear: ' + fmt(r.inputs.d_G, 'mm') +
+        ' · Ratio m_G: ' + fmt(r.inputs.mG) + '<br>' +
+        'Tangential load W_t: ' + fmt(r.inputs.W_t, 'N') + '<br><br>' +
+        '<strong style="color:#f1f5f9">Safety factors</strong><br>' +
+        '<span style="color:#94a3b8">Pinion:</span> SF_bending = <strong>' + fmt(r.pinion.SF_bending) + '</strong> · SF_contact = <strong>' + fmt(r.pinion.SF_contact) + '</strong><br>' +
+        '<span style="color:#94a3b8">Gear:</span>   SF_bending = <strong>' + fmt(r.gear.SF_bending)   + '</strong> · SF_contact = <strong>' + fmt(r.gear.SF_contact)   + '</strong><br>' +
+        '<span style="color:#94a3b8">Overall min:</span> <strong style="color:' + (r.SF_min >= 1.5 ? '#a7f3d0' : r.SF_min >= 1.0 ? '#fed7aa' : '#fca5a5') + '">' + fmt(r.SF_min) + '</strong>';
+    } else if (kind === 'shaft') {
+      body.innerHTML =
+        '<strong style="color:#f1f5f9">Stresses</strong><br>' +
+        'σ_a = ' + fmt(r.stresses.sigma_a, 'MPa') + ' · σ_m = ' + fmt(r.stresses.sigma_m, 'MPa') +
+        ' · τ_a = ' + fmt(r.stresses.tau_a, 'MPa') + ' · τ_m = ' + fmt(r.stresses.tau_m, 'MPa') + '<br>' +
+        "σ'_a = " + fmt(r.stresses.sigma_prime_a, 'MPa') + " · σ'_m = " + fmt(r.stresses.sigma_prime_m, 'MPa') + '<br><br>' +
+        '<strong style="color:#f1f5f9">Factors of safety</strong><br>' +
+        'Goodman: <strong>' + fmt(r.n_Goodman) + '</strong> · Soderberg: <strong>' + fmt(r.n_Soderberg) + '</strong> · First-cycle yield: <strong>' + fmt(r.n_yield) + '</strong><br>' +
+        'Endurance limit S_e (corrected): ' + fmt(r.marin.S_e, 'MPa') + ' (uncorrected ' + fmt(r.marin.S_e_prime, 'MPa') + ')';
+    } else if (kind === 'bearing') {
+      const cat = r.inputs.catalog;
+      const tag = cat ? (r.inputs.designation + ' · Ø' + cat.d + '/' + cat.D + ' × ' + cat.B + 'mm · C = ' + fmt(cat.C/1000, 'kN')) : ('custom C = ' + fmt(r.inputs.C/1000, 'kN'));
+      body.innerHTML =
+        '<strong style="color:#f1f5f9">' + tag + '</strong><br>' +
+        'Equivalent load P: ' + fmt(r.P, 'N') + ' · Exponent a = ' + fmt(r.inputs.a) + '<br><br>' +
+        '<strong style="color:#f1f5f9">L_10 life</strong><br>' +
+        fmt(r.L10_rev) + ' × 10⁶ revolutions<br>' +
+        fmt(r.L10_h, 'hours') + ' at ' + r.inputs.rpm + ' rpm' + (r.inputs.reliability !== 0.9 ? ' (L₁₀)' : '') + '<br>' +
+        (r.inputs.reliability !== 0.9 ?
+          ('Adjusted to R = ' + r.inputs.reliability + ': ' + fmt(r.L_R_h, 'hours')) :
+          '');
+    } else if (kind === 'weld') {
+      body.innerHTML =
+        '<strong style="color:#f1f5f9">Throat geometry</strong><br>' +
+        't = 0.707·h = ' + fmt(r.throat.t, 'mm') + ' · area A = ' + fmt(r.throat.A, 'mm²') + '<br><br>' +
+        '<strong style="color:#f1f5f9">Stress</strong><br>' +
+        'τ = F / A = ' + fmt(r.stress.tau, 'MPa') + '<br>' +
+        'Allowable (' + r.inputs.electrode + ', ' + (r.inputs.cyclic ? 'cyclic' : 'static') + '): ' + fmt(r.allowable, 'MPa') + '<br>' +
+        'Capacity: ' + fmt(r.capacity, 'N') + ' · Utilisation: ' + fmt(r.utilisation * 100, '%') + '<br>' +
+        'Safety factor: <strong style="color:' + (r.safetyFactor >= 1.5 ? '#a7f3d0' : r.safetyFactor >= 1.0 ? '#fed7aa' : '#fca5a5') + '">' + fmt(r.safetyFactor) + '</strong>';
+    }
+    root.appendChild(body);
+  }
+
+  /**
+   * Switch the UI to a different analysis tab. Rebuilds the form grid, preset buttons,
+   * and report area in-place using the tab's schema.
+   * @param {string} tabKey  One of 'bolt' | 'gear' | 'shaft' | 'bearing' | 'weld'.
+   */
+  function switchTab(tabKey) {
+    if (!TABS[tabKey]) return;
+    S.currentTab = tabKey;
+    // Rebuild pill highlights
+    if (S.els.tabBar) {
+      Array.from(S.els.tabBar.children).forEach(pill => {
+        const active = pill.dataset.tab === tabKey;
+        pill.style.background = active ? '#38bdf8' : '#334155';
+        pill.style.color = active ? '#0f172a' : '#cbd5e1';
+        pill.style.fontWeight = active ? '700' : '500';
+      });
+    }
+    // Show/hide NL prompt (bolt only)
+    if (S.els.promptWrap) S.els.promptWrap.style.display = TABS[tabKey].hasPrompt ? 'flex' : 'none';
+    // Update subtitle
+    if (S.els.subtitle) S.els.subtitle.textContent = TABS[tabKey].label + ' — ' + TABS[tabKey].subtitle;
+    // Rebuild form grid
+    rebuildFormGrid();
+    // Rebuild presets
+    rebuildPresets();
+    // Clear report
+    if (S.els.report) S.els.report.innerHTML = '<div style="padding:14px 0;color:#64748b;font-size:12px;font-style:italic">Adjust inputs to see live analysis.</div>';
+    // Compute once
+    setTimeout(compute, 0);
+  }
+
+  function rebuildFormGrid() {
+    const grid = S.els.grid;
+    if (!grid) return;
+    grid.innerHTML = '';
+    // Clear stale input element refs (keep prompt, report, etc.)
+    Object.keys(S.els).forEach(k => { if (k.startsWith('in_')) delete S.els[k]; });
+    currentFields().forEach(field => {
+      const [key, label, unit, def, min, type, opts] = field;
+      const cell = document.createElement('label');
+      cell.style.cssText = 'display:flex;flex-direction:column;gap:2px;font-size:11px;color:#94a3b8';
+      const lbl = document.createElement('span');
+      lbl.innerHTML = label + (unit ? ' <span style="color:#64748b">['+unit+']</span>' : '');
+      let input;
+      if (type === 'select') {
+        input = document.createElement('select');
+        input.style.cssText = 'padding:5px;background:#0f172a;color:#e2e8f0;border:1px solid #334155;border-radius:3px;font-size:12px';
+        opts.forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = v; input.appendChild(o); });
+        input.value = def;
+      } else {
+        input = document.createElement('input');
+        input.type = 'number';
+        input.step = 'any';
+        if (min !== null) input.min = String(min);
+        input.value = String(def);
+        input.style.cssText = 'padding:5px;background:#0f172a;color:#e2e8f0;border:1px solid #334155;border-radius:3px;font-size:12px';
+      }
+      input.addEventListener('input', compute);
+      input.addEventListener('change', compute);
+      S.els['in_' + key] = input;
+      cell.appendChild(lbl);
+      cell.appendChild(input);
+      grid.appendChild(cell);
+    });
+  }
+
+  function rebuildPresets() {
+    const presets = S.els.presets;
+    if (!presets) return;
+    presets.innerHTML = '';
+    TABS[S.currentTab].presets.forEach(preset => {
+      const b = document.createElement('button');
+      b.textContent = preset.label;
+      b.style.cssText = 'padding:4px 8px;background:#334155;color:#cbd5e1;border:0;border-radius:3px;cursor:pointer;font-size:11px';
+      b.onclick = () => {
+        Object.entries(preset.values).forEach(([k, v]) => { const el = S.els['in_' + k]; if (el) el.value = String(v); });
+        compute();
+      };
+      presets.appendChild(b);
+    });
   }
 
   function renderReport(r) {
@@ -789,11 +1265,32 @@
 
     // Header
     const header = document.createElement('div');
-    header.innerHTML = '<div style="font-size:15px;font-weight:700;color:#f1f5f9">AI Engineering Analyst</div>'
-      + '<div style="font-size:11px;color:#94a3b8;margin-top:2px">Bolted-joint analysis (VDI 2230 / Shigley) — v1</div>';
+    const title = document.createElement('div');
+    title.style.cssText = 'font-size:15px;font-weight:700;color:#f1f5f9';
+    title.textContent = 'AI Engineering Analyst';
+    const subtitle = document.createElement('div');
+    subtitle.style.cssText = 'font-size:11px;color:#94a3b8;margin-top:2px';
+    subtitle.textContent = 'Bolted Joint — VDI 2230 / Shigley';
+    S.els.subtitle = subtitle;
+    header.appendChild(title);
+    header.appendChild(subtitle);
     wrap.appendChild(header);
 
-    // Prompt box for natural-language entry
+    // Tab pills — 5 analysis kinds
+    const tabBar = document.createElement('div');
+    tabBar.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;padding:6px;background:#0f172a;border:1px solid #334155;border-radius:6px';
+    Object.entries(TABS).forEach(([key, tab]) => {
+      const pill = document.createElement('button');
+      pill.dataset.tab = key;
+      pill.textContent = tab.label;
+      pill.style.cssText = 'padding:6px 12px;background:' + (key === 'bolt' ? '#38bdf8' : '#334155') + ';color:' + (key === 'bolt' ? '#0f172a' : '#cbd5e1') + ';border:0;border-radius:4px;cursor:pointer;font-size:12px;font-weight:' + (key === 'bolt' ? '700' : '500') + ';transition:background 0.15s';
+      pill.addEventListener('click', () => switchTab(key));
+      tabBar.appendChild(pill);
+    });
+    S.els.tabBar = tabBar;
+    wrap.appendChild(tabBar);
+
+    // Prompt box for natural-language entry (bolted-joint only)
     const promptWrap = document.createElement('div');
     promptWrap.style.cssText = 'display:flex;gap:6px';
     const prompt = document.createElement('input');
@@ -806,60 +1303,24 @@
     applyBtn.onclick = applyFromPrompt;
     prompt.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); applyFromPrompt(); } });
     S.els.prompt = prompt;
+    S.els.promptWrap = promptWrap;
     promptWrap.appendChild(prompt);
     promptWrap.appendChild(applyBtn);
     wrap.appendChild(promptWrap);
 
-    // Input grid
+    // Input grid — populated by rebuildFormGrid()
     const grid = document.createElement('div');
     grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;padding:10px;background:#1e293b;border-radius:6px';
-    INPUT_FIELDS.forEach(field => {
-      const [key, label, unit, def, min, type, opts] = field;
-      const cell = document.createElement('label');
-      cell.style.cssText = 'display:flex;flex-direction:column;gap:2px;font-size:11px;color:#94a3b8';
-      const lbl = document.createElement('span');
-      lbl.innerHTML = label + (unit ? ' <span style="color:#64748b">['+unit+']</span>' : '');
-      let input;
-      if (type === 'select') {
-        input = document.createElement('select');
-        input.style.cssText = 'padding:5px;background:#0f172a;color:#e2e8f0;border:1px solid #334155;border-radius:3px;font-size:12px';
-        opts.forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = v; input.appendChild(o); });
-        input.value = def;
-      } else {
-        input = document.createElement('input');
-        input.type = 'number';
-        input.step = 'any';
-        if (min !== null) input.min = String(min);
-        input.value = String(def);
-        input.style.cssText = 'padding:5px;background:#0f172a;color:#e2e8f0;border:1px solid #334155;border-radius:3px;font-size:12px';
-      }
-      input.addEventListener('input', compute);
-      input.addEventListener('change', compute);
-      S.els['in_' + key] = input;
-      cell.appendChild(lbl);
-      cell.appendChild(input);
-      grid.appendChild(cell);
-    });
+    S.els.grid = grid;
     wrap.appendChild(grid);
+    rebuildFormGrid();
 
-    // Preset examples
+    // Preset examples — populated by rebuildPresets()
     const presets = document.createElement('div');
     presets.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px';
-    [
-      { label: 'MecAgent demo', values: { boltCount:4, thread:'M12', grade:'10.9', preload:39000, shearForce:18000, axialForce:18000, moment:420000, bcd:96, friction:0.16, safetyFactor:1.5 } },
-      { label: 'Flange M8 light', values: { boltCount:8, thread:'M8', grade:'8.8', preload:15000, shearForce:5000, axialForce:2000, moment:50000, bcd:60, friction:0.15, safetyFactor:1.25 } },
-      { label: 'Heavy M20', values: { boltCount:6, thread:'M20', grade:'8.8', preload:120000, shearForce:30000, axialForce:25000, moment:800000, bcd:200, friction:0.14, safetyFactor:1.5 } }
-    ].forEach(preset => {
-      const b = document.createElement('button');
-      b.textContent = preset.label;
-      b.style.cssText = 'padding:4px 8px;background:#334155;color:#cbd5e1;border:0;border-radius:3px;cursor:pointer;font-size:11px';
-      b.onclick = () => {
-        Object.entries(preset.values).forEach(([k, v]) => { const el = S.els['in_' + k]; if (el) el.value = String(v); });
-        compute();
-      };
-      presets.appendChild(b);
-    });
+    S.els.presets = presets;
     wrap.appendChild(presets);
+    rebuildPresets();
 
     // Report area
     const report = document.createElement('div');
@@ -910,6 +1371,12 @@
     analyzeShaft: shaftFatigueAnalysis,
     SHAFT_MATERIALS,
     SURFACE_FACTORS,
+    // ---- v2: bearings ----
+    analyzeBearing: bearingLifeAnalysis,
+    BEARING_CATALOGUE,
+    // ---- v2: welds ----
+    analyzeWeld: filletWeldAnalysis,
+    WELD_ELECTRODES,
     // ---- shared ----
     runSelfTests,
     STEEL_GRADES,
@@ -927,11 +1394,13 @@
     },
     getUI: () => { if (!uiEl) uiEl = buildUI(); return uiEl; },
     execute: (cmd, params) => {
-      if (cmd === 'analyze')        return boltedJointAnalysis(params || {});
-      if (cmd === 'analyze-gear')   return spurGearAnalysis(params || {});
-      if (cmd === 'analyze-shaft')  return shaftFatigueAnalysis(params || {});
-      if (cmd === 'parse')          return parseBoltedJointPrompt((params && params.prompt) || '');
-      if (cmd === 'show')           { if (!uiEl) uiEl = buildUI(); return uiEl; }
+      if (cmd === 'analyze')         return boltedJointAnalysis(params || {});
+      if (cmd === 'analyze-gear')    return spurGearAnalysis(params || {});
+      if (cmd === 'analyze-shaft')   return shaftFatigueAnalysis(params || {});
+      if (cmd === 'analyze-bearing') return bearingLifeAnalysis(params || {});
+      if (cmd === 'analyze-weld')    return filletWeldAnalysis(params || {});
+      if (cmd === 'parse')           return parseBoltedJointPrompt((params && params.prompt) || '');
+      if (cmd === 'show')            { if (!uiEl) uiEl = buildUI(); return uiEl; }
     }
   };
 

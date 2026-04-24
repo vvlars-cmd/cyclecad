@@ -914,7 +914,10 @@
     },
     go: () => { if (!uiEl) uiEl = buildUI(); return run(); },
     abort: () => abort(),
-    getState: () => ({ running:S.running, stepIndex:S.stepIndex, results:S.results.length, errors:S.errors.length, model:S.els.model?.value })
+    getState: () => ({ running:S.running, stepIndex:S.stepIndex, results:S.results.length, errors:S.errors.length, model:S.els.model?.value }),
+    // Exposed for Text-to-CAD live preview: given a natural language prompt, returns a plan array
+    // of step objects ({method, params, note}) for known templates, or null for novel prompts.
+    matchTemplate: (prompt) => { try { return matchTemplate(prompt); } catch(e) { return null; } }
   };
   console.log('AI Copilot v1.2 module loaded');
 })();

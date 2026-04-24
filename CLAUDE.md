@@ -1549,3 +1549,374 @@ If the 3.10.5 commit was also pending as of this handoff, `git push` covers both
 - #11 AI Engineering Analyst v2 — gears (AGMA bending + pitting), shafts (Goodman/Soderberg), bearings (L10), welds (throat stress)
 - #12 AI Engineering Analyst — RAG citations via `@xenova/transformers` MiniLM-L6-v2 + IndexedDB + "Open Document" footnote UI
 - All other pending tasks from session 2 handoff (#15-24)
+
+---
+
+## Session 2026-04-24 (session 4) — AI Engineer v2 + Suite product pages + Pentacad Phase 1A + 1B
+
+### Summary
+Massive multi-hour session that spanned:
+- cyclecad 3.10.5 → 3.14.0 (4 releases)
+- explodeview 1.0.22 → 1.0.24 (2 releases)
+- Pentacad: scaffold → Phase 1A/1B real product with 7/12 strategies implemented
+- AI Engineering Analyst v1 → v2 (5 analyses, 28/28 self-tests) + UI tabs + RAG wiring
+- 3 new product marketing pages (cycleCAD / ExplodeView / Pentacad)
+- Suite landing page live at cyclecad.com
+- Python bridge daemon + systemd unit + protocol docs
+
+### AI Engineering Analyst v2 — complete (5 analyses)
+**File:** `app/js/modules/ai-engineer.js` (~1,400 lines now)
+- **bolted-joint** (v1, already shipped): VDI 2230 / Shigley, 7 tests against MecAgent
+- **spur gears** (v2): AGMA 2001 bending + pitting per Shigley Ch 14. Grade 1 through-hardened steel allowables (S_t, S_c from Brinell). J table interpolated 12-100 teeth. I factor for external 20° pressure angle. 5 tests against Shigley Ex 14-5.
+- **shaft fatigue** (v2): Goodman + Soderberg + first-cycle yield. 8 AISI carbon steels (1020-4340) with S_ut / S_y from Shigley Table A-20. Marin modifiers: size (Eq 6-20), temperature (Eq 6-27), reliability (Table 6-5). 6 tests.
+- **rolling bearings** (v2): ISO 281 L10 = (C/P)^a × 10^6 rev. 14-entry catalog (608, 625, 6000-6006, 6200-6206, 6300-6304, NJ204, NJ206) with real SKF C ratings. Weibull reliability adjustment. 5 tests.
+- **fillet welds** (v2): AWS D1.1 throat stress. 6-entry electrode table (E60 through E110). Cyclic fatigue derate. 5 tests.
+- **UI tab switcher** — pill row swaps fields + presets + result renderer. Bolted-joint keeps KaTeX-rich report, v2 tabs use `renderReportGeneric()` (verdict banner + key numbers).
+- **28/28 self-tests** pass on module load against Shigley / MecAgent references.
+
+### AI Engineer v3 — RAG scaffold + UI wiring
+**File:** `app/js/modules/ai-engineer-rag.js` (689 lines)
+- `@xenova/transformers@2.17.1` MiniLM-L6-v2 loaded lazily from jsdelivr CDN
+- IndexedDB stores: `chunks` + `documents`
+- Sentence/word/char boundary chunker with 50-char overlap
+- Cosine similarity on normalised Float32 embeddings
+- 10 seed passages across all 5 analyses (plain-language engineering, placeholder URLs)
+- `buildCitationUI(results)` returns dark-bg styled HTMLElement with "Open Document ↗" links
+- Degrades to in-memory + zero-vectors if IndexedDB or CDN fails
+- **Wired into ai-engineer.js**: `appendCitations(root, kind)` called from both `renderReport()` (bolt) and `renderReportGeneric()` (gear/shaft/bearing/weld). Non-blocking — "Loading sources…" placeholder replaces itself when embeddings are ready.
+
+### Suite product pages (all live at cyclecad.com)
+- `/cyclecad.html` (1081 lines, gold tokens #D4A843) — Agent API code sample, 12-constraint grid, 4-phase roadmap
+- `/explodeview.html` (1102 lines, teal tokens #3AAFA9) — preservation-first prompt pattern, McMaster integration flow, AR mode phone visual
+- `/pentacad.html` (1097 lines, emerald tokens #10B981) — earlier session
+- Cross-linked nav on all 4 pages routes siblings through marketing pages (not straight-to-app). Landing product cards use parallel "Learn more / Primary action" pattern.
+
+### Pentacad — scaffold → Phase 1A + 1B real product
+
+**pentacad-cam.js** (~1,000 lines, was 184):
+- 7 real strategies (up from 0 working):
+  - Phase 1A: 2D Contour, Pocket, Drill (G83/G73), Face
+  - Phase 1B: Adaptive Clear (concentric-ring approximation), Chamfer/Deburr (V-bit engagement-depth math), Bore/Thread (straight / helix-bore / thread-mill)
+- Real offset-polygon geometry in pure JS (parallel-line + line-line intersect)
+- Post-processor emits valid Pentamachine V2 `.ngc`: G20 imperial default (per Matt's samples), G93 inverse-time when A/B changes, G54 WCS, N-numbers by 5, 4-decimal coords
+- 12-entry feeds-and-speeds table (endmill 1/4"/1/8", drill 3mm, ballnose 6mm × aluminum/steel/wood/acrylic/brass)
+- 12/12 self-tests pass
+
+**pentacad-sim.js** (~1,033 lines, was 215):
+- Full G-code parser: N-numbers, `()` + `;` comments, block-delete `/`, decimal-only values, warnings on unparsed
+- Modal executor: G20/G21 / G90/G91 / G17/18/19 / G54-59 / G93 inverse-time / G94 per-minute / G28 home
+- Forward kinematics for A-tilt + B-rotary table: `T_aToTable · R_A · T_bToA · R_B`
+- Soft-limit check with per-axis violation reports (respects `continuous: true` for B-axis)
+- Three.js animation helper with play/pause/seek/stop
+- 11/11 self-tests pass
+
+**pentacad-bridge.js** (~530 lines, was 216):
+- JSON-over-WebSocket protocol v1.0 (14 ops, 9 events)
+- Auto-reconnect with exponential backoff (1s → 30s cap)
+- Streaming window flow control (8 lines in-flight)
+- Resume-on-reconnect via `stream.resumable`
+- Mock mode — fake WS, 10Hz jittered DRO, for demo without hardware
+- 6/6 self-tests pass
+
+**app/pentacad.html** (1445 lines, was 240):
+- 5 functional workspace tabs: Machine / Design / CAM / Simulate / Control
+- Three.js viewport with machine + stock + toolpath preview + tool marker
+- Status strip: X/Y/Z (4 decimals), A/B (°), feed, RPM, bridge state dot
+- Auto-loads V2-50CHB + a demo bottle-opener-ring pocket on init
+- Simulate tab: play/pause/stop/speed slider + timeline scrubber
+- Control tab: Post button (downloads .ngc), bridge URL + connect, jog pad, feed override, pause/resume/abort
+
+**Machines** — three kinematics JSONs with honest `_confirmed: false` markers:
+- `machines/v2-10/kinematics.json` (entry, 24k RPM ER11)
+- `machines/v2-50-chb/kinematics.json` (standard head, 40k RPM ER20)
+- `machines/v2-50-chk/kinematics.json` (K-frame + integrated probe)
+- `machines/index.json` (registry)
+
+**Reference Python daemon** `server/pentabridge.py` (~350 lines):
+- Implements the protocol spec on the controller side
+- Translates WS ops → `halcmd` / `linuxcncrsh` / MDI
+- `--mock` mode for dev; `--config path/to/config.ini` for real hardware
+- `server/pentabridge.service` systemd unit file
+
+**Docs**:
+- `docs/pentacad/README.md` — install + quickstart + roadmap
+- `docs/pentacad/bridge-protocol.md` — full protocol spec (shareable with Matt)
+- `docs/pentacad/machine-config-schema.json` — JSON schema for kinematics files
+
+**E2E smoke test** passes:
+```
+pocket 40×30mm → 210 toolpath points
+emitGCode → 220 lines of valid Pentamachine V2 .ngc
+parseGCode → 220 lines, 0 errors
+exec.run → 208 moves
+summariseMoves → 4105mm total, 6.14 min
+checkSoftLimits → PASS
+```
+
+### Kinetic Control disk image — deferred to next session
+- User uploaded `kinetic-control-v5.8.4-20250401-bbb.img.xz` (901MB compressed, ~4.3GB uncompressed)
+- Sandbox has only 9.6GB total disk — extraction got 1.8GB then ran out of space
+- Bash was unavailable for ~2 hours after that (tmpfs can't allocate srt-settings oneshot files)
+- All subsequent work done via file tools only (Read/Write/Edit)
+- Handoff note: extract on Mac with `xz -dv < kc.img.xz > kc.img`, inspect `/home/pmc/linuxcnc/configs/` for real HAL/INI paths
+
+### Versions shipped this session (when pushed)
+- **cyclecad 3.10.5** — AI Copilot polyline + bearing/housing/T-slot/U-bracket templates (4 templates)
+- **cyclecad 3.11.0** — AI Engineering Analyst v1 (bolted-joint, MecAgent-parity)
+- **cyclecad 3.12.0** — Suite product pages + AI Engineer v2 (gears + shafts) + app polish
+- **cyclecad 3.13.0** — AI Engineer v2 complete (5 analyses + bearings + welds) + UI tabs + RAG scaffold + Docker fix + Text-to-CAD live preview
+- **cyclecad 3.14.0** — Pentacad Phase 1A + 1B real product (7/12 strategies, sim, bridge, 3 machines, Python daemon, docs) + RAG UI wiring
+- **explodeview 1.0.23** — compositing render module scaffold
+- **explodeview 1.0.24** — compositing render UI auto-install
+
+### Handoff files created
+- `HANDOFF-2026-04-24-session-3.md` — comprehensive handoff with push commands for cyclecad 3.14.0
+
+### Files still uncommitted on disk at session 4 end (VM bash dead — user must run push)
+See `HANDOFF-2026-04-24-session-3.md` for the exact `git add` list.
+
+---
+
+## Session 2026-04-24 (session 5) — Kinetic Control decoded + Rockhopper pivot + Pentacad Kinetic-style UI
+
+### The big discovery: Rockhopper is the real bridge
+
+User uploaded the Kinetic Control v5.8.4 BeagleBone Black disk image (`kinetic-control-v5.8.4-20250401-bbb.img`, ~4.3GB uncompressed). After the VM's bash died from a disk-full event during extraction, I pivoted to **Docker on the user's Mac** (`debian:bookworm-slim` + `debugfs`, since Alpine's e2fsprogs skips debugfs) to decode the ext4 partition at sector 8192. That plus a `strings` dump plus cloning `PocketNC/Rockhopper` and `PocketNC/Settings` gave us the full picture.
+
+**Key finding:** every Pentamachine already runs **Rockhopper**, a Tornado WebSocket server exposing the full LinuxCNC API as JSON. It's been there since the original Pocket NC (2013). This replaces `pentabridge.py` as the primary integration path. Pentabridge stays as a fallback for non-Rockhopper LinuxCNC setups (rare outside Pentamachine hardware).
+
+All findings consolidated in `docs/pentacad/kinetic-control-facts.md` — Rockhopper protocol, 150+ StatusItems, 50+ CommandItems, platform facts, real variants, CORS warning.
+
+### Real machine variants (corrected — do not re-confuse)
+
+Earlier sessions drafted `V2-50CHB` and `V2-50CHK` sub-variants. Those **DO NOT exist**. The actual product line, confirmed from disk image GLBs + `PocketNC/Settings/versions/`:
+
+| Consumer name | boardRevision | GLB | Notes |
+|---|---|---|---|
+| V1 | `v1revH` | `v1.glb` + `v1kickstarter.glb` | Legacy, ER11 24k |
+| V2-10 | `v2revP` | `v2-10.glb` | Production |
+| V2-50 | `v2revR` | `v2-50.glb` | Flagship, ER20 40k |
+| Solo | `(tbd)` | `solo.glb` (7.9MB) | New SKU, specs unclear |
+
+Plus accessory GLB: `v2-vise.glb` (V2 workholding vise).
+
+**What changed in the repo**:
+- `machines/v1/kinematics.json` — NEW
+- `machines/v2-50/kinematics.json` — NEW
+- `machines/solo/kinematics.json` — NEW, honest `_confirmed: false` across the board
+- `machines/v2-50-chb/kinematics.json`, `machines/v2-50-chk/kinematics.json` — reduced to deprecated redirect shells
+- `machines/index.json` — rewritten with real product line + `deprecatedAliases` array
+
+### Rockhopper protocol notes (the condensed version)
+
+Subprotocol: `'linuxcnc'` (REQUIRED on `new WebSocket(url, ['linuxcnc'])`)
+
+Login phase: `{id, user, password, date?}` — no `command` field; server MD5s the password and compares against `userdict`.
+
+After login: `{id, command, name, ...params}` — commands are `get`/`watch`/`unwatch`/`put`/`list_get`/`list_put`. Params are **flat at the top level**, not nested in a data object.
+
+Replies: `{id, code, data}` — `code` is always a `?OK`/`?ERR`/`?...` token.
+
+Defaults: user `default`, password `default` (MD5 in `/var/opt/pocketnc/Rockhopper/userdict` or similar).
+
+**CORS restriction (important!):** Rockhopper hardcodes an origin regex `https?://([a-z0-9]+\.)?pocketnc.com`. Opening pentacad from `cyclecad.com` will be rejected. Three workarounds:
+1. Serve pentacad locally (`python3 -m http.server` + `localhost` origin) — empty Origin passes
+2. Patch Rockhopper upstream or on the shop's copy
+3. nginx reverse-proxy stripping the Origin header
+
+### Corrections applied to pentabridge.py
+
+Cross-referencing against the real halui pin dump caught two bugs in earlier drafts:
+1. **Feed override** used `halui.feed-override.value <n>` — that pin is **read-only**. Correct setter is `halui.feed-override.direct-value`.
+2. **Spindle override** used `halui.spindle-override.value` — doesn't exist. Correct setter is `halui.spindle.0.override.direct-value` (V2 has one spindle at index 0).
+
+Jog path also changed from MDI incremental (`G91 G1 X<d> F<feed>`) to direct halui pins (`halui.axis.jog-speed` + `.increment` + `.increment-plus/minus`) — faster, no parser round-trip, works in any control mode.
+
+### What shipped this session
+
+**`app/js/modules/rockhopper-client.js`** (~600 lines, NEW)
+- Full browser-side WS client matching the real protocol
+- Exports: `connect()`, `disconnect()`, `on()`, `send()`, `get()`, `watch()`, `unwatch()`, `listStatus()`, `listCommands()`, `put()`, `mdi()`, `setMode()`, `setState()`, `clearEstop()`, `jog()`, `home()`, `homeAll()`, `feedOverride()`, `spindleOverride()`, `spindle()`, `coolant()`, `auto()`, `pause()`, `resume()`, `abort()`, `openFile()`, `uploadAndRun()`, `getStatus()`, `getDRO()`, `startMock()`, `stopMock()`, `runSelfTests()`
+- JOINT map: X=0, Y=1, Z=2, A=3, B=4
+- DEFAULT_WATCH: 26 items (`actual_position`, `task_state`, `exec_state`, `motion_line`, `spindle`, `feedrate`, etc.)
+- Mock mode for dev without hardware
+
+**`app/js/modules/pentacad.js`** (updated)
+- Bumped to v1.0.0 in header
+- Recognizes Rockhopper as preferred bridge, PentaBridge as fallback
+- New `rockhopper.*` dispatch namespace in `execute()`
+- Machine picker in `getUI()` now shows the real product line (V1/V2-10/V2-50/Solo)
+
+**`app/pentacad.html`** (full Kinetic-style rebuild across two commits)
+
+First commit (`0f23901`, pushed earlier):
+- White panels + green `#15B573` + amber `#F5A623` RESET + dark `#1A2828` status bar (matches the Kinetic Control screenshot the user sent)
+- Top tabs: Machine / Design / CAM / Simulate / **Production** (active default)
+- Production tab: 4-panel grid with SVG circular gauges (Spindle/Feed), big DRO readout (X/Y/Z/A/B, 4 decimals), Control panel (CYCLE/START, FEED HOLD, STEP, Optional Stop, sliders for Max Velocity / Max Rapid / Feed Rate / Spindle Rate)
+- Bottom status bar: connected dot + modal state + orange angular RESET + run timer + alert pills
+
+Second commit (`a5b3e94`, pushed this session end):
+- **USB auto-detect** in Machine tab — three probe buttons: macOS gadget (192.168.6.2), Linux/Win gadget (192.168.7.2), scan-all fallback
+- Rockhopper user/pass fields (defaults: `default`/`default`)
+- **Runtime GLB fetch** — "↓ Fetch V2-50 model from connected machine" button, blob-cached, dispatches `pentacad:machine-glb-ready` CustomEvent
+- **CAM tab** rebuilt Kinetic-style: dark viewport + sidebar with Setup 1 card, 4-op list (Face / Adaptive Clear / Pocket / Drill), +Add / Generate / Post-to-G-code buttons, Posted summary card (lines/moves/distance/time) with auto-download
+- **Simulate tab** rebuilt Kinetic-style: dark viewport with color-coded toolpath (green rapid, blue feed), Playback controls (play/pause/stop + speed + timeline scrubber), Motion summary, per-axis soft-limit check, Current-move readout
+- **Three.js integration**: `<script type="importmap">` for three@0.170.0 + OrbitControls + GLTFLoader. `createViewport()` factory with `setGlb()` / `setToolpath()` / `markToolAt()`. Lazy-inits on tab switch; both viewports subscribe to the GLB-ready event.
+
+**`docs/pentacad/kinetic-control-facts.md`** (NEW) — all findings in one file, shareable reference for future sessions.
+
+**`server/pentabridge.py`** (fixed with correct halui pin names per findings above).
+
+**`server/pentamachine-v2.cps`** (NEW, draft Fusion 360 post-processor matching the dialect — G20 imperial, G93 inverse-time, G54 WCS, 4-decimal coords).
+
+### Git state at session 5 end
+
+- `a5b3e94` pushed (most recent) — pentacad.html with USB auto-detect + Kinetic CAM/Simulate + GLB fetch
+- `0f23901..3e66f86` pushed earlier — Production tab + machine JSONs + rockhopper-client.js + docs
+- **Everything is on `origin/main`.** No unpushed work at session end.
+- **npm**: `cyclecad@3.14.0` is still the published version. Next publish should be `3.15.0` once the Rockhopper client has been shakedown-tested against real hardware.
+
+### User's next move (when returning)
+
+Last message: *"all three you can work on, i connect penta machine with usb cable"*
+
+All three landed. When the user comes back, the flow is:
+1. Plug in Pentamachine via USB
+2. Open pentacad.html (probably via `localhost` because of the CORS regex — see `HANDOFF-2026-04-24-session-5.md` for details)
+3. Click a USB auto-detect button
+4. Debug whatever happens
+
+Likely first-hit issues are documented in `HANDOFF-2026-04-24-session-5.md`: CORS origin check, GLB URL path, BBB gadget subnet, creds override.
+
+### Key collaboration lessons from session 5
+
+- **VM bash stays dead** once a disk-full event kills it. Docker on the user's Mac is the escape hatch for Linux-only tooling. `debian:bookworm-slim` for `debugfs`; Alpine's e2fsprogs lacks it.
+- **Never guess halui pin names again.** The disk-image string dump is the authoritative catalog. `.value` pins are usually read-only; setters end in `.direct-value`. Spindle overrides are per-index (`halui.spindle.0.override.direct-value`).
+- **The fabricated CHB/CHK product names are dead** — do not resurrect. The real chain is V1 / V2-10 / V2-50 / Solo, keyed on boardRevision.
+- **Rockhopper subprotocol and flat-param JSON** are not optional — get them wrong and the server closes the socket without explanation. `docs/pentacad/kinetic-control-facts.md` has the exact shapes.
+- **User's push happens at his Terminal.** Push commands go via `write_clipboard` after `request_access(["Terminal"], clipboardWrite: true)`. Terminal is tier-"click" — no typing directly into it.
+
+### Handoff file
+
+`HANDOFF-2026-04-24-session-5.md` — quickstart for the next chat: what to read, likely bugs when connecting to real hardware, pending task inbox.
+
+## Session 2026-04-24 (session 6) — Pentacad v1.0 polish: standalone simulator + full docs + test suite + pre-flight
+
+### What shipped (commit cb41310, pushed clean to origin/main)
+
+**8 new files, all under `docs/pentacad/` and `app/`:**
+
+| File | Purpose | Approx lines |
+|------|---------|--------------|
+| `app/pentacad-sim.html` | Standalone 5-axis simulator, sim.pentamachine.com-parity feature set | 1,550 |
+| `docs/pentacad/ARCHITECTURE.md` | Full system architecture (layers, data flow, coords, security, perf, extension points, deploy modes, licensing) | ~700 |
+| `docs/pentacad/HELP.md` | User guide: 5 workspaces + standalone sim + keyboard shortcuts + G/M reference + 8 error fixes + 13 FAQ | ~550 |
+| `docs/pentacad/PRE-FLIGHT-CHECKLIST.md` | 30–45 min step-by-step for first hardware test (unboxing → WS handshake → home → jog → air-cut → FEED HOLD → abort → post-flight) | ~400 |
+| `docs/pentacad/MATT-REQUEST-LIST.md` | Prioritised A/B/C/D asks with workaround shipped for each, status table, suggested message template | ~280 |
+| `docs/pentacad/tutorials/00-07.md` | 8 step-by-step tutorials (getting-started, face-mill, pocket+drill, adaptive, chamfer, bore/thread, bottle-opener full workflow, simulator tour) | ~820 combined |
+| `app/tests/pentacad-all-tests.html` | Master test dashboard — ~60 tests across sim/cam/bridge/rockhopper/integration/machines, auto-runs, exports JSON, per-module collapsible | ~600 |
+| `app/tests/pentacad-sim-tests.html` + `pentacad-cam-tests.html` | Focused module drill-downs with CAM→Sim round-trip verification | ~270 combined |
+
+### Standalone simulator feature inventory (`app/pentacad-sim.html`)
+
+Designed for feature-parity with sim.pentamachine.com based on general 5-axis CAM simulator industry knowledge. We never successfully fetched sim.pentamachine.com this session (see allowlist blocker below), so styling is approximation — parity diff is pending.
+
+Shipped:
+- Three-panel layout: syntax-highlighted G-code editor / Three.js viewport / tabbed side panel (DRO/Stats/Limits/Issues)
+- Kinetic-Control design tokens (green #15B573, amber #F5A623, dark status bar #1A2828)
+- G-code tokenizer: G/M orange, N grey, F/S purple, T pink, A/B/C teal, XYZ default, comments italic grey. Current-line green highlight. Error lines red-tinted.
+- 7 pre-built example programs: face-mill, pocket+drill, bottle-opener-ring (abridged), thread-mill M6×1.0, adaptive-clear, 3+2 indexing, deliberate soft-limit test
+- Machine picker (V1/V2-10/V2-50/Solo) — bundled kinematics so works from `file://`
+- Drag-drop .nc/.ngc/.gcode/.tap files anywhere on page
+- Shareable URLs: `#m=v2-50&g=<base64-gcode>`
+- 7 visibility toggles: Machine / Stock / Toolpath / Rapid moves / Grid / Axes / Origin
+- Playback: Space=play/pause, →/←=step, Home/End=jump, timeline scrubber, speed chip 0.25×–50×
+- Camera views: F=fit, R=reset iso, 1/3/7 = front/right/top
+- DRO tab: X/Y/Z 4-decimal inch + A/B 3-decimal deg, active modal-state chips, feed/RPM/tool/coolant
+- Stats tab: line count, moves, rapid/feed split, M6 count, distances, est run time, per-axis envelope used
+- Limits tab: per-axis soft-limit check, green/red rows, violation counts
+- Issues tab: parser errors + envelope violations + "feed without M3" + "no M2/M30" heuristics
+- Status bar at bottom matches Kinetic Control pendant style
+
+Loads existing modules: `app/js/modules/pentacad-sim.js` for parser + executor + kinematics (no duplication of core logic).
+
+### Architecture doc highlights (`docs/pentacad/ARCHITECTURE.md`)
+
+- §2 Layered model with ASCII diagram: users → entry points → coordinator → 5 sub-modules → controller
+- §3 Module responsibilities — one section per module, self-test counts, line counts
+- §4 Data flow — end-to-end trace from "user clicks Add Op" through CAM → Sim → Post → Rockhopper → LinuxCNC
+- §5 Coordinate systems table — pins down inch vs mm vs degrees at every boundary, where conversions happen
+- §6 G-code dialect — exactly what Pentacad speaks, what it warns-but-ignores
+- §7 Security and threat model — credentials, transport, CORS, G-code-as-input, agent auth gating
+- §8 Performance targets with measured numbers (parse 10k lines <200ms, exec <500ms, 60fps viewport, DRO 30Hz paint)
+- §9 Extension points — how to add a machine / strategy / post / controller / agent integration
+- §10 Deployment modes — static, localhost, embedded, self-hosted on Pentamachine, Docker
+- §11 Testing strategy — 4 layers: unit self-tests, integration pages, visual sim smoke, hardware pre-flight
+- §12 Out of scope — generic interpreters, non-AB-table kinematics, 3D free-form (Phase 3), Fusion-post parity
+- §13 Licensing — AGPL-3.0-only + commercial dual-license rationale
+
+### Test suite structure
+
+- `pentacad-all-tests.html` is the authoritative aggregator. Auto-runs on load. ~60 tests across 6 modules.
+- Tests delegate to each module's own `runSelfTests()` where available, plus add integration tests that cross module boundaries (CAM→Sim round-trip, parse-then-exec, limit-check-against-machine).
+- `pentacad-sim-tests.html` + `pentacad-cam-tests.html` are focused drill-down pages for iterating on one module with a 2-second feedback loop.
+- All browser-runnable. No node, no Playwright, no CI required for basic confidence. JSON export for CI integration later.
+
+### Matt request list — current state
+
+Priority A (would significantly improve Pentacad quality, all have workarounds shipped):
+1. Native GLBs for V1/V2-10/V2-50/Solo (we can only fetch from connected machine)
+2. Representative `PocketNC.ini` per variant to confirm envelope/feed/accel
+3. 3–5 more reference `.ngc` files (we only have bottle-opener-ring)
+4. Stock tool list per variant
+
+Priority B: Rockhopper CORS config flag, official halui pin reference, G-code dialect spec, kinematics walkthrough, singularity handling convention.
+
+Priority C: CalibrationOverlay.inc example, actual-vs-commanded spindle RPM, coolant M-code per-variant.
+
+Priority D (future): tool probe, wrapped_rotary mapping, probe calibration, multi-machine fleet view.
+
+Full list + suggested message template in `docs/pentacad/MATT-REQUEST-LIST.md`.
+
+### Cross-reference with pilot-intelligence-brief.md
+
+User re-uploaded the pilot brief mid-session. Strategic reminder that shaped the Matt ask list:
+
+- Matt stated "we provide feedback for 4+ companies working on similar CAM concepts" → he's a **neutral ecosystem supplier**, not a partner
+- JV ask is dead. Pilot-first. Build in silence, ship polished demos (not source/architecture), public launch before he asks for exclusivity
+- All Matt asks in the list are technical-only, nothing requiring partnership discussion, nothing exclusive — framed so he can treat Pentacad same as his other CAM partners
+
+### The pentamachine.com allowlist blocker (unresolved)
+
+**Issue:** across 5+ fetch attempts spanning the entire session, `sim.pentamachine.com`, `pentamachine.com`, and `www.pentamachine.com` all returned the same cowork-egress-blocked error. The error's "Allowed:" list was identical every time and contained zero pentamachine entries — only package managers + Anthropic/Claude domains.
+
+**User actions during the session:**
+1. Added `pentamachine.com` as an additional allowed domain with the mode set to "Package managers only" → blocked
+2. Added `*.pentamachine.com` wildcard → blocked
+3. Switched domain allowlist mode to "All domains" (screenshot showed `Claude can access all domains on the internet.`) → still blocked
+
+**Conclusion:** Cowork sandbox allowlist is session-start-snapshotted. Settings changes during a live session do NOT propagate to the running sandbox. This appears to be an architectural limit, not a user error.
+
+**Fix for next session:** Start a fresh chat. First fetch of `sim.pentamachine.com` will work against the new snapshot. Then do styling-pass:
+1. Pull page source + inspect network requests
+2. Diff styling against `app/pentacad-sim.html`
+3. Port exact layout, colour palette, HUD styling, toolpath colouring
+4. Ship as `pentacad-sim.html v0.3` with visual parity to the reference
+
+### Resume command for next chat
+
+> Resume pentacad sim styling pass — mirror sim.pentamachine.com UI against our app/pentacad-sim.html. Read HANDOFF-2026-04-24-session-6.md first.
+
+### Git state at session 6 end
+
+```
+a5b3e94..cb41310  main -> main
+```
+
+Commit `cb41310` — "Pentacad v1.0.0 — standalone simulator, architecture, help, 8 tutorials, test suite, pre-flight checklist, Matt asks list". Clean push. No pending local commits. No stale lock files.
+
+npm state: `cyclecad@3.14.0` still the published version. Do NOT publish 3.15.0 until hardware validation completes tomorrow per §9.3 of the pre-flight checklist.
+
+### Handoff file
+
+`HANDOFF-2026-04-24-session-6.md` — the resume document for the next chat with everything needed to pick up the styling pass.

@@ -2329,11 +2329,10 @@ function setupGlbKinematics(root3d) {
     }
   });
 
-  // Material colors — calibrated brighter in v0.22 so machine reads with
-  // surface detail visible (was crushing to near-black at 0x32353A under
-  // softer lighting).
-  const accentGrey = new THREE.MeshLambertMaterial({ color: 0x5A5D62 });
-  const bodyDark   = new THREE.MeshLambertMaterial({ color: 0x42454A });
+  // Material colors — v0.23 lifted again, user reports still too dark.
+  // This puts body at medium-grey with clearly visible surface detail.
+  const accentGrey = new THREE.MeshLambertMaterial({ color: 0x6E7176 });
+  const bodyDark   = new THREE.MeshLambertMaterial({ color: 0x555960 });
   root3d.traverse(obj => {
     if (!obj.isMesh || !obj.material) return;
     const m = Array.isArray(obj.material) ? obj.material[0] : obj.material;
@@ -3200,8 +3199,8 @@ function wireUI() {
     vcRenderer.outputColorSpace = THREE.SRGBColorSpace;
 
     const vcScene = new THREE.Scene();
-    const vcCamera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
-    vcCamera.position.set(0, 0, 4);
+    const vcCamera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+    vcCamera.position.set(0, 0, 3.2);   // tighter than before so cube fills the 80px display
 
     // Bright multi-light setup so the cube shows clear 3D depth instead of looking flat
     vcScene.add(new THREE.AmbientLight(0xffffff, 0.8));
@@ -3255,16 +3254,20 @@ function wireUI() {
     const cubeModel = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.4, 1.4), cubeMats);
     vcGroup.add(cubeModel);
 
-    // Render loop synced to main camera
+    // Render loop synced to main camera. Only override default rotation when
+    // the main camera direction is meaningfully non-zero (otherwise cube
+    // collapses to a sliver edge-on).
     function renderViewCube() {
-      if (app.three) {
+      if (app.three && app.three.camera && app.three.controls) {
         const cam = app.three.camera;
         const target = app.three.controls.target;
-        const dir = cam.position.clone().sub(target).normalize();
-        // Set our cube's group rotation so cube reflects scene orientation
-        const yaw = Math.atan2(dir.x, dir.z);
-        const pitch = -Math.asin(dir.y);
-        vcGroup.rotation.set(pitch, yaw, 0);
+        const dir = cam.position.clone().sub(target);
+        if (dir.length() > 0.5) {
+          dir.normalize();
+          const yaw = Math.atan2(dir.x, dir.z);
+          const pitch = -Math.asin(THREE.MathUtils.clamp(dir.y, -1, 1));
+          vcGroup.rotation.set(pitch, yaw, 0);
+        }
       }
       vcRenderer.render(vcScene, vcCamera);
       requestAnimationFrame(renderViewCube);

@@ -584,9 +584,13 @@ input, textarea { font-family: inherit; color: inherit; }
 }
 .pt-change-machine:hover { background: var(--pt-green-dark); }
 
-/* ── Machine menu (popover) ── */
+/* ── Machine menu (popover) ──
+   position:fixed so the JS positioning code (which uses screen coords from
+   getBoundingClientRect) lands the menu where the user expects. With
+   position:absolute it would be offset by the pt-viewport's left edge
+   (~325px) and end up off-screen on smaller windows. */
 .pt-machine-menu {
-  position: absolute;
+  position: fixed;
   background: #FFFFFF;
   color: var(--pt-text);
   border-radius: var(--pt-radius-sm);

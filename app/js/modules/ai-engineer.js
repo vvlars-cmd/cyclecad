@@ -1057,6 +1057,9 @@
         'Safety factor: <strong style="color:' + (r.safetyFactor >= 1.5 ? '#a7f3d0' : r.safetyFactor >= 1.0 ? '#fed7aa' : '#fca5a5') + '">' + fmt(r.safetyFactor) + '</strong>';
     }
     root.appendChild(body);
+
+    // RAG citations — appears below the report once the embeddings are ready
+    appendCitations(root, kind);
   }
 
   /**
@@ -1228,6 +1231,53 @@
       'Thread ' + i.thread + ' A_s = ' + i.A_s + ' mm² (DIN 13). Grade ' + i.grade + ' R_p0.2 = ' + i.R_p02 + ' MPa, R_m = ' + i.R_m + ' MPa.<br>' +
       'This is a first-pass analysis — always verify with detailed VDI 2230 if safety-critical.';
     root.appendChild(meta);
+
+    // RAG citations (non-blocking — appears below report once ready)
+    appendCitations(root, 'bolt');
+  }
+
+  /**
+   * Append a "Sources" block to the given report element by querying the RAG
+   * module for context related to the current analysis kind. Non-blocking —
+   * the citations fade in once the embeddings are ready.
+   *
+   * @param {HTMLElement} root  Report container.
+   * @param {'bolt'|'gear'|'shaft'|'bearing'|'weld'} kind
+   */
+  function appendCitations(root, kind) {
+    const RAG = (window.CycleCAD && window.CycleCAD.AIEngineerRAG) || null;
+    if (!RAG) return;                                     // RAG not loaded — silently skip
+    if (!RAG.isReady || typeof RAG.query !== 'function') return;
+
+    // Placeholder that replaces itself when the query resolves.
+    const placeholder = document.createElement('div');
+    placeholder.style.cssText = 'margin-top:14px;padding-top:10px;border-top:1px dashed #334155;font-size:11px;color:#64748b;font-style:italic';
+    placeholder.textContent = 'Loading sources…';
+    root.appendChild(placeholder);
+
+    const QUERY_BY_KIND = {
+      bolt:    'bolted joint preload slip resistance bolt tension von mises',
+      gear:    'spur gear AGMA bending contact stress Lewis',
+      shaft:   'shaft fatigue Goodman Soderberg alternating mean endurance',
+      bearing: 'rolling bearing L10 life ISO 281 dynamic load',
+      weld:    'fillet weld throat stress AWS D1.1 electrode allowable'
+    };
+    const q = QUERY_BY_KIND[kind] || kind;
+
+    // Ensure the model is initialised (lazy). Tolerate any failures silently.
+    const initPromise = RAG.init ? Promise.resolve().then(() => RAG.init()).catch(() => null) : Promise.resolve();
+    initPromise
+      .then(() => RAG.query(q, { topK: 3 }))
+      .then((results) => {
+        placeholder.remove();
+        if (!Array.isArray(results) || results.length === 0) return;
+        const citationsEl = RAG.buildCitationUI ? RAG.buildCitationUI(results) : null;
+        if (citationsEl) root.appendChild(citationsEl);
+      })
+      .catch((err) => {
+        placeholder.style.color = '#64748b';
+        placeholder.textContent = 'Sources unavailable (' + (err && err.message || String(err)).slice(0, 80) + ')';
+      });
   }
 
   function section(title, safe) {

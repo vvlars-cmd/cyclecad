@@ -7,3 +7,17 @@ example/
 # DUO project demo page
 app/duo-manifest-demo.html
 DUO-MANIFEST-README.md
+
+# Kinetic Control disk-image dump (raw strings — do not commit, 7.6MB)
+kc-dump.txt
+kc.img
+*.img
+*.img.xz
+
+
+# Disk-image debug artifacts — produced ad-hoc, not source code
+kc
+kc-*.txt
+
+# Session handoff notes — kept locally for AI context, not source code
+HANDOFF-*.md

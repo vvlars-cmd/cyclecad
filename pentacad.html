@@ -974,48 +974,49 @@ N4300 <span class="kw">M30</span>
         <ul>
           <li>Module scaffold</li>
           <li>Machine JSON schema</li>
-          <li>G-code parser (G20/G90/G93/G94/G54)</li>
+          <li>3 machine defs (V2-10, V2-50CHB, V2-50CHK)</li>
           <li>Bridge protocol spec</li>
           <li>Strategy registry (12)</li>
+        </ul>
+      </div>
+
+      <div class="phase done">
+        <div class="phase-dot"></div>
+        <span class="phase-num">Done</span>
+        <h4>Phase 1 · CAM core</h4>
+        <ul>
+          <li>Real 2D Contour + Pocket + Drill + Face</li>
+          <li>Adaptive Clear + Chamfer + Bore/Thread</li>
+          <li>Full G-code parser + modal executor</li>
+          <li>A/B forward kinematics + soft-limit</li>
+          <li>Pentamachine V2 post-processor</li>
+          <li>Setup manager + operation list UI</li>
         </ul>
       </div>
 
       <div class="phase active">
         <div class="phase-dot"></div>
         <span class="phase-num">In progress</span>
-        <h4>Phase 1 · CAM core</h4>
+        <h4>Phase 2 · Live bridge + 3D finishing</h4>
         <ul>
-          <li>Setup manager UI</li>
-          <li>2D Contour + Adaptive + Pocket + Face</li>
-          <li>Drill canned cycles</li>
-          <li>Post-processor emission</li>
-          <li>Real Pentamachine kinematics (awaiting V2 specs)</li>
+          <li>Kinetic Control WS bridge (protocol v1.0 spec live)</li>
+          <li>Python daemon reference implementation</li>
+          <li>Jog · stream · DRO · pause · abort</li>
+          <li>Parallel / Radial / Scallop / Projection / Flow (3D)</li>
+          <li>Stock-removal rendering in simulator</li>
         </ul>
       </div>
 
       <div class="phase next">
         <div class="phase-dot"></div>
         <span class="phase-num">Next</span>
-        <h4>Phase 2 · 3D + Sim</h4>
+        <h4>Phase 3 · Production ready</h4>
         <ul>
-          <li>3D finishing strategies (parallel, scallop, projection, flow)</li>
-          <li>Forward-kinematics simulator</li>
-          <li>Soft-limit + stock-removal</li>
-          <li>Collision check</li>
-          <li>WCS probing workflow</li>
-        </ul>
-      </div>
-
-      <div class="phase next">
-        <div class="phase-dot"></div>
-        <span class="phase-num">Later</span>
-        <h4>Phase 3 · Live bridge</h4>
-        <ul>
-          <li>Kinetic Control WS bridge</li>
-          <li>Jog · stream · DRO · pause · abort</li>
-          <li>G38 probing</li>
+          <li>Collision detection against fixtures</li>
+          <li>G38 probing workflow UI</li>
           <li>Offline queue with resume</li>
           <li>Multi-machine dashboard</li>
+          <li>Fusion / Inventor post plugin</li>
         </ul>
       </div>
     </div>

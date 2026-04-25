@@ -1,0 +1,206 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Pentacad Machine Configuration",
+  "description": "Defines kinematics, spindle, limits, tool library, and post-processor options for a Pentamachine V2 variant.",
+  "type": "object",
+  "required": ["machineId", "vendor", "type", "linear", "rotary"],
+  "properties": {
+    "machineId":   { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "vendor":      { "type": "string" },
+    "productUrl":  { "type": "string", "format": "uri" },
+    "family":      { "type": "string" },
+    "variant":     { "type": "string" },
+    "displayName": { "type": "string" },
+    "type": {
+      "type": "string",
+      "enum": ["3-axis", "3-axis-A-rotary", "5-axis-AB-table", "5-axis-BC-head"]
+    },
+    "description": { "type": "string" },
+
+    "linear": {
+      "type": "object",
+      "required": ["x", "y", "z"],
+      "properties": {
+        "x": { "$ref": "#/definitions/linearAxis" },
+        "y": { "$ref": "#/definitions/linearAxis" },
+        "z": { "$ref": "#/definitions/linearAxis" }
+      }
+    },
+
+    "rotary": {
+      "type": "object",
+      "properties": {
+        "a": { "$ref": "#/definitions/rotaryAxis" },
+        "b": { "$ref": "#/definitions/rotaryAxis" },
+        "c": { "$ref": "#/definitions/rotaryAxis" }
+      }
+    },
+
+    "pivots": {
+      "type": "object",
+      "description": "Geometric offsets for forward kinematics. All values in machine's preferred unit (inch or mm).",
+      "properties": {
+        "a_to_table":   { "$ref": "#/definitions/offset3d" },
+        "b_to_a":       { "$ref": "#/definitions/offset3d" },
+        "spindle_to_a": { "$ref": "#/definitions/offset3d" }
+      }
+    },
+
+    "home": {
+      "type": "object",
+      "description": "Homed position for each axis.",
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" },
+        "a": { "type": "number" },
+        "b": { "type": "number" }
+      }
+    },
+
+    "tool_length_zero": {
+      "type": "number",
+      "description": "Reference tool length at machine home (in machine units)."
+    },
+
+    "spindle": {
+      "type": "object",
+      "properties": {
+        "type":      { "type": "string" },
+        "min_rpm":   { "type": "number" },
+        "max_rpm":   { "type": "number" },
+        "recommended_warmup_seconds": { "type": "number" }
+      }
+    },
+
+    "max_feed": {
+      "type": "object",
+      "properties": {
+        "rapid_linear": { "$ref": "#/definitions/feedWithUnit" },
+        "rapid_rotary": { "$ref": "#/definitions/feedWithUnit" },
+        "cut":          { "$ref": "#/definitions/feedWithUnit" }
+      }
+    },
+
+    "coolant": {
+      "type": "object",
+      "properties": {
+        "mist":  { "type": "object", "properties": { "m_code": {"type": "integer"}, "supported": {"type": "boolean"} } },
+        "flood": { "type": "object", "properties": { "m_code": {"type": "integer"}, "supported": {"type": "boolean"} } },
+        "off":   { "type": "object", "properties": { "m_code": {"type": "integer"} } }
+      }
+    },
+
+    "controller": {
+      "type": "object",
+      "properties": {
+        "platform":         { "type": "string" },
+        "kinematicsModule": { "type": "string" },
+        "configIniPath":    { "type": "string" },
+        "halPath":          { "type": "string" }
+      }
+    },
+
+    "post": {
+      "type": "object",
+      "description": "Post-processor defaults. Used by PentacadCAM.emitGCode().",
+      "properties": {
+        "dialect":               { "type": "string" },
+        "units":                 { "enum": ["inch", "mm"] },
+        "planeCode":             { "type": "string" },
+        "distanceCode":          { "type": "string" },
+        "wcsDefault":            { "type": "string" },
+        "feedModeDefault":       { "type": "string" },
+        "feedModeFor5Axis":      { "type": "string" },
+        "cutterComp":            { "type": "string" },
+        "programNumberFormat":   { "type": "string" },
+        "decimalPlacesLinear":   { "type": "integer", "minimum": 1, "maximum": 6 },
+        "decimalPlacesRotary":   { "type": "integer", "minimum": 1, "maximum": 6 }
+      }
+    },
+
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "description", "type"],
+        "properties": {
+          "id":          { "type": "integer" },
+          "description": { "type": "string" },
+          "type":        { "enum": ["flat", "ball", "bull", "vbit", "drill", "tap", "probe"] },
+          "dia_in":      { "type": "number" },
+          "dia_mm":      { "type": "number" },
+          "flutes":      { "type": "integer" },
+          "max_rpm":     { "type": "number" },
+          "angle_deg":   { "type": "number" }
+        }
+      }
+    },
+
+    "singularity_notes": { "type": "array", "items": { "type": "string" } },
+
+    "safety": {
+      "type": "object",
+      "properties": {
+        "estop": {
+          "type": "object",
+          "properties": {
+            "hardware":  { "type": "boolean" },
+            "m_code":    { "type": "integer" }
+          }
+        },
+        "toolBreakDetection": { "type": "boolean" },
+        "probing": {
+          "type": "object",
+          "properties": {
+            "supported":      { "type": "boolean" },
+            "g_code":         { "type": "string" },
+            "default_feed_in_per_min": { "type": "number" }
+          }
+        },
+        "wcs": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  },
+
+  "definitions": {
+    "linearAxis": {
+      "type": "object",
+      "required": ["min", "max", "unit"],
+      "properties": {
+        "min":        { "type": "number" },
+        "max":        { "type": "number" },
+        "unit":       { "enum": ["inch", "mm"] },
+        "_confirmed": { "type": "boolean" },
+        "_source":    { "type": "string" }
+      }
+    },
+    "rotaryAxis": {
+      "type": "object",
+      "required": ["min", "max", "unit"],
+      "properties": {
+        "min":        { "type": "number" },
+        "max":        { "type": "number" },
+        "unit":       { "enum": ["deg"] },
+        "axis":       { "enum": ["X", "Y", "Z"] },
+        "continuous": { "type": "boolean" },
+        "_confirmed": { "type": "boolean" }
+      }
+    },
+    "offset3d": {
+      "type": "object",
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" }
+      }
+    },
+    "feedWithUnit": {
+      "type": "object",
+      "properties": {
+        "value": { "type": "number" },
+        "unit":  { "type": "string" }
+      }
+    }
+  }
+}

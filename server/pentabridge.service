@@ -1,0 +1,22 @@
+[Unit]
+Description=Pentacad bridge — WebSocket ⇄ LinuxCNC/Kinetic Control
+Documentation=https://github.com/vvlars-cmd/cyclecad/blob/main/docs/pentacad/bridge-protocol.md
+After=network.target linuxcnc.service
+Wants=linuxcnc.service
+
+[Service]
+Type=simple
+User=pmc
+Group=pmc
+WorkingDirectory=/home/pmc
+ExecStart=/usr/local/bin/pentabridge --port 7777 --config /home/pmc/linuxcnc/configs/v2-50-chb/v2-50-chb.ini
+Restart=on-failure
+RestartSec=5s
+
+# Hardening
+PrivateTmp=true
+ProtectSystem=full
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

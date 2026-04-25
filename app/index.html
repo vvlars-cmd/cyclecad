@@ -1412,7 +1412,7 @@
     </div>
     <div class="status-item">
       <span class="status-label">Version:</span>
-      <span class="status-value" id="status-version">v3.13.0</span>
+      <span class="status-value" id="status-version">v3.14.0</span>
     </div>
   </div>
 
@@ -1964,7 +1964,7 @@ window._dismissSplash = function(action) {
         }
         break;
       case 'help-about': {
-        const v = (window.CycleCAD && window.CycleCAD.version) ? window.CycleCAD.version : '3.13.0';
+        const v = (window.CycleCAD && window.CycleCAD.version) ? window.CycleCAD.version : '3.14.0';
         showDialog('About cycleCAD', 'cycleCAD v' + v + '<br>Part of the cycleCAD Suite — parametric CAD, ExplodeView, Pentacad.<br><br>Open-source (MIT) parametric 3D CAD modeller. Built with Three.js, OpenCascade.js for real B-rep, supporting STEP / IGES / GLB import, full parametric modelling, and AI-powered design assistance via the AI Copilot + AI Engineering Analyst.');
         break; }
       case 'tools-ai-copilot':
@@ -2961,7 +2961,7 @@ window._dismissSplash = function(action) {
 
 // ─── Dynamic version badge — fetch from /package.json on load, fall back to embedded ───
 (function(){
-  const FALLBACK_VERSION = '3.13.0';
+  const FALLBACK_VERSION = '3.14.0';
   async function updateVersion() {
     const badge = document.getElementById('status-version');
     if (!badge) return;

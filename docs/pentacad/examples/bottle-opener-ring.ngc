@@ -1,0 +1,92 @@
+%
+(AXIS,stop)
+(PROGRAM: 1001)
+(PENTACAD v1.0.0 GENERATED -- machine: v2-50-chb -- units: inch)
+(CREATED: 2026-04-24T14:00:00Z)
+(PART: bottle-opener-ring -- stock 100x10x100mm aluminum)
+(WCS: G54 @ centre-top)
+N10 G20 G17 G90 G40 G54
+N15 G94
+
+(OP1: Face -- stock top)
+N20 T1 M6 (T1: 1/4" flat endmill 2FL carbide)
+N25 M3 S18000 M7
+N30 G0 X-2.0000 Y-2.0000 Z0.1000
+N35 G1 Z-0.0200 F10.0
+N40 G1 X2.0000 F31.5
+N45 G1 Y-1.8000
+N50 G1 X-2.0000
+N55 G1 Y-1.6000
+N60 G1 X2.0000
+N65 G1 Y-1.4000
+N70 G1 X-2.0000
+(...abbreviated: 18 more scan lines covering full stock face...)
+N140 G0 Z0.2500
+
+(OP2: Adaptive Clear -- pocket rough)
+N145 T2 M6 (T2: 1/8" flat endmill 2FL)
+N150 M3 S22000 M7
+N155 G0 X0.3000 Y0.0000 Z0.2500
+N160 G1 X0.3000 Y0.0000 Z-0.0394 F9.8
+(ring 1 of 3)
+N165 G1 X0.2771 Y0.1150 Z-0.0394 F19.7
+N170 G1 X0.2120 Y0.2121 Z-0.0394
+N175 G1 X0.1150 Y0.2771 Z-0.0394
+N180 G1 X0.0000 Y0.3000 Z-0.0394
+(...traces around ring 1...)
+N210 G1 X0.3000 Y0.0000 Z-0.0394 (close ring 1)
+N215 G1 X0.2400 Y0.0000 Z-0.0394 (traverse to ring 2)
+(...ring 2, ring 3...)
+N400 G0 Z0.2500
+
+(OP3: Pocket finish)
+N405 T2 M6 (T2: 1/8" flat endmill 2FL -- same tool)
+N410 G0 X-0.2000 Y-0.2000 Z0.2500
+N415 G1 Z-0.0394 F9.8
+N420 G1 Y0.2000 F19.7
+N425 G1 X-0.1000
+N430 G1 Y-0.2000
+N435 G1 X0.0000
+N440 G1 Y0.2000
+(...zig-zag scan lines at 0.04" stepover...)
+N500 G0 Z0.2500
+
+(OP4: Drill -- 4x thru holes at corners)
+N505 T3 M6 (T3: 3mm twist drill HSS-Co)
+N510 M3 S3500 M7
+N515 G0 X1.2000 Y1.2000 Z0.1000
+N520 G1 Z-0.1181 F7.9 (G83 peck 1)
+N525 G0 Z0.1000 (retract)
+N530 G1 Z-0.2362 F7.9 (G83 peck 2)
+N535 G0 Z0.1000
+N540 G1 Z-0.3543 F7.9 (G83 peck 3 -- through)
+N545 G0 Z0.2500
+N550 G0 X-1.2000 Y1.2000
+(...same G83 cycle at each of 4 corners...)
+N650 G0 Z0.5000
+
+(OP5: 3+2 tilt + chamfer outer edge)
+N655 T4 M6 (T4: 90deg V-bit engraver 1/8" shank)
+N660 M3 S18000 M7
+N665 G0 X0.0000 Y0.0000 Z0.5000
+N670 G0 A22.5000 B0.0000 (tilt 22.5deg for chamfer)
+N675 G93 (inverse-time feed for 5-axis move)
+N680 G1 X2.0000 Y0.0000 Z-0.0197 A22.5000 B0.0000 F28.3
+N685 G94 (back to per-minute feed)
+(...follow outer edge with V-bit at tilted plane...)
+N820 G0 Z0.5000
+N825 G0 A0.0000 B0.0000 (return to vertical)
+
+(PROGRAM END)
+N830 G94 M9 M5
+N835 M30
+%
+
+(=== SUMMARY ===)
+(Total lines: ~835)
+(Total moves: ~680)
+(Cut distance: ~2450mm)
+(Rapid distance: ~380mm)
+(Estimated time: ~18 min at default feeds)
+(Tool changes: 4)
+(5-axis moves: 12 (G93 inverse-time))

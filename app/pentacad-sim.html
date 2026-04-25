@@ -2314,12 +2314,16 @@ function loadViceOverlay(platterY, onReady) {
 //     matching Penta's default render.
 //   - We use Three.js's attach() which preserves the world transform.
 function setupGlbKinematics(root3d) {
-  const a = root3d.getObjectByName('a');
-  const b = root3d.getObjectByName('b');
-  if (a && b && b.parent !== a) {
-    a.attach(b);
-  }
-  // Cache each axis node's home position so animation can translate from there.
+  // NOTE: do NOT attach 'b' to 'a' here. The Penta GLB authors them as flat
+  // siblings with world-space transforms; reparenting via attach() preserves
+  // the WORLD transform but rotates the cube into a weird local frame, which
+  // caused the 'tool holder perpendicular to spindle' bug.
+  // Instead we rotate them independently via applyToolPosition() — A around X,
+  // B around Y — and accept that B doesn't physically follow A's tilt
+  // visually. (Penta's own renderer takes the same shortcut.)
+
+  // Cache home positions for axes — currently UNUSED, but retained so that
+  // future linear-axis animation can translate from these without recomputing.
   ['x_1', 'x_2', 'y', 'z'].forEach(name => {
     const node = root3d.getObjectByName(name);
     if (node) {
@@ -2327,11 +2331,10 @@ function setupGlbKinematics(root3d) {
     }
   });
 
-  // Replace GLB materials with flat MeshLambertMaterial — colour-matched
-  // pixel-perfect against Penta's reference shot (~#1E1F22 body, surface
-  // detail clearly visible against white scene).
-  const accentGrey = new THREE.MeshLambertMaterial({ color: 0x36383B });
-  const bodyDark   = new THREE.MeshLambertMaterial({ color: 0x1E1F22 });
+  // Replace GLB materials with flat MeshLambertMaterial — lifted from v0.19
+  // (was crushing to near-black against my softer lighting).
+  const accentGrey = new THREE.MeshLambertMaterial({ color: 0x4A4D51 });
+  const bodyDark   = new THREE.MeshLambertMaterial({ color: 0x32353A });
   root3d.traverse(obj => {
     if (!obj.isMesh || !obj.material) return;
     const m = Array.isArray(obj.material) ? obj.material[0] : obj.material;
@@ -2349,12 +2352,11 @@ function setupGlbKinematics(root3d) {
     }
   });
 
-  // Hide ALL tool-holder + collet meshes from the GLB. Penta only renders
-  // these when a specific tool is active, and our tool marker (cone+sphere)
-  // already shows the cutting position. Rendering the GLB's static
-  // SHORT/LONG/collet/collet001 meshes produces the 'perpendicular tool
-  // holder floating in air' bug.
-  ['SHORT', 'LONG', 'collet', 'collet001'].forEach(name => {
+  // Hide the duplicate / wrong-orientation tool meshes, but keep ONE collet
+  // visible so the spindle motor has a body terminating below it (otherwise
+  // 'spindle motor floating in air' as user reported). 'collet' is the
+  // shorter / simpler one and renders correctly in-line with the spindle.
+  ['SHORT', 'LONG', 'collet001'].forEach(name => {
     const node = root3d.getObjectByName(name);
     if (node) node.visible = false;
   });
@@ -2821,21 +2823,13 @@ function updateTool3D(pos) {
   if (aMesh) aMesh.rotation.x = (pos.a * Math.PI) / 180;
   if (bMesh) bMesh.rotation.y = (pos.b * Math.PI) / 180;
 
-  // Translate linear axis nodes — spindle assembly moves with X/Y/Z.
-  //   x_1, x_2 — left/right rails (move with X)
-  //   y       — Y stage (moves with Y, depth axis)
-  //   z       — Z carriage (moves with Z, vertical, retracted at Z=0)
-  // pos values are in mm; scale to GLB-local authored units.
-  // GLB framed to ~14 wide for a real-world ~20" machine, so 1mm ≈ 14/(20*25.4) ≈ 0.0276 authored
-  const linScale = 0.0276;
-  const xNode = machine.getObjectByName('x_1');
-  const x2Node = machine.getObjectByName('x_2');
-  const yNode = machine.getObjectByName('y');
-  const zNode = machine.getObjectByName('z');
-  if (xNode && xNode.userData.homePos) xNode.position.x = xNode.userData.homePos.x + pos.x * linScale;
-  if (x2Node && x2Node.userData.homePos) x2Node.position.x = x2Node.userData.homePos.x + pos.x * linScale;
-  if (yNode && yNode.userData.homePos) yNode.position.z = yNode.userData.homePos.z - pos.y * linScale;
-  if (zNode && zNode.userData.homePos) zNode.position.y = zNode.userData.homePos.y + pos.z * linScale;
+  // Linear-axis (x_1, x_2, y, z) translation is currently DISABLED.
+  // The Penta GLB nodes are authored at specific world-space positions and
+  // translating them produced 'spindle floating in air' artefacts because
+  // the column they should slide on is a separate (unscaled) node.
+  // Future work: figure out the GLB's authored axis-rail layout and
+  // translate properly. For now the static GLB position is correct enough
+  // to match Penta's default render.
 }
 
 function updateDRO(pos, mv) {
@@ -3210,12 +3204,22 @@ function wireUI() {
     const vcCamera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
     vcCamera.position.set(0, 0, 4);
 
-    vcScene.add(new THREE.AmbientLight(0xffffff, 1.2));
-    const vcKey = new THREE.DirectionalLight(0xffffff, 0.6);
-    vcKey.position.set(2, 3, 4);
+    // Bright multi-light setup so the cube shows clear 3D depth instead of looking flat
+    vcScene.add(new THREE.AmbientLight(0xffffff, 0.8));
+    const vcKey = new THREE.DirectionalLight(0xffffff, 0.9);
+    vcKey.position.set(3, 5, 4);
     vcScene.add(vcKey);
+    const vcFill = new THREE.DirectionalLight(0xffffff, 0.5);
+    vcFill.position.set(-3, -1, 2);
+    vcScene.add(vcFill);
+    const vcRim = new THREE.DirectionalLight(0xffffff, 0.3);
+    vcRim.position.set(0, -2, -3);
+    vcScene.add(vcRim);
 
     const vcGroup = new THREE.Group();
+    // Default 3/4 iso angle so the cube reads as 3D from the start (instead of
+    // flat on first paint while waiting for live-rotate to kick in)
+    vcGroup.rotation.set(-0.3, -0.5, 0);
     vcScene.add(vcGroup);
 
     // Try loading the real Penta chamfered cube; fall back to a Box if missing.

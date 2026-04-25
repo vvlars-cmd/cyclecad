@@ -2290,205 +2290,126 @@ function fitCameraToObject(camera, controls, object, offset = 1.55) {
 
 function buildMachineProxy(m) {
   /*
-    Pentamachine V2-50 proxy — Three.js primitives.
-    Matches the real bench-top 5-axis router's silhouette:
-      - White/cream enclosure shell with open front (~20" W × 14" D × 18" H)
-      - Grey internal frame + base plate
-      - Back column carrying a cylindrical spindle body (ER20 on V2-50)
-      - A-tilt trunnion + B-rotary platter at the front of the base
-      - Accent-coloured top cap (machine colour, e.g. Penta teal on V2-50)
+    Pentamachine proxy — bare mechanism only, NO enclosure.
+    Matches sim.pentamachine.com's matte-dark rendering — same silhouette
+    for every machine, no per-variant tinting (Penta does not change
+    machine colour either).
 
-    Author units ≈ inches. `root.scale = 10` upscales to render units.
-    (Runtime will be replaced by the real GLB fetched from the connected
-     machine when USB is attached — see pentacad.html rockhopper.*.)
+    Mesh nodes 'a' and 'b' are exposed by name so the kinematics code
+    in applyToolPosition() can rotate them during sim playback.
   */
-
   const g = new THREE.Group();
   g.name = 'machineProxy';
 
-  // Materials
-  const whitePanel = new THREE.MeshStandardMaterial({
-    color: 0xF2F0EB, metalness: 0.1, roughness: 0.55
-  });
-  const darkFrame = new THREE.MeshStandardMaterial({
-    color: 0x2A2F35, metalness: 0.4, roughness: 0.55
-  });
-  const platePlate = new THREE.MeshStandardMaterial({
-    color: 0x8A9299, metalness: 0.55, roughness: 0.5
-  });
-  const brushedMetal = new THREE.MeshStandardMaterial({
-    color: 0xBCC1C6, metalness: 0.75, roughness: 0.25
-  });
-  const accent = new THREE.MeshStandardMaterial({
-    color: m.color || 0x03B188, metalness: 0.5, roughness: 0.45
-  });
-  const spindleBody = new THREE.MeshStandardMaterial({
-    color: 0x3C4249, metalness: 0.65, roughness: 0.3
-  });
+  // Single matte-dark material for every body part — matches Penta's look.
+  // No per-machine tint. `m.color` is intentionally ignored.
+  const dark    = new THREE.MeshStandardMaterial({ color: 0x202428, metalness: 0.35, roughness: 0.55 });
+  const greyer  = new THREE.MeshStandardMaterial({ color: 0x2C3036, metalness: 0.40, roughness: 0.50 });
+  const brushed = new THREE.MeshStandardMaterial({ color: 0x383C42, metalness: 0.50, roughness: 0.40 });
+  const platter = new THREE.MeshStandardMaterial({ color: 0x4A4F55, metalness: 0.55, roughness: 0.45 });
 
-  // ── ENCLOSURE — open front, white panels (like Matt's V2 chassis) ──
-  // Using individual thin panels so we can leave the front open for visibility.
-  const W = 20, H = 15, D = 13;      // outer dimensions in authored units (≈ inches)
-  const t = 0.35;                     // panel thickness
+  // ── BASE PLATE — grey foundation ──
+  const base = new THREE.Mesh(new THREE.BoxGeometry(14, 0.6, 11), dark);
+  base.position.y = 0.3;
+  g.add(base);
 
-  // Left / right walls
-  const mkWall = (w, h, d) => new THREE.Mesh(new THREE.BoxGeometry(w, h, d), whitePanel);
-  const leftWall  = mkWall(t, H, D); leftWall.position.set(-W/2 + t/2, H/2 - 1.2, 0);
-  const rightWall = mkWall(t, H, D); rightWall.position.set( W/2 - t/2, H/2 - 1.2, 0);
-  const backWall  = mkWall(W, H, t); backWall.position.set(0, H/2 - 1.2, -D/2 + t/2);
-  g.add(leftWall, rightWall, backWall);
-
-  // Top panel — accent colour (Penta teal on V2-50, blue on V2-10, etc.)
-  const topPanel = new THREE.Mesh(new THREE.BoxGeometry(W, t, D), accent);
-  topPanel.position.set(0, H - 1.2 + t/2, 0);
-  topPanel.name = 'topPanel';
-  g.add(topPanel);
-
-  // Subtle dark frame strips running along the top-front edge (industrial accent)
-  const frontFrame = new THREE.Mesh(new THREE.BoxGeometry(W, 0.15, 0.15), darkFrame);
-  frontFrame.position.set(0, H - 1.2, D/2 - 0.1);
-  g.add(frontFrame);
-
-  // ── BOTTOM / BASE PLATE — grey internal working surface ──
-  const basePlate = new THREE.Mesh(
-    new THREE.BoxGeometry(W - 2*t - 0.2, 0.6, D - 2*t - 0.2),
-    platePlate
-  );
-  basePlate.position.set(0, -1.2 + 0.3, 0);
-  g.add(basePlate);
-
-  // Two T-slot rails on the base (decorative detail)
-  for (const xOff of [-2.8, 2.8]) {
-    const slot = new THREE.Mesh(
-      new THREE.BoxGeometry(0.4, 0.02, D - 2*t - 1.5),
-      new THREE.MeshStandardMaterial({ color: 0x4A5058, metalness: 0.5, roughness: 0.5 })
-    );
-    slot.position.set(xOff, 0.01, 0);
+  // Two T-slot rails on the base
+  for (const xOff of [-3.5, 3.5]) {
+    const slot = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.04, 9), brushed);
+    slot.position.set(xOff, 0.62, 0);
     g.add(slot);
   }
 
-  // ── COLUMN — runs up the back to carry the spindle ──
-  const column = new THREE.Mesh(
-    new THREE.BoxGeometry(4.5, H - 2.0, 2.8),
-    brushedMetal
-  );
-  column.position.set(0, (H - 2.0)/2 - 0.9, -D/2 + 2.4);
+  // ── COLUMN at back ──
+  const column = new THREE.Mesh(new THREE.BoxGeometry(4.5, 11, 2.4), dark);
+  column.position.set(0, 6, -3.5);
   g.add(column);
 
-  // Column front face (lighter "ways" cover plate)
-  const colFace = new THREE.Mesh(
-    new THREE.BoxGeometry(3.0, H - 3.0, 0.1),
-    new THREE.MeshStandardMaterial({ color: 0xDCDEE1, metalness: 0.4, roughness: 0.4 })
-  );
-  colFace.position.set(0, (H - 2.0)/2 - 0.9, -D/2 + 3.8 + 0.05);
-  g.add(colFace);
-
-  // Z-axis carriage (rides on the column front face, holds the spindle)
-  const zCarriage = new THREE.Mesh(
-    new THREE.BoxGeometry(3.4, 3.4, 1.8),
-    new THREE.MeshStandardMaterial({ color: 0x5A6068, metalness: 0.6, roughness: 0.35 })
-  );
-  zCarriage.position.set(0, H/2 + 1.5, -D/2 + 4.6);
-  zCarriage.name = 'zCarriage';
+  // Z-axis carriage (rides on the column)
+  const zCarriage = new THREE.Mesh(new THREE.BoxGeometry(3.6, 3.4, 2.2), greyer);
+  zCarriage.position.set(0, 9, -2.8);
+  zCarriage.name = 'z';
   g.add(zCarriage);
 
-  // ── SPINDLE BODY — cylindrical, ER20 collet on V2-50 ──
-  // Main cylindrical motor body
+  // ── SPINDLE BODY — cylindrical, hangs from carriage ──
   const spindleMotor = new THREE.Mesh(
-    new THREE.CylinderGeometry(1.05, 1.05, 4.2, 24),
-    spindleBody
+    new THREE.CylinderGeometry(0.9, 0.9, 3.6, 24),
+    dark
   );
-  spindleMotor.position.set(0, H/2 + 0.3, -D/2 + 4.6 + 0.8);
-  spindleMotor.name = 'spindleMotor';
+  spindleMotor.position.set(0, 7.0, -2.0);
+  spindleMotor.name = 'spindle';
   g.add(spindleMotor);
 
-  // Cooling fins (subtle — a thin ring near the top)
-  const fins = new THREE.Mesh(
-    new THREE.CylinderGeometry(1.15, 1.15, 0.6, 24),
-    new THREE.MeshStandardMaterial({ color: 0x2C3137, metalness: 0.7, roughness: 0.25 })
-  );
-  fins.position.set(0, H/2 + 1.7, -D/2 + 4.6 + 0.8);
+  // Cooling-fin ring near top of spindle
+  const fins = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 0.4, 24), brushed);
+  fins.position.set(0, 8.6, -2.0);
   g.add(fins);
 
-  // Nose cone / collet housing (tapered body)
-  const nose = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.8, 0.55, 1.0, 20),
-    new THREE.MeshStandardMaterial({ color: 0x8C9299, metalness: 0.8, roughness: 0.18 })
-  );
-  nose.position.set(0, H/2 - 2.3, -D/2 + 4.6 + 0.8);
-  nose.name = 'spindleNose';
+  // Tapered nose cone
+  const nose = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.45, 0.9, 20), greyer);
+  nose.position.set(0, 4.7, -2.0);
   g.add(nose);
 
-  // Collet nut (ER20 looks like a hex-shaped nut at the tip)
-  const collet = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.5, 0.5, 0.5, 6),
-    new THREE.MeshStandardMaterial({ color: 0xB0B4B8, metalness: 0.85, roughness: 0.15 })
-  );
-  collet.position.set(0, H/2 - 3.05, -D/2 + 4.6 + 0.8);
+  // Collet nut
+  const collet = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.4, 6), brushed);
+  collet.position.set(0, 4.0, -2.0);
   g.add(collet);
 
-  // ── TRUNNION + B-ROTARY TABLE (at the front of the base) ──
-  const trunnion = new THREE.Group();
-  trunnion.name = 'a';      /* match real-GLB node name so kinematics work uniformly */
+  // X-axis carriages (subtle visual on either side of the spindle column)
+  for (let i = 0; i < 2; i++) {
+    const x1 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.6, 1.2), brushed);
+    x1.position.set(i === 0 ? -2.4 : 2.4, 9, -2.8);
+    x1.name = i === 0 ? 'x_1' : 'x_2';
+    g.add(x1);
+  }
 
-  // Twin support arms that hold the A-axis
-  const armMat = new THREE.MeshStandardMaterial({ color: 0x6A7078, metalness: 0.6, roughness: 0.4 });
-  for (const x of [-3.0, 3.0]) {
-    const arm = new THREE.Mesh(new THREE.BoxGeometry(1.0, 2.2, 2.5), armMat);
-    arm.position.set(x, 1.1, 1.8);
+  // Y-axis carriage strip below Z carriage
+  const y = new THREE.Mesh(new THREE.BoxGeometry(5.5, 0.8, 1.2), brushed);
+  y.position.set(0, 7.5, -3.4);
+  y.name = 'y';
+  g.add(y);
+
+  // ── A-TRUNNION (named 'a' for kinematics) ──
+  const trunnion = new THREE.Group();
+  trunnion.name = 'a';
+
+  // Two supporting arms
+  for (const x of [-2.6, 2.6]) {
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.8, 2.0, 2.0), greyer);
+    arm.position.set(x, 1.6, 1.8);
     trunnion.add(arm);
   }
-
-  // Horizontal trunnion bar connecting the arms (the A-axis itself)
-  const aBar = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.4, 0.4, 6.4, 16),
-    new THREE.MeshStandardMaterial({ color: 0x8A9299, metalness: 0.75, roughness: 0.25 })
-  );
-  aBar.rotation.z = Math.PI / 2;  // horizontal along X
-  aBar.position.set(0, 1.6, 1.8);
+  // Horizontal trunnion bar (A axis itself)
+  const aBar = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 5.6, 16), brushed);
+  aBar.rotation.z = Math.PI / 2;
+  aBar.position.set(0, 2.0, 1.8);
   trunnion.add(aBar);
-
-  // A-tilt body hanging off the bar — carries the B platter
-  const aBody = new THREE.Mesh(
-    new THREE.BoxGeometry(5.0, 1.0, 3.5),
-    new THREE.MeshStandardMaterial({ color: 0x7A7F85, metalness: 0.55, roughness: 0.4 })
-  );
-  aBody.position.set(0, 0.85, 1.8);
+  // A-tilt body
+  const aBody = new THREE.Mesh(new THREE.BoxGeometry(4.5, 1.0, 3.0), greyer);
+  aBody.position.set(0, 1.0, 1.8);
   trunnion.add(aBody);
 
-  // B-rotary platter on top of the A body
+  // ── B-ROTARY PLATTER (named 'b' for kinematics) ──
   const tableGroup = new THREE.Group();
-  tableGroup.name = 'b';    /* match real-GLB node name */
-  const table = new THREE.Mesh(
-    new THREE.CylinderGeometry(2.4, 2.4, 0.3, 40),
-    new THREE.MeshStandardMaterial({ color: 0xC8CCD0, metalness: 0.7, roughness: 0.28 })
-  );
-  table.position.y = 0.80;
+  tableGroup.name = 'b';
+  const table = new THREE.Mesh(new THREE.CylinderGeometry(2.0, 2.0, 0.25, 40), platter);
+  table.position.y = 0.65;
   tableGroup.add(table);
-
-  // Platter T-slot pattern (decorative)
-  const platterSlotMat = new THREE.MeshStandardMaterial({ color: 0x4A5058, metalness: 0.4, roughness: 0.55 });
-  for (let angle = 0; angle < Math.PI; angle += Math.PI / 3) {
-    const slot = new THREE.Mesh(
-      new THREE.BoxGeometry(4.4, 0.02, 0.18),
-      platterSlotMat
-    );
-    slot.rotation.y = angle;
-    slot.position.y = 0.95;
-    tableGroup.add(slot);
+  // Decorative bolt-circle holes
+  const holeMat = new THREE.MeshStandardMaterial({ color: 0x101216, metalness: 0.6, roughness: 0.4 });
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2;
+    const hole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.06, 12), holeMat);
+    hole.position.set(Math.cos(a) * 1.5, 0.78, Math.sin(a) * 1.5);
+    tableGroup.add(hole);
   }
-
-  // Centre reference pin on the platter
-  const centerPin = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.12, 0.12, 0.12, 16),
-    new THREE.MeshStandardMaterial({ color: 0x303538, metalness: 0.8, roughness: 0.2 })
-  );
-  centerPin.position.y = 1.01;
+  // Centre pin
+  const centerPin = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.12, 16), brushed);
+  centerPin.position.y = 0.83;
   tableGroup.add(centerPin);
 
   tableGroup.position.set(0, 0.1, 1.8);
   trunnion.add(tableGroup);
-
   trunnion.position.set(0, 0, 0);
   g.add(trunnion);
 

@@ -193,7 +193,20 @@ window.CycleCAD.PentacadSim = (() => {
    * @param {object} [machine]  optional loaded machine definition (from
    *                            pentacad.js) — used for feed caps + limits.
    */
-  function createExecutor(machine) {
+  /**
+   * Create a stateful G-code executor for a given machine.
+   *
+   * @param {Object} machine                       Machine descriptor (kinematics + envelope).
+   * @param {Object} [options]                     Optional executor configuration.
+   * @param {Object<number, {zoff?: number, dia?: number, holder?: ('short'|'long')}>} [options.toolOverrides]
+   *   Per-tool overrides applied on G43. `zoff` is the tool length offset
+   *   (positive = tool extends below the spindle reference) in inches.
+   * @returns {{ state: object, moves: object[], step: function, run: function }}
+   */
+  function createExecutor(machine, options) {
+    const opts = options || {};
+    const toolOverrides = opts.toolOverrides || {};
+
     const state = {
       pos: { x: 0, y: 0, z: 0, a: 0, b: 0 }, // always stored in mm + degrees
       feed: 0,                                // mm/min (converted from inch if needed)
@@ -201,6 +214,8 @@ window.CycleCAD.PentacadSim = (() => {
       units: 'inch',                          // default G20 per Pentamachine dialect
       wcs: 'G54',
       toolId: null,
+      tlo: 0,                                 // active tool length offset (mm)
+      tloActive: false,                       // G43 turns this on; G49 turns it off
       spindleOn: false,
       coolant: 'off',
       modalGroups: {
@@ -244,6 +259,19 @@ window.CycleCAD.PentacadSim = (() => {
       if (hasG(line, 95)) state.modalGroups.feedMode = 'G95';
       if (hasG(line, 40)) state.cutterComp = 'off';
       for (let w = 54; w <= 59; w++) if (hasG(line, w)) state.wcs = `G${w}`;
+
+      // Tool-length offset: G43 = on (use override for active tool, default 0
+      // when no override). G49 = cancel TLO. Stored in mm to match `state.pos`.
+      if (hasG(line, 43)) {
+        state.tloActive = true;
+        const ov = state.toolId != null ? toolOverrides[state.toolId] : null;
+        const zoffInch = ov && typeof ov.zoff === 'number' ? ov.zoff : 0;
+        state.tlo = zoffInch * INCH_TO_MM;
+      }
+      if (hasG(line, 49)) {
+        state.tloActive = false;
+        state.tlo = 0;
+      }
 
       // Spindle
       if (hasM(line, 3)) state.spindleOn = true;
@@ -292,6 +320,8 @@ window.CycleCAD.PentacadSim = (() => {
           lineNumber: line.lineNumber,
           comment: line.comment,
           feed: 0,
+          tool: state.toolId,
+          tlo: state.tlo,
         };
         moves.push(mv);
         return mv;
@@ -386,6 +416,8 @@ window.CycleCAD.PentacadSim = (() => {
         feed: state.feed,
         plane: state.modalGroups.plane,
         arcOffsets,
+        tool: state.toolId,
+        tlo: state.tlo,              // active tool-length offset, mm
       };
 
       moves.push(mv);

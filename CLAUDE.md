@@ -1,7 +1,62 @@
 # Memory — cycleCAD
 
+> **Latest handoff: `HANDOFF-2026-04-25-pentacad-sim.md`** — read first if continuing.
+
 ## Me
 SACHIN (vvlars@googlemail.com, GitHub: vvlars-cmd). Building cycleCAD — open-source browser-based parametric 3D CAD modeler. Also maintains ExplodeView (separate repo). Company: cycleWASH (bicycle washing machines).
+
+## Session 2026-04-25 — Pentacad sim Penta-replica push (v0.1 → v0.35)
+
+Goal: make `app/pentacad-sim.html` an exact replica of `https://sim.pentamachine.com`.
+
+Result: 35 incremental commits, last pushed `c53e46a..fc0333f`. Live at
+`https://cyclecad.com/app/pentacad-sim.html`. Full session details in
+`HANDOFF-2026-04-25-pentacad-sim.md`.
+
+Key wins:
+- All 5 machines (Solo / V1 / V1 Kickstarter / V2-10 / V2-50) loading real GLBs
+- Exact MUI styling sampled via Chrome MCP `getComputedStyle`:
+  - DRO panel: `rgba(100,100,100,0.75)` 10px radius monospace 13px
+  - Playback overlay: same bg, 5px radius, 670×80 floating
+  - Show Options: `#E0E0E0` flat MUI button 4px radius
+  - CHANGE MACHINE: rectangular MUI 4px radius (NOT pill)
+  - Transport buttons: dark `rgba(0,0,0,0.54)` on grey bar (not white)
+- SHORT/LONG tool holder selector — fixes the 'perpendicular tool' bug
+- Floating playback overlay with two rows (transport + timeline)
+- Camera Parenting + Camera Projection menus working (FOV trick for ortho)
+- Penta-nav widget integrated into cycleCAD + ExplodeView
+- Demo hub, test runner, architecture/tutorial/help docs all shipped
+- vs-mecagent.html competitive landing page
+
+Open issues (next session):
+1. ViewCube renders flat — pitch/yaw collapse when camera direction is colinear
+2. Spindle Z-carriage 'floating in air / colliding into trunnion' — GLB authors
+   it at a position Penta's runtime translates; we don't know their math yet
+3. The drag-direction sign on cube has been flipped multiple times — needs
+   final verification
+
+Files changed this session (cyclecad repo):
+- `app/pentacad-sim.html` — main file (~3400 lines, all sim logic inline)
+- `app/pentacad.html` — embeds sim via iframe in Simulate tab
+- `app/index.html` — wires PentaNavWidget into cycleCAD
+- `app/js/widgets/penta-nav.js` — shared Suite widget (NEW)
+- `app/models/*.glb` — 7 Pentamachine 3D models committed (was .gitignored)
+- `app/demo/index.html` + `milling-3d-demo.html` + `all-machines.html`
+- `app/tests/all-tests.html` — 6-suite test runner
+- `docs/ARCHITECTURE.md` + `TUTORIAL-SUITE.md` + `HELP-SUITE.md`
+- `vs-mecagent.html`
+- `_autonomous-commit.sh` — combined commit script
+
+User preferences confirmed:
+- Push commits manually via Terminal (Terminal is tier-click — Claude can't type into it)
+- Wants single combined `rm -f locks && git add -A && git commit -m "..." && git push` line each time
+- Color preference: charcoal grey with surface detail (not pure black, not light grey)
+- "Too dark" / "too light" feedback — must use Chrome MCP to sample exact Penta values
+- "build me exact copy of the original" — use Chrome MCP to test every function
+- "you are top 0.1%" — keep iterating autonomously when away
+- Gone for hours at a time — leaves authoritative push permission
+
+
 
 ## Two Repos — CRITICAL DISTINCTION
 | Repo | Local Path | GitHub | npm | What |

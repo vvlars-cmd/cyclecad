@@ -2026,14 +2026,23 @@ function rebuildToolpath() {
     acc = tEnd;
   }
 
+  // Penta-parity: a single thin orange polyline traces the planned tool
+  // path. Cut moves (G1/G2/G3) get a brighter, slightly thicker line;
+  // rapid moves get a dimmer dashed line so the eye distinguishes
+  // them without the screen looking busy. (Previously: blue solid for
+  // cuts + dashed orange rapids — too colourful and didn't match
+  // the reference visual.)
   if (feedPts.length) {
     const g = new THREE.BufferGeometry().setFromPoints(feedPts);
-    const m = new THREE.LineBasicMaterial({ color: 0x0288D1 });
+    const m = new THREE.LineBasicMaterial({ color: 0xED6C02, transparent: true, opacity: 0.95 });
     tp.add(new THREE.LineSegments(g, m));
   }
   if (rapidPts.length) {
     const g = new THREE.BufferGeometry().setFromPoints(rapidPts);
-    const m = new THREE.LineDashedMaterial({ color: 0xED6C02, dashSize: 0.05, gapSize: 0.04, transparent: true, opacity: 0.6 });
+    const m = new THREE.LineDashedMaterial({
+      color: 0xED6C02, dashSize: 0.06, gapSize: 0.05,
+      transparent: true, opacity: 0.45,
+    });
     const ls = new THREE.LineSegments(g, m);
     ls.computeLineDistances();
     tp.add(ls);
@@ -2047,7 +2056,7 @@ function rebuildToolpath() {
 function resetPlayback() {
   app.elapsed = 0;
   app.playing = false;
-  $('ctl-play-icon').setAttribute('d', 'M8 5v14l11-7z');
+  updatePlayIcon();
   // Mark the controls overlay 'idle' so the play button pulses, drawing the
   // user's eye to the entry point. Cleared once they hit play.
   const c = $('controls');
@@ -2064,7 +2073,7 @@ function advancePlayback(dt) {
   if (app.elapsed >= app.totalTime) {
     app.elapsed = app.totalTime;
     app.playing = false;
-    $('ctl-play-icon').setAttribute('d', 'M8 5v14l11-7z');
+    updatePlayIcon();   // morphs to the Replay icon at end-of-program
   }
   applyPlaybackState();
 }
@@ -2147,13 +2156,35 @@ function updateDRO(pos, tool = 0) {
   $('dro-t').textContent = String(tool || 0);
 }
 
+// SVG `d` paths for the three play-button states. The Penta reference
+// morphs the same button between PlayArrow / Pause / Replay; we mirror
+// that pattern instead of using three separate buttons.
+const PLAY_ICON_PATHS = Object.freeze({
+  play:   'M8 5v14l11-7z',                                  // right triangle
+  pause:  'M6 5h4v14H6zM14 5h4v14h-4z',                     // two bars
+  replay: 'M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z', // circular arrow
+});
+
+/**
+ * Update the play button to match the current playback state.
+ *   - playing: Pause icon
+ *   - paused mid-program: PlayArrow icon
+ *   - parked at end-of-program (Stop pressed): Replay icon (play from start)
+ */
+function updatePlayIcon() {
+  const el = $('ctl-play-icon');
+  if (!el) return;
+  let key = 'play';
+  if (app.playing) key = 'pause';
+  else if (app.elapsed >= app.totalTime && app.totalTime > 0) key = 'replay';
+  el.setAttribute('d', PLAY_ICON_PATHS[key]);
+}
+
 function togglePlay() {
   if (app.moves.length === 0) { toast('Load a G-code program first.'); return; }
   if (app.elapsed >= app.totalTime) app.elapsed = 0;
   app.playing = !app.playing;
-  $('ctl-play-icon').setAttribute('d',
-    app.playing ? 'M6 5h4v14H6zM14 5h4v14h-4z' : 'M8 5v14l11-7z'
-  );
+  updatePlayIcon();
   // First play interaction — drop the pulsing-button hint.
   const c = $('controls');
   if (c) c.classList.remove('is-idle');
@@ -2461,7 +2492,15 @@ function changeMachine(id) {
 
 function wirePlayback() {
   $('ctl-play').addEventListener('click', togglePlay);
-  $('ctl-stop').addEventListener('click', () => { app.elapsed = 0; app.playing = false; $('ctl-play-icon').setAttribute('d', 'M8 5v14l11-7z'); applyPlaybackState(); });
+  $('ctl-stop').addEventListener('click', () => {
+    // Stop = park at end-of-program so the play button morphs to the
+    // Replay icon (matches Penta's reference UX where Stop offers
+    // "play from start again" rather than "play from current position").
+    app.elapsed = app.totalTime;
+    app.playing = false;
+    updatePlayIcon();
+    applyPlaybackState();
+  });
   $('ctl-jump-start').addEventListener('click', () => { jumpTo(0); });
   $('ctl-jump-end').addEventListener('click', () => { jumpTo(1); });
   $('ctl-step').addEventListener('click', () => step(+1));

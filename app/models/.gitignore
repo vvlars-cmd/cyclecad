@@ -1,8 +1,8 @@
-# GLB machine models — don't commit these.
-# They live on the connected Pentamachine and are fetched at runtime,
-# or pulled from the Kinetic Control disk image locally by the developer.
-# See README.md in this directory for how to populate.
-*.glb
-*.gltf
-!.gitignore
-!README.md
+# Pentamachine GLB models — committed so the public Suite can serve them
+# without depending on Penta's CDN (which blocks CORS from cyclecad.com).
+# Source: extracted from Kinetic Control v5.8.4 disk image
+# (kinetic-control-v5.8.4-20250401-bbb.img — /usr/opt/penta-ui-builds/gltf/).
+# Same files served at https://sim.pentamachine.com/gltf/.
+#
+# These are 3D-only models — no firmware, no proprietary code.
+# (Empty: nothing ignored here.)

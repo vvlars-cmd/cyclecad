@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>cycleCAD Suite — All 5 Pentamachines side-by-side</title>
+<meta name="description" content="All 5 Pentamachine variants — Solo / V1 / V1 Kickstarter / V2-10 / V2-50 — running the same sim.ngc face-pass program side-by-side." />
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; overflow:hidden; }
+body {
+  font-family: Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  color: rgba(0,0,0,0.87);
+  background: #FAFAFA;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  background: #1A1F25;
+  color: #FFFFFF;
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+header h1 {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+}
+header .tag {
+  font-size: 12px;
+  color: rgba(255,255,255,0.65);
+  margin-left: 8px;
+}
+header .spacer { flex: 1; }
+header button, header a {
+  background: #03B188;
+  color: #FFFFFF;
+  border: 0;
+  border-radius: 4px;
+  padding: 8px 14px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+header button:hover, header a:hover { background: #028F6D; }
+header a.outline {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.3);
+}
+header a.outline:hover { border-color: #FFFFFF; }
+
+.grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 1px;
+  background: #E0E0E0;
+  min-height: 0;
+}
+.cell {
+  background: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  position: relative;
+}
+.cell-head {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  background: rgba(255,255,255,0.95);
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  border-bottom: 1px solid #EAEAEA;
+}
+.cell-head .mark {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #03B188;
+}
+.cell iframe {
+  flex: 1;
+  border: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.cell.note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(0,0,0,0.55);
+  font-size: 13px;
+  text-align: center;
+  padding: 24px;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>5 machines · same G-code (sim.ngc face-pass) · synchronized playback</h1>
+  <span class="tag">All running locally — no CDN, no CORS.</span>
+  <span class="spacer"></span>
+  <button id="play-all">▶ Play All</button>
+  <button id="pause-all">❚❚ Pause All</button>
+  <button id="restart-all">⟳ Restart All</button>
+  <a href="/app/demo/index.html" class="outline">← Back to demos</a>
+</header>
+
+<div class="grid">
+
+  <div class="cell">
+    <div class="cell-head"><span class="mark"></span>Pentamachine V2-10 <span style="opacity:.5;">— your machine</span></div>
+    <iframe data-machine="v2-10" src="/app/pentacad-sim.html#m=v2-10&amp;ex=sim-ngc&amp;speed=1"></iframe>
+  </div>
+
+  <div class="cell">
+    <div class="cell-head"><span class="mark"></span>Pentamachine V2-50 <span style="opacity:.5;">— flagship</span></div>
+    <iframe data-machine="v2-50" src="/app/pentacad-sim.html#m=v2-50&amp;ex=sim-ngc&amp;speed=1"></iframe>
+  </div>
+
+  <div class="cell">
+    <div class="cell-head"><span class="mark"></span>Pentamachine Solo</div>
+    <iframe data-machine="solo" src="/app/pentacad-sim.html#m=solo&amp;ex=sim-ngc&amp;speed=1"></iframe>
+  </div>
+
+  <div class="cell">
+    <div class="cell-head"><span class="mark"></span>Pentamachine V1 <span style="opacity:.5;">— legacy</span></div>
+    <iframe data-machine="v1" src="/app/pentacad-sim.html#m=v1&amp;ex=sim-ngc&amp;speed=1"></iframe>
+  </div>
+
+  <div class="cell">
+    <div class="cell-head"><span class="mark"></span>V1 Kickstarter</div>
+    <iframe data-machine="v1kickstarter" src="/app/pentacad-sim.html#m=v1kickstarter&amp;ex=sim-ngc&amp;speed=1"></iframe>
+  </div>
+
+  <div class="cell note">
+    Same G-code (Penta's <code>sim.ngc</code>: G20 / G90 / G94 / T4 / S8500 / F20 / G0 A90 / 2"×2" face square)<br />
+    runs identically on every variant.<br />
+    Each machine renders from its own GLB at <code>./models/&lt;id&gt;.glb</code>.<br /><br />
+    Press <strong>▶ Play All</strong> above to start them in lockstep.
+  </div>
+
+</div>
+
+<script>
+const iframes = [...document.querySelectorAll('iframe[data-machine]')];
+
+function eachWin(fn) {
+  iframes.forEach(f => {
+    try {
+      const w = f.contentWindow;
+      if (w) fn(w, f);
+    } catch (e) {}
+  });
+}
+
+document.getElementById('play-all').addEventListener('click', () => {
+  eachWin(w => { if (typeof w.togglePlay === 'function') w.togglePlay(); });
+});
+
+document.getElementById('pause-all').addEventListener('click', () => {
+  eachWin(w => {
+    if (w.app && w.app.playing && typeof w.togglePlay === 'function') w.togglePlay();
+  });
+});
+
+document.getElementById('restart-all').addEventListener('click', () => {
+  iframes.forEach(f => {
+    const url = new URL(f.src);
+    url.hash = `m=${f.dataset.machine}&ex=sim-ngc&speed=1&_t=${Date.now()}`;
+    f.src = url.toString();
+  });
+});
+</script>
+</body>
+</html>

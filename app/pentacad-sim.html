@@ -520,18 +520,18 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 #vc-parent-menu     { top: 0; }
 #vc-projection-menu { top: 50px; }   /* aligns with the bottom button */
 
-/* DRO panel — matches Penta's grey monospace readout */
+/* DRO panel — exact Penta colours sampled via Chrome MCP from .DRO-dro:
+   rgba(100, 100, 100, 0.75) bg, 10px radius, 13px monospace, no shadow. */
 .dro-panel {
-  background: rgba(108, 113, 117, 0.92);
+  background: rgba(100, 100, 100, 0.75);
   color: #FFFFFF;
-  border-radius: 6px;
+  border-radius: 10px;
   padding: 10px 12px;
-  font-family: Monaco, Menlo, "Ubuntu Mono", Consolas, "Source Code Pro", source-code-pro, monospace;
-  font-size: 14px;
+  font-family: monospace;
+  font-size: 13px;
   line-height: 1.5;
   align-self: flex-end;
-  width: 158px;
-  box-shadow: var(--pt-shadow);
+  width: 106px;
 }
 .dro-row {
   display: flex;
@@ -541,44 +541,51 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .dro-k { font-weight: 500; opacity: 0.95; }
 .dro-v { font-variant-numeric: tabular-nums; }
 
-/* Show Options pill button */
+/* Show Options button — exact Penta MUI button styling sampled via Chrome MCP:
+   bg #E0E0E0, 4px radius, padding 6px 16px, weight 500, 130×30 */
 .show-options-btn {
-  width: 100%;
-  background: rgba(255,255,255,0.95);
-  border: 1px solid var(--pt-border);
-  border-radius: 18px;
-  padding: 8px 16px;
+  width: 130px;
+  background: rgb(224, 224, 224);
+  border: 0;
+  border-radius: 4px;
+  padding: 6px 16px;
   font-family: Roboto, Helvetica, Arial, sans-serif;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 500;
-  color: rgba(0,0,0,0.6);
+  color: rgba(0,0,0,0.87);
   cursor: pointer;
   transition: background 0.15s;
-  box-shadow: var(--pt-shadow-sm);
+  text-transform: none;
+  align-self: flex-end;
 }
-.show-options-btn:hover { background: var(--pt-surface-2); color: var(--pt-text); }
+.show-options-btn:hover { background: rgb(208, 208, 208); }
 
-/* CHANGE MACHINE green pill at bottom-right */
+/* CHANGE MACHINE — exact Penta MUI button styling sampled via Chrome MCP:
+   #03B188 bg, 4px radius, 6px 16px padding, weight 500, uppercase, 165×36 */
 .change-machine-pill {
   position: absolute;
   right: 16px;
-  bottom: 64px;             /* Above the playback bar */
+  bottom: 16px;
   z-index: 12;
-  background: var(--pt-green);
+  background: rgb(3, 177, 136);
   color: #FFFFFF;
   border: 0;
-  border-radius: 22px;
-  padding: 12px 22px;
+  border-radius: 4px;
+  padding: 6px 16px;
   font-family: Roboto, Helvetica, Arial, sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-size: 14px;
+  font-weight: 500;
   text-transform: uppercase;
   cursor: pointer;
-  box-shadow: var(--pt-shadow);
-  transition: background 0.15s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.18);
+  transition: background 0.15s, box-shadow 0.15s;
+  min-width: 165px;
+  min-height: 36px;
 }
-.change-machine-pill:hover { background: var(--pt-green-dark); }
+.change-machine-pill:hover {
+  background: rgb(2, 143, 109);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.22);
+}
 
 /* ─── Back Plot panel — Penta-replica Show Options ─── */
 .back-plot-panel {
@@ -718,24 +725,34 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .vp-vis-toggles .btn.off .tick { visibility: hidden; }
 .vp-vis-toggles .btn.off { background: #F5F5F5; color: var(--pt-text-2); }
 
-/* Playback controls bar — Penta-replica: medium-grey rounded-corner inline
-   strip at viewport bottom. Always visible, NOT a floating overlay. */
+/* Playback controls bar — colour-matched to Penta exactly via Chrome MCP:
+   rgba(100, 100, 100, 0.75) bg, 5px radius, no shadow, 670×80 floating
+   centered overlay. */
 .playback-bar {
-  flex-shrink: 0;
-  width: calc(100% - 24px);
-  margin: 0 12px 12px;
-  background: rgba(116, 119, 124, 0.92);
-  border-radius: 6px;
-  padding: 8px 16px;
-  display: flex;
-  align-items: center;
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 670px;
+  max-width: calc(100% - 40px);
+  background: rgba(100, 100, 100, 0.75);
+  border-radius: 5px;
+  padding: 6px 12px 8px;
+  display: grid;
+  grid-template-rows: auto auto;
   gap: 4px;
   color: #FFFFFF;
   font-size: 13px;
   z-index: 5;
-  min-height: 50px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.10);
+  pointer-events: auto;
 }
+.playback-bar .pb-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.playback-bar .pb-row.transport { justify-content: center; }
+.playback-bar .pb-row.timeline { gap: 12px; }
 .playback-bar .btn {
   background: transparent;
   color: #FFFFFF;
@@ -1293,23 +1310,26 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     <canvas id="viewport-canvas"></canvas>
 
     <div class="playback-bar">
-      <button class="btn icon" id="pb-toggle-editor" title="Hide / show G-code panel">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
-      </button>
-      <button class="btn" id="pb-jump-start" title="Jump to start (Home)">⏮</button>
-      <button class="btn" id="pb-step-back" title="Step back (←)">◀</button>
-      <button class="btn primary" id="pb-play" title="Play / pause (Space)">▶</button>
-      <button class="btn" id="pb-stop-square" title="Stop">⏹</button>
-      <button class="btn" id="pb-step" title="Step forward (→)">▶|</button>
-      <button class="btn" id="pb-jump-end" title="Jump to end (End)">⏭</button>
+      <!-- Top row: toggle + transport + speed slider -->
+      <div class="pb-row transport">
+        <button class="btn icon" id="pb-toggle-editor" title="Toggle G Code Pane">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+        </button>
+        <button class="btn" id="pb-jump-start" title="Jump to start (Home)">⏮</button>
+        <button class="btn" id="pb-step-back" title="Step back (←)">◀</button>
+        <button class="btn primary" id="pb-play" title="Play / pause (Space)">▶</button>
+        <button class="btn" id="pb-stop-square" title="Stop">⏹</button>
+        <button class="btn" id="pb-step" title="Step forward (→)">▶</button>
+        <button class="btn" id="pb-jump-end" title="Jump to end (End)">⏭</button>
+        <span class="speed-label" style="margin-left:14px;">⏱</span>
+        <span class="mono" id="speed-display" style="min-width:34px;text-align:right;">1.00</span>
+        <input type="range" id="speed-slider" min="0.1" max="10" value="1" step="0.1" style="flex:0 0 110px;" title="Playback speed" />
+      </div>
 
-      <span class="speed-label" style="margin-left:14px;">⏱</span>
-      <span class="mono" id="speed-display" style="min-width:36px;text-align:right;">1.00</span>
-      <input type="range" id="speed-slider" min="0.1" max="10" value="1" step="0.1" style="flex:0 0 130px;" title="Playback speed" />
-
-      <div class="timeline-wrap" style="margin-left:14px;">
+      <!-- Bottom row: timeline -->
+      <div class="pb-row timeline">
         <span class="mono" id="t-elapsed">00:00:00</span>
-        <input type="range" class="timeline" id="timeline" min="0" max="1000" value="0" step="1" />
+        <input type="range" class="timeline" id="timeline" min="0" max="1000" value="0" step="1" style="flex:1;" />
       </div>
 
       <!-- Hidden legacy speed-chip kept for backward-compat -->
@@ -2388,13 +2408,22 @@ function setupGlbKinematics(root3d) {
     });
   });
 
-  // Hide the duplicate / wrong-orientation tool meshes, but keep ONE collet
-  // visible so the spindle motor has a body terminating below it (otherwise
-  // 'spindle motor floating in air' as user reported). 'collet' is the
-  // shorter / simpler one and renders correctly in-line with the spindle.
-  ['SHORT', 'LONG', 'collet001'].forEach(name => {
+  // Penta's GLB ships TWO tool holders (SHORT + LONG) and the user picks
+  // one in Show Options -> 'tool holder' radio. Default in Penta is LONG.
+  // Render only the selected holder + its collet; hide the other to avoid
+  // the 'perpendicular tool holder floating' bug.
+  const activeToolHolder = (window.PENTACAD_TOOL_HOLDER || 'LONG').toUpperCase();
+  const inactiveHolder = activeToolHolder === 'LONG' ? 'SHORT' : 'LONG';
+  const inactiveCollet = activeToolHolder === 'LONG' ? 'collet001' : 'collet';
+  [inactiveHolder, inactiveCollet].forEach(name => {
     const node = root3d.getObjectByName(name);
     if (node) node.visible = false;
+  });
+  // Make sure the ACTIVE holder + its collet are visible (in case toggled later)
+  const activeCollet = activeToolHolder === 'LONG' ? 'collet' : 'collet001';
+  [activeToolHolder, activeCollet].forEach(name => {
+    const node = root3d.getObjectByName(name);
+    if (node) node.visible = true;
   });
 }
 
@@ -2492,8 +2521,6 @@ function applyCameraProjection(mode) {
 // Frame camera to include an object's bounding box with a comfortable margin.
 // Called after the GLB loads so the real V2-10 always fills the viewport nicely.
 function fitCameraToObject(camera, controls, object, offset = 2.2) {
-  // Margin bumped from 1.55 -> 2.2 so the whole machine fits with breathing room
-  // instead of filling the frame edge-to-edge (was the 'too close' complaint).
   const box = new THREE.Box3().setFromObject(object);
   if (box.isEmpty()) return;
   const size = new THREE.Vector3(); box.getSize(size);
@@ -2501,7 +2528,11 @@ function fitCameraToObject(camera, controls, object, offset = 2.2) {
   const maxDim = Math.max(size.x, size.y, size.z);
   const fov = camera.fov * Math.PI / 180;
   const dist = (maxDim / 2) / Math.tan(fov / 2) * offset;
-  const dir = new THREE.Vector3(0.85, 0.5, 1.0).normalize();
+  // Penta-style default angle: slight elevation, mostly frontal-side.
+  // Was (0.85, 0.5, 1.0) -> top-down feel that made spindle look floating.
+  // Now (0.6, 0.25, 1.0) gives the machine character with column on the
+  // right and trunnion+platter visible to the left, like Penta's reference.
+  const dir = new THREE.Vector3(0.6, 0.25, 1.0).normalize();
   camera.position.copy(center.clone().add(dir.multiplyScalar(dist)));
   camera.near = Math.max(0.1, dist / 200);
   camera.far = dist * 200;
@@ -3313,47 +3344,79 @@ function wireUI() {
     vcGroup.rotation.set(-0.3, -0.5, 0);
     vcScene.add(vcGroup);
 
-    // Build a proper LABELED cube — textured BoxGeometry with Top/Bot/Front/
-    // Back/Left/Right baked into each face. Matches Penta's labeled cube.
-    // Order matches THREE.BoxGeometry: [+X, -X, +Y, -Y, +Z, -Z] = right/left/top/bottom/front/back
-    const labels = ['Right', 'Left', 'Top', 'Bot', 'Front', 'Back'];
-    const accentIdx = 0;   // Right face has the teal accent in Penta's reference
-    const cubeMats = labels.map((label, i) => {
-      const c = document.createElement('canvas');
-      c.width = 256; c.height = 256;
-      const ctx = c.getContext('2d');
-      // Solid white background, teal-rimmed border
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(0, 0, 256, 256);
-      ctx.strokeStyle = '#6FCFEB';
-      ctx.lineWidth = 6;
-      ctx.strokeRect(3, 3, 250, 250);
-      // Optional accent highlight (e.g. Right face gets teal)
-      if (i === accentIdx) {
-        ctx.fillStyle = '#03B188';
-        ctx.fillRect(3, 3, 250, 250);
-        ctx.fillStyle = '#FFFFFF';
-      } else {
-        ctx.fillStyle = 'rgba(0,0,0,0.78)';
-      }
-      ctx.font = 'bold 56px Roboto, Helvetica, Arial, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(label, 128, 132);
-      const tex = new THREE.CanvasTexture(c);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      return new THREE.MeshLambertMaterial({ map: tex });
-    });
-    // Use RoundedBoxGeometry so the cube has chamfered corners + edges
-    // (matches Penta's reference cube). Segments=4 + radius=0.12 gives
-    // visible rounded chamfer without bloating geometry.
-    const cubeGeom = new RoundedBoxGeometry(1.4, 1.4, 1.4, 4, 0.12);
-    const cubeModel = new THREE.Mesh(cubeGeom, cubeMats);
-    vcGroup.add(cubeModel);
+    // Use the actual chamfered viewCube.glb (extracted from Penta's disk image).
+    // The GLB has visible flat chamfer faces (the look the user is asking for).
+    // Apply face labels as Sprites floating in front of each face.
+    if (!_gltfLoader) _gltfLoader = new GLTFLoader();
+    _gltfLoader.load('./models/viewCube.glb', (gltf) => {
+      const cubeModel = gltf.scene;
+      // Scale to fit our 1.4-unit display
+      const box = new THREE.Box3().setFromObject(cubeModel);
+      const size = new THREE.Vector3(); box.getSize(size);
+      const maxDim = Math.max(size.x, size.y, size.z);
+      if (maxDim > 0) cubeModel.scale.setScalar(1.4 / maxDim);
+      // Center on origin
+      const center = new THREE.Vector3(); box.getCenter(center);
+      cubeModel.position.sub(center.multiplyScalar(1.4 / maxDim));
+      // Apply light material so faces read clearly
+      cubeModel.traverse(o => {
+        if (o.isMesh) o.material = new THREE.MeshLambertMaterial({ color: 0xE8E8E8 });
+      });
+      vcGroup.add(cubeModel);
 
-    // Render loop synced to main camera. Only override default rotation when
-    // the main camera direction is meaningfully non-zero (otherwise cube
-    // collapses to a sliver edge-on).
+      // Floating label sprites in front of each face
+      const labelDef = [
+        { txt: 'Right', pos: [ 0.78,  0,    0   ], r: 'y',  a:  Math.PI/2 },
+        { txt: 'Left',  pos: [-0.78,  0,    0   ], r: 'y',  a: -Math.PI/2 },
+        { txt: 'Top',   pos: [ 0,     0.78, 0   ], r: 'x',  a: -Math.PI/2 },
+        { txt: 'Bot',   pos: [ 0,    -0.78, 0   ], r: 'x',  a:  Math.PI/2 },
+        { txt: 'Front', pos: [ 0,     0,    0.78], r: 'y',  a:  0 },
+        { txt: 'Back',  pos: [ 0,     0,   -0.78], r: 'y',  a:  Math.PI },
+      ];
+      labelDef.forEach(({ txt, pos, r, a }) => {
+        const c = document.createElement('canvas');
+        c.width = 256; c.height = 128;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = 'rgba(255,255,255,0)';
+        ctx.fillRect(0, 0, 256, 128);
+        ctx.fillStyle = 'rgba(0,0,0,0.78)';
+        ctx.font = 'bold 64px Roboto, Helvetica, Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(txt, 128, 70);
+        const tex = new THREE.CanvasTexture(c);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        const planeMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthTest: false });
+        const plane = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.35), planeMat);
+        plane.position.set(...pos);
+        if (r === 'y') plane.rotation.y = a;
+        if (r === 'x') plane.rotation.x = a;
+        plane.renderOrder = 999;
+        vcGroup.add(plane);
+      });
+    }, undefined, () => {
+      // Fallback: BoxGeometry with face textures (no chamfers)
+      const labels = ['Right','Left','Top','Bot','Front','Back'];
+      const cubeMats = labels.map(label => {
+        const c = document.createElement('canvas');
+        c.width = 256; c.height = 256;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0,0,256,256);
+        ctx.strokeStyle = '#6FCFEB'; ctx.lineWidth = 6; ctx.strokeRect(3,3,250,250);
+        ctx.fillStyle = 'rgba(0,0,0,0.78)';
+        ctx.font = 'bold 56px Roboto, Helvetica, Arial, sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(label, 128, 132);
+        const tex = new THREE.CanvasTexture(c);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        return new THREE.MeshLambertMaterial({ map: tex });
+      });
+      vcGroup.add(new THREE.Mesh(new RoundedBoxGeometry(1.4, 1.4, 1.4, 4, 0.18), cubeMats));
+    });
+
+    // Render loop. Cube tracks main camera direction so the visible face
+    // always reflects the user's current view — Penta does the same. The
+    // initial rotation is a 3/4 iso so it reads as 3D from first paint.
     function renderViewCube() {
       if (app.three && app.three.camera && app.three.controls) {
         const cam = app.three.camera;
@@ -3363,7 +3426,11 @@ function wireUI() {
           dir.normalize();
           const yaw = Math.atan2(dir.x, dir.z);
           const pitch = -Math.asin(THREE.MathUtils.clamp(dir.y, -1, 1));
-          vcGroup.rotation.set(pitch, yaw, 0);
+          // Floor pitch so we never go fully flat (single face only)
+          const minPitch = -Math.PI / 6;   // -30°
+          const maxPitch =  Math.PI / 6;
+          const safePitch = THREE.MathUtils.clamp(pitch, minPitch, maxPitch);
+          vcGroup.rotation.set(safePitch, yaw, 0);
         }
       }
       vcRenderer.render(vcScene, vcCamera);

@@ -1743,15 +1743,15 @@ function setupGlbKinematics(machineGlb, glbScale) {
 
 /** Apply or revert SHORT/LONG holder visibility.
  *  The GLB authors both holders at Scene-root level so they render
- *  simultaneously by default — visually the SHORT and LONG meshes are
- *  oriented at right angles to each other, producing the "perpendicular
- *  tool holder" silhouette. We hide whichever isn't selected.
+ *  simultaneously by default — the SHORT and LONG meshes are oriented at
+ *  right angles to each other, producing the "perpendicular tool holder"
+ *  silhouette. We sweep the entire GLB and hide the inactive set by
+ *  name-pattern, so suffixed variants (SHORT001, LONG001, collet002, …)
+ *  are caught too.
  */
 function applyToolHolderVisibility() {
   const k = app.three && app.three.kinematics;
-  if (!k) return;
-  // Pull the active tool's holder choice from app.toolOverrides (default LONG,
-  // which matches Penta's reference default).
+  if (!k || !k.glb) return;
   const activeTool = (() => {
     if (!app.parsed) return null;
     let t = null;
@@ -1765,14 +1765,20 @@ function applyToolHolderVisibility() {
   const holder = (activeTool != null && app.toolOverrides[activeTool]
                   && app.toolOverrides[activeTool].holder) || 'long';
   const wantShort = holder === 'short';
-  // Hide inactive holder + its paired collet. `traverse` so we also catch
-  // children (e.g. collet001 is parented under SHORT on V2-10).
-  if (k.SHORT) k.SHORT.traverse(n => { n.visible = wantShort; });
-  if (k.LONG)  k.LONG.traverse (n => { n.visible = !wantShort; });
-  // collet may be a separate Scene-root node on some variants — toggle
-  // independently if it's not nested.
-  if (k.collet    && (!k.LONG  || !k.LONG.getObjectByName('collet')))    k.collet.visible    = !wantShort;
-  if (k.collet001 && (!k.SHORT || !k.SHORT.getObjectByName('collet001'))) k.collet001.visible = wantShort;
+
+  // Penta's GLBs pair holders with specific collets:
+  //   LONG  + collet
+  //   SHORT + collet001
+  // Match by case-insensitive name prefix so authoring quirks across V1 /
+  // V2-10 / V2-50 / Solo are all caught.
+  const isShortLike = (n) => /^short/i.test(n) || /^collet0*1/i.test(n) || /^collet0*0?2/i.test(n);
+  const isLongLike  = (n) => /^long/i.test(n)  || (/^collet$/i.test(n) || /^collet0*0?$/i.test(n));
+
+  k.glb.traverse(node => {
+    const name = node.name || '';
+    if (isShortLike(name)) node.visible = wantShort;
+    else if (isLongLike(name)) node.visible = !wantShort;
+  });
 }
 
 /**
@@ -1800,23 +1806,30 @@ function applyMachineState(pos) {
   const yMm = (pos.y || 0) * mmPerUnit;
   const zMm = (pos.z || 0) * mmPerUnit;
 
-  // Empirical render-units-per-mm — settled on 0.0276 for the V2-50 GLB by
-  // a previous session. Multiplied by glbScale to compensate for the
-  // auto-fit scaling applied at load-time.
-  const SCALE = 0.0276 * (k.glbScale || 1);
+  // Empirical render-units-per-mm. Tuned per machine via `app.kinScale` so
+  // the user can correct over- / under-shoot without code edits.
+  const SCALE = (app.kinScale || 0.0276) * (k.glbScale || 1);
 
-  // Translate the parent GROUP nodes — `x`, `y`, `z` are containers that
-  // carry their named children + the unnamed spindle / motor geometry.
-  // Translating the leaf meshes (x_1, x_2, z) directly only moves the
-  // brackets, leaving the spindle behind. Per the V2-10 inspection:
-  //   - x  carries x_1, x_2, z (and the spindle motor)
-  //   - y  carries a -> b (so Y stage motion drags the trunnion + platter)
-  //   - z  is inside x (vertical spindle motion within the X-carriage)
-  if (k.x && k.x_home) k.x.position.x = k.x_home.x + xMm * SCALE;
-  if (k.y && k.y_home) k.y.position.z = k.y_home.z + yMm * SCALE;
-  if (k.z && k.z_home) k.z.position.y = k.z_home.y + zMm * SCALE;
-  // A/B are direct rotations from G-code degrees — applied on top of the
-  // authored home rotation so we don't fight the GLB's authored pose.
+  // Pentamachine V2 kinematics (per user 2026-04-25):
+  //   - The TRUNNION (mesh `y` -> `a` -> `b`) does NOT translate. A and B
+  //     are pure rotations.
+  //   - The X-CARRIAGE (group `x` with children x_1, x_2, z + the spindle
+  //     motor geometry) carries the spindle and moves on machine X and Y.
+  //   - Z is the SPINDLE axis — translates the inner `z` mesh along the
+  //     spindle's own direction, within the X-carriage's local frame.
+  //
+  // So both X and Y machine axes map onto the `x` group's transform; the
+  // `y` mesh stays fixed. (Previous code translated `y` along world Z which
+  // visibly slid the trunnion, contradicting the actual Pocket NC V2
+  // kinematics.)
+  if (k.x && k.x_home) {
+    k.x.position.x = k.x_home.x + xMm * SCALE;          // machine X
+    k.x.position.y = k.x_home.y + yMm * SCALE;          // machine Y (vertical)
+  }
+  if (k.z && k.z_home) {
+    k.z.position.z = k.z_home.z + zMm * SCALE;          // machine Z (spindle axis)
+  }
+  // A/B rotations on top of the authored home pose.
   if (k.a && k.a_homeRot) {
     k.a.rotation.x = k.a_homeRot.x + (pos.a || 0) * Math.PI / 180;
   }
@@ -2958,6 +2971,10 @@ async function boot() {
   const initialGcode = (restore && restore.gcode) || $('demo-gcode').textContent.trim();
   loadGcode(initialGcode, (restore && restore.filename) || 'sim.ngc');
 }
+
+// Expose the live app state on window so we can probe it via DevTools or
+// remote inspection (Chrome MCP) without re-instrumenting on every change.
+window.PentacadSimApp = app;
 
 boot();
 

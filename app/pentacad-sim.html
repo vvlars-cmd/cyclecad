@@ -667,16 +667,17 @@ input, textarea { font-family: inherit; color: inherit; }
   padding: 6px 12px 8px 12px;
   z-index: 11;
   display: none;
-  opacity: 0;
-  transition: opacity 250ms ease-out;
-  pointer-events: none;
-}
-.pt-controls.is-visible {
-  display: block;
-}
-.pt-controls.is-visible.is-active {
   opacity: 1;
-  pointer-events: auto;
+  transition: opacity 250ms ease-out;
+}
+.pt-controls.is-visible { display: block; }
+/* When idle (5s+ since last viewport activity) the bar fades out and stops
+   intercepting clicks. CRUCIAL: opacity:1 + pointer-events:auto are the
+   DEFAULT — only the .is-faded class flips them off. The previous version
+   had it inverted and the bar was never clickable on first load. */
+.pt-controls.is-faded {
+  opacity: 0;
+  pointer-events: none;
 }
 /* Pulse the play button before first run so the entry point is obvious. */
 .pt-controls.is-idle #ctl-play {
@@ -1941,7 +1942,9 @@ function resetPlayback() {
   const c = $('controls');
   if (c) c.classList.add('is-idle');
   updateTimelineUI();
-  updateDRO({ x: 0, y: app.machine.stock.z + 0.5, z: 0, a: 0, b: 0 }, 0);
+  // DRO at home position — all zeros. (Earlier code used stock.z + 0.5
+  // which produced a confusing Y=1.75 that the user noticed.)
+  updateDRO({ x: 0, y: 0, z: 0, a: 0, b: 0 }, 0);
   rebuildToolpath();
 }
 
@@ -2382,19 +2385,18 @@ function wirePlayback() {
 }
 
 /**
- * Show the playback overlay and (re)start the 5-second hide timer.
- * Disabled while the cursor is inside the bar or while playback is paused
- * before first run (idle hint).
+ * Reset the 5-second fade-out timer for the playback overlay. The bar is
+ * visible (opacity:1, clickable) by default — this only schedules the fade.
  */
 function revealPlaybackOverlay() {
   const c = $('controls');
-  if (!c || !c.classList.contains('is-visible')) return;
-  c.classList.add('is-active');
+  if (!c) return;
+  c.classList.remove('is-faded');
   if (app._hideTimer) clearTimeout(app._hideTimer);
   app._hideTimer = setTimeout(() => {
-    if (app._controlsHover) return;     // don't hide while hovered
-    if (c.classList.contains('is-idle')) return;  // keep visible until first play
-    c.classList.remove('is-active');
+    if (app._controlsHover) return;          // hovering — keep visible
+    if (c.classList.contains('is-idle')) return; // pre-first-play hint
+    c.classList.add('is-faded');
   }, 5000);
 }
 

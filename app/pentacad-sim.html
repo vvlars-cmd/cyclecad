@@ -1699,25 +1699,77 @@ function buildToolMarker() {
  * @param {{x:number,y:number,z:number}} dims  inch dimensions of the stock
  */
 function buildStockIndicator(dims) {
-  const w = dims?.x ?? 1.5;
-  const d = dims?.y ?? 1.5;
-  const h = dims?.z ?? 0.75;
+  // Penta's reference shows a SMALL outline (~1×1×0.25 inch) sitting on the
+  // platter face, not a workpiece-sized block. Cap the dimensions so it
+  // reads as an "indicator" rather than the full stock-block size.
+  const w = Math.min(dims?.x ?? 1.0, 1.0);
+  const d = Math.min(dims?.y ?? 1.0, 1.0);
+  const h = Math.min(dims?.z ?? 0.25, 0.25);
   const g = new THREE.Group();
   g.name = 'stockIndicator';
 
-  const fillGeo = new THREE.BoxGeometry(w, h, d);
-  const fill = new THREE.Mesh(fillGeo, new THREE.MeshBasicMaterial({
-    color: 0x03B188, transparent: true, opacity: 0.14, depthWrite: false
-  }));
-  fill.position.y = h / 2;
-  g.add(fill);
-
+  // Wireframe edges only — Penta uses a crisp green outline with no fill.
+  // Cleaner read against the dark machine and easier to see through.
+  const geom = new THREE.BoxGeometry(w, h, d);
   const edges = new THREE.LineSegments(
-    new THREE.EdgesGeometry(fillGeo),
+    new THREE.EdgesGeometry(geom),
     new THREE.LineBasicMaterial({ color: 0x03B188 })
   );
   edges.position.y = h / 2;
   g.add(edges);
+
+  return g;
+}
+
+/**
+ * Build a real spindle-tool mesh — stainless shank tapering to a cutter
+ * tip — that mounts on the spindle nose so the user can see what's
+ * cutting. Penta renders the tool as a child of the spindle so it
+ * inherits all axis transforms.
+ *
+ * Local frame: tip at origin, shaft extends along +Z. Orient via the
+ * parent (we attach to `z` mesh and rotate -90° around X so +Z points
+ * along the spindle axis toward the trunnion).
+ *
+ * @param {number} dia    cutter diameter (inches)
+ * @param {number} length total tool length (inches)
+ */
+function buildSpindleTool(dia, length) {
+  dia    = Math.max(0.05, dia    || 0.125);
+  length = Math.max(0.40, length || 1.50);
+  const shankDia = Math.max(dia, 0.22);
+  const shankLen = length * 0.6;
+  const flutLen  = length * 0.4;
+
+  const g = new THREE.Group();
+  g.name = 'spindleTool';
+
+  // Stainless shank (held by the collet)
+  const shank = new THREE.Mesh(
+    new THREE.CylinderGeometry(shankDia / 2, shankDia / 2, shankLen, 24),
+    new THREE.MeshStandardMaterial({ color: 0xCFCFD2, roughness: 0.30, metalness: 0.85 })
+  );
+  shank.rotation.x = Math.PI / 2;          // axis along +Z
+  shank.position.z = -(flutLen + shankLen / 2);
+  g.add(shank);
+
+  // Tapered cutter (flute area + tip)
+  const flute = new THREE.Mesh(
+    new THREE.CylinderGeometry(dia / 2, dia / 2, flutLen, 20),
+    new THREE.MeshStandardMaterial({ color: 0xB6B6BA, roughness: 0.25, metalness: 0.92 })
+  );
+  flute.rotation.x = Math.PI / 2;
+  flute.position.z = -(flutLen / 2);
+  g.add(flute);
+
+  // Pointed tip at the very end so the user has a definite working point
+  const tip = new THREE.Mesh(
+    new THREE.ConeGeometry(dia / 2, 0.06, 16),
+    new THREE.MeshStandardMaterial({ color: 0x9B9BA0, roughness: 0.22, metalness: 0.95 })
+  );
+  tip.rotation.x = -Math.PI / 2;
+  tip.position.z = 0.03;
+  g.add(tip);
 
   return g;
 }
@@ -1955,14 +2007,28 @@ function setupGlbKinematics(machineGlb, glbScale) {
   if (k.b) {
     const old = k.b.getObjectByName('stockIndicator');
     if (old) k.b.remove(old);
-    const stockDims = app.machine.stock || { x: 1.5, y: 1.5, z: 0.75 };
+    const stockDims = app.machine.stock || { x: 1.0, y: 1.0, z: 0.25 };
     const indicator = buildStockIndicator(stockDims);
-    // Offset along the platter's local +Y so the stock sits on top of
-    // the platter face rather than embedded inside it. The exact axis
-    // here mirrors how the GLB authors the platter normal — Y in the
-    // local frame at A=0 corresponds to the platter face.
     indicator.position.y = 0.05;
     k.b.add(indicator);
+  }
+
+  // Attach a real spindle tool (shank + cutter + tip) to the `z` mesh so
+  // it travels with the X-carriage and the spindle. Penta does this so
+  // the user sees what's cutting; without it the spindle nose looks
+  // bare. Removed first to handle re-loads cleanly.
+  if (k.z) {
+    const oldTool = k.z.getObjectByName('spindleTool');
+    if (oldTool) k.z.remove(oldTool);
+    const tool = buildSpindleTool(0.125, 1.5);
+    // The Pentamachine spindle axis points from the spindle nose toward
+    // the trunnion. In the GLB's local frame at A=0, that axis is
+    // typically -X (trunnion is on the LEFT in the default camera view).
+    // Rotate the tool group so its local +Z (the tool's own axis) lines
+    // up with -X in z-mesh local space, then offset to the spindle nose.
+    tool.rotation.y = -Math.PI / 2;        // tool +Z -> world -X
+    tool.position.set(-1.5, 0, 0);         // sit at the spindle nose
+    k.z.add(tool);
   }
 }
 

@@ -687,15 +687,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 }
 .back-plot-panel .bp-btn:hover { background: rgba(0,0,0,0.08); }
 
-/* Original (legacy, hidden) vis-toggles cluster */
+/* Legacy vis-toggles cluster — DEPRECATED in v0.6+. Always hidden. The Penta
+   replica uses the Back Plot panel (Show Options) for these settings. */
 .vp-vis-toggles {
-  position: absolute;
-  right: 16px;
-  top: 16px;
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: none !important;
 }
 .vp-vis-toggles .btn {
   background: #E0E0E0;                  /* matches FAB default rgb(224,224,224) */

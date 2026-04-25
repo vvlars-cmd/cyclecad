@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>cycleCAD Suite vs MecAgent — open-source browser CAD vs Inventor copilot</title>
+<meta name="description" content="MecAgent is an AI copilot bolted into Inventor and SolidWorks. cycleCAD Suite is a complete open-source platform — CAD + CAM + sim + bridge — that runs in any browser. Here's the head-to-head." />
+<link rel="canonical" href="https://cyclecad.com/vs-mecagent.html" />
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { min-height:100%; }
+body {
+  font-family: Roboto, Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  color: rgba(0,0,0,0.87);
+  background: #FFFFFF;
+}
+
+header.nav {
+  background: #1A1F25;
+  color: #FFFFFF;
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+header.nav .brand {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 20px;
+  font-weight: 500;
+  text-decoration: none;
+  color: #FFFFFF;
+}
+header.nav .spacer { flex: 1; }
+header.nav a { color: #03B188; text-decoration: none; font-size: 13px; font-weight: 500; }
+header.nav a:hover { text-decoration: underline; }
+
+.hero {
+  background: linear-gradient(155deg, #0F1418 0%, #1A1F25 60%, #2A2F35 100%);
+  color: #FFFFFF;
+  padding: 88px 24px 72px;
+  text-align: center;
+}
+.hero h1 {
+  font-size: 44px;
+  font-weight: 300;
+  letter-spacing: -0.015em;
+  max-width: 900px;
+  margin: 0 auto 18px;
+  line-height: 1.15;
+}
+.hero h1 .green { color: #03B188; }
+.hero h1 .grey  { color: #8A949D; }
+.hero p {
+  font-size: 17px;
+  max-width: 740px;
+  margin: 0 auto;
+  color: rgba(255,255,255,0.72);
+}
+.hero .cta {
+  margin-top: 32px;
+  display: inline-flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.hero .btn {
+  display: inline-block;
+  padding: 12px 22px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  letter-spacing: 0.02em;
+}
+.hero .btn.primary  { background: #03B188; color: #FFFFFF; }
+.hero .btn.primary:hover { background: #028F6D; }
+.hero .btn.outline  { border: 1px solid rgba(255,255,255,0.3); color: #FFFFFF; }
+.hero .btn.outline:hover { border-color: #FFFFFF; }
+
+.section { padding: 56px 24px; max-width: 1200px; margin: 0 auto; }
+.section h2 {
+  font-size: 28px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: #1A1F25;
+  margin-bottom: 8px;
+}
+.section .subtitle {
+  font-size: 14px;
+  color: rgba(0,0,0,0.55);
+  margin-bottom: 32px;
+}
+
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.compare-table th, .compare-table td {
+  padding: 14px 16px;
+  text-align: left;
+  border-bottom: 1px solid #EAEAEA;
+  vertical-align: top;
+}
+.compare-table thead th {
+  background: #FAFAFA;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(0,0,0,0.7);
+  border-bottom: 2px solid #03B188;
+}
+.compare-table thead th.us  { color: #03B188; }
+.compare-table thead th.them { color: rgba(0,0,0,0.45); }
+.compare-table .feature { font-weight: 500; color: #1A1F25; width: 28%; }
+.compare-table .us  { color: #028F6D; }
+.compare-table .them { color: rgba(0,0,0,0.55); }
+.compare-table .check { color: #03B188; font-weight: 700; }
+.compare-table .x     { color: #B00020; font-weight: 700; }
+
+.differentiators {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+  margin-top: 32px;
+}
+.diff-card {
+  background: #FAFAFA;
+  border: 1px solid #EAEAEA;
+  border-left: 4px solid #03B188;
+  border-radius: 6px;
+  padding: 22px;
+}
+.diff-card h3 {
+  font-size: 16px;
+  font-weight: 500;
+  color: #1A1F25;
+  margin-bottom: 8px;
+}
+.diff-card p {
+  font-size: 13px;
+  color: rgba(0,0,0,0.62);
+  line-height: 1.5;
+}
+.diff-card .icon { font-size: 22px; margin-bottom: 8px; display: block; }
+
+.callout {
+  background: rgba(3,177,136,0.06);
+  border-left: 4px solid #03B188;
+  padding: 22px 26px;
+  margin: 36px 0;
+  border-radius: 4px;
+}
+.callout h3 {
+  font-size: 16px;
+  color: #028F6D;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+.callout p {
+  font-size: 14px;
+  color: rgba(0,0,0,0.7);
+}
+.callout code {
+  font-family: Monaco, Menlo, Consolas, monospace;
+  font-size: 12px;
+  background: rgba(0,0,0,0.04);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+footer {
+  background: #1A1F25;
+  color: rgba(255,255,255,0.6);
+  text-align: center;
+  padding: 32px 24px;
+  font-size: 12px;
+}
+footer a { color: #03B188; text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <a class="brand" href="/">cycleCAD Suite</a>
+  <span class="spacer"></span>
+  <a href="/">Home</a>
+  <a href="/app/index.html">Open app</a>
+  <a href="/app/demo/index.html">Demos</a>
+  <a href="/docs/ARCHITECTURE.md">Docs</a>
+  <a href="https://github.com/vvlars-cmd/cyclecad" target="_blank" rel="noopener">GitHub ↗</a>
+</header>
+
+<section class="hero">
+  <h1>
+    MecAgent <span class="grey">automates repetitive CAD tasks <strong>inside Inventor</strong>.</span><br />
+    cycleCAD Suite <span class="green">is the whole platform — and it runs in any browser tab.</span>
+  </h1>
+  <p>
+    MecAgent is a paid AI copilot you install into Autodesk Inventor or SolidWorks.
+    cycleCAD Suite is open-source, browser-native, and includes the CAD modeller,
+    a 3D viewer, a 5-axis CAM, a real-machine controller bridge, plus AI design and
+    engineering-analysis copilots — all without leaving your browser tab.
+  </p>
+  <div class="cta">
+    <a class="btn primary" href="/app/index.html">Open the app</a>
+    <a class="btn outline" href="/app/demo/index.html">See the demos</a>
+  </div>
+</section>
+
+<section class="section">
+  <h2>Head-to-head</h2>
+  <div class="subtitle">Sources: <a href="https://mecagent.com" target="_blank" rel="noopener">mecagent.com</a> homepage and product page (April 2026).</div>
+
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th class="feature">Capability</th>
+        <th class="us">cycleCAD Suite</th>
+        <th class="them">MecAgent</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="feature">Where it runs</td>
+        <td class="us"><strong>Any browser tab.</strong> No install. Mac / Linux / Windows / Chromebook / iPad.</td>
+        <td class="them">Plugin into Autodesk Inventor or SolidWorks (Windows desktop only).</td>
+      </tr>
+      <tr>
+        <td class="feature">License</td>
+        <td class="us"><strong>Open source.</strong> MIT (cycleCAD, ExplodeView) + AGPL-3 (Pentacad).</td>
+        <td class="them">Closed-source. Paid SaaS subscription.</td>
+      </tr>
+      <tr>
+        <td class="feature">Cost to a single user</td>
+        <td class="us"><span class="check">$0</span> for the Suite. Plus your own LLM keys (Claude / Gemini / Groq) — Gemini and Groq have free tiers.</td>
+        <td class="them">MecAgent subscription <em>plus</em> Inventor (~$2,500/yr) or SolidWorks (~$4,200/yr) license.</td>
+      </tr>
+      <tr>
+        <td class="feature">CAD modeller</td>
+        <td class="us"><span class="check">✓</span> Built in (cycleCAD): sketch → extrude / revolve / fillet / chamfer / boolean / shell / pattern / sweep / loft / sheet metal.</td>
+        <td class="them"><span class="x">✗</span> Bring your own (relies on Inventor / SolidWorks).</td>
+      </tr>
+      <tr>
+        <td class="feature">AI design copilot</td>
+        <td class="us"><span class="check">✓</span> AI Copilot — text-to-CAD with 12 deterministic templates (gears, bearings, hex nuts, brackets, T-slots, …) <em>plus</em> LLM fallback for novel prompts.</td>
+        <td class="them"><span class="check">✓</span> Same idea, LLM-only. Limited to the host CAD's API surface.</td>
+      </tr>
+      <tr>
+        <td class="feature">AI engineering analysis</td>
+        <td class="us"><span class="check">✓</span> Bolted joints (VDI 2230), spur gears (AGMA), shaft fatigue (Goodman / Soderberg), bearings (ISO 281), welds (AWS D1.1). <strong>Pure-JS analytical math, 28/28 self-tests pass against Shigley reference.</strong></td>
+        <td class="them"><span class="check">✓</span> "AI Mechanical Engineering Expert" mentioned on homepage. LLM-driven narratives; analytical depth not publicly documented.</td>
+      </tr>
+      <tr>
+        <td class="feature">CAM / toolpath generation</td>
+        <td class="us"><span class="check">✓</span> Built in (Pentacad). 7 strategies including 5-axis. Pentamachine V2 dialect post-processor.</td>
+        <td class="them"><span class="x">✗</span> Not in scope.</td>
+      </tr>
+      <tr>
+        <td class="feature">5-axis simulator</td>
+        <td class="us"><span class="check">✓</span> Pixel-replica of <a href="https://sim.pentamachine.com" target="_blank" rel="noopener">sim.pentamachine.com</a>: real V1 / V1 Kickstarter / V2-10 / V2-50 / Solo GLB models, ViewCube, DRO, soft-limit check.</td>
+        <td class="them"><span class="x">✗</span> Not in scope.</td>
+      </tr>
+      <tr>
+        <td class="feature">Real machine handoff</td>
+        <td class="us"><span class="check">✓</span> Rockhopper WebSocket bridge to LinuxCNC on a connected Pentamachine. Live DRO, jog, feed override, cycle start / feed hold / abort.</td>
+        <td class="them"><span class="x">✗</span> Design-time only — no manufacturing path.</td>
+      </tr>
+      <tr>
+        <td class="feature">3D viewer + AR + AI render</td>
+        <td class="us"><span class="check">✓</span> ExplodeView: STEP import, exploded views, WebXR AR mode, photoreal AI render via Gemini Nano Banana 2.</td>
+        <td class="them"><span class="x">✗</span> Drawings only ("CAD Drawing AI Generation").</td>
+      </tr>
+      <tr>
+        <td class="feature">Drawing automation</td>
+        <td class="us">Pentacad post-processor + drawing layout in cycleCAD. Templates extensible.</td>
+        <td class="them"><span class="check">✓</span> "CAD Drawing AI Generation" — auto orthographic projections + dimension callouts.</td>
+      </tr>
+      <tr>
+        <td class="feature">Macro / API automation</td>
+        <td class="us"><span class="check">✓</span> <code>window.cycleCAD.execute()</code> JSON-RPC API exposes 55+ commands across 10 namespaces. Self-describing schema for AI agents.</td>
+        <td class="them"><span class="check">✓</span> "CAD Macro AI Generation" against Inventor / SolidWorks API.</td>
+      </tr>
+      <tr>
+        <td class="feature">Self-hosting</td>
+        <td class="us"><span class="check">✓</span> Static site — host on your own domain in 30 seconds. Or Docker for offline / air-gapped.</td>
+        <td class="them"><span class="x">✗</span> SaaS, depends on MecAgent's servers.</td>
+      </tr>
+      <tr>
+        <td class="feature">Vendor lock-in</td>
+        <td class="us"><strong>None.</strong> All file formats are open: STEP / GLB / G-code / NGC / DXF.</td>
+        <td class="them">Tied to Autodesk / Dassault ecosystem and to MecAgent's continued service.</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="section" style="background:#FAFAFA;max-width:none;">
+  <div style="max-width:1200px;margin:0 auto;">
+    <h2>Why we built it differently</h2>
+    <div class="subtitle">Three things only an open browser-native platform can do.</div>
+
+    <div class="differentiators">
+      <div class="diff-card">
+        <span class="icon">🌐</span>
+        <h3>Zero install</h3>
+        <p>
+          Open <code>cyclecad.com</code> on any device. No installer, no Inventor seat,
+          no Windows-only restrictions. Field tech opens it on an iPad. Educator
+          opens it on a Chromebook. Customer opens a share link in five seconds.
+        </p>
+      </div>
+
+      <div class="diff-card">
+        <span class="icon">🔬</span>
+        <h3>Deterministic engineering</h3>
+        <p>
+          Our AI Engineering Analyst computes every number with pure-JS analytical
+          functions. The LLM only parses your prompt and writes the narrative.
+          Math is auditable, deterministic, and verifiable against Shigley / VDI 2230 / AGMA / ISO 281 / AWS D1.1.
+          28/28 self-tests pass on every load.
+        </p>
+      </div>
+
+      <div class="diff-card">
+        <span class="icon">🛠️</span>
+        <h3>Real manufacturing</h3>
+        <p>
+          A design copilot that doesn't ship to a real machine is a dead end.
+          Our CAM and Pentacad Bridge connect to a Pentamachine V2 over USB and
+          stream live DRO via Rockhopper WebSocket. CAD → CAM → simulate → cut.
+        </p>
+      </div>
+
+      <div class="diff-card">
+        <span class="icon">📂</span>
+        <h3>Open formats, open code</h3>
+        <p>
+          STEP, GLB, G-code, NGC, DXF. All open. All standard. MIT / AGPL-3 source
+          on GitHub. You can fork it, vendor it into your own product, or run it
+          on your own intranet behind a firewall.
+        </p>
+      </div>
+
+      <div class="diff-card">
+        <span class="icon">🤖</span>
+        <h3>Agent-native API</h3>
+        <p>
+          <code>window.cycleCAD.execute()</code> exposes 55+ commands as a self-describing
+          JSON-RPC interface. Claude, Gemini, or Groq can drive the entire Suite without
+          screen scraping or pixel clicks. Macros are first-class.
+        </p>
+      </div>
+
+      <div class="diff-card">
+        <span class="icon">🏗️</span>
+        <h3>One pipeline, not three tools</h3>
+        <p>
+          Design in cycleCAD, present in ExplodeView, manufacture with Pentacad — all on
+          one domain, one tab. Files cross between the three with a click. No imports,
+          no exports, no version mismatches.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="callout">
+    <h3>Want to see it run the same program MecAgent's site shows?</h3>
+    <p>
+      Open <a href="/app/demo/milling-3d-demo.html">the milling demo</a> — it runs the exact
+      sim.pentamachine.com default G-code on the real V2-10 model, side-by-side with a
+      narrative explaining each line. Or if you want the MecAgent-equivalent bolted-joint
+      analysis, type <code>analyze 4 M12 bolts class 10.9 with 18 kN shear and 18 kN axial</code>
+      in our <a href="/app/index.html#tools=ai-engineer">AI Engineering Analyst</a> — every
+      number is derived from VDI 2230 / Shigley.
+    </p>
+  </div>
+
+  <h2 style="margin-top:48px;">Honest about the gaps</h2>
+  <div class="subtitle">Where MecAgent is ahead today.</div>
+  <ul style="font-size:14px;line-height:1.7;color:rgba(0,0,0,0.7);padding-left:22px;">
+    <li><strong>Drawing automation</strong> — MecAgent's auto-dimensioning and orthographic
+      projection generation is mature. Our drawing pipeline emits DXF and basic title-block
+      layouts; auto-dimensioning is on the roadmap.</li>
+    <li><strong>Inventor / SolidWorks integration</strong> — if you've already invested in
+      Autodesk's stack and want AI inside it, MecAgent fits that workflow. Our story is
+      "step out of Autodesk", not "live inside it".</li>
+    <li><strong>Enterprise sales motion</strong> — MecAgent has a sales team, customer
+      success, and probably an SSO story. We're a community + open-core project. If you
+      need enterprise hand-holding today, that gap is real.</li>
+  </ul>
+</section>
+
+<footer>
+  cycleCAD Suite — open source · MIT (cycleCAD, ExplodeView) and AGPL-3 (Pentacad) ·
+  <a href="https://github.com/vvlars-cmd/cyclecad" target="_blank" rel="noopener">github.com/vvlars-cmd/cyclecad</a>
+  <br /><br />
+  This page is a comparison written by the cycleCAD Suite team. MecAgent is a trademark of MecAgent. We have no commercial relationship with MecAgent and have not contacted them about this comparison.
+</footer>
+</body>
+</html>

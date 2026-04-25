@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>cycleCAD Suite — Demos</title>
+<meta name="description" content="Curated demos of every tool in the cycleCAD Suite: parametric CAD, AI Copilot, AI Engineering Analyst, Pentacad CAM/sim, ExplodeView, and the Pentamachine controller bridge." />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛠️</text></svg>" />
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; }
+body {
+  font-family: Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  color: rgba(0,0,0,0.87);
+  background: #FAFAFA;
+  -webkit-font-smoothing: antialiased;
+}
+
+header {
+  background: #1A1F25;
+  color: #FFFFFF;
+  padding: 18px 32px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+header .logo { font-size: 24px; }
+header .brand {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+header .tag {
+  font-size: 13px;
+  color: rgba(255,255,255,0.65);
+  margin-left: 6px;
+}
+header .spacer { flex: 1; }
+header a {
+  color: #03B188;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  margin-left: 22px;
+}
+header a:hover { text-decoration: underline; }
+
+.hero {
+  background: linear-gradient(160deg, #FFFFFF 0%, #F5F5F5 100%);
+  padding: 56px 32px 40px;
+  text-align: center;
+  border-bottom: 1px solid #E0E0E0;
+}
+.hero h1 {
+  font-size: 40px;
+  font-weight: 300;
+  letter-spacing: -0.01em;
+  color: #1A1F25;
+  margin-bottom: 12px;
+}
+.hero h1 .accent { color: #03B188; font-weight: 500; }
+.hero p {
+  font-size: 17px;
+  color: rgba(0,0,0,0.6);
+  max-width: 720px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+.grid {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 40px 24px 60px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 18px;
+}
+
+.card {
+  background: #FFFFFF;
+  border: 1px solid #E0E0E0;
+  border-radius: 8px;
+  padding: 22px 22px 18px;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  min-height: 240px;
+}
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+  border-color: #03B188;
+}
+.card .badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #FFFFFF;
+  background: #03B188;
+  padding: 3px 8px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  align-self: flex-start;
+}
+.card .badge.cad      { background: #1976D2; }
+.card .badge.viewer   { background: #7B61FF; }
+.card .badge.cam      { background: #03B188; }
+.card .badge.ai       { background: #D84315; }
+.card .badge.docs     { background: #607D8B; }
+.card .badge.test     { background: #424242; }
+.card .badge.live     { background: #03B188; }
+.card .badge.local    { background: #F5A623; }
+.card .badge.external { background: #6FCFEB; color: #1A1F25; }
+
+.card h3 {
+  font-size: 17px;
+  font-weight: 500;
+  color: #1A1F25;
+  margin-bottom: 6px;
+}
+.card .meta {
+  font-size: 11px;
+  color: rgba(0,0,0,0.45);
+  font-family: Monaco, Menlo, "Ubuntu Mono", Consolas, monospace;
+  margin-bottom: 10px;
+}
+.card p {
+  font-size: 13px;
+  color: rgba(0,0,0,0.62);
+  line-height: 1.5;
+  flex: 1;
+  margin-bottom: 14px;
+}
+.card .arrow {
+  font-size: 13px;
+  color: #03B188;
+  font-weight: 500;
+}
+.card:hover .arrow { color: #028F6D; }
+
+.section-title {
+  max-width: 1280px;
+  margin: 36px auto 0;
+  padding: 0 24px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: rgba(0,0,0,0.5);
+  text-transform: uppercase;
+  border-bottom: 2px solid #03B188;
+  padding-bottom: 6px;
+  display: inline-block;
+}
+.section-title-wrap { max-width: 1280px; margin: 0 auto; padding: 0 24px; }
+
+footer {
+  background: #FFFFFF;
+  border-top: 1px solid #E0E0E0;
+  padding: 32px 24px;
+  text-align: center;
+  color: rgba(0,0,0,0.5);
+  font-size: 12px;
+}
+footer a { color: #03B188; text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="logo">🛠️</span>
+  <span class="brand">cycleCAD Suite</span>
+  <span class="tag">· Demos</span>
+  <span class="spacer"></span>
+  <a href="/">Home</a>
+  <a href="/app/index.html">Open app</a>
+  <a href="https://github.com/vvlars-cmd/cyclecad" target="_blank" rel="noopener">GitHub ↗</a>
+</header>
+
+<section class="hero">
+  <h1>One tool for the whole pipeline — <span class="accent">design → present → manufacture</span></h1>
+  <p>
+    The cycleCAD Suite is browser-native, open-source, and integrates parametric CAD, AI design copilots,
+    a 5-axis CAM + simulator, and a real-machine controller bridge. Pick a demo below to see what runs in
+    your browser tab — no install, no plugin.
+  </p>
+</section>
+
+<div class="section-title-wrap"><span class="section-title">Pentacad — CAM + 5-axis sim</span></div>
+<div class="grid">
+
+  <a class="card" href="/app/demo/milling-3d-demo.html">
+    <span class="badge cam">Live demo</span>
+    <h3>Milling on V2-10 (sim.ngc face-pass)</h3>
+    <div class="meta">app/demo/milling-3d-demo.html</div>
+    <p>The sim.pentamachine.com default G-code program running on the real V2-10 machine model. Side-by-side narrative explains every line of the 28-line face-pass.</p>
+    <span class="arrow">Run demo →</span>
+  </a>
+
+  <a class="card" href="/app/pentacad-sim.html#m=v2-10&amp;ex=sim-ngc">
+    <span class="badge cam">Standalone sim</span>
+    <h3>Pentacad simulator (full-screen)</h3>
+    <div class="meta">app/pentacad-sim.html</div>
+    <p>Pixel-replica of sim.pentamachine.com — ViewCube, DRO panel, all 5 machines (Solo / V1 / V1 Kickstarter / V2-10 / V2-50), real GLB models, matte rendering. Same controls.</p>
+    <span class="arrow">Open sim →</span>
+  </a>
+
+  <a class="card" href="/app/pentacad.html">
+    <span class="badge cam">Full Pentacad</span>
+    <h3>Pentacad full app (Machine / Design / CAM / Sim / Production)</h3>
+    <div class="meta">app/pentacad.html</div>
+    <p>The complete CAM workflow: pick machine, design or import a part, generate toolpaths, post to G-code, simulate, then send to a real Pentamachine over Rockhopper WebSocket.</p>
+    <span class="arrow">Open Pentacad →</span>
+  </a>
+
+  <a class="card" href="/app/pentacad-sim.html#m=v2-10&amp;ex=bottle-opener">
+    <span class="badge cam">5-axis sample</span>
+    <h3>Bottle-opener ring (Matt's reference)</h3>
+    <div class="meta">5-axis pocket + chamfer + contour</div>
+    <p>Penta's own demo part — full 5-axis indexing program with ~380 lines, A-tilt and B-rotary motion. Shows G93 inverse-time feed for rotary moves.</p>
+    <span class="arrow">Run program →</span>
+  </a>
+
+  <a class="card" href="https://sim.pentamachine.com" target="_blank" rel="noopener">
+    <span class="badge external">Reference</span>
+    <h3>sim.pentamachine.com (original)</h3>
+    <div class="meta">https://sim.pentamachine.com</div>
+    <p>The Penta Machine Co. simulator that ours mirrors. Open this in another tab and run the same G-code in both for a side-by-side comparison.</p>
+    <span class="arrow">Open Penta sim →</span>
+  </a>
+
+</div>
+
+<div class="section-title-wrap"><span class="section-title">cycleCAD — parametric CAD + AI</span></div>
+<div class="grid">
+
+  <a class="card" href="/app/index.html">
+    <span class="badge cad">CAD app</span>
+    <h3>cycleCAD parametric modeller</h3>
+    <div class="meta">app/index.html</div>
+    <p>Browser-native parametric CAD with sketch / extrude / revolve / fillet / chamfer / boolean / shell / pattern / sweep / loft / sheet metal. Inventor (.ipt) and STEP import.</p>
+    <span class="arrow">Open cycleCAD →</span>
+  </a>
+
+  <a class="card" href="/app/index.html#tools=ai-copilot">
+    <span class="badge ai">AI Copilot</span>
+    <h3>Text-to-CAD with the AI Copilot</h3>
+    <div class="meta">Cmd/Ctrl + Shift + K</div>
+    <p>Type a prompt: <code>M8 hex nut</code>, <code>spur gear 20 teeth module 2 bore 10mm</code>, <code>bearing housing for 6204</code>. Built-in templates handle 12 common shapes deterministically; LLM handles the rest.</p>
+    <span class="arrow">Try Copilot →</span>
+  </a>
+
+  <a class="card" href="/app/index.html#tools=ai-engineer">
+    <span class="badge ai">AI Engineer</span>
+    <h3>AI Engineering Analyst (vs MecAgent)</h3>
+    <div class="meta">5 analyses · 28/28 self-tests pass</div>
+    <p>Bolted-joint (VDI 2230 / Shigley), spur gears (AGMA), shaft fatigue (Goodman / Soderberg), rolling bearings (ISO 281 L10), fillet welds (AWS D1.1). Pure-JS math, LLM only writes the narrative.</p>
+    <span class="arrow">Run analysis →</span>
+  </a>
+
+  <a class="card" href="https://explodeview.com" target="_blank" rel="noopener">
+    <span class="badge viewer">ExplodeView</span>
+    <h3>3D viewer + AR + AI render</h3>
+    <div class="meta">https://explodeview.com</div>
+    <p>Browser-native CAD viewer for STEP files. Exploded views, measurement, AR walkthrough on phone, and AI photorealistic renders via Gemini Nano Banana 2 with preservation-first prompting.</p>
+    <span class="arrow">Open ExplodeView ↗</span>
+  </a>
+
+</div>
+
+<div class="section-title-wrap"><span class="section-title">Reference</span></div>
+<div class="grid">
+
+  <a class="card" href="/docs/ARCHITECTURE.md">
+    <span class="badge docs">Docs</span>
+    <h3>Suite architecture</h3>
+    <div class="meta">docs/ARCHITECTURE.md</div>
+    <p>How cycleCAD / ExplodeView / Pentacad fit together. Layered model, machine variant system, G-code → motion pipeline, coordinate boundaries, security, performance targets.</p>
+    <span class="arrow">Read →</span>
+  </a>
+
+  <a class="card" href="/docs/TUTORIAL-SUITE.md">
+    <span class="badge docs">Tutorial</span>
+    <h3>5-tour guided walkthrough</h3>
+    <div class="meta">docs/TUTORIAL-SUITE.md</div>
+    <p>Run a sim · Generate G-code from CAM · Ask the AI Copilot · Verify a bolted joint · Render in ExplodeView. Five short tours that build on each other.</p>
+    <span class="arrow">Start tutorial →</span>
+  </a>
+
+  <a class="card" href="/docs/HELP-SUITE.md">
+    <span class="badge docs">Help</span>
+    <h3>Shortcuts, FAQ, troubleshooting</h3>
+    <div class="meta">docs/HELP-SUITE.md</div>
+    <p>Keyboard shortcuts for every app, common questions, fixes for "machine doesn't move", "G-code didn't load", "Rockhopper auth failed", and where to find each feature.</p>
+    <span class="arrow">Open help →</span>
+  </a>
+
+  <a class="card" href="/app/tests/all-tests.html">
+    <span class="badge test">Tests</span>
+    <h3>Master test runner</h3>
+    <div class="meta">app/tests/all-tests.html</div>
+    <p>Browser-runnable test suite: G-code parser, AI Copilot templates, AI Engineer self-tests, GLB loader fallbacks. Pass/fail grid with JSON export.</p>
+    <span class="arrow">Run tests →</span>
+  </a>
+
+  <a class="card" href="/docs/pentacad/PRE-FLIGHT-CHECKLIST.md">
+    <span class="badge live">Hardware</span>
+    <h3>Pre-flight checklist (real machine)</h3>
+    <div class="meta">docs/pentacad/PRE-FLIGHT-CHECKLIST.md</div>
+    <p>30–45 min step-by-step for first-time hardware test on a real Pentamachine: USB connect → Rockhopper handshake → home → jog → air-cut → FEED HOLD → abort → post-flight.</p>
+    <span class="arrow">Read checklist →</span>
+  </a>
+
+  <a class="card" href="/docs/pentacad/bridge-protocol.md">
+    <span class="badge docs">Protocol</span>
+    <h3>Rockhopper WebSocket protocol</h3>
+    <div class="meta">docs/pentacad/bridge-protocol.md</div>
+    <p>Full spec for the JSON-over-WebSocket protocol Pentacad speaks to LinuxCNC via Rockhopper on the BeagleBone Black. 14 ops, 9 events, resume-on-reconnect.</p>
+    <span class="arrow">Read protocol →</span>
+  </a>
+
+</div>
+
+<footer>
+  Open source · MIT (cycleCAD, ExplodeView) and AGPL-3 (Pentacad) ·
+  <a href="https://github.com/vvlars-cmd/cyclecad" target="_blank" rel="noopener">github.com/vvlars-cmd/cyclecad</a>
+</footer>
+
+</body>
+</html>

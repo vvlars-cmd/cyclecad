@@ -544,6 +544,118 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 }
 .change-machine-pill:hover { background: var(--pt-green-dark); }
 
+/* ─── Back Plot panel — Penta-replica Show Options ─── */
+.back-plot-panel {
+  position: absolute;
+  right: 250px;       /* sit just to the left of the right widget cluster */
+  top: 110px;
+  z-index: 14;
+  width: 280px;
+  background: #FFFFFF;       /* SOLID white — was transparent */
+  border: 1px solid #D8D8D8;
+  border-radius: 6px;
+  padding: 18px 20px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  font-family: Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  color: rgba(0,0,0,0.87);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.back-plot-panel[hidden] { display: none; }
+.back-plot-panel .bp-head {
+  display: flex;
+  justify-content: flex-end;
+  border-bottom: 1px solid #EAEAEA;
+  padding-bottom: 12px;
+  margin-bottom: 4px;
+}
+.back-plot-panel .bp-title {
+  font-size: 16px;
+  font-weight: 400;
+  color: rgba(0,0,0,0.7);
+}
+
+/* MUI-style checkbox row */
+.back-plot-panel .bp-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  user-select: none;
+}
+.back-plot-panel .bp-check input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.back-plot-panel .bp-check-mark {
+  width: 22px;
+  height: 22px;
+  border: 2px solid rgba(0,0,0,0.45);
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+.back-plot-panel .bp-check input[type="checkbox"]:checked + .bp-check-mark {
+  background: #03B188;
+  border-color: #03B188;
+}
+.back-plot-panel .bp-check input[type="checkbox"]:checked + .bp-check-mark::after {
+  content: '✓';
+  color: #FFFFFF;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* From / To line-number inputs */
+.back-plot-panel .bp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.back-plot-panel .bp-field label {
+  font-size: 12px;
+  color: rgba(0,0,0,0.55);
+}
+.back-plot-panel .bp-field input {
+  font-family: Monaco, Menlo, Consolas, monospace;
+  font-size: 14px;
+  padding: 8px 10px;
+  border: 1px solid rgba(0,0,0,0.35);
+  border-radius: 3px;
+  background: #FFFFFF;
+  color: rgba(0,0,0,0.87);
+  width: 100%;
+}
+.back-plot-panel .bp-field input:focus {
+  outline: none;
+  border-color: #03B188;
+}
+
+/* MUI-style outlined buttons */
+.back-plot-panel .bp-btn {
+  background: rgba(0,0,0,0.04);
+  border: 1px solid rgba(0,0,0,0.18);
+  border-radius: 3px;
+  padding: 10px 14px;
+  font-family: Roboto, Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: rgba(0,0,0,0.75);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.back-plot-panel .bp-btn:hover { background: rgba(0,0,0,0.08); }
+
 /* Original (legacy, hidden) vis-toggles cluster */
 .vp-vis-toggles {
   position: absolute;
@@ -1060,6 +1172,43 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       <button class="btn" id="vis-grid">Grid <span class="tick">✓</span></button>
       <button class="btn off" id="vis-axes">Axes <span class="tick">✓</span></button>
       <button class="btn" id="vis-origin">Origin <span class="tick">✓</span></button>
+    </div>
+
+    <!-- ─── Penta-replica "Back Plot" Show Options panel ─── -->
+    <div class="back-plot-panel" id="back-plot-panel" hidden>
+      <div class="bp-head">
+        <span class="bp-title">Back Plot</span>
+      </div>
+      <label class="bp-check">
+        <input type="checkbox" id="bp-show-between" checked />
+        <span class="bp-check-mark"></span>
+        Show between lines
+      </label>
+      <div class="bp-field">
+        <label>From</label>
+        <input type="number" id="bp-from" value="1" min="1" />
+      </div>
+      <div class="bp-field">
+        <label>To</label>
+        <input type="number" id="bp-to" value="999" min="1" />
+      </div>
+      <button class="bp-btn" id="bp-set-current">SET CURRENT TOOL PATH</button>
+      <button class="bp-btn" id="bp-set-whole">SET WHOLE FILE</button>
+      <label class="bp-check">
+        <input type="checkbox" id="bp-auto-update" checked />
+        <span class="bp-check-mark"></span>
+        Automatically update lines
+      </label>
+      <label class="bp-check">
+        <input type="checkbox" id="bp-isolate-slider" />
+        <span class="bp-check-mark"></span>
+        Isolate Playback Slider
+      </label>
+      <label class="bp-check">
+        <input type="checkbox" id="bp-show-time" />
+        <span class="bp-check-mark"></span>
+        Show time window
+      </label>
     </div>
 
     <canvas id="viewport-canvas"></canvas>
@@ -1787,12 +1936,15 @@ function initThree() {
     }
     console.info('[pentacad-sim] loaded GLB model:', url);
   }, () => {
-    // No GLB available — proxy remains. Set a hint on the HUD.
-    const hud = document.getElementById('hud-machine');
-    if (hud && !hud.dataset.noted) {
-      hud.dataset.noted = '1';
-      hud.title = 'Proxy model (no ./models/<machine-id>.glb found)';
+    // No GLB candidates worked — show the proxy now (was hidden on first paint
+    // expecting a GLB to arrive). Proxy still has 'a' and 'b' named meshes for
+    // kinematics, so playback works regardless.
+    machine.visible = true;
+    if (app.three) {
+      fitCameraToObject(app.three.camera, app.three.controls, app.three.root);
     }
+    console.warn('[pentacad-sim] No GLB available — using proxy machine. ' +
+      'For real V2-10/V2-50/V1/Solo/V1KS models, drop them in app/models/ or paste a #glb=<url>.');
   });
 
   // Stock block
@@ -2277,7 +2429,7 @@ function buildMachineProxy(m) {
 
   // ── TRUNNION + B-ROTARY TABLE (at the front of the base) ──
   const trunnion = new THREE.Group();
-  trunnion.name = 'trunnion';
+  trunnion.name = 'a';      /* match real-GLB node name so kinematics work uniformly */
 
   // Twin support arms that hold the A-axis
   const armMat = new THREE.MeshStandardMaterial({ color: 0x6A7078, metalness: 0.6, roughness: 0.4 });
@@ -2306,7 +2458,7 @@ function buildMachineProxy(m) {
 
   // B-rotary platter on top of the A body
   const tableGroup = new THREE.Group();
-  tableGroup.name = 'tableB';
+  tableGroup.name = 'b';    /* match real-GLB node name */
   const table = new THREE.Mesh(
     new THREE.CylinderGeometry(2.4, 2.4, 0.3, 40),
     new THREE.MeshStandardMaterial({ color: 0xC8CCD0, metalness: 0.7, roughness: 0.28 })
@@ -2941,16 +3093,36 @@ function wireUI() {
     a.click();
   });
 
-  // Show Options button — toggles the visibility cluster
+  // Show Options button — toggles the Back Plot panel (matches Penta sim)
   const showOpts = document.getElementById('show-options');
   if (showOpts) showOpts.addEventListener('click', () => {
-    const cluster = document.getElementById('vp-vis-toggles');
-    if (cluster) {
-      cluster.hidden = !cluster.hidden;
-      cluster.style.position = 'absolute';
-      cluster.style.right = '250px';
-      cluster.style.top = '16px';
-      showOpts.textContent = cluster.hidden ? 'Show Options' : 'Hide Options';
+    const panel = document.getElementById('back-plot-panel');
+    if (panel) {
+      panel.hidden = !panel.hidden;
+      showOpts.textContent = panel.hidden ? 'Show Options' : 'Hide Options';
+    }
+  });
+
+  // Wire Back Plot panel buttons
+  const bpSetCurrent = document.getElementById('bp-set-current');
+  if (bpSetCurrent) bpSetCurrent.addEventListener('click', () => {
+    // Set From/To to current move's line number
+    const fromInput = document.getElementById('bp-from');
+    const toInput = document.getElementById('bp-to');
+    if (fromInput && toInput && app.currentMove >= 0 && app.moves[app.currentMove]) {
+      const ln = app.moves[app.currentMove].lineNumber || 1;
+      fromInput.value = ln;
+      toInput.value = ln;
+    }
+  });
+  const bpSetWhole = document.getElementById('bp-set-whole');
+  if (bpSetWhole) bpSetWhole.addEventListener('click', () => {
+    // Set From/To to span the whole file
+    const fromInput = document.getElementById('bp-from');
+    const toInput = document.getElementById('bp-to');
+    if (fromInput && toInput && app.parsed) {
+      fromInput.value = 1;
+      toInput.value = (app.parsed.lines && app.parsed.lines.length) || 999;
     }
   });
 

@@ -1532,6 +1532,11 @@ function initViewport() {
   controls.minDistance = 2;
   controls.maxDistance = 2000;
   controls.zoomSpeed = 1.0;
+  // Punchy rotation speed so horizontal drag visibly swings the camera
+  // around the vertical axis. Default 1.0 felt sluggish (a 200-px drag
+  // produced only ~7° of yaw); 2.5 gives ~17° per 200 px which matches
+  // the responsiveness of sim.pentamachine.com.
+  controls.rotateSpeed = 2.5;
 
   // Lights — bright, neutral so charcoal-grey machines read correctly on white
   const ambient = new THREE.AmbientLight(0xFFFFFF, 1.4);

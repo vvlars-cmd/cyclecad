@@ -429,8 +429,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   width: 80px;
   height: 80px;
   position: relative;
-  perspective: 400px;
   cursor: grab;
+}
+.viewcube canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: transparent;
 }
 .vc-face {
   position: absolute;
@@ -1145,13 +1150,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 
       <!-- ViewCube + camera buttons row -->
       <div class="vc-row">
-        <div class="viewcube" id="viewcube" title="Drag to orbit · click a face to snap">
-          <div class="vc-face vc-top" data-face="top">Top</div>
-          <div class="vc-face vc-bottom" data-face="bottom">Bot</div>
-          <div class="vc-face vc-front" data-face="front">Front</div>
-          <div class="vc-face vc-back" data-face="back">Back</div>
-          <div class="vc-face vc-right" data-face="right">Right</div>
-          <div class="vc-face vc-left" data-face="left">Left</div>
+        <div class="viewcube" id="viewcube" title="Drag to orbit · click a face/edge to snap">
+          <canvas id="viewcube-canvas" width="160" height="160"></canvas>
         </div>
         <div class="vc-buttons">
           <!-- Camera parenting: choose which part the camera follows -->
@@ -2364,24 +2364,47 @@ function setupGlbKinematics(root3d) {
 // part during playback. Penta's "Camera parenting options" menu does the same:
 // pick Spindle/Tool/Table/etc., camera orbits around that point.
 function applyCameraParenting(target) {
-  if (!app.three || !app.three.machine) return;
+  if (!app.three) {
+    console.warn('[pentacad-sim] camera parenting: scene not ready');
+    return;
+  }
   const machine = app.three.machine;
   let node = null;
   switch (target) {
-    case 'base':     node = machine.getObjectByName('Base_1') || machine.getObjectByName('base'); break;
+    case 'base':     node = (machine && (machine.getObjectByName('Base_1') || machine.getObjectByName('base'))); break;
     case 'part':     node = app.three.stock; break;
-    case 'spindle':  node = machine.getObjectByName('spindle') || machine.getObjectByName('z'); break;
-    case 'table':    node = machine.getObjectByName('b'); break;
+    case 'spindle':  node = (machine && (machine.getObjectByName('spindle') || machine.getObjectByName('z'))); break;
+    case 'table':    node = (machine && machine.getObjectByName('b')); break;
     case 'tool':     node = app.three.tool; break;
-    case 'trunnion': node = machine.getObjectByName('a'); break;
+    case 'trunnion': node = (machine && machine.getObjectByName('a')); break;
   }
-  if (!node) return;
+  if (!node) {
+    console.warn('[pentacad-sim] camera parenting: node not found for', target);
+    return;
+  }
   const box = new THREE.Box3().setFromObject(node);
-  const center = new THREE.Vector3(); box.getCenter(center);
-  app.three.controls.target.copy(center);
+  if (box.isEmpty()) {
+    // Fallback: use the node's world position
+    const pos = new THREE.Vector3();
+    node.getWorldPosition(pos);
+    app.three.controls.target.copy(pos);
+  } else {
+    const center = new THREE.Vector3(); box.getCenter(center);
+    app.three.controls.target.copy(center);
+  }
+  // Pull camera in to a comfortable distance from the new target
+  const cam = app.three.camera;
+  const target3 = app.three.controls.target;
+  const offset = cam.position.clone().sub(target3);
+  const desiredDist = box.isEmpty() ? offset.length() : Math.max(box.getSize(new THREE.Vector3()).length() * 1.8, 4);
+  if (offset.length() > 0) {
+    offset.normalize().multiplyScalar(desiredDist);
+    cam.position.copy(target3.clone().add(offset));
+    cam.lookAt(target3);
+  }
   app.three.controls.update();
   app.cameraParent = target;
-  console.info('[pentacad-sim] camera parented to:', target);
+  console.info('[pentacad-sim] camera parented to:', target, '@', target3);
 }
 
 // Camera projection — Penta's menu offers Auto / Perspective / Orthographic.
@@ -3157,35 +3180,113 @@ function wireUI() {
     camera.lookAt(target);
     controls.update();
   }
-  // Wire clicks on each face — backed up by a region click on the cube container
-  // because CSS 3D-transformed faces sometimes miss hit-testing in Safari/Chrome.
-  document.querySelectorAll('.vc-face').forEach(f => {
-    f.addEventListener('click', (e) => {
-      e.stopPropagation();
-      console.info('[viewcube] face clicked:', f.dataset.face);
-      snapCameraTo(f.dataset.face);
-    });
-  });
-
-  // Region-based click: divide cube area into 9 zones (top / bottom / left /
-  // right / front centre + 4 corners). Reliable even when 3D hit-test fails.
+  // ─── Three.js ViewCube renderer + raycaster ───
+  // Renders the real chamfered viewCube.glb (extracted from Penta's disk image)
+  // in a small offscreen scene. Click events use raycasting against actual
+  // mesh geometry — perfect hit-testing for face / edge / corner clicks.
+  const vcCanvas = document.getElementById('viewcube-canvas');
   const vcEl = document.getElementById('viewcube');
-  if (vcEl) {
+  if (vcCanvas && vcEl) {
+    const vcRenderer = new THREE.WebGLRenderer({ canvas: vcCanvas, antialias: true, alpha: true });
+    vcRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    vcRenderer.setSize(160, 160, false);
+    vcRenderer.outputColorSpace = THREE.SRGBColorSpace;
+
+    const vcScene = new THREE.Scene();
+    const vcCamera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
+    vcCamera.position.set(0, 0, 4);
+
+    vcScene.add(new THREE.AmbientLight(0xffffff, 1.2));
+    const vcKey = new THREE.DirectionalLight(0xffffff, 0.6);
+    vcKey.position.set(2, 3, 4);
+    vcScene.add(vcKey);
+
+    const vcGroup = new THREE.Group();
+    vcScene.add(vcGroup);
+
+    // Try loading the real Penta chamfered cube; fall back to a Box if missing.
+    let cubeModel = null;
+    if (!_gltfLoader) _gltfLoader = new GLTFLoader();
+    _gltfLoader.load('./models/viewCube.glb', (gltf) => {
+      cubeModel = gltf.scene;
+      // Scale the GLB to fit the 80px display
+      const box = new THREE.Box3().setFromObject(cubeModel);
+      const size = new THREE.Vector3(); box.getSize(size);
+      const maxDim = Math.max(size.x, size.y, size.z);
+      if (maxDim > 0) cubeModel.scale.setScalar(1.6 / maxDim);
+      // Replace materials to match Penta's faded teal-bordered white look
+      cubeModel.traverse(o => {
+        if (o.isMesh) {
+          o.material = new THREE.MeshLambertMaterial({ color: 0xE8E8E8 });
+        }
+      });
+      vcGroup.add(cubeModel);
+    }, undefined, () => {
+      // Fallback: chamfered cube (round-edge box)
+      const geom = new THREE.BoxGeometry(1.4, 1.4, 1.4);
+      const mat = new THREE.MeshLambertMaterial({ color: 0xE8E8E8 });
+      cubeModel = new THREE.Mesh(geom, mat);
+      vcGroup.add(cubeModel);
+    });
+
+    // Render loop synced to main camera
+    function renderViewCube() {
+      if (app.three) {
+        const cam = app.three.camera;
+        const target = app.three.controls.target;
+        const dir = cam.position.clone().sub(target).normalize();
+        // Set our cube's group rotation so cube reflects scene orientation
+        const yaw = Math.atan2(dir.x, dir.z);
+        const pitch = -Math.asin(dir.y);
+        vcGroup.rotation.set(pitch, yaw, 0);
+      }
+      vcRenderer.render(vcScene, vcCamera);
+      requestAnimationFrame(renderViewCube);
+    }
+    renderViewCube();
+
+    // Raycaster for click face detection
+    const raycaster = new THREE.Raycaster();
+    const ndc = new THREE.Vector2();
+
+    function determineFaceFromHit(hit) {
+      // Compare the hit normal in WORLD space to the 6 cardinal directions
+      // (after undoing vcGroup rotation) and pick the closest.
+      if (!hit.face) return 'front';
+      const localNormal = hit.face.normal.clone();
+      // hit.face.normal is in object-local space; transform to world
+      const worldNormal = localNormal.applyMatrix3(new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld));
+      // Then transform back through vcGroup so we get the face in cube-local frame
+      worldNormal.applyMatrix3(new THREE.Matrix3().getNormalMatrix(vcGroup.matrixWorld).invert());
+      worldNormal.normalize();
+      const dirs = [
+        ['front',  new THREE.Vector3(0, 0, 1)],
+        ['back',   new THREE.Vector3(0, 0, -1)],
+        ['right',  new THREE.Vector3(1, 0, 0)],
+        ['left',   new THREE.Vector3(-1, 0, 0)],
+        ['top',    new THREE.Vector3(0, 1, 0)],
+        ['bottom', new THREE.Vector3(0, -1, 0)],
+      ];
+      let best = 'front', bestDot = -Infinity;
+      for (const [name, v] of dirs) {
+        const d = worldNormal.dot(v);
+        if (d > bestDot) { bestDot = d; best = name; }
+      }
+      return best;
+    }
+
     vcEl.addEventListener('click', (e) => {
-      // Only handle clicks that didn't land on a face button (those bubble first)
-      if (e.target.classList && e.target.classList.contains('vc-face')) return;
       if (isDragging) return;
-      const rect = vcEl.getBoundingClientRect();
-      const px = (e.clientX - rect.left) / rect.width;
-      const py = (e.clientY - rect.top) / rect.height;
-      let face;
-      if      (py < 0.33) face = 'top';
-      else if (py > 0.66) face = 'bottom';
-      else if (px < 0.33) face = 'left';
-      else if (px > 0.66) face = 'right';
-      else                face = 'front';
-      console.info('[viewcube] region click:', face, `(${px.toFixed(2)}, ${py.toFixed(2)})`);
-      snapCameraTo(face);
+      const rect = vcCanvas.getBoundingClientRect();
+      ndc.x =  ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      ndc.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
+      raycaster.setFromCamera(ndc, vcCamera);
+      const hits = raycaster.intersectObject(vcGroup, true);
+      if (hits.length > 0) {
+        const face = determineFaceFromHit(hits[0]);
+        console.info('[viewcube] hit face:', face);
+        snapCameraTo(face);
+      }
     });
   }
 

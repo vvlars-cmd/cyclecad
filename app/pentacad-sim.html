@@ -1918,15 +1918,15 @@ function initThree() {
   controls.dampingFactor = 0.08;
   controls.target.set(0, 8, 0);   // Raised to machine mid-height, not the ground
 
-  // Lighting calibrated to match Penta's reference shot — lighter than v0.5.
-  // Penta's render shows machine as charcoal-grey with surface detail visible,
-  // not pure black. Stronger ambient + softer key + a hemisphere light bounce
-  // makes the GLB's PBR materials read at the right brightness.
-  const ambient = new THREE.AmbientLight(0xffffff, 1.10);
-  const key = new THREE.DirectionalLight(0xffffff, 0.55);
-  key.position.set(10, 20, 10);
-  const hemi = new THREE.HemisphereLight(0xFFFFFF, 0xCCCCCC, 0.35);
-  scene.add(ambient, key, hemi);
+  // Lighting — much brighter than v0.7 so PBR materials read as matte charcoal
+  // (not the pure black that v0.7 produced). Multi-direction key+fill+hemi.
+  const ambient = new THREE.AmbientLight(0xffffff, 1.6);
+  const key = new THREE.DirectionalLight(0xffffff, 0.9);
+  key.position.set(10, 25, 12);
+  const fill = new THREE.DirectionalLight(0xffffff, 0.6);
+  fill.position.set(-12, 6, -8);
+  const hemi = new THREE.HemisphereLight(0xFFFFFF, 0xC8CCD0, 0.7);
+  scene.add(ambient, key, fill, hemi);
 
   // Groups — inch units, scale 10x for legibility in the viewport
   const root = new THREE.Group();
@@ -2328,6 +2328,29 @@ function setupGlbKinematics(root3d) {
       node.userData.homePos = node.position.clone();
     }
   });
+
+  // Brighten the GLB's stock materials — Penta's renderer shows them lighter
+  // than what they author the .glb at. Bump roughness up + bump base color
+  // toward a matte charcoal so PBR doesn't crush them to pure black.
+  root3d.traverse(obj => {
+    if (!obj.isMesh || !obj.material) return;
+    const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+    mats.forEach(m => {
+      if (m.color && m.color.r < 0.18 && m.color.g < 0.18 && m.color.b < 0.18) {
+        // Authored near-black — lift to charcoal grey so they read against white
+        m.color.setRGB(0.28, 0.30, 0.33);
+      }
+      m.metalness = Math.min(m.metalness ?? 0.3, 0.35);
+      m.roughness = Math.max(m.roughness ?? 0.6, 0.7);
+      m.needsUpdate = true;
+    });
+  });
+
+  // Hide the inactive duplicate collet — Penta GLB ships two collet meshes
+  // ('collet' + 'collet001'); rendering both produces the 90°-rotated tool
+  // holder. Keep only 'collet'.
+  const collet001 = root3d.getObjectByName('collet001');
+  if (collet001) collet001.visible = false;
 }
 
 // Camera parenting — make the OrbitControls target follow a particular machine

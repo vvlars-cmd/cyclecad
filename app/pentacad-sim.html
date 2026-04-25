@@ -755,28 +755,28 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .playback-bar .pb-row.timeline { gap: 12px; }
 .playback-bar .btn {
   background: transparent;
-  color: #FFFFFF;
+  color: rgba(0, 0, 0, 0.54);
   border: 0;
-  padding: 8px 10px;
-  min-height: 36px;
-  min-width: 36px;
-  font-size: 16px;
-  border-radius: 4px;
+  padding: 8px;
+  width: 40px;
+  height: 40px;
+  font-size: 18px;
+  border-radius: 50%;
   justify-content: center;
-  font-weight: 500;
   display: inline-flex;
   align-items: center;
   cursor: pointer;
-  transition: background 0.12s;
+  transition: background 0.15s;
+  line-height: 1;
 }
-.playback-bar .btn:hover { background: rgba(255,255,255,0.16); }
-.playback-bar .btn.icon { padding: 8px; }
+.playback-bar .btn:hover { background: rgba(0, 0, 0, 0.06); }
+.playback-bar .btn.icon { padding: 12px; width: 48px; height: 48px; }
 .playback-bar .btn.primary {
   background: transparent !important;
-  color: #FFFFFF !important;
+  color: rgba(0, 0, 0, 0.54) !important;
   font-size: 18px;
 }
-.playback-bar .btn.primary:hover { background: rgba(255,255,255,0.16) !important; }
+.playback-bar .btn.primary:hover { background: rgba(0, 0, 0, 0.06) !important; }
 .playback-bar input[type="range"] {
   appearance: none;
   height: 3px;
@@ -1304,6 +1304,15 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         <input type="checkbox" id="bp-show-time" />
         <span class="bp-check-mark"></span>
         Show time window
+      </label>
+      <div class="bp-field">
+        <label>Seconds</label>
+        <input type="number" id="bp-time-seconds" value="10" min="1" />
+      </div>
+      <label class="bp-check">
+        <input type="checkbox" id="bp-show-past" />
+        <span class="bp-check-mark"></span>
+        Show past only
       </label>
     </div>
 

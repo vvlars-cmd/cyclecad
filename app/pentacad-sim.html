@@ -3366,6 +3366,13 @@ async function boot() {
 // remote inspection (Chrome MCP) without re-instrumenting on every change.
 window.PentacadSimApp = app;
 
+// Manual refresh — call this in DevTools after tweaking kinematics
+// settings (e.g. zHomeOffset, kinAxes, kinScale) to apply the change
+// without having to scrub the timeline or play.
+window.PentacadSimApp.refresh = () => {
+  applyPlaybackState();
+};
+
 boot();
 
 // Self-test: sanity-check that pentacad-sim self-tests pass

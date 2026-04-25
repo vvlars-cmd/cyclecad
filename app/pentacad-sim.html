@@ -1119,7 +1119,7 @@ M30
 
 <script type="module">
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1512,31 +1512,25 @@ function initViewport() {
   const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 5000);
   camera.position.set(28, 22, 34);
 
-  const controls = new OrbitControls(camera, canvas);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.08;
+  // TrackballControls instead of OrbitControls so the camera can rotate
+  // FREELY in every direction — including flipping past the top / bottom
+  // poles. OrbitControls locks the camera's up-vector, which is why the
+  // user reported the view 'banks left and right like a ship' near the
+  // poles: at high latitudes only theta change is allowed, producing a
+  // visible 'roll' instead of a true horizontal swing.
+  //
+  // TrackballControls is unconstrained — any drag rotates the camera
+  // around its own axes without preserving any up-direction.
+  const controls = new TrackballControls(camera, canvas);
   controls.target.set(0, 8, 0);
-  // Keep the polar angle clearly off the poles. At phi = 0 or phi = π the
-  // camera looks straight up / down. Even within a few degrees of the
-  // pole, horizontal drag has very little visible effect because the
-  // camera barely moves in 3D — only theta changes, and at high latitudes
-  // theta change manifests as a tiny in-place spin. 0.35 rad (~20°) gives
-  // both the Top and Bottom faces meaningful viewing room while keeping
-  // the rotation feeling responsive in every direction.
-  controls.minPolarAngle = 0.35;
-  controls.maxPolarAngle = Math.PI - 0.35;
-  // Distance limits: minDistance keeps the camera from clipping into the
-  // machine; maxDistance is generous because fitCamera() can park the camera
-  // at ≈300 for the larger GLBs (V2-50, Solo) — clamping any tighter makes
-  // the scroll-out wheel feel "stuck" the moment it loads.
   controls.minDistance = 2;
   controls.maxDistance = 2000;
-  controls.zoomSpeed = 1.0;
-  // Punchy rotation speed so horizontal drag visibly swings the camera
-  // around the vertical axis. Default 1.0 felt sluggish (a 200-px drag
-  // produced only ~7° of yaw); 2.5 gives ~17° per 200 px which matches
-  // the responsiveness of sim.pentamachine.com.
-  controls.rotateSpeed = 2.5;
+  controls.rotateSpeed = 4.0;
+  controls.zoomSpeed   = 1.4;
+  controls.panSpeed    = 1.2;
+  controls.staticMoving = false;            // smooth, with damping
+  controls.dynamicDampingFactor = 0.15;
+  controls.noPan = false;
 
   // Lights — bright, neutral so charcoal-grey machines read correctly on white
   const ambient = new THREE.AmbientLight(0xFFFFFF, 1.4);
@@ -1593,13 +1587,18 @@ function initViewport() {
 
 function resizeViewport() {
   if (!app.three) return;
-  const { renderer, camera } = app.three;
+  const { renderer, camera, controls } = app.three;
   const v = $('viewport');
   const w = v.clientWidth;
   const h = v.clientHeight;
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
+  // TrackballControls caches the canvas rect for its drag math; without
+  // this call rotations behave wrong after a layout change.
+  if (controls && typeof controls.handleResize === 'function') {
+    controls.handleResize();
+  }
 }
 
 function buildStock(machine) {

@@ -1913,15 +1913,15 @@ function initThree() {
   controls.dampingFactor = 0.08;
   controls.target.set(0, 8, 0);   // Raised to machine mid-height, not the ground
 
-  // Lighting — much brighter than v0.7 so PBR materials read as matte charcoal
-  // (not the pure black that v0.7 produced). Multi-direction key+fill+hemi.
-  const ambient = new THREE.AmbientLight(0xffffff, 1.6);
-  const key = new THREE.DirectionalLight(0xffffff, 0.9);
-  key.position.set(10, 25, 12);
-  const fill = new THREE.DirectionalLight(0xffffff, 0.6);
-  fill.position.set(-12, 6, -8);
-  const hemi = new THREE.HemisphereLight(0xFFFFFF, 0xC8CCD0, 0.7);
-  scene.add(ambient, key, fill, hemi);
+  // Lighting calibrated to Penta reference: soft top-lit, no harsh fill.
+  // Ambient does most of the work; subtle directional key adds gentle top
+  // edge highlights; hemisphere adds soft skybounce. No second fill (was
+  // washing out the matte look).
+  const ambient = new THREE.AmbientLight(0xffffff, 1.25);
+  const key = new THREE.DirectionalLight(0xffffff, 0.45);
+  key.position.set(8, 25, 10);
+  const hemi = new THREE.HemisphereLight(0xFFFFFF, 0xCCCCCC, 0.45);
+  scene.add(ambient, key, hemi);
 
   // Groups — inch units, scale 10x for legibility in the viewport
   const root = new THREE.Group();
@@ -2327,11 +2327,11 @@ function setupGlbKinematics(root3d) {
     }
   });
 
-  // Replace GLB materials with flat MeshLambertMaterial — calibrated to match
-  // Penta reference shot exactly. Body is near-black charcoal, stock is light
-  // medium-grey. Tweaked from v0.15 (was a hair too light).
-  const accentGrey = new THREE.MeshLambertMaterial({ color: 0x2A2C2F });   // platter / accent details
-  const bodyDark   = new THREE.MeshLambertMaterial({ color: 0x18191B });   // base, column, trunnion
+  // Replace GLB materials with flat MeshLambertMaterial — colour-matched
+  // pixel-perfect against Penta's reference shot (~#1E1F22 body, surface
+  // detail clearly visible against white scene).
+  const accentGrey = new THREE.MeshLambertMaterial({ color: 0x36383B });
+  const bodyDark   = new THREE.MeshLambertMaterial({ color: 0x1E1F22 });
   root3d.traverse(obj => {
     if (!obj.isMesh || !obj.material) return;
     const m = Array.isArray(obj.material) ? obj.material[0] : obj.material;
@@ -2408,33 +2408,47 @@ function applyCameraParenting(target) {
 }
 
 // Camera projection — Penta's menu offers Auto / Perspective / Orthographic.
-// Auto picks based on view: top/front/side -> ortho, oblique -> perspective.
+// Implementation trick: keep ONE PerspectiveCamera (so OrbitControls stays
+// bound and orbit keeps working), but change its FOV. A very narrow FOV
+// at a far camera distance produces the same visual effect as orthographic.
 function applyCameraProjection(mode) {
-  if (!app.three) return;
-  const oldCam = app.three.camera;
-  const ctrl = app.three.controls;
-  const aspect = oldCam.aspect;
-  const target = ctrl.target.clone();
-  const pos = oldCam.position.clone();
-  const dist = pos.distanceTo(target);
-  let newCam;
-  if (mode === 'orthographic' || mode === 'auto') {
-    // Use orthographic frustum sized so the scene fits at this distance
-    const fov = 50 * Math.PI / 180;
-    const halfH = Math.tan(fov / 2) * dist;
-    const halfW = halfH * aspect;
-    newCam = new THREE.OrthographicCamera(-halfW, halfW, halfH, -halfH, 0.01, dist * 100);
-  } else {
-    newCam = new THREE.PerspectiveCamera(50, aspect, 0.1, dist * 100);
+  if (!app.three) {
+    console.warn('[pentacad-sim] camera projection: scene not ready');
+    return;
   }
-  newCam.position.copy(pos);
-  newCam.lookAt(target);
-  newCam.updateProjectionMatrix();
-  app.three.camera = newCam;
-  ctrl.object = newCam;
+  const cam = app.three.camera;
+  if (!cam.isPerspectiveCamera) {
+    console.warn('[pentacad-sim] camera projection: only PerspectiveCamera supported');
+    return;
+  }
+  const ctrl = app.three.controls;
+  const dist = cam.position.distanceTo(ctrl.target);
+
+  let targetFov;
+  if (mode === 'orthographic') {
+    targetFov = 5;       // Very narrow FOV ≈ ortho look
+  } else if (mode === 'perspective') {
+    targetFov = 50;      // Standard perspective
+  } else {
+    // 'auto' — wider for oblique views, narrower for axis-aligned ones.
+    const dir = cam.position.clone().sub(ctrl.target).normalize();
+    const axisAlignedness = Math.max(Math.abs(dir.x), Math.abs(dir.y), Math.abs(dir.z));
+    targetFov = axisAlignedness > 0.95 ? 12 : 50;
+  }
+
+  // To keep the scene visually the same size when FOV changes, scale camera
+  // distance: distance * tan(fov/2) is constant.
+  const oldHalfFov = cam.fov * Math.PI / 360;
+  const newHalfFov = targetFov * Math.PI / 360;
+  const newDist = dist * Math.tan(oldHalfFov) / Math.tan(newHalfFov);
+  const dir = cam.position.clone().sub(ctrl.target).normalize();
+  cam.position.copy(ctrl.target.clone().add(dir.multiplyScalar(newDist)));
+  cam.fov = targetFov;
+  cam.far = newDist * 100;
+  cam.updateProjectionMatrix();
   ctrl.update();
   app.cameraProjection = mode;
-  console.info('[pentacad-sim] camera projection:', mode);
+  console.info('[pentacad-sim] camera projection:', mode, '(FOV', targetFov, ')');
 }
 
 // Frame camera to include an object's bounding box with a comfortable margin.

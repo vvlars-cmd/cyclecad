@@ -2417,8 +2417,10 @@ function wirePlayback() {
 }
 
 /**
- * Reset the 5-second fade-out timer for the playback overlay. The bar is
+ * Reset the 3-second fade-out timer for the playback overlay. The bar is
  * visible (opacity:1, clickable) by default — this only schedules the fade.
+ * Hovering the bar keeps it visible. Otherwise it disappears regardless of
+ * whether the user has played yet (user request 2026-04-25).
  */
 function revealPlaybackOverlay() {
   const c = $('controls');
@@ -2426,10 +2428,9 @@ function revealPlaybackOverlay() {
   c.classList.remove('is-faded');
   if (app._hideTimer) clearTimeout(app._hideTimer);
   app._hideTimer = setTimeout(() => {
-    if (app._controlsHover) return;          // hovering — keep visible
-    if (c.classList.contains('is-idle')) return; // pre-first-play hint
+    if (app._controlsHover) return;
     c.classList.add('is-faded');
-  }, 5000);
+  }, 3000);
 }
 
 function toggleGcodePane() {

@@ -2330,11 +2330,9 @@ function setupGlbKinematics(root3d) {
     }
   });
 
-  // Brighten the GLB's existing PBR materials INSTEAD of replacing them.
-  // Replacing with flat Lambert killed surface detail (bolt holes, slots, etc).
-  // Now we keep MeshStandardMaterial intact and just lift dark base colours
-  // toward charcoal so the geometry renders bright + detailed under our
-  // simple lighting setup (no env map).
+  // Tune the GLB's existing PBR materials so they read on our simple lighting.
+  // Penta reference is darker charcoal — lifting too far makes everything
+  // look like construction-paper grey.
   root3d.traverse(obj => {
     if (!obj.isMesh || !obj.material) return;
     const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
@@ -2342,14 +2340,15 @@ function setupGlbKinematics(root3d) {
       if (m.color) {
         const r = m.color.r, g = m.color.g, b = m.color.b;
         const isLED = (r > 0.5 && (g < 0.5 || b < 0.3));
-        if (!isLED && r < 0.35 && g < 0.35 && b < 0.35) {
-          // Authored very dark — lift to medium-charcoal range
-          m.color.setRGB(0.36, 0.38, 0.41);
+        if (!isLED && r < 0.10 && g < 0.10 && b < 0.10) {
+          // Only lift TRULY near-black to readable charcoal (preserves
+          // intentional dark-grey authoring elsewhere)
+          m.color.setRGB(0.22, 0.23, 0.25);
         }
       }
-      // Tame metalness so we don't get the harsh mirror-black PBR look
-      if ('metalness' in m) m.metalness = Math.min(m.metalness, 0.25);
-      if ('roughness' in m) m.roughness = Math.max(m.roughness, 0.65);
+      // Tame metalness slightly so PBR doesn't go mirror-black
+      if ('metalness' in m) m.metalness = Math.min(m.metalness, 0.4);
+      if ('roughness' in m) m.roughness = Math.max(m.roughness, 0.55);
       m.needsUpdate = true;
     });
   });

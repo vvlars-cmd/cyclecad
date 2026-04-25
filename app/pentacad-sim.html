@@ -1969,6 +1969,9 @@ function initThree() {
       positionStockOnGlb(bbox, app.machine);
       fitCameraToObject(app.three.camera, app.three.controls, app.three.root);
 
+      // Apply zero pose so axes reset to home (proxy compatibility hook)
+      try { applyToolPosition({ x: 0, y: 0, z: 0, a: 0, b: 0 }); } catch (e) {}
+
       // Optional vice overlay — toggle via app.viz.vice or #vice=1 URL hash
       const hpVice = location.hash && new URLSearchParams(location.hash.slice(1)).get('vice') === '1';
       if (app.viz.vice || hpVice) {
@@ -2767,13 +2770,31 @@ function updateTool3D(pos) {
   const z = (pos.y / 25.4) * 10;
   app.three.tool.position.set(x, y, z);
 
+  const machine = app.three.machine;
+  if (!machine) return;
+
   // Rotate the A-trunnion + B-platter. Real Penta GLB names them 'a' and 'b'
   // as flat siblings; proxy names them 'trunnion' and 'tableB'. Try both.
-  const machine = app.three.machine;
   const aMesh = machine.getObjectByName('a') || machine.getObjectByName('trunnion');
   const bMesh = machine.getObjectByName('b') || machine.getObjectByName('tableB');
   if (aMesh) aMesh.rotation.x = (pos.a * Math.PI) / 180;
   if (bMesh) bMesh.rotation.y = (pos.b * Math.PI) / 180;
+
+  // Translate linear axis nodes — spindle assembly moves with X/Y/Z.
+  //   x_1, x_2 — left/right rails (move with X)
+  //   y       — Y stage (moves with Y, depth axis)
+  //   z       — Z carriage (moves with Z, vertical, retracted at Z=0)
+  // pos values are in mm; scale to GLB-local authored units.
+  // GLB framed to ~14 wide for a real-world ~20" machine, so 1mm ≈ 14/(20*25.4) ≈ 0.0276 authored
+  const linScale = 0.0276;
+  const xNode = machine.getObjectByName('x_1');
+  const x2Node = machine.getObjectByName('x_2');
+  const yNode = machine.getObjectByName('y');
+  const zNode = machine.getObjectByName('z');
+  if (xNode && xNode.userData.homePos) xNode.position.x = xNode.userData.homePos.x + pos.x * linScale;
+  if (x2Node && x2Node.userData.homePos) x2Node.position.x = x2Node.userData.homePos.x + pos.x * linScale;
+  if (yNode && yNode.userData.homePos) yNode.position.z = yNode.userData.homePos.z - pos.y * linScale;
+  if (zNode && zNode.userData.homePos) zNode.position.y = zNode.userData.homePos.y + pos.z * linScale;
 }
 
 function updateDRO(pos, mv) {
@@ -3140,15 +3161,17 @@ function wireUI() {
   // (Penta's ViewCube spins with the scene and responds to drag — was static in v0.5.)
   const vc = document.getElementById('viewcube');
   if (vc) {
-    // 1. Sync cube to camera every frame
+    // 1. Sync cube to camera every frame.
+    //   The cube should mirror what the camera sees: when camera is above
+    //   the scene looking down, the top face is visible (cube tilted FORWARD
+    //   toward viewer). CSS rotateX(positive) tilts top AWAY, so we negate.
     function syncViewCube() {
       if (!app.three) return;
       const cam = app.three.camera;
       const target = app.three.controls.target;
       const dir = cam.position.clone().sub(target).normalize();
-      // Convert direction into yaw/pitch in degrees
       const yaw   = -Math.atan2(dir.x, dir.z) * 180 / Math.PI;
-      const pitch = Math.asin(dir.y) * 180 / Math.PI;
+      const pitch = -Math.asin(dir.y) * 180 / Math.PI;   // negated so cube matches camera
       vc.style.transform = `rotateX(${pitch}deg) rotateY(${yaw}deg)`;
     }
     if (app.three) {

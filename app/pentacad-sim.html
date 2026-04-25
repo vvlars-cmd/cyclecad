@@ -484,6 +484,37 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   transform: scale(1.05);
 }
 
+/* Floating dropdown menus — Penta-style: white card, large rows, MUI hover */
+.vc-menu {
+  position: absolute;
+  right: 64px;        /* sit to the left of the camera buttons */
+  top: 0;
+  min-width: 180px;
+  background: #FFFFFF;
+  border-radius: 6px;
+  border: 1px solid #D8D8D8;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.16);
+  padding: 8px 0;
+  z-index: 14;
+  display: flex;
+  flex-direction: column;
+}
+.vc-menu[hidden] { display: none; }
+.vc-menu button {
+  background: transparent;
+  border: 0;
+  text-align: left;
+  padding: 12px 22px;
+  font-family: Roboto, Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  color: rgba(0,0,0,0.85);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.vc-menu button:hover { background: rgba(0,0,0,0.06); }
+#vc-parent-menu     { top: 0; }
+#vc-projection-menu { top: 50px; }   /* aligns with the bottom button */
+
 /* DRO panel — matches Penta's grey monospace readout */
 .dro-panel {
   background: rgba(108, 113, 117, 0.92);
@@ -1119,7 +1150,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 
       <!-- ViewCube + camera buttons row -->
       <div class="vc-row">
-        <div class="viewcube" id="viewcube" title="Click a face to snap camera">
+        <div class="viewcube" id="viewcube" title="Drag to orbit · click a face to snap">
           <div class="vc-face vc-top" data-face="top">Top</div>
           <div class="vc-face vc-bottom" data-face="bottom">Bot</div>
           <div class="vc-face vc-front" data-face="front">Front</div>
@@ -1128,19 +1159,38 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
           <div class="vc-face vc-left" data-face="left">Left</div>
         </div>
         <div class="vc-buttons">
-          <button class="vc-btn" id="vc-fit" title="Fit to scene">
+          <!-- Camera parenting: choose which part the camera follows -->
+          <button class="vc-btn" id="vc-parent" title="Camera parenting options">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="3"/>
               <path d="M12 1v6 M12 17v6 M1 12h6 M17 12h6"/>
             </svg>
           </button>
-          <button class="vc-btn" id="vc-screenshot" title="Screenshot viewport">
+          <!-- Camera projection: Auto / Perspective / Orthographic -->
+          <button class="vc-btn" id="vc-projection" title="Camera projection options">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
               <circle cx="12" cy="13" r="4"/>
             </svg>
           </button>
         </div>
+      </div>
+
+      <!-- Camera-parenting menu (drops out of vc-parent button) -->
+      <div class="vc-menu" id="vc-parent-menu" hidden>
+        <button data-parent="base">Base</button>
+        <button data-parent="part">Part</button>
+        <button data-parent="spindle">Spindle</button>
+        <button data-parent="table">Table</button>
+        <button data-parent="tool">Tool</button>
+        <button data-parent="trunnion">Trunnion</button>
+      </div>
+
+      <!-- Camera-projection menu (drops out of vc-projection button) -->
+      <div class="vc-menu" id="vc-projection-menu" hidden>
+        <button data-projection="auto">Auto</button>
+        <button data-projection="perspective">Perspective</button>
+        <button data-projection="orthographic">Orthographic</button>
       </div>
 
       <!-- DRO panel — Penta-replica with X/Y/Z/A/B/T -->
@@ -2280,6 +2330,60 @@ function setupGlbKinematics(root3d) {
   });
 }
 
+// Camera parenting — make the OrbitControls target follow a particular machine
+// part during playback. Penta's "Camera parenting options" menu does the same:
+// pick Spindle/Tool/Table/etc., camera orbits around that point.
+function applyCameraParenting(target) {
+  if (!app.three || !app.three.machine) return;
+  const machine = app.three.machine;
+  let node = null;
+  switch (target) {
+    case 'base':     node = machine.getObjectByName('Base_1') || machine.getObjectByName('base'); break;
+    case 'part':     node = app.three.stock; break;
+    case 'spindle':  node = machine.getObjectByName('spindle') || machine.getObjectByName('z'); break;
+    case 'table':    node = machine.getObjectByName('b'); break;
+    case 'tool':     node = app.three.tool; break;
+    case 'trunnion': node = machine.getObjectByName('a'); break;
+  }
+  if (!node) return;
+  const box = new THREE.Box3().setFromObject(node);
+  const center = new THREE.Vector3(); box.getCenter(center);
+  app.three.controls.target.copy(center);
+  app.three.controls.update();
+  app.cameraParent = target;
+  console.info('[pentacad-sim] camera parented to:', target);
+}
+
+// Camera projection — Penta's menu offers Auto / Perspective / Orthographic.
+// Auto picks based on view: top/front/side -> ortho, oblique -> perspective.
+function applyCameraProjection(mode) {
+  if (!app.three) return;
+  const oldCam = app.three.camera;
+  const ctrl = app.three.controls;
+  const aspect = oldCam.aspect;
+  const target = ctrl.target.clone();
+  const pos = oldCam.position.clone();
+  const dist = pos.distanceTo(target);
+  let newCam;
+  if (mode === 'orthographic' || mode === 'auto') {
+    // Use orthographic frustum sized so the scene fits at this distance
+    const fov = 50 * Math.PI / 180;
+    const halfH = Math.tan(fov / 2) * dist;
+    const halfW = halfH * aspect;
+    newCam = new THREE.OrthographicCamera(-halfW, halfW, halfH, -halfH, 0.01, dist * 100);
+  } else {
+    newCam = new THREE.PerspectiveCamera(50, aspect, 0.1, dist * 100);
+  }
+  newCam.position.copy(pos);
+  newCam.lookAt(target);
+  newCam.updateProjectionMatrix();
+  app.three.camera = newCam;
+  ctrl.object = newCam;
+  ctrl.update();
+  app.cameraProjection = mode;
+  console.info('[pentacad-sim] camera projection:', mode);
+}
+
 // Frame camera to include an object's bounding box with a comfortable margin.
 // Called after the GLB loads so the real V2-10 always fills the viewport nicely.
 function fitCameraToObject(camera, controls, object, offset = 2.2) {
@@ -3063,22 +3167,50 @@ function wireUI() {
     });
   }
 
-  // Fit-to-scene button
-  const vcFit = document.getElementById('vc-fit');
-  if (vcFit) vcFit.addEventListener('click', () => {
-    if (app.three) fitCameraToObject(app.three.camera, app.three.controls, app.three.root);
-  });
+  // Camera-parenting button — opens parenting menu (Base / Part / Spindle / Table / Tool / Trunnion)
+  const vcParent = document.getElementById('vc-parent');
+  const vcParentMenu = document.getElementById('vc-parent-menu');
+  if (vcParent && vcParentMenu) {
+    vcParent.addEventListener('click', (e) => {
+      e.stopPropagation();
+      vcParentMenu.hidden = !vcParentMenu.hidden;
+      if (vcProjectionMenu) vcProjectionMenu.hidden = true;
+    });
+    vcParentMenu.querySelectorAll('button').forEach(b => {
+      b.addEventListener('click', () => {
+        const target = b.dataset.parent;
+        applyCameraParenting(target);
+        vcParentMenu.hidden = true;
+      });
+    });
+  }
 
-  // Screenshot button — capture the renderer's canvas to a PNG download
-  const vcScreenshot = document.getElementById('vc-screenshot');
-  if (vcScreenshot) vcScreenshot.addEventListener('click', () => {
-    if (!app.three) return;
-    app.three.renderer.render(app.three.scene, app.three.camera);
-    const url = app.three.renderer.domElement.toDataURL('image/png');
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `pentacad-sim-${app.machine.id}-${Date.now()}.png`;
-    a.click();
+  // Camera-projection button — opens projection menu (Auto / Perspective / Orthographic)
+  const vcProjection = document.getElementById('vc-projection');
+  const vcProjectionMenu = document.getElementById('vc-projection-menu');
+  if (vcProjection && vcProjectionMenu) {
+    vcProjection.addEventListener('click', (e) => {
+      e.stopPropagation();
+      vcProjectionMenu.hidden = !vcProjectionMenu.hidden;
+      if (vcParentMenu) vcParentMenu.hidden = true;
+    });
+    vcProjectionMenu.querySelectorAll('button').forEach(b => {
+      b.addEventListener('click', () => {
+        const mode = b.dataset.projection;
+        applyCameraProjection(mode);
+        vcProjectionMenu.hidden = true;
+      });
+    });
+  }
+
+  // Click-outside closes both menus
+  document.addEventListener('click', (e) => {
+    if (vcParentMenu && !vcParentMenu.hidden && !vcParent.contains(e.target) && !vcParentMenu.contains(e.target)) {
+      vcParentMenu.hidden = true;
+    }
+    if (vcProjectionMenu && !vcProjectionMenu.hidden && !vcProjection.contains(e.target) && !vcProjectionMenu.contains(e.target)) {
+      vcProjectionMenu.hidden = true;
+    }
   });
 
   // Show Options button — toggles the Back Plot panel (matches Penta sim)

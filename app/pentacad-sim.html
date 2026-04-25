@@ -3184,36 +3184,48 @@ function wireUI() {
       tick();
     }
 
-    // 2. Drag-to-orbit on the cube body
-    let dragState = null;
+    // 2. Drag-to-orbit — only activate after the pointer actually moves enough
+    //    to qualify as a drag. Below that threshold we let click events fire
+    //    on the .vc-face buttons normally. Without this, every click was being
+    //    eaten by the drag handler -> "none of the navigation is working".
+    const DRAG_THRESHOLD = 4;   // pixels
+    let downPos = null;
+    let isDragging = false;
     vc.addEventListener('pointerdown', (e) => {
-      e.preventDefault();
-      vc.setPointerCapture(e.pointerId);
-      dragState = { x: e.clientX, y: e.clientY };
-      vc.style.cursor = 'grabbing';
+      downPos = { x: e.clientX, y: e.clientY, id: e.pointerId };
+      isDragging = false;
     });
     vc.addEventListener('pointermove', (e) => {
-      if (!dragState || !app.three) return;
-      const dx = e.clientX - dragState.x;
-      const dy = e.clientY - dragState.y;
-      dragState = { x: e.clientX, y: e.clientY };
-      // Rotate the camera around controls.target by dx/dy
+      if (!downPos || !app.three) return;
+      const dx = e.clientX - downPos.x;
+      const dy = e.clientY - downPos.y;
+      if (!isDragging) {
+        if (Math.abs(dx) + Math.abs(dy) < DRAG_THRESHOLD) return;
+        isDragging = true;
+        try { vc.setPointerCapture(downPos.id); } catch {}
+        vc.style.cursor = 'grabbing';
+      }
+      // Apply orbit delta around controls target
       const cam = app.three.camera;
       const ctrl = app.three.controls;
       const offset = cam.position.clone().sub(ctrl.target);
       const sphr = new THREE.Spherical().setFromVector3(offset);
-      sphr.theta -= dx * 0.01;
-      sphr.phi   = Math.min(Math.max(sphr.phi - dy * 0.01, 0.05), Math.PI - 0.05);
+      sphr.theta -= e.movementX * 0.01;
+      sphr.phi   = Math.min(Math.max(sphr.phi - e.movementY * 0.01, 0.05), Math.PI - 0.05);
       offset.setFromSpherical(sphr);
       cam.position.copy(ctrl.target.clone().add(offset));
       cam.lookAt(ctrl.target);
       ctrl.update();
     });
-    vc.addEventListener('pointerup', (e) => {
-      dragState = null;
+    const endDrag = (e) => {
+      if (downPos && isDragging) {
+        try { vc.releasePointerCapture(downPos.id); } catch {}
+      }
+      downPos = null; isDragging = false;
       vc.style.cursor = 'grab';
-      try { vc.releasePointerCapture(e.pointerId); } catch (err) {}
-    });
+    };
+    vc.addEventListener('pointerup', endDrag);
+    vc.addEventListener('pointercancel', endDrag);
   }
 
   // Resolve all four menu DOM nodes up-front so the click handlers can

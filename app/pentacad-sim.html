@@ -2013,22 +2013,19 @@ function setupGlbKinematics(machineGlb, glbScale) {
     k.b.add(indicator);
   }
 
-  // Attach a real spindle tool (shank + cutter + tip) to the `z` mesh so
-  // it travels with the X-carriage and the spindle. Penta does this so
-  // the user sees what's cutting; without it the spindle nose looks
-  // bare. Removed first to handle re-loads cleanly.
+  // Tool / spindle-nose geometry deliberately NOT attached here. The GLB's
+  // z mesh sits at its authored origin which doesn't match where the
+  // Pentamachine runtime parks the visible spindle (open issue #2 from
+  // the previous handoff: the spindle "floats" / clips into the trunnion
+  // until we reverse-engineer Penta's home-position offset). Adding extra
+  // child geometry on top makes the misalignment worse, not better.
+  //
+  // Tunable knob for when we have the right offset: set
+  //   PentacadSimApp.kinematics.zHomeOffset = new THREE.Vector3(dx, dy, dz)
+  // and we'll apply it on the next applyMachineState() pass. Initial value
+  // is zero so we don't introduce a regression.
   if (k.z) {
-    const oldTool = k.z.getObjectByName('spindleTool');
-    if (oldTool) k.z.remove(oldTool);
-    const tool = buildSpindleTool(0.125, 1.5);
-    // The Pentamachine spindle axis points from the spindle nose toward
-    // the trunnion. In the GLB's local frame at A=0, that axis is
-    // typically -X (trunnion is on the LEFT in the default camera view).
-    // Rotate the tool group so its local +Z (the tool's own axis) lines
-    // up with -X in z-mesh local space, then offset to the spindle nose.
-    tool.rotation.y = -Math.PI / 2;        // tool +Z -> world -X
-    tool.position.set(-1.5, 0, 0);         // sit at the spindle nose
-    k.z.add(tool);
+    k.zHomeOffset = new THREE.Vector3(0, 0, 0);
   }
 }
 
@@ -2131,6 +2128,15 @@ function applyMachineState(pos) {
     const home = k[`${meshKey}_home`];
     if (!obj || !home) continue;
     obj.position[worldAxis] = home[worldAxis] + cmd[machineAxis] * SCALE * sign;
+  }
+
+  // Apply a per-machine "spindle home" offset to z so the visible spindle
+  // sits on its rails instead of floating. Tunable at runtime via
+  // PentacadSimApp.three.kinematics.zHomeOffset.set(dx, dy, dz).
+  if (k.z && k.z_home && k.zHomeOffset) {
+    k.z.position.x += k.zHomeOffset.x;
+    k.z.position.y += k.zHomeOffset.y;
+    k.z.position.z += k.zHomeOffset.z;
   }
 
   // A/B rotations on top of the authored home pose.

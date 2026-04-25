@@ -1516,14 +1516,15 @@ function initViewport() {
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
   controls.target.set(0, 8, 0);
-  // Keep the polar angle a hair off the poles. At phi = 0 or phi = π the
-  // camera looks straight up / down, gimbal-locks, and only azimuth
-  // (clockwise / counter-clockwise) responds to drag — exactly the symptom
-  // the user reported when the ViewCube reached the "Bottom" face. The
-  // 0.08 rad (~4.6°) clamp lets you see almost the full top / bottom
-  // without hitting the singularity.
-  controls.minPolarAngle = 0.08;
-  controls.maxPolarAngle = Math.PI - 0.08;
+  // Keep the polar angle clearly off the poles. At phi = 0 or phi = π the
+  // camera looks straight up / down. Even within a few degrees of the
+  // pole, horizontal drag has very little visible effect because the
+  // camera barely moves in 3D — only theta changes, and at high latitudes
+  // theta change manifests as a tiny in-place spin. 0.35 rad (~20°) gives
+  // both the Top and Bottom faces meaningful viewing room while keeping
+  // the rotation feeling responsive in every direction.
+  controls.minPolarAngle = 0.35;
+  controls.maxPolarAngle = Math.PI - 0.35;
   // Distance limits: minDistance keeps the camera from clipping into the
   // machine; maxDistance is generous because fitCamera() can park the camera
   // at ≈300 for the larger GLBs (V2-50, Solo) — clamping any tighter makes
@@ -2430,7 +2431,7 @@ function revealPlaybackOverlay() {
   app._hideTimer = setTimeout(() => {
     if (app._controlsHover) return;
     c.classList.add('is-faded');
-  }, 3000);
+  }, 2000);
 }
 
 function toggleGcodePane() {

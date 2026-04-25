@@ -1690,6 +1690,38 @@ function buildToolMarker() {
   return g;
 }
 
+/**
+ * Build a translucent green stock indicator that mounts on the B-platter
+ * face and inherits A + B transforms (so it tilts and spins with the
+ * physical workpiece would). Penta's reference sim shows a similar
+ * wireframe so the user has a visual anchor for where the part is.
+ *
+ * @param {{x:number,y:number,z:number}} dims  inch dimensions of the stock
+ */
+function buildStockIndicator(dims) {
+  const w = dims?.x ?? 1.5;
+  const d = dims?.y ?? 1.5;
+  const h = dims?.z ?? 0.75;
+  const g = new THREE.Group();
+  g.name = 'stockIndicator';
+
+  const fillGeo = new THREE.BoxGeometry(w, h, d);
+  const fill = new THREE.Mesh(fillGeo, new THREE.MeshBasicMaterial({
+    color: 0x03B188, transparent: true, opacity: 0.14, depthWrite: false
+  }));
+  fill.position.y = h / 2;
+  g.add(fill);
+
+  const edges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(fillGeo),
+    new THREE.LineBasicMaterial({ color: 0x03B188 })
+  );
+  edges.position.y = h / 2;
+  g.add(edges);
+
+  return g;
+}
+
 /** Try each candidate URL until one loads, or fall back to a proxy box. */
 async function loadMachineModel() {
   const t = app.three;
@@ -1915,6 +1947,23 @@ function setupGlbKinematics(machineGlb, glbScale) {
     if (obj) k[`${name}_homeRot`] = obj.rotation.clone();
   }
   app.three.kinematics = k;
+
+  // Attach a translucent green stock indicator to the B-platter so the
+  // user has a visual anchor for the workpiece. It inherits A + B so it
+  // tilts and spins with the physical part. Removed first if a previous
+  // machine had attached one, so swapping machines doesn't double up.
+  if (k.b) {
+    const old = k.b.getObjectByName('stockIndicator');
+    if (old) k.b.remove(old);
+    const stockDims = app.machine.stock || { x: 1.5, y: 1.5, z: 0.75 };
+    const indicator = buildStockIndicator(stockDims);
+    // Offset along the platter's local +Y so the stock sits on top of
+    // the platter face rather than embedded inside it. The exact axis
+    // here mirrors how the GLB authors the platter normal — Y in the
+    // local frame at A=0 corresponds to the platter face.
+    indicator.position.y = 0.05;
+    k.b.add(indicator);
+  }
 }
 
 /** Apply or revert SHORT/LONG holder visibility.

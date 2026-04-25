@@ -1868,12 +1868,15 @@ function initThree() {
   controls.dampingFactor = 0.08;
   controls.target.set(0, 8, 0);   // Raised to machine mid-height, not the ground
 
-  // Two-light setup matching sim.pentamachine.com: bright ambient + subtle key.
-  // Without an env map this gives the matte machine look they have.
-  const ambient = new THREE.AmbientLight(0xffffff, 0.85);
-  const key = new THREE.DirectionalLight(0xffffff, 0.40);
+  // Lighting calibrated to match Penta's reference shot — lighter than v0.5.
+  // Penta's render shows machine as charcoal-grey with surface detail visible,
+  // not pure black. Stronger ambient + softer key + a hemisphere light bounce
+  // makes the GLB's PBR materials read at the right brightness.
+  const ambient = new THREE.AmbientLight(0xffffff, 1.10);
+  const key = new THREE.DirectionalLight(0xffffff, 0.55);
   key.position.set(10, 20, 10);
-  scene.add(ambient, key);
+  const hemi = new THREE.HemisphereLight(0xFFFFFF, 0xCCCCCC, 0.35);
+  scene.add(ambient, key, hemi);
 
   // Groups — inch units, scale 10x for legibility in the viewport
   const root = new THREE.Group();
@@ -2258,17 +2261,23 @@ function loadViceOverlay(platterY, onReady) {
 // Set up forward kinematics on a loaded GLB by reparenting nodes:
 //   - 'b' (rotary platter) becomes a child of 'a' (A-tilt trunnion) so that
 //     tilting A also tilts B with it.
+//   - 'z' (Z-axis carriage / spindle) is parked at its retracted (home) position
+//     so the machine renders looking like it's sitting at G53 G0 Z0 (top of travel),
+//     matching Penta's default render.
 //   - We use Three.js's attach() which preserves the world transform.
-// Falls back gracefully if names are missing (e.g. proxy machine).
 function setupGlbKinematics(root3d) {
   const a = root3d.getObjectByName('a');
   const b = root3d.getObjectByName('b');
   if (a && b && b.parent !== a) {
     a.attach(b);
   }
-  // Ensure A-axis rotation pivots about its center on the X axis
-  // (Three.js rotates about object origin; for the Penta GLB 'a' node,
-  // the origin happens to be at the trunnion pivot, so this works.)
+  // Cache each axis node's home position so animation can translate from there.
+  ['x_1', 'x_2', 'y', 'z'].forEach(name => {
+    const node = root3d.getObjectByName(name);
+    if (node) {
+      node.userData.homePos = node.position.clone();
+    }
+  });
 }
 
 // Frame camera to include an object's bounding box with a comfortable margin.
@@ -2999,6 +3008,60 @@ function wireUI() {
   document.querySelectorAll('.vc-face').forEach(f => {
     f.addEventListener('click', () => snapCameraTo(f.dataset.face));
   });
+
+  // Live-rotate the ViewCube to match the camera + allow drag-to-orbit.
+  // (Penta's ViewCube spins with the scene and responds to drag — was static in v0.5.)
+  const vc = document.getElementById('viewcube');
+  if (vc) {
+    // 1. Sync cube to camera every frame
+    function syncViewCube() {
+      if (!app.three) return;
+      const cam = app.three.camera;
+      const target = app.three.controls.target;
+      const dir = cam.position.clone().sub(target).normalize();
+      // Convert direction into yaw/pitch in degrees
+      const yaw   = -Math.atan2(dir.x, dir.z) * 180 / Math.PI;
+      const pitch = Math.asin(dir.y) * 180 / Math.PI;
+      vc.style.transform = `rotateX(${pitch}deg) rotateY(${yaw}deg)`;
+    }
+    if (app.three) {
+      const orig = app.three.renderer.setAnimationLoop ? app.three.renderer.setAnimationLoop.bind(app.three.renderer) : null;
+      // Hook into the animate loop by piggy-backing on requestAnimationFrame
+      const tick = () => { syncViewCube(); requestAnimationFrame(tick); };
+      tick();
+    }
+
+    // 2. Drag-to-orbit on the cube body
+    let dragState = null;
+    vc.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      vc.setPointerCapture(e.pointerId);
+      dragState = { x: e.clientX, y: e.clientY };
+      vc.style.cursor = 'grabbing';
+    });
+    vc.addEventListener('pointermove', (e) => {
+      if (!dragState || !app.three) return;
+      const dx = e.clientX - dragState.x;
+      const dy = e.clientY - dragState.y;
+      dragState = { x: e.clientX, y: e.clientY };
+      // Rotate the camera around controls.target by dx/dy
+      const cam = app.three.camera;
+      const ctrl = app.three.controls;
+      const offset = cam.position.clone().sub(ctrl.target);
+      const sphr = new THREE.Spherical().setFromVector3(offset);
+      sphr.theta -= dx * 0.01;
+      sphr.phi   = Math.min(Math.max(sphr.phi - dy * 0.01, 0.05), Math.PI - 0.05);
+      offset.setFromSpherical(sphr);
+      cam.position.copy(ctrl.target.clone().add(offset));
+      cam.lookAt(ctrl.target);
+      ctrl.update();
+    });
+    vc.addEventListener('pointerup', (e) => {
+      dragState = null;
+      vc.style.cursor = 'grab';
+      try { vc.releasePointerCapture(e.pointerId); } catch (err) {}
+    });
+  }
 
   // Fit-to-scene button
   const vcFit = document.getElementById('vc-fit');

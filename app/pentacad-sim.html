@@ -718,36 +718,68 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .vp-vis-toggles .btn.off .tick { visibility: hidden; }
 .vp-vis-toggles .btn.off { background: #F5F5F5; color: var(--pt-text-2); }
 
-/* Playback controls bar — INLINE solid strip at the bottom of the viewport.
-   Always visible regardless of viewport height so you never miss the controls. */
+/* Playback controls bar — Penta-replica: medium-grey rounded-corner inline
+   strip at viewport bottom. Always visible, NOT a floating overlay. */
 .playback-bar {
   flex-shrink: 0;
-  width: 100%;
-  background: #2A2F35;       /* solid charcoal, high contrast against white scene */
-  border-top: 1px solid #1A1F25;
-  padding: 10px 16px;
+  width: calc(100% - 24px);
+  margin: 0 12px 12px;
+  background: rgba(116, 119, 124, 0.92);
+  border-radius: 6px;
+  padding: 8px 16px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 4px;
   color: #FFFFFF;
-  font-size: 12px;
+  font-size: 13px;
   z-index: 5;
-  min-height: 52px;
-  box-shadow: 0 -2px 6px rgba(0,0,0,0.08);
+  min-height: 50px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.10);
 }
 .playback-bar .btn {
-  background: rgba(255,255,255,0.10);
+  background: transparent;
   color: #FFFFFF;
   border: 0;
-  padding: 6px 12px;
-  min-height: 32px;
+  padding: 8px 10px;
+  min-height: 36px;
   min-width: 36px;
-  font-size: 14px;
-  border-radius: 50%;
+  font-size: 16px;
+  border-radius: 4px;
   justify-content: center;
   font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  transition: background 0.12s;
 }
-.playback-bar .btn:hover { background: rgba(255,255,255,0.20); }
+.playback-bar .btn:hover { background: rgba(255,255,255,0.16); }
+.playback-bar .btn.icon { padding: 8px; }
+.playback-bar .btn.primary {
+  background: transparent !important;
+  color: #FFFFFF !important;
+  font-size: 18px;
+}
+.playback-bar .btn.primary:hover { background: rgba(255,255,255,0.16) !important; }
+.playback-bar input[type="range"] {
+  appearance: none;
+  height: 3px;
+  background: rgba(255,255,255,0.45);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+.playback-bar input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+.playback-bar .speed-label,
+.playback-bar #speed-display,
+.playback-bar #t-elapsed { color: #FFFFFF; font-size: 13px; }
 .playback-bar .btn.primary {
   background: var(--pt-green) !important;
   color: #FFFFFF !important;

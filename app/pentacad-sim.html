@@ -2327,10 +2327,11 @@ function setupGlbKinematics(root3d) {
     }
   });
 
-  // Replace GLB materials with flat MeshLambertMaterial — DARKER than v0.13
-  // to match Penta's matte black reference (was too light grey at 0x8A8E92).
-  const accentGrey = new THREE.MeshLambertMaterial({ color: 0x383A3D });   // platter / Y carriage
-  const bodyDark   = new THREE.MeshLambertMaterial({ color: 0x232528 });   // base, column, trunnion
+  // Replace GLB materials with flat MeshLambertMaterial — calibrated to match
+  // Penta reference shot exactly. Body is near-black charcoal, stock is light
+  // medium-grey. Tweaked from v0.15 (was a hair too light).
+  const accentGrey = new THREE.MeshLambertMaterial({ color: 0x2A2C2F });   // platter / accent details
+  const bodyDark   = new THREE.MeshLambertMaterial({ color: 0x18191B });   // base, column, trunnion
   root3d.traverse(obj => {
     if (!obj.isMesh || !obj.material) return;
     const m = Array.isArray(obj.material) ? obj.material[0] : obj.material;
@@ -3156,9 +3157,37 @@ function wireUI() {
     camera.lookAt(target);
     controls.update();
   }
+  // Wire clicks on each face — backed up by a region click on the cube container
+  // because CSS 3D-transformed faces sometimes miss hit-testing in Safari/Chrome.
   document.querySelectorAll('.vc-face').forEach(f => {
-    f.addEventListener('click', () => snapCameraTo(f.dataset.face));
+    f.addEventListener('click', (e) => {
+      e.stopPropagation();
+      console.info('[viewcube] face clicked:', f.dataset.face);
+      snapCameraTo(f.dataset.face);
+    });
   });
+
+  // Region-based click: divide cube area into 9 zones (top / bottom / left /
+  // right / front centre + 4 corners). Reliable even when 3D hit-test fails.
+  const vcEl = document.getElementById('viewcube');
+  if (vcEl) {
+    vcEl.addEventListener('click', (e) => {
+      // Only handle clicks that didn't land on a face button (those bubble first)
+      if (e.target.classList && e.target.classList.contains('vc-face')) return;
+      if (isDragging) return;
+      const rect = vcEl.getBoundingClientRect();
+      const px = (e.clientX - rect.left) / rect.width;
+      const py = (e.clientY - rect.top) / rect.height;
+      let face;
+      if      (py < 0.33) face = 'top';
+      else if (py > 0.66) face = 'bottom';
+      else if (px < 0.33) face = 'left';
+      else if (px > 0.66) face = 'right';
+      else                face = 'front';
+      console.info('[viewcube] region click:', face, `(${px.toFixed(2)}, ${py.toFixed(2)})`);
+      snapCameraTo(face);
+    });
+  }
 
   // Live-rotate the ViewCube to match the camera + allow drag-to-orbit.
   // (Penta's ViewCube spins with the scene and responds to drag — was static in v0.5.)

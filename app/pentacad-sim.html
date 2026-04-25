@@ -667,8 +667,17 @@ input, textarea { font-family: inherit; color: inherit; }
   padding: 6px 12px 8px 12px;
   z-index: 11;
   display: none;
+  opacity: 0;
+  transition: opacity 250ms ease-out;
+  pointer-events: none;
 }
-.pt-controls.is-visible { display: block; }
+.pt-controls.is-visible {
+  display: block;
+}
+.pt-controls.is-visible.is-active {
+  opacity: 1;
+  pointer-events: auto;
+}
 /* Pulse the play button before first run so the entry point is obvious. */
 .pt-controls.is-idle #ctl-play {
   background: var(--pt-green);
@@ -1636,6 +1645,11 @@ async function loadMachineModel() {
         n.material.roughness = 0.6;
       }
     });
+    // Hide the static placeholder stock cube whenever a real GLB is loaded —
+    // the reference Penta sim shows the workpiece on the B-platter, not a
+    // floating cube near scene origin. (User report: "what is this stock at
+    // the back of the spindle".)
+    if (t.stock) t.stock.visible = false;
     // Auto-frame: scale GLB so its bounding box is ~14 inch wide
     const box = new THREE.Box3().setFromObject(obj);
     const size = new THREE.Vector3(); box.getSize(size);
@@ -1679,32 +1693,64 @@ async function loadMachineModel() {
 function setupGlbKinematics(machineGlb, glbScale) {
   if (!machineGlb || !app.three) return;
   const get = (n) => machineGlb.getObjectByName(n) || null;
+  // Live GLB inspection (V2-50, 2026-04-25) shows the hierarchy is NESTED,
+  // not flat as the previous handoff claimed:
+  //
+  //   Base
+  //   ├── Base_1, Base_2  (static frame)
+  //   ├── y               (Y-stage group)
+  //   │   └── a           (A-trunnion group)
+  //   │       └── b       (B-platter)
+  //   └── x               (X-carriage group)
+  //       ├── x_1, x_2    (carriage rails)
+  //       └── z           (Z-axis spindle carriage)
+  //
+  // So translating leaf meshes (x_1, x_2, z) individually moves only the
+  // labelled rails / brackets. To make the spindle MOTOR (which is geometry
+  // parented under `x` or `z`) follow X-axis motion, we must translate the
+  // GROUP nodes — `x`, `y`, `z`, `a`, `b` — not their named children.
+  // Tool holders (SHORT, LONG, collet, collet001) live at Scene-root in the
+  // GLB — they're authored as separate "ghost" meshes the runtime is supposed
+  // to attach onto the spindle. Without explicit attachment they all render
+  // at their authored origin pose, producing the classic
+  // "perpendicular-tool-holder" bug the user reported on V2-10. We hide the
+  // inactive holder via applyToolHolderVisibility().
   const k = {
     glb: machineGlb,
     glbScale: glbScale || 1,
-    base_1: get('Base_1'), base_2: get('Base_2'),
-    x_1: get('x_1'), x_2: get('x_2'),
-    y:   get('y'),   z:   get('z'),
-    a:   get('a'),   b:   get('b'),
+    // Group nodes (preferred for transformation):
+    x: get('x'), y: get('y'), z: get('z'),
+    a: get('a'), b: get('b'),
+    // Tool holders (may not exist on every variant):
     SHORT:    get('SHORT'),    LONG:    get('LONG'),
     collet:   get('collet'),   collet001: get('collet001'),
     cycle_start_led: get('cycle_start_led'),
     estop_led:       get('estop_led'),
   };
-  // Capture each axis-mesh's home position so per-frame translations are
+  // Capture each group's home transform so per-frame translations are
   // additive on top of the authored layout — never overwriting it.
-  for (const name of ['x_1', 'x_2', 'y', 'z']) {
+  for (const name of ['x', 'y', 'z']) {
     const obj = k[name];
     if (obj) k[`${name}_home`] = obj.position.clone();
+  }
+  for (const name of ['a', 'b']) {
+    const obj = k[name];
+    if (obj) k[`${name}_homeRot`] = obj.rotation.clone();
   }
   app.three.kinematics = k;
 }
 
-/** Apply or revert SHORT/LONG holder visibility. */
+/** Apply or revert SHORT/LONG holder visibility.
+ *  The GLB authors both holders at Scene-root level so they render
+ *  simultaneously by default — visually the SHORT and LONG meshes are
+ *  oriented at right angles to each other, producing the "perpendicular
+ *  tool holder" silhouette. We hide whichever isn't selected.
+ */
 function applyToolHolderVisibility() {
   const k = app.three && app.three.kinematics;
   if (!k) return;
-  // Pull the active tool's holder choice from app.toolOverrides (default LONG).
+  // Pull the active tool's holder choice from app.toolOverrides (default LONG,
+  // which matches Penta's reference default).
   const activeTool = (() => {
     if (!app.parsed) return null;
     let t = null;
@@ -1718,10 +1764,14 @@ function applyToolHolderVisibility() {
   const holder = (activeTool != null && app.toolOverrides[activeTool]
                   && app.toolOverrides[activeTool].holder) || 'long';
   const wantShort = holder === 'short';
-  if (k.SHORT)     k.SHORT.visible     =  wantShort;
-  if (k.collet001) k.collet001.visible =  wantShort;
-  if (k.LONG)      k.LONG.visible      = !wantShort;
-  if (k.collet)    k.collet.visible    = !wantShort;
+  // Hide inactive holder + its paired collet. `traverse` so we also catch
+  // children (e.g. collet001 is parented under SHORT on V2-10).
+  if (k.SHORT) k.SHORT.traverse(n => { n.visible = wantShort; });
+  if (k.LONG)  k.LONG.traverse (n => { n.visible = !wantShort; });
+  // collet may be a separate Scene-root node on some variants — toggle
+  // independently if it's not nested.
+  if (k.collet    && (!k.LONG  || !k.LONG.getObjectByName('collet')))    k.collet.visible    = !wantShort;
+  if (k.collet001 && (!k.SHORT || !k.SHORT.getObjectByName('collet001'))) k.collet001.visible = wantShort;
 }
 
 /**
@@ -1749,28 +1799,29 @@ function applyMachineState(pos) {
   const yMm = (pos.y || 0) * mmPerUnit;
   const zMm = (pos.z || 0) * mmPerUnit;
 
-  // Empirical render-units-per-mm. The previous session settled on 0.0276
-  // for the V2-50 GLB; the value carries reasonably across V1 / V2-10 /
-  // Solo because the GLB authoring units are uniform across the Pentamachine
-  // family. Multiplied by `glbScale` to compensate for the auto-fit scaling
-  // applied at load-time.
-  const TRAVEL_MM_TO_RENDER = 0.0276 * (k.glbScale || 1);
+  // Empirical render-units-per-mm — settled on 0.0276 for the V2-50 GLB by
+  // a previous session. Multiplied by glbScale to compensate for the
+  // auto-fit scaling applied at load-time.
+  const SCALE = 0.0276 * (k.glbScale || 1);
 
-  if (k.x_1 && k.x_1_home) {
-    k.x_1.position.x = k.x_1_home.x + xMm * TRAVEL_MM_TO_RENDER;
+  // Translate the parent GROUP nodes — `x`, `y`, `z` are containers that
+  // carry their named children + the unnamed spindle / motor geometry.
+  // Translating the leaf meshes (x_1, x_2, z) directly only moves the
+  // brackets, leaving the spindle behind. Per the V2-10 inspection:
+  //   - x  carries x_1, x_2, z (and the spindle motor)
+  //   - y  carries a -> b (so Y stage motion drags the trunnion + platter)
+  //   - z  is inside x (vertical spindle motion within the X-carriage)
+  if (k.x && k.x_home) k.x.position.x = k.x_home.x + xMm * SCALE;
+  if (k.y && k.y_home) k.y.position.z = k.y_home.z + yMm * SCALE;
+  if (k.z && k.z_home) k.z.position.y = k.z_home.y + zMm * SCALE;
+  // A/B are direct rotations from G-code degrees — applied on top of the
+  // authored home rotation so we don't fight the GLB's authored pose.
+  if (k.a && k.a_homeRot) {
+    k.a.rotation.x = k.a_homeRot.x + (pos.a || 0) * Math.PI / 180;
   }
-  if (k.x_2 && k.x_2_home) {
-    k.x_2.position.x = k.x_2_home.x + xMm * TRAVEL_MM_TO_RENDER;
+  if (k.b && k.b_homeRot) {
+    k.b.rotation.y = k.b_homeRot.y + (pos.b || 0) * Math.PI / 180;
   }
-  if (k.y && k.y_home) {
-    k.y.position.z = k.y_home.z + yMm * TRAVEL_MM_TO_RENDER;
-  }
-  if (k.z && k.z_home) {
-    k.z.position.y = k.z_home.y + zMm * TRAVEL_MM_TO_RENDER;
-  }
-  // A/B are direct rotations from G-code degrees — no offset, no scale.
-  if (k.a) k.a.rotation.x = (pos.a || 0) * Math.PI / 180;
-  if (k.b) k.b.rotation.y = (pos.b || 0) * Math.PI / 180;
 }
 
 function buildMachineProxy(machine) {
@@ -2302,12 +2353,49 @@ function wirePlayback() {
   $('speed-slider').addEventListener('input', e => {
     app.speed = parseFloat(e.target.value) || 1;
     $('speed-val').textContent = app.speed.toFixed(2);
+    revealPlaybackOverlay();
   });
   $('timeline').addEventListener('input', e => {
     const r = parseInt(e.target.value, 10) / 1000;
     app.elapsed = app.totalTime * r;
     applyPlaybackState();
+    revealPlaybackOverlay();
   });
+
+  // Auto-hide the playback overlay after 5s of viewport-pointer inactivity,
+  // matching video-player UX. Mouse motion or wheel anywhere in the viewport
+  // re-reveals it; clicks on the bar itself also count as activity.
+  const vp = $('viewport');
+  ['pointermove', 'pointerdown', 'wheel'].forEach(ev => {
+    vp.addEventListener(ev, revealPlaybackOverlay, { passive: true });
+  });
+  $('controls').addEventListener('pointerenter', () => {
+    revealPlaybackOverlay();
+    app._controlsHover = true;
+  });
+  $('controls').addEventListener('pointerleave', () => {
+    app._controlsHover = false;
+    revealPlaybackOverlay();   // resets the 5s timer once the cursor leaves
+  });
+  // Initial reveal so the user sees it for the idle hint pulse.
+  revealPlaybackOverlay();
+}
+
+/**
+ * Show the playback overlay and (re)start the 5-second hide timer.
+ * Disabled while the cursor is inside the bar or while playback is paused
+ * before first run (idle hint).
+ */
+function revealPlaybackOverlay() {
+  const c = $('controls');
+  if (!c || !c.classList.contains('is-visible')) return;
+  c.classList.add('is-active');
+  if (app._hideTimer) clearTimeout(app._hideTimer);
+  app._hideTimer = setTimeout(() => {
+    if (app._controlsHover) return;     // don't hide while hovered
+    if (c.classList.contains('is-idle')) return;  // keep visible until first play
+    c.classList.remove('is-active');
+  }, 5000);
 }
 
 function toggleGcodePane() {

@@ -135,6 +135,36 @@ nav .links a.cta:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgb
 .btn .arrow { transition: transform var(--t-fast); }
 .btn:hover .arrow { transform: translateX(4px); }
 
+/* "Try the live simulator" CTA — same shape as the secondary button but
+   carries a small green pulsing dot to advertise that it's live now. */
+.btn-sim {
+  background: rgba(16, 185, 129, 0.08);
+  color: var(--emerald-2);
+  border: 1px solid var(--emerald);
+}
+.btn-sim:hover {
+  background: rgba(16, 185, 129, 0.16);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(16, 185, 129, 0.20);
+}
+.sim-pulse {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--emerald-2);
+  margin-right: 8px;
+  vertical-align: middle;
+  position: relative;
+  box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7);
+  animation: sim-pulse 1.6s ease-out infinite;
+}
+@keyframes sim-pulse {
+  0%   { box-shadow: 0 0 0 0   rgba(52, 211, 153, 0.6); }
+  70%  { box-shadow: 0 0 0 10px rgba(52, 211, 153, 0);   }
+  100% { box-shadow: 0 0 0 0   rgba(52, 211, 153, 0);   }
+}
+
 /* Hero visual — 5-axis machine schematic */
 .hero-visual {
   position: relative; aspect-ratio: 1 / 1; max-width: 440px; justify-self: end;
@@ -566,6 +596,11 @@ footer .legal {
       </p>
       <div class="ctas">
         <a href="/app/pentacad.html" class="btn btn-primary">Launch Pentacad <span class="arrow">→</span></a>
+        <a href="/app/pentacad-sim.html" class="btn btn-sim">
+          <span class="sim-pulse" aria-hidden="true"></span>
+          Try the live simulator
+          <span class="arrow">→</span>
+        </a>
         <a href="#strategies" class="btn btn-secondary">See the strategies</a>
       </div>
     </div>
@@ -1030,6 +1065,11 @@ N4300 <span class="kw">M30</span>
     <p>Open Pentacad in the browser. Import a cycleCAD part. Generate a toolpath. Simulate. Post. Stream.</p>
     <div class="ctas">
       <a href="/app/pentacad.html" class="btn btn-primary">Launch Pentacad <span class="arrow">→</span></a>
+      <a href="/app/pentacad-sim.html" class="btn btn-sim">
+        <span class="sim-pulse" aria-hidden="true"></span>
+        Try the live simulator
+        <span class="arrow">→</span>
+      </a>
       <a href="https://github.com/vvlars-cmd/cyclecad" class="btn btn-secondary">View on GitHub</a>
       <a href="mailto:sachin.kumar@cyclewash.com?subject=Pentacad%20pilot%20interest" class="btn btn-secondary">Talk about a pilot</a>
     </div>

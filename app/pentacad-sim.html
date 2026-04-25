@@ -2327,36 +2327,36 @@ function setupGlbKinematics(root3d) {
     }
   });
 
-  // Replace every GLB material with a flat MeshLambertMaterial in matte grey.
-  // PBR (MeshStandardMaterial) crushes Penta's near-black authored colours to
-  // black without an env map; with an env map it goes shiny/glossy.
-  // Lambert gives us reliable matte mid-grey regardless of lighting setup.
-  // Keep red/yellow/green LED meshes' original colour — only override greys.
-  const greyMat = new THREE.MeshLambertMaterial({ color: 0x8A8E92 });
-  const darkGreyMat = new THREE.MeshLambertMaterial({ color: 0x60656A });
+  // Replace GLB materials with flat MeshLambertMaterial — DARKER than v0.13
+  // to match Penta's matte black reference (was too light grey at 0x8A8E92).
+  const accentGrey = new THREE.MeshLambertMaterial({ color: 0x383A3D });   // platter / Y carriage
+  const bodyDark   = new THREE.MeshLambertMaterial({ color: 0x232528 });   // base, column, trunnion
   root3d.traverse(obj => {
     if (!obj.isMesh || !obj.material) return;
     const m = Array.isArray(obj.material) ? obj.material[0] : obj.material;
     const c = m && m.color;
-    if (!c) { obj.material = greyMat; return; }
+    if (!c) { obj.material = bodyDark; return; }
     const r = c.r, g = c.g, b = c.b;
-    const isLED  = (r > 0.5 && (g < 0.5 || b < 0.3));      // red, yellow LED bodies
-    const isPlatter = obj.name && /^b$/i.test(obj.name);    // B-rotary platter
+    const isLED  = (r > 0.5 && (g < 0.5 || b < 0.3));            // red / yellow LEDs
+    const isPlatter = obj.name && /^b$/i.test(obj.name);          // B-rotary platter
     if (isLED) {
-      // Keep colour, just convert to Lambert so it's lit consistently
       obj.material = new THREE.MeshLambertMaterial({ color: c.clone() });
     } else if (isPlatter) {
-      obj.material = greyMat;
+      obj.material = accentGrey;
     } else {
-      obj.material = darkGreyMat;
+      obj.material = bodyDark;
     }
   });
 
-  // Hide the inactive duplicate collet — Penta GLB ships two collet meshes
-  // ('collet' + 'collet001'); rendering both produces the 90°-rotated tool
-  // holder. Keep only 'collet'.
-  const collet001 = root3d.getObjectByName('collet001');
-  if (collet001) collet001.visible = false;
+  // Hide ALL tool-holder + collet meshes from the GLB. Penta only renders
+  // these when a specific tool is active, and our tool marker (cone+sphere)
+  // already shows the cutting position. Rendering the GLB's static
+  // SHORT/LONG/collet/collet001 meshes produces the 'perpendicular tool
+  // holder floating in air' bug.
+  ['SHORT', 'LONG', 'collet', 'collet001'].forEach(name => {
+    const node = root3d.getObjectByName(name);
+    if (node) node.visible = false;
+  });
 }
 
 // Camera parenting — make the OrbitControls target follow a particular machine

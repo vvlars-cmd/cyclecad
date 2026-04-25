@@ -1913,14 +1913,12 @@ function initThree() {
   controls.dampingFactor = 0.08;
   controls.target.set(0, 8, 0);   // Raised to machine mid-height, not the ground
 
-  // Lighting calibrated to Penta reference: soft top-lit, no harsh fill.
-  // Ambient does most of the work; subtle directional key adds gentle top
-  // edge highlights; hemisphere adds soft skybounce. No second fill (was
-  // washing out the matte look).
-  const ambient = new THREE.AmbientLight(0xffffff, 1.25);
-  const key = new THREE.DirectionalLight(0xffffff, 0.45);
+  // Lighting v0.22 — bumped a touch so even with darker materials the
+  // machine reads as charcoal-grey-with-detail rather than near-black.
+  const ambient = new THREE.AmbientLight(0xffffff, 1.45);
+  const key = new THREE.DirectionalLight(0xffffff, 0.55);
   key.position.set(8, 25, 10);
-  const hemi = new THREE.HemisphereLight(0xFFFFFF, 0xCCCCCC, 0.45);
+  const hemi = new THREE.HemisphereLight(0xFFFFFF, 0xCCCCCC, 0.55);
   scene.add(ambient, key, hemi);
 
   // Groups — inch units, scale 10x for legibility in the viewport
@@ -2331,10 +2329,11 @@ function setupGlbKinematics(root3d) {
     }
   });
 
-  // Replace GLB materials with flat MeshLambertMaterial — lifted from v0.19
-  // (was crushing to near-black against my softer lighting).
-  const accentGrey = new THREE.MeshLambertMaterial({ color: 0x4A4D51 });
-  const bodyDark   = new THREE.MeshLambertMaterial({ color: 0x32353A });
+  // Material colors — calibrated brighter in v0.22 so machine reads with
+  // surface detail visible (was crushing to near-black at 0x32353A under
+  // softer lighting).
+  const accentGrey = new THREE.MeshLambertMaterial({ color: 0x5A5D62 });
+  const bodyDark   = new THREE.MeshLambertMaterial({ color: 0x42454A });
   root3d.traverse(obj => {
     if (!obj.isMesh || !obj.material) return;
     const m = Array.isArray(obj.material) ? obj.material[0] : obj.material;
@@ -3222,30 +3221,39 @@ function wireUI() {
     vcGroup.rotation.set(-0.3, -0.5, 0);
     vcScene.add(vcGroup);
 
-    // Try loading the real Penta chamfered cube; fall back to a Box if missing.
-    let cubeModel = null;
-    if (!_gltfLoader) _gltfLoader = new GLTFLoader();
-    _gltfLoader.load('./models/viewCube.glb', (gltf) => {
-      cubeModel = gltf.scene;
-      // Scale the GLB to fit the 80px display
-      const box = new THREE.Box3().setFromObject(cubeModel);
-      const size = new THREE.Vector3(); box.getSize(size);
-      const maxDim = Math.max(size.x, size.y, size.z);
-      if (maxDim > 0) cubeModel.scale.setScalar(1.6 / maxDim);
-      // Replace materials to match Penta's faded teal-bordered white look
-      cubeModel.traverse(o => {
-        if (o.isMesh) {
-          o.material = new THREE.MeshLambertMaterial({ color: 0xE8E8E8 });
-        }
-      });
-      vcGroup.add(cubeModel);
-    }, undefined, () => {
-      // Fallback: chamfered cube (round-edge box)
-      const geom = new THREE.BoxGeometry(1.4, 1.4, 1.4);
-      const mat = new THREE.MeshLambertMaterial({ color: 0xE8E8E8 });
-      cubeModel = new THREE.Mesh(geom, mat);
-      vcGroup.add(cubeModel);
+    // Build a proper LABELED cube — textured BoxGeometry with Top/Bot/Front/
+    // Back/Left/Right baked into each face. Matches Penta's labeled cube.
+    // Order matches THREE.BoxGeometry: [+X, -X, +Y, -Y, +Z, -Z] = right/left/top/bottom/front/back
+    const labels = ['Right', 'Left', 'Top', 'Bot', 'Front', 'Back'];
+    const accentIdx = 0;   // Right face has the teal accent in Penta's reference
+    const cubeMats = labels.map((label, i) => {
+      const c = document.createElement('canvas');
+      c.width = 256; c.height = 256;
+      const ctx = c.getContext('2d');
+      // Solid white background, teal-rimmed border
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, 256, 256);
+      ctx.strokeStyle = '#6FCFEB';
+      ctx.lineWidth = 6;
+      ctx.strokeRect(3, 3, 250, 250);
+      // Optional accent highlight (e.g. Right face gets teal)
+      if (i === accentIdx) {
+        ctx.fillStyle = '#03B188';
+        ctx.fillRect(3, 3, 250, 250);
+        ctx.fillStyle = '#FFFFFF';
+      } else {
+        ctx.fillStyle = 'rgba(0,0,0,0.78)';
+      }
+      ctx.font = 'bold 56px Roboto, Helvetica, Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, 128, 132);
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return new THREE.MeshLambertMaterial({ map: tex });
     });
+    const cubeModel = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.4, 1.4), cubeMats);
+    vcGroup.add(cubeModel);
 
     // Render loop synced to main camera
     function renderViewCube() {
@@ -3353,13 +3361,15 @@ function wireUI() {
         try { vc.setPointerCapture(downPos.id); } catch {}
         vc.style.cursor = 'grabbing';
       }
-      // Apply orbit delta around controls target
+      // Apply orbit delta around controls target.
+      // Drag-direction matches Penta: pull the cube down -> cube top tilts
+      // toward viewer -> camera moves DOWN (phi increases).
       const cam = app.three.camera;
       const ctrl = app.three.controls;
       const offset = cam.position.clone().sub(ctrl.target);
       const sphr = new THREE.Spherical().setFromVector3(offset);
-      sphr.theta -= e.movementX * 0.01;
-      sphr.phi   = Math.min(Math.max(sphr.phi - e.movementY * 0.01, 0.05), Math.PI - 0.05);
+      sphr.theta += e.movementX * 0.01;   // drag right -> camera/cube spins right
+      sphr.phi   = Math.min(Math.max(sphr.phi + e.movementY * 0.01, 0.05), Math.PI - 0.05);
       offset.setFromSpherical(sphr);
       cam.position.copy(ctrl.target.clone().add(offset));
       cam.lookAt(ctrl.target);

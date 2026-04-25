@@ -1765,6 +1765,27 @@ window._dismissSplash = function(action) {
   window._renderer = renderer;
   window._controls = controls;
 
+  // ===== Penta-style nav widget (DRO + camera buttons + Show Options) =====
+  // Drops in alongside cycleCAD's existing ViewCube. Skips its own cube
+  // since cycleCAD already renders one. Shared widget across the Suite.
+  import('/app/js/widgets/penta-nav.js').then(({ PentaNavWidget }) => {
+    window._cyclecadNav = new PentaNavWidget({
+      container: document.getElementById('viewport-container'),
+      camera, controls, renderer,
+      fitTarget: scene,
+      enableViewCube: false,
+      enableScreenshot: true,
+      enableDRO: true,
+      droLabels: ['X','Y','Z'],
+      initialDRO: { X: 0, Y: 0, Z: 0 },
+      screenshotName: 'cyclecad'
+    });
+    // Hook camera frame updates so DRO reflects last selection / cursor
+    window._updateCyclecadDRO = (x, y, z) => {
+      window._cyclecadNav && window._cyclecadNav.updateDRO({ X: x, Y: y, Z: z });
+    };
+  }).catch(e => console.warn('[cyclecad] PentaNavWidget unavailable:', e.message));
+
   // ===== Global State =====
   const appState = {
     currentWorkspace: 'design',

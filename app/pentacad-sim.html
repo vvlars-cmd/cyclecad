@@ -1796,39 +1796,52 @@ function applyToolHolderVisibility() {
  *
  * @param {{x:number,y:number,z:number,a:number,b:number}} pos  display units + degrees
  */
+/**
+ * Per-axis kinematic mapping. The user can flip signs and pick world axes
+ * at runtime via `window.PentacadSimApp.kinAxes` to tune any direction
+ * without a code edit. Default values reflect Pocket NC V2 kinematics as
+ * described by the user (2026-04-25):
+ *
+ *   - machine Y:  the y-group (trunnion) translates UP   → world +Y
+ *   - machine Z:  the z mesh (spindle nose) slides toward the trunnion,
+ *                 which is on the LEFT in the default camera view → world -X
+ *   - machine X:  the x-group (spindle carriage) moves toward the FRONT,
+ *                 i.e. the side with the cycle-start / e-stop buttons,
+ *                 which is +Z in Three.js front-camera convention → world +Z
+ *   - A, B:       pure rotations on `a` and `b`. No translation.
+ */
+const DEFAULT_KIN_AXES = Object.freeze({
+  // Each entry: [target-mesh-key, world-axis ('x'|'y'|'z'), sign]
+  X: ['x', 'z',  1],
+  Y: ['y', 'y',  1],
+  Z: ['z', 'x', -1],
+});
+
 function applyMachineState(pos) {
   const k = app.three && app.three.kinematics;
   if (!k || !k.glb) return;
 
   // Translate display units -> mm so the per-machine scale below is unitless.
   const mmPerUnit = app.displayUnits === 'mm' ? 1 : MM_PER_INCH;
-  const xMm = (pos.x || 0) * mmPerUnit;
-  const yMm = (pos.y || 0) * mmPerUnit;
-  const zMm = (pos.z || 0) * mmPerUnit;
+  const cmd = {
+    X: (pos.x || 0) * mmPerUnit,
+    Y: (pos.y || 0) * mmPerUnit,
+    Z: (pos.z || 0) * mmPerUnit,
+  };
 
-  // Empirical render-units-per-mm. Tuned per machine via `app.kinScale` so
-  // the user can correct over- / under-shoot without code edits.
+  // Live-tunable scale + axis mapping. Set on window.PentacadSimApp to fix
+  // a wrong direction or magnitude without re-pushing.
   const SCALE = (app.kinScale || 0.0276) * (k.glbScale || 1);
+  const axes = app.kinAxes || DEFAULT_KIN_AXES;
 
-  // Pentamachine V2 kinematics (per user 2026-04-25):
-  //   - The TRUNNION (mesh `y` -> `a` -> `b`) does NOT translate. A and B
-  //     are pure rotations.
-  //   - The X-CARRIAGE (group `x` with children x_1, x_2, z + the spindle
-  //     motor geometry) carries the spindle and moves on machine X and Y.
-  //   - Z is the SPINDLE axis — translates the inner `z` mesh along the
-  //     spindle's own direction, within the X-carriage's local frame.
-  //
-  // So both X and Y machine axes map onto the `x` group's transform; the
-  // `y` mesh stays fixed. (Previous code translated `y` along world Z which
-  // visibly slid the trunnion, contradicting the actual Pocket NC V2
-  // kinematics.)
-  if (k.x && k.x_home) {
-    k.x.position.x = k.x_home.x + xMm * SCALE;          // machine X
-    k.x.position.y = k.x_home.y + yMm * SCALE;          // machine Y (vertical)
+  for (const machineAxis of ['X', 'Y', 'Z']) {
+    const [meshKey, worldAxis, sign] = axes[machineAxis];
+    const obj = k[meshKey];
+    const home = k[`${meshKey}_home`];
+    if (!obj || !home) continue;
+    obj.position[worldAxis] = home[worldAxis] + cmd[machineAxis] * SCALE * sign;
   }
-  if (k.z && k.z_home) {
-    k.z.position.z = k.z_home.z + zMm * SCALE;          // machine Z (spindle axis)
-  }
+
   // A/B rotations on top of the authored home pose.
   if (k.a && k.a_homeRot) {
     k.a.rotation.x = k.a_homeRot.x + (pos.a || 0) * Math.PI / 180;

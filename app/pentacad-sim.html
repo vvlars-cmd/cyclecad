@@ -1516,8 +1516,14 @@ function initViewport() {
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
   controls.target.set(0, 8, 0);
-  controls.minPolarAngle = 0;
-  controls.maxPolarAngle = Math.PI;
+  // Keep the polar angle a hair off the poles. At phi = 0 or phi = π the
+  // camera looks straight up / down, gimbal-locks, and only azimuth
+  // (clockwise / counter-clockwise) responds to drag — exactly the symptom
+  // the user reported when the ViewCube reached the "Bottom" face. The
+  // 0.08 rad (~4.6°) clamp lets you see almost the full top / bottom
+  // without hitting the singularity.
+  controls.minPolarAngle = 0.08;
+  controls.maxPolarAngle = Math.PI - 0.08;
   // Distance limits: minDistance keeps the camera from clipping into the
   // machine; maxDistance is generous because fitCamera() can park the camera
   // at ≈300 for the larger GLBs (V2-50, Solo) — clamping any tighter makes
@@ -2603,6 +2609,19 @@ const PARENT_TO_MESH = Object.freeze({
 function setCameraParent(name) {
   if (!PARENT_TO_MESH.hasOwnProperty(name)) return;
   app.cameraParent = name;
+  // Picking "Base" also yanks the camera back to a known-good iso view —
+  // useful when the user has gimbal-locked into "Bottom" / "Top" and
+  // can't drag back. The polar-angle clamp on OrbitControls (0.08..π-0.08)
+  // prevents future lockups, but this gives an explicit escape hatch.
+  if (name === 'base' && app.three) {
+    const c = app.three.camera;
+    const t = app.three.controls.target;
+    const dist = c.position.distanceTo(t);
+    // Iso direction matching the boot default (28, 22, 34) normalised.
+    const isoDir = new THREE.Vector3(28, 22, 34).normalize();
+    c.position.copy(t).add(isoDir.multiplyScalar(dist));
+    app.three.controls.update();
+  }
   saveSession();
   toast(`Camera parent: ${name}`);
 }

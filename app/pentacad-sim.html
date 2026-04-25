@@ -1610,14 +1610,84 @@ function buildStock(machine) {
   return mesh;
 }
 
+/**
+ * Build a more realistic tool / end-mill marker — silver shaft + tapered
+ * cutter at the tip, sized roughly to the active tool's diameter. The
+ * marker is a child of the world root and gets repositioned each frame
+ * by moveToolMarker() to track the spindle nose minus the tool-length
+ * offset. Replaces the previous tiny red cone placeholder.
+ */
+/**
+ * Attach a wire-frame stock outline as a child of the b-platter mesh so
+ * it inherits the trunnion (A) tilt and platter (B) spin. Sized from the
+ * machine's per-variant stock dimensions. This mirrors the reference
+ * Penta sim, where the workpiece outline visibly rotates with the
+ * trunnion / platter during playback. Cleaner replacement for the old
+ * floating BoxGeometry stock cube near scene origin.
+ */
+function addStockIndicator(machineGlb, machine) {
+  if (!machineGlb || !machine) return;
+  const b = machineGlb.getObjectByName('b');
+  if (!b) return;
+  // Remove any prior indicator so machine swaps don't accumulate them.
+  const prior = b.getObjectByName('stockIndicator');
+  if (prior) b.remove(prior);
+
+  // Stock dimensions are in inches per the machine catalog; the GLB's
+  // local scale is unitless authored geometry, so we approximate by
+  // building a slightly oversized box centered on the platter face.
+  // 0.45 is empirical so the outline reads at the demo program's scale
+  // without overpowering the platter beneath.
+  const w = (machine.stock?.x || 1.5) * 0.45;
+  const d = (machine.stock?.y || 1.5) * 0.45;
+  const h = (machine.stock?.z || 0.75) * 0.45;
+  const box = new THREE.BoxGeometry(w, h, d);
+  const edges = new THREE.EdgesGeometry(box);
+  const mat = new THREE.LineBasicMaterial({
+    color: 0x14B86C,         // Penta-ish green
+    transparent: true,
+    opacity: 0.85,
+    depthTest: true,
+  });
+  const lines = new THREE.LineSegments(edges, mat);
+  lines.name = 'stockIndicator';
+  // Sit on the platter face. The platter's local +Y is its face-normal,
+  // so we lift the stock by half its height.
+  lines.position.y = h / 2;
+  b.add(lines);
+}
+
 function buildToolMarker() {
-  const g = new THREE.ConeGeometry(0.08, 0.4, 12);
-  const m = new THREE.MeshStandardMaterial({ color: 0xE04444, roughness: 0.4 });
-  const mesh = new THREE.Mesh(g, m);
-  mesh.rotation.x = Math.PI;     // tip down
-  mesh.position.y = 1.2;         // park position
-  mesh.name = 'tool-tip';
-  return mesh;
+  const g = new THREE.Group();
+  g.name = 'tool-tip';
+
+  const shaftR = 0.08;            // shaft radius (inches)
+  const shaftL = 1.2;             // shaft length
+  const tipL   = 0.35;            // cutter tip length
+
+  const matShaft = new THREE.MeshStandardMaterial({
+    color: 0xC8CCCF, metalness: 0.85, roughness: 0.25
+  });
+  const matTip = new THREE.MeshStandardMaterial({
+    color: 0xE5E7EA, metalness: 0.92, roughness: 0.18
+  });
+
+  // Shaft: cylinder pointing along +Y. Origin at the bottom of the shaft
+  // so children stack downward toward the part.
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(shaftR, shaftR, shaftL, 16), matShaft);
+  shaft.position.y = shaftL / 2 + tipL;
+  g.add(shaft);
+
+  // Tapered cutter at the bottom. Cone narrows from shaft radius down to
+  // a small rounded tip — looks like a typical end-mill / ball-nose cutter.
+  const tip = new THREE.Mesh(new THREE.CylinderGeometry(shaftR, shaftR * 0.55, tipL, 16), matTip);
+  tip.position.y = tipL / 2;
+  g.add(tip);
+
+  // Reference origin (0,0,0) is the cutter tip — useful so applyMachineState
+  // can position the tool tip at exact tool coordinates.
+  g.position.y = 1.2;             // park height; updated each frame
+  return g;
 }
 
 /** Try each candidate URL until one loads, or fall back to a proxy box. */
@@ -1662,6 +1732,10 @@ async function loadMachineModel() {
     // floating cube near scene origin. (User report: "what is this stock at
     // the back of the spindle".)
     if (t.stock) t.stock.visible = false;
+    // Add a lightweight green-wireframe stock indicator that lives on the
+    // B-platter — matches Penta's reference visual where the workpiece
+    // outline tilts and spins with the trunnion + platter rotations.
+    addStockIndicator(obj, app.machine);
     // Auto-frame: scale GLB so its bounding box is ~14 inch wide
     const box = new THREE.Box3().setFromObject(obj);
     const size = new THREE.Vector3(); box.getSize(size);
@@ -2005,12 +2079,15 @@ function applyPlaybackState() {
     // Executor stores positions in mm. For display + scene, convert to the
     // user's preferred display units (inches for the Pentamachine dialect).
     const display = mmPosToDisplay(pt.pos);
-    // Tool-length offset (also in mm on the move record) — subtract from
-    // the tool tip's Z so it renders at the correct depth below the spindle.
+    // Tool-length offset (mm on the move record). The reference Penta sim
+    // displays Z as the TOOL TIP position — commanded Z minus the active
+    // TLO. Example: with Tool 4's Z offset = -3.0000, a commanded Z=0
+    // produces DRO Z = 0 - (-3) = 3, matching the reference exactly.
     const tloMm = pt.move?.tlo || 0;
     const tloDisplay = app.displayUnits === 'mm' ? tloMm : tloMm / MM_PER_INCH;
-    updateDRO(display, tool);
-    moveToolMarker({ ...display, z: display.z - tloDisplay });
+    const droPos = { ...display, z: display.z - tloDisplay };
+    updateDRO(droPos, tool);
+    moveToolMarker(droPos);
     // Drive the rigged GLB so the user actually sees the machine move.
     applyMachineState(display);
     highlightCurrentLine(pt.move);

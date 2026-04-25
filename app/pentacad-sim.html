@@ -1748,6 +1748,14 @@ async function loadMachineModel() {
     t.machineGroup.add(obj);
     setupGlbKinematics(obj, s);
     applyToolHolderVisibility();
+    // Attach the cutter to the spindle group so it rides X/Y/Z motion, and
+    // the green stock outline to the B-platter so it tilts with A and spins
+    // with B — matching how sim.pentamachine.com presents the work area.
+    const spindleParent = t.kinematics?.z || t.kinematics?.x;
+    t.kinematics.toolMesh  = buildAndAttachToolMesh(spindleParent);
+    t.kinematics.stockMesh = buildAndAttachStockIndicator(t.kinematics.b, app.machine);
+    // Hide the legacy red cone — the new tool mesh replaces it.
+    if (t.toolMarker) t.toolMarker.visible = false;
     applyMachineState({ x: 0, y: 0, z: 0, a: 0, b: 0 });   // park to home
     fitCamera();
   } else {
@@ -1776,6 +1784,89 @@ async function loadMachineModel() {
  * @param {THREE.Object3D} machineGlb  the loaded GLB scene root
  * @param {number}         glbScale    the auto-fit scale we applied to the GLB
  */
+/**
+ * Build a tool/cutter mesh — a tapered silver shaft + dark holder cone — and
+ * parent it to the GLB's spindle group (`z` if present, else `x`) so it
+ * tracks all three linear axes during playback. Replaces the tiny red cone
+ * marker. Diameter is taken from the active tool override (defaults to
+ * 0.125" / 1/8" endmill).
+ */
+function buildAndAttachToolMesh(parent) {
+  if (!parent) return null;
+  // Strip any previous tool we attached so a machine swap doesn't leave
+  // stragglers in the scene.
+  for (let i = parent.children.length - 1; i >= 0; i--) {
+    if (parent.children[i].userData.__pcTool) parent.remove(parent.children[i]);
+  }
+  const dia = (() => {
+    const t = app.activeTool;
+    if (t && app.toolOverrides[t] && app.toolOverrides[t].dia) return app.toolOverrides[t].dia;
+    return 0.125;
+  })();
+  const grp = new THREE.Group();
+  grp.userData.__pcTool = true;
+  grp.name = 'toolAssembly';
+  // Holder collar
+  const holder = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.4, 0.32, 0.6, 24),
+    new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.6, roughness: 0.4 })
+  );
+  holder.position.y = -0.6;
+  grp.add(holder);
+  // Shank (silver)
+  const shank = new THREE.Mesh(
+    new THREE.CylinderGeometry(dia * 1.1, dia * 1.1, 0.8, 16),
+    new THREE.MeshStandardMaterial({ color: 0xC8C8D0, metalness: 0.85, roughness: 0.25 })
+  );
+  shank.position.y = -1.4;
+  grp.add(shank);
+  // Cutter (dark, tapered tip)
+  const cutter = new THREE.Mesh(
+    new THREE.CylinderGeometry(dia, dia * 0.95, 0.5, 12),
+    new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.8, roughness: 0.4 })
+  );
+  cutter.position.y = -2.05;
+  grp.add(cutter);
+  parent.add(grp);
+  return grp;
+}
+
+/**
+ * Build a green wireframe box that represents the stock workpiece, parented
+ * to the B-platter so it tilts with A and rotates with B. Penta's reference
+ * shows the same: the part outline rides the platter through every move.
+ */
+function buildAndAttachStockIndicator(parent, machine) {
+  if (!parent) return null;
+  for (let i = parent.children.length - 1; i >= 0; i--) {
+    if (parent.children[i].userData.__pcStock) parent.remove(parent.children[i]);
+  }
+  // machine.stock is in inches; the GLB world scale plus root.scale (10) make
+  // the unit conversion cancel — geometry size in inches reads correctly.
+  const sx = machine.stock.x;
+  const sy = machine.stock.y;
+  const sz = machine.stock.z;
+  const grp = new THREE.Group();
+  grp.userData.__pcStock = true;
+  grp.name = 'stockIndicator';
+  // Translucent green fill
+  const fill = new THREE.Mesh(
+    new THREE.BoxGeometry(sx, sz, sy),
+    new THREE.MeshStandardMaterial({ color: 0x35C29A, transparent: true, opacity: 0.18, metalness: 0.0, roughness: 0.8 })
+  );
+  fill.position.y = sz / 2 + 0.05;
+  grp.add(fill);
+  // Crisp green wireframe outline
+  const edges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(sx, sz, sy)),
+    new THREE.LineBasicMaterial({ color: 0x16A37C, linewidth: 1 })
+  );
+  edges.position.y = sz / 2 + 0.05;
+  grp.add(edges);
+  parent.add(grp);
+  return grp;
+}
+
 function setupGlbKinematics(machineGlb, glbScale) {
   if (!machineGlb || !app.three) return;
   const get = (n) => machineGlb.getObjectByName(n) || null;
@@ -1960,20 +2051,42 @@ function buildMachineProxy(machine) {
   return g;
 }
 
+/**
+ * Frame the camera on the "action area" — the B-platter where work happens
+ * — instead of the whole machine bounding box. sim.pentamachine.com does
+ * the same: it points the camera at the trunnion / B-platter at a
+ * comfortable 3/4 elevated angle so the spindle motor + trunnion + part
+ * are all clearly visible.
+ *
+ * If the B-platter mesh isn't rigged yet (proxy machine), falls back to
+ * the whole-root bbox.
+ */
 function fitCamera() {
   if (!app.three) return;
-  const { camera, controls, root } = app.three;
-  const box = new THREE.Box3().setFromObject(root);
-  if (!box.isEmpty()) {
-    const center = new THREE.Vector3(); box.getCenter(center);
+  const { camera, controls, root, kinematics } = app.three;
+
+  // Prefer the B-platter as the focus point.
+  let center = new THREE.Vector3();
+  let frameSize = 14;            // inch — slightly larger than the trunnion
+  if (kinematics && kinematics.b) {
+    kinematics.b.getWorldPosition(center);
+    // Bias the focus a little above the platter so the camera doesn't
+    // sit nose-to-disc.
+    center.y += 1.5;
+  } else {
+    const box = new THREE.Box3().setFromObject(root);
+    if (box.isEmpty()) return;
+    box.getCenter(center);
     const size = new THREE.Vector3(); box.getSize(size);
-    const maxDim = Math.max(size.x, size.y, size.z);
-    const dist = maxDim / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2)) * 1.6;
-    const dir = new THREE.Vector3().subVectors(camera.position, controls.target).normalize();
-    camera.position.copy(center).add(dir.multiplyScalar(dist));
-    controls.target.copy(center);
-    controls.update();
+    frameSize = Math.max(size.x, size.y, size.z);
   }
+
+  const dist = frameSize / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2)) * 1.6;
+  // Use the boot iso direction so the framing is the same every reset.
+  const dir = new THREE.Vector3(0.55, 0.45, 0.7).normalize();
+  camera.position.copy(center).add(dir.multiplyScalar(dist));
+  controls.target.copy(center);
+  controls.update();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2085,6 +2198,8 @@ function applyPlaybackState() {
   const pt = sim.findPointOnTimeline(app.moves, app.elapsed);
   if (pt && pt.pos) {
     const tool = pt.move?.tool ?? pt.move?.toolId ?? 0;
+    // Cache for buildAndAttachToolMesh's diameter lookup.
+    app.activeTool = tool || app.activeTool;
     // Executor stores positions in mm. For display + scene, convert to the
     // user's preferred display units (inches for the Pentamachine dialect).
     const display = mmPosToDisplay(pt.pos);

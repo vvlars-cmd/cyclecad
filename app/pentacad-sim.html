@@ -186,6 +186,16 @@ input, textarea { font-family: inherit; color: inherit; }
   flex-direction: column;
   min-height: 0;          /* allow flex children to scroll */
   position: relative;
+  overflow: hidden;       /* clip when grid track collapses to 0 */
+}
+/* When the pane is collapsed via the toggle button, the grid tracks for the
+   pane + divider go to 0px. The `overflow:hidden` above clips the content,
+   and the elements remain in the grid so the viewport reliably stays in
+   column 3 (vs. `display:none` which auto-promotes children into columns
+   1 + 2 and leaves the page blank). */
+.pt-main.is-pane-collapsed .pt-pane,
+.pt-main.is-pane-collapsed .pt-divider {
+  pointer-events: none;
 }
 .pt-pane-tabs {
   height: 48px;
@@ -600,6 +610,34 @@ input, textarea { font-family: inherit; color: inherit; }
   z-index: 30;
   display: none;
 }
+
+/* ── Camera Parenting / Projection popovers ──
+   Same MUI elevation8 styling as the machine menu, dropped to the LEFT of
+   the FAB column so the menu is fully visible without overlapping it. */
+.pt-fab-menu {
+  position: fixed;
+  background: #FFFFFF;
+  color: var(--pt-text);
+  border-radius: var(--pt-radius-sm);
+  box-shadow: var(--pt-elev-8);
+  min-width: 130px;
+  padding: 8px 0;
+  z-index: 30;
+}
+.pt-fab-menu[hidden] { display: none; }
+.pt-fab-menu button {
+  display: block;
+  width: 100%;
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--pt-text);
+}
+.pt-fab-menu button:hover { background: rgba(0, 0, 0, 0.04); }
+.pt-fab-menu button.is-current { background: rgba(3, 177, 136, 0.12); font-weight: 500; }
 .pt-machine-menu.is-open { display: block; }
 .pt-machine-menu button {
   display: block;
@@ -631,6 +669,16 @@ input, textarea { font-family: inherit; color: inherit; }
   display: none;
 }
 .pt-controls.is-visible { display: block; }
+/* Pulse the play button before first run so the entry point is obvious. */
+.pt-controls.is-idle #ctl-play {
+  background: var(--pt-green);
+  color: #FFFFFF;
+  animation: pt-pulse 1.6s ease-in-out infinite;
+}
+@keyframes pt-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(3, 177, 136, 0.55); }
+  50%      { box-shadow: 0 0 0 10px rgba(3, 177, 136, 0); }
+}
 .pt-controls-row { display: flex; align-items: center; gap: 6px; height: 36px; }
 .pt-controls-row.transport { gap: 0; }
 .pt-c-btn {
@@ -862,12 +910,29 @@ input, textarea { font-family: inherit; color: inherit; }
     </div>
 
     <div class="pt-camerabtns">
-      <button class="pt-fab" id="btn-locate" title="Center camera on machine">
+      <button class="pt-fab" id="btn-parent" title="Camera parenting — what the camera follows">
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>
       </button>
-      <button class="pt-fab" id="btn-screenshot" title="Take a screenshot">
+      <button class="pt-fab" id="btn-projection" title="Camera projection — perspective / orthographic / auto">
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9.4 10.5l4.77-8.26C13.47 2.09 12.75 2 12 2c-2.4 0-4.6.85-6.32 2.25l3.66 6.35.06-.1zM21.54 9c-.92-2.92-3.15-5.26-6-6.34L11.88 9h9.66zm.26 1H12.26l-.13.22 4.84 8.38C19.94 17.07 22 13.78 22 10c0-.34-.02-.67-.05-1zM8.54 12L3.7 3.62C2.59 4.56 2 6 2 7.5l4.45 4.5h2.09zM4.42 16.5l4.85-1.78c-.69-.79-1.16-1.83-1.32-2.99h-.06l-3.47 4.77zM2 12c0 4.05 2.4 7.5 5.85 9.07l3.7-6.4-1.7-2.94c-.15-.27-.25-.57-.32-.88L2 12zm10.59 4.96l1.7 2.94c2.16-.78 4.05-2.43 5.18-4.42l-7.21 1.49.33-.01z"/></svg>
       </button>
+    </div>
+
+    <!-- Camera Parenting menu (drops out of btn-parent) -->
+    <div class="pt-fab-menu" id="parent-menu" hidden>
+      <button data-parent="base"     class="is-current">Base</button>
+      <button data-parent="part">Part</button>
+      <button data-parent="spindle">Spindle</button>
+      <button data-parent="table">Table</button>
+      <button data-parent="tool">Tool</button>
+      <button data-parent="trunnion">Trunnion</button>
+    </div>
+
+    <!-- Camera Projection menu (drops out of btn-projection) -->
+    <div class="pt-fab-menu" id="projection-menu" hidden>
+      <button data-projection="auto"          class="is-current">Auto</button>
+      <button data-projection="perspective">Perspective</button>
+      <button data-projection="orthographic">Orthographic</button>
     </div>
 
     <!-- DRO panel -->
@@ -1132,7 +1197,11 @@ const app = {
   /** Session restore */
   restored: null,
   /** 'inch' (Pentamachine default) or 'mm' — flips on G21 detection */
-  displayUnits: 'inch'
+  displayUnits: 'inch',
+  /** Camera parenting target — see PARENT_TO_MESH */
+  cameraParent: 'base',
+  /** Camera projection mode — perspective / orthographic / auto */
+  cameraProjection: 'auto'
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1410,6 +1479,8 @@ function renderSummary() {
       else if (kind === 'dia') app.toolOverrides[tool].dia = parseFloat(el.value);
       else if (kind === 'holder') app.toolOverrides[tool].holder = el.value;
       runExecutor();
+      // Holder change requires immediate visibility refresh on the GLB.
+      if (kind === 'holder') applyToolHolderVisibility();
       saveSession();
     });
   });
@@ -1486,6 +1557,7 @@ function initViewport() {
     const dt = (now - last) / 1000;
     last = now;
     if (app.playing) advancePlayback(dt);
+    applyCameraParenting();
     controls.update();
     renderer.render(scene, camera);
     if (app.viewcube) drawViewCube();
@@ -1574,12 +1646,131 @@ async function loadMachineModel() {
     const newBox = new THREE.Box3().setFromObject(obj);
     obj.position.y -= newBox.min.y;        // sit on floor
     t.machineGroup.add(obj);
+    setupGlbKinematics(obj, s);
+    applyToolHolderVisibility();
+    applyMachineState({ x: 0, y: 0, z: 0, a: 0, b: 0 });   // park to home
     fitCamera();
   } else {
     t.machineGroup.add(buildMachineProxy(app.machine));
     fitCamera();
     toast(`No GLB for ${app.machine.label} — showing proxy.`);
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GLB rigging — find the named meshes that make up the machine kinematics
+// chain and bind them to live executor state. Without this the GLB renders as
+// a static block; the previous (v0.3) sim built this rigging inline and the
+// rewrite lost it. Re-implementing here.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Inspect a Pentamachine GLB and capture references to the meshes that move
+ * during playback (X carriage halves, Y stage, Z carriage, A trunnion, B
+ * platter, plus the SHORT/LONG tool holders + paired collets). Stores them
+ * on `app.three.kinematics` plus the GLB's overall scale so per-frame
+ * translations can be expressed in mm and converted to render units.
+ *
+ * Mesh-name reference: see `app/models/INVENTORY.md`.
+ *
+ * @param {THREE.Object3D} machineGlb  the loaded GLB scene root
+ * @param {number}         glbScale    the auto-fit scale we applied to the GLB
+ */
+function setupGlbKinematics(machineGlb, glbScale) {
+  if (!machineGlb || !app.three) return;
+  const get = (n) => machineGlb.getObjectByName(n) || null;
+  const k = {
+    glb: machineGlb,
+    glbScale: glbScale || 1,
+    base_1: get('Base_1'), base_2: get('Base_2'),
+    x_1: get('x_1'), x_2: get('x_2'),
+    y:   get('y'),   z:   get('z'),
+    a:   get('a'),   b:   get('b'),
+    SHORT:    get('SHORT'),    LONG:    get('LONG'),
+    collet:   get('collet'),   collet001: get('collet001'),
+    cycle_start_led: get('cycle_start_led'),
+    estop_led:       get('estop_led'),
+  };
+  // Capture each axis-mesh's home position so per-frame translations are
+  // additive on top of the authored layout — never overwriting it.
+  for (const name of ['x_1', 'x_2', 'y', 'z']) {
+    const obj = k[name];
+    if (obj) k[`${name}_home`] = obj.position.clone();
+  }
+  app.three.kinematics = k;
+}
+
+/** Apply or revert SHORT/LONG holder visibility. */
+function applyToolHolderVisibility() {
+  const k = app.three && app.three.kinematics;
+  if (!k) return;
+  // Pull the active tool's holder choice from app.toolOverrides (default LONG).
+  const activeTool = (() => {
+    if (!app.parsed) return null;
+    let t = null;
+    for (const line of app.parsed.lines || []) {
+      for (const w of line.words || []) {
+        if (w.letter === 'T') t = w.value;
+      }
+    }
+    return t;
+  })();
+  const holder = (activeTool != null && app.toolOverrides[activeTool]
+                  && app.toolOverrides[activeTool].holder) || 'long';
+  const wantShort = holder === 'short';
+  if (k.SHORT)     k.SHORT.visible     =  wantShort;
+  if (k.collet001) k.collet001.visible =  wantShort;
+  if (k.LONG)      k.LONG.visible      = !wantShort;
+  if (k.collet)    k.collet.visible    = !wantShort;
+}
+
+/**
+ * Apply the executor's current pose to the GLB. Linear axes translate, A/B
+ * rotate. Position arg is in DISPLAY units (inches by default for G20 programs)
+ * — we convert to mm before applying since the per-machine scale tuning was
+ * captured in mm.
+ *
+ * Per-axis world mapping (see INVENTORY.md):
+ *   - x_1, x_2 translate along world-X (left-right)
+ *   - y         translates along world-Z (depth, forward-back)
+ *   - z         translates along world-Y (up-down) — spindle vertical
+ *   - a         rotates about world-X (trunnion tilt)
+ *   - b         rotates about world-Y (rotary platter)
+ *
+ * @param {{x:number,y:number,z:number,a:number,b:number}} pos  display units + degrees
+ */
+function applyMachineState(pos) {
+  const k = app.three && app.three.kinematics;
+  if (!k || !k.glb) return;
+
+  // Translate display units -> mm so the per-machine scale below is unitless.
+  const mmPerUnit = app.displayUnits === 'mm' ? 1 : MM_PER_INCH;
+  const xMm = (pos.x || 0) * mmPerUnit;
+  const yMm = (pos.y || 0) * mmPerUnit;
+  const zMm = (pos.z || 0) * mmPerUnit;
+
+  // Empirical render-units-per-mm. The previous session settled on 0.0276
+  // for the V2-50 GLB; the value carries reasonably across V1 / V2-10 /
+  // Solo because the GLB authoring units are uniform across the Pentamachine
+  // family. Multiplied by `glbScale` to compensate for the auto-fit scaling
+  // applied at load-time.
+  const TRAVEL_MM_TO_RENDER = 0.0276 * (k.glbScale || 1);
+
+  if (k.x_1 && k.x_1_home) {
+    k.x_1.position.x = k.x_1_home.x + xMm * TRAVEL_MM_TO_RENDER;
+  }
+  if (k.x_2 && k.x_2_home) {
+    k.x_2.position.x = k.x_2_home.x + xMm * TRAVEL_MM_TO_RENDER;
+  }
+  if (k.y && k.y_home) {
+    k.y.position.z = k.y_home.z + yMm * TRAVEL_MM_TO_RENDER;
+  }
+  if (k.z && k.z_home) {
+    k.z.position.y = k.z_home.y + zMm * TRAVEL_MM_TO_RENDER;
+  }
+  // A/B are direct rotations from G-code degrees — no offset, no scale.
+  if (k.a) k.a.rotation.x = (pos.a || 0) * Math.PI / 180;
+  if (k.b) k.b.rotation.y = (pos.b || 0) * Math.PI / 180;
 }
 
 function buildMachineProxy(machine) {
@@ -1694,6 +1885,10 @@ function resetPlayback() {
   app.elapsed = 0;
   app.playing = false;
   $('ctl-play-icon').setAttribute('d', 'M8 5v14l11-7z');
+  // Mark the controls overlay 'idle' so the play button pulses, drawing the
+  // user's eye to the entry point. Cleared once they hit play.
+  const c = $('controls');
+  if (c) c.classList.add('is-idle');
   updateTimelineUI();
   updateDRO({ x: 0, y: app.machine.stock.z + 0.5, z: 0, a: 0, b: 0 }, 0);
   rebuildToolpath();
@@ -1725,6 +1920,8 @@ function applyPlaybackState() {
     const tloDisplay = app.displayUnits === 'mm' ? tloMm : tloMm / MM_PER_INCH;
     updateDRO(display, tool);
     moveToolMarker({ ...display, z: display.z - tloDisplay });
+    // Drive the rigged GLB so the user actually sees the machine move.
+    applyMachineState(display);
     highlightCurrentLine(pt.move);
   }
   // Time-window trail rendering depends on the playhead, so rebuild on each
@@ -1789,6 +1986,9 @@ function togglePlay() {
   $('ctl-play-icon').setAttribute('d',
     app.playing ? 'M6 5h4v14H6zM14 5h4v14h-4z' : 'M8 5v14l11-7z'
   );
+  // First play interaction — drop the pulsing-button hint.
+  const c = $('controls');
+  if (c) c.classList.remove('is-idle');
 }
 
 /**
@@ -2111,16 +2311,19 @@ function wirePlayback() {
 }
 
 function toggleGcodePane() {
-  const pane = document.querySelector('.pt-pane');
   const main = document.querySelector('.pt-main');
-  const collapsed = pane.style.display === 'none';
-  if (collapsed) {
-    pane.style.display = '';
-    main.style.gridTemplateColumns = '320px 5px 1fr';
-  } else {
-    pane.style.display = 'none';
-    main.style.gridTemplateColumns = '0px 0px 1fr';
-  }
+  // Don't toggle `display: none` on the pane — that removes it from the CSS
+  // Grid track entirely, which auto-promotes the divider + viewport into
+  // columns 1 + 2 and leaves the (now-empty) 3rd column holding nothing,
+  // resulting in a fully blank screen. Instead, collapse the pane + divider
+  // tracks to 0px and let `overflow:hidden` on .pt-pane clip the contents.
+  const collapsed = main.classList.toggle('is-pane-collapsed');
+  main.style.gridTemplateColumns = collapsed
+    ? '0px 0px 1fr'
+    : '320px 5px 1fr';
+  // Force a reflow so the viewport's clientWidth reads the new column width.
+  // Then resize the WebGL canvas to match.
+  void main.offsetWidth;
   resizeViewport();
 }
 
@@ -2203,15 +2406,139 @@ function downloadGcode() {
 }
 
 function wireCameraButtons() {
-  $('btn-locate').addEventListener('click', fitCamera);
-  $('btn-screenshot').addEventListener('click', () => {
-    const url = $('viewport-canvas').toDataURL('image/png');
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `pentacad-sim-${Date.now()}.png`;
-    a.click();
-    toast('Screenshot saved.');
+  wireFabMenu({
+    btnId: 'btn-parent',
+    menuId: 'parent-menu',
+    dataAttr: 'data-parent',
+    initial: app.cameraParent,
+    apply: setCameraParent,
   });
+  wireFabMenu({
+    btnId: 'btn-projection',
+    menuId: 'projection-menu',
+    dataAttr: 'data-projection',
+    initial: app.cameraProjection,
+    apply: setCameraProjection,
+  });
+}
+
+/**
+ * Generic helper that turns a FAB + popover into a single-select menu.
+ *
+ * @param {Object} opts
+ * @param {string} opts.btnId         id of the FAB button
+ * @param {string} opts.menuId        id of the popover element
+ * @param {string} opts.dataAttr      attribute on each <button> carrying its value
+ * @param {string} opts.initial       initially-selected value (highlights that row)
+ * @param {(v:string)=>void} opts.apply  called when the user picks an option
+ */
+function wireFabMenu(opts) {
+  const btn  = $(opts.btnId);
+  const menu = $(opts.menuId);
+  function refreshHighlight(val) {
+    menu.querySelectorAll('button').forEach(b =>
+      b.classList.toggle('is-current', b.getAttribute(opts.dataAttr) === val));
+  }
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    // Close peer menus before opening this one.
+    document.querySelectorAll('.pt-fab-menu').forEach(m => { if (m !== menu) m.hidden = true; });
+    const willOpen = menu.hidden;
+    if (willOpen) {
+      const r = btn.getBoundingClientRect();
+      // Drop the menu to the left of the FAB column with its top aligned.
+      menu.style.left = (r.left - 138) + 'px';
+      menu.style.top  = r.top + 'px';
+    }
+    menu.hidden = !willOpen;
+  });
+  document.addEventListener('click', e => {
+    if (!menu.contains(e.target) && e.target !== btn) menu.hidden = true;
+  });
+  menu.querySelectorAll('button').forEach(b => {
+    b.addEventListener('click', () => {
+      const val = b.getAttribute(opts.dataAttr);
+      refreshHighlight(val);
+      opts.apply(val);
+      menu.hidden = true;
+    });
+  });
+  refreshHighlight(opts.initial);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Camera parenting + projection
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Map a camera-parent label to the GLB mesh name it should follow. The
+ * camera target tracks the world position of that node every frame.
+ * 'base' (default) keeps the target at the scene origin — i.e. no follow.
+ */
+const PARENT_TO_MESH = Object.freeze({
+  base:     null,         // static — keep target at scene origin
+  part:     'b',          // workpiece sits on the B-platter
+  spindle:  'z',          // Z-carriage carries the spindle
+  table:    'b',          // B-platter is the rotary table
+  tool:     '__tool__',   // synthetic — track the live tool-tip marker
+  trunnion: 'a',          // A-trunnion
+});
+
+function setCameraParent(name) {
+  if (!PARENT_TO_MESH.hasOwnProperty(name)) return;
+  app.cameraParent = name;
+  saveSession();
+  toast(`Camera parent: ${name}`);
+}
+
+/** Called every frame from the animate loop to apply the chosen parent. */
+function applyCameraParenting() {
+  if (!app.three) return;
+  const target = app.three.controls.target;
+  const meshName = PARENT_TO_MESH[app.cameraParent || 'base'];
+  if (!meshName) return;                            // 'base' = no-op
+  const obj = meshName === '__tool__'
+    ? app.three.toolMarker
+    : app.three.machineGroup.getObjectByName(meshName)
+       || app.three.root.getObjectByName(meshName);
+  if (!obj) return;
+  const p = new THREE.Vector3();
+  obj.getWorldPosition(p);
+  // Lerp toward the new target so the camera doesn't snap each frame.
+  target.lerp(p, 0.15);
+}
+
+const PROJECTION_FOV = Object.freeze({
+  perspective:  50,    // standard
+  orthographic: 5,     // FOV-trick — looks orthographic without swapping cameras
+  auto:         18,    // narrow perspective, biased toward axis-aligned views
+});
+
+function setCameraProjection(mode) {
+  if (!app.three || !PROJECTION_FOV.hasOwnProperty(mode)) return;
+  const c = app.three.camera;
+  const t = app.three.controls.target;
+  const oldFov = c.fov;
+  const newFov = PROJECTION_FOV[mode];
+  if (oldFov !== newFov) {
+    // Scale camera distance so the framing stays roughly constant when the
+    // FOV changes. Smaller FOV → camera moves further away to keep size.
+    const offset = c.position.clone().sub(t);
+    const scale = Math.tan(THREE.MathUtils.degToRad(oldFov / 2))
+                / Math.tan(THREE.MathUtils.degToRad(newFov / 2));
+    c.position.copy(t).add(offset.multiplyScalar(scale));
+  }
+  c.fov = newFov;
+  c.updateProjectionMatrix();
+  // Orthographic mode parks the camera 10× further away — give the OrbitControls
+  // distance limits enough headroom to accommodate that.
+  app.three.controls.maxDistance = mode === 'orthographic' ? 20000
+                                  : mode === 'auto'        ? 5000
+                                  :                          2000;
+  app.three.controls.update();
+  app.cameraProjection = mode;
+  saveSession();
+  toast(`Projection: ${mode}`);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

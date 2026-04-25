@@ -1433,8 +1433,13 @@ function initViewport() {
   controls.target.set(0, 8, 0);
   controls.minPolarAngle = 0;
   controls.maxPolarAngle = Math.PI;
-  controls.minDistance = 4;
-  controls.maxDistance = 200;
+  // Distance limits: minDistance keeps the camera from clipping into the
+  // machine; maxDistance is generous because fitCamera() can park the camera
+  // at ≈300 for the larger GLBs (V2-50, Solo) — clamping any tighter makes
+  // the scroll-out wheel feel "stuck" the moment it loads.
+  controls.minDistance = 2;
+  controls.maxDistance = 2000;
+  controls.zoomSpeed = 1.0;
 
   // Lights — bright, neutral so charcoal-grey machines read correctly on white
   const ambient = new THREE.AmbientLight(0xFFFFFF, 1.4);

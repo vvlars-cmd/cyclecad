@@ -47,6 +47,59 @@ Files changed this session (cyclecad repo):
 - `vs-mecagent.html`
 - `_autonomous-commit.sh` — combined commit script
 
+## Session 2026-04-25 (afternoon) — full clone rewrite v0.4
+
+Goal: turn `app/pentacad-sim.html` into a functional clone of `sim.pentamachine.com`. Previous session got 80% there in 35 incremental commits but accumulated cruft. This session rewrote the file clean.
+
+What landed (still local — push command at the bottom of `HANDOFF-2026-04-25-sim-clone.md`):
+
+- **`app/pentacad-sim.html`** — rewritten from 3,821 lines down to ~2,300. Same machine GLBs (5 variants from `app/models/`), same `pentacad-sim.js` parser/executor wiring, but a much smaller, cleaner CSS/JS shell modelled directly on Penta's MUI-rendered DOM (sampled live via Chrome MCP `getComputedStyle`).
+- **`app/js/modules/pentacad-sim.js`** — surgical patch: `createExecutor(machine, options)` now accepts `{toolOverrides: {<toolId>: {zoff, dia, holder}}}`. G43 reads the active tool's `zoff` and stores the offset on `state.tlo` (mm); G49 cancels. Each emitted move record now carries `tool` and `tlo` so the renderer can place the tool tip at `Z - tlo`. Self-tests still pass (no field shape changes that existing assertions rely on).
+- **`docs/pentacad/sim-clone-findings.md`** — full reference doc with layout map, palette tokens, computed-style measurements, control inventory, interaction notes from exercising every Penta control via Chrome MCP.
+- **`HANDOFF-2026-04-25-sim-clone.md`** — exhaustive handoff with the push command + 10-step post-deploy verification procedure.
+
+Bugs fixed vs the old v0.3:
+- Flat ViewCube (own scene, real `viewCube.glb` loaded as upgrade with canvas-textured cube as fallback, raycast-driven face snap that handles both shapes)
+- Orbit lock around one edge (explicit `minPolarAngle = 0`, `maxPolarAngle = π`, no target pinning, no camera-parenting hooks running by default)
+- Wrong executor API in renderer (used non-existent `getMoves()`, ratio-based timeline, `mv.kind`, `mv.gcodeLine` — fixed to `exec.moves` getter, seconds-based `findPointOnTimeline`, `mv.mode`, `mv.lineNumber`)
+- Unit mismatch (executor stores positions in mm regardless of program units; renderer now detects G20/G21 and converts mm→inches for display when showing inch programs)
+- Step buttons (advanced by ±0.5 s; now jump to next/previous move boundary)
+- Speed slider range bumped to 0.1–10× (was 0.1–5×) to match Penta
+
+Features added beyond the v0.3 baseline:
+- Real `viewCube.glb` upgrade path (lookups face normals via raycast → axis-snap → camera reposition along that direction)
+- Examples picker in the GCode pane header — six built-in demo programs (face-mill, pocket+drill, bottle-opener-ring abridged, M6×1 thread-mill, adaptive concentric clear, deliberate soft-limit test)
+- Time-window playback (Back Plot toggle now actually trims the rendered toolpath to ±N seconds of the playhead; with "Show past only" the window collapses to "last N s before playhead"; rebuild fires on every playback tick when active)
+- Tool-override fields (Z offset / diameter / Short-Long holder) actually flow into the executor — G43 picks up the SUMMARY-tab Z-offset
+- Auto-scroll editor to current line during playback
+- Drag-and-drop anywhere accepts `.ngc / .nc / .gcode / .glb / .gltf`
+- Session restore via URL hash (`#m=<id>&g=<base64>`) plus `localStorage`
+- Keyboard shortcuts: Space, ←/→, Home/End, S, F, Cmd+O, Esc
+
+Deliberately NOT cloned (IP boundary):
+- Penta's exact PENTA brand-mark SVG path — replaced with original 5-sided geometry + "PENTA" wordmark
+- The YouTube tutorial video embedded in their Help dialog — replaced with text help (keyboard shortcuts + workspace tour)
+- Their bundled `static/js/main.<hash>.js` / `static/css/main.<hash>.css` — clone is an entirely original implementation written from observed CSS computed values, layout sizes, and control inventory
+
+Carried forward from previous session (still open):
+- Spindle Z-carriage floating / clipping (the `z` mesh's runtime translate scale and origin offset still need reverse-engineering — see `app/models/INVENTORY.md` "Open issues" section)
+- ViewCube drag-direction sign verification (probably correct but flagged multiple times historically)
+
+Files for the next chat to read first:
+1. **`HANDOFF-2026-04-25-pentacad-sim.md`** — previous session's handoff (v0.1→v0.35 incremental work)
+2. **`HANDOFF-2026-04-25-sim-clone.md`** — this session's clean rewrite (v0.4)
+3. **`app/models/INVENTORY.md`** — GLB inventory + mesh names + kinematics rules + tool-holder gotcha + open issues
+4. **`docs/pentacad/sim-clone-findings.md`** — Penta UI computed-style reference
+
+Pending push: see "Push command" section in `HANDOFF-2026-04-25-sim-clone.md`. Files to commit:
+```
+app/pentacad-sim.html
+app/js/modules/pentacad-sim.js
+docs/pentacad/sim-clone-findings.md
+HANDOFF-2026-04-25-sim-clone.md
+CLAUDE.md
+```
+
 User preferences confirmed:
 - Push commits manually via Terminal (Terminal is tier-click — Claude can't type into it)
 - Wants single combined `rm -f locks && git add -A && git commit -m "..." && git push` line each time

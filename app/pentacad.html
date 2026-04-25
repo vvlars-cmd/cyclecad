@@ -1065,44 +1065,34 @@ button { font-family: inherit; font-size: inherit; cursor: pointer; border: 0; b
   </section>
 
   <!-- ───────────────── SIMULATE TAB ───────────────── -->
+  <!-- Full Pentacad Simulator embedded — same renderer as the standalone sim,
+       with the real V2-10 GLB, sim-ngc default program, full playback,
+       DRO, soft-limit check, and toolpath rendering all visible inline. -->
   <section class="kc-tabview" data-tabview="simulate">
     <div class="ws-layout">
-      <div class="ws-viewport" id="sim-viewport">
-        <div class="floaty" id="sim-floaty">Simulator · A/B forward kinematics</div>
-        <div class="view-legend">
-          <span class="lg green"></span>Rapid
-          <span class="lg blue"></span>Feed
-          <span class="lg red"></span>Violation
-        </div>
+      <div class="ws-viewport" id="sim-viewport" style="padding:0; overflow:hidden;">
+        <iframe id="sim-iframe"
+                src="/app/pentacad-sim.html#m=v2-10&ex=sim-ngc"
+                title="Pentacad simulator — V2-10 with sim.ngc face-pass"
+                style="width:100%; height:100%; border:0; display:block; background:#FFFFFF;"
+                allow="fullscreen">
+        </iframe>
       </div>
       <div class="ws-side">
 
         <div class="card">
-          <h3>Playback
-            <a href="/app/pentacad-sim.html" target="_blank" rel="noopener"
-               class="standalone-sim-link"
-               title="Open the full-screen standalone simulator (styled to match sim.pentamachine.com)">
-              Open standalone sim&nbsp;↗
-            </a>
-          </h3>
+          <h3>Send program to sim</h3>
+          <p style="font-size:11px;color:var(--kc-text-3);margin:6px 0 10px;line-height:1.4;">
+            The simulator runs in-app. Use the iframe's own playback bar
+            (centered, bottom of the viewport). Or post G-code from the CAM tab and
+            it'll auto-load here.
+          </p>
           <div class="ctrl-row">
-            <button class="ctrl-btn step" id="sim-play">▶ Play</button>
-            <button class="ctrl-btn hold" id="sim-pause">❚❚ Pause</button>
-            <button class="ctrl-btn cycle" id="sim-stop">◼ Stop</button>
+            <button class="ctrl-btn step" id="sim-load-cam">↧ Load CAM G-code</button>
+            <button class="ctrl-btn cycle" id="sim-restart">⟳ Restart sim</button>
           </div>
-          <div class="slider-row">
-            <div class="head">
-              <span class="k">Speed</span>
-              <span class="v" id="sim-speed-v">1.0 ×</span>
-            </div>
-            <input type="range" min="0.25" max="8" step="0.25" value="1" id="sim-speed"/>
-          </div>
-          <div class="slider-row">
-            <div class="head">
-              <span class="k">Timeline</span>
-              <span class="v"><span id="sim-elapsed">00:00.0</span> / <span id="sim-total">—</span></span>
-            </div>
-            <input type="range" min="0" max="1000" value="0" step="1" id="sim-scrub"/>
+          <div class="ctrl-row">
+            <button class="ctrl-btn hold" id="sim-popout" title="Open the simulator in a separate full-screen tab">↗ Pop out</button>
           </div>
         </div>
 
@@ -1642,27 +1632,61 @@ button { font-family: inherit; font-size: inherit; cursor: pointer; border: 0; b
     document.getElementById('sim-scrub').value = Math.round((simState.elapsed / total) * 1000);
     if (simState.playing) simState.rafId = requestAnimationFrame(tick);
   }
-  document.getElementById('sim-play').addEventListener('click', () => {
-    const sim = window.CycleCAD.PentacadSim;
-    if (window._lastSimMoves && sim) {
-      simState.total = sim.summariseMoves(window._lastSimMoves).estimatedTimeMin * 60 || 360;
-    } else { simState.total = 360; }
-    simState.playing = true; simState.lastTs = 0;
-    simState.rafId = requestAnimationFrame(tick);
+  // ── Embedded iframe sim controls ──────────────────────────────────────
+  // The Simulate tab now embeds /app/pentacad-sim.html via iframe. The
+  // iframe runs the full GLTF + PBR sim with its own playback bar, DRO,
+  // and toolpath. Pentacad-side controls just push G-code in and
+  // popout / restart the iframe.
+
+  function _simIframeWin() {
+    const f = document.getElementById('sim-iframe');
+    return f && f.contentWindow;
+  }
+
+  function pushGcodeToSim(gcode, name) {
+    const w = _simIframeWin();
+    if (!w) return false;
+    if (typeof w.setGcode === 'function') {
+      w.setGcode(gcode, name || 'cam-posted.ngc');
+      return true;
+    }
+    // Fallback: re-load iframe with hash payload
+    const f = document.getElementById('sim-iframe');
+    f.src = `/app/pentacad-sim.html#m=v2-10&g=${btoa(encodeURIComponent(gcode))}`;
+    return true;
+  }
+  window.pushGcodeToSim = pushGcodeToSim;
+
+  const btnLoadCam = document.getElementById('sim-load-cam');
+  if (btnLoadCam) btnLoadCam.addEventListener('click', () => {
+    if (!window._lastPostedGcode) {
+      alert('Post G-code from the CAM tab first (CAM → Generate toolpaths → Post to G-code).');
+      return;
+    }
+    pushGcodeToSim(window._lastPostedGcode, 'cam-posted.ngc');
   });
-  document.getElementById('sim-pause').addEventListener('click', () => { simState.playing = false; });
-  document.getElementById('sim-stop').addEventListener('click', () => {
-    simState.playing = false; simState.elapsed = 0; simState.lastTs = 0;
-    document.getElementById('sim-elapsed').textContent = '00:00.0';
-    document.getElementById('sim-scrub').value = 0;
+
+  const btnRestart = document.getElementById('sim-restart');
+  if (btnRestart) btnRestart.addEventListener('click', () => {
+    const f = document.getElementById('sim-iframe');
+    f.src = f.src.split('#')[0] + '#m=v2-10&ex=sim-ngc&_t=' + Date.now();
   });
-  document.getElementById('sim-scrub').addEventListener('input', (e) => {
-    if (!simState.total) return;
-    simState.elapsed = (Number(e.target.value) / 1000) * simState.total;
-    const mm = Math.floor(simState.elapsed / 60).toString().padStart(2,'0');
-    const ss = (simState.elapsed % 60).toFixed(1).padStart(4,'0');
-    document.getElementById('sim-elapsed').textContent = mm + ':' + ss;
+
+  const btnPopout = document.getElementById('sim-popout');
+  if (btnPopout) btnPopout.addEventListener('click', () => {
+    window.open('/app/pentacad-sim.html#m=v2-10&ex=sim-ngc', '_blank', 'noopener');
   });
+
+  // Auto-push: when the CAM tab posts G-code, also send it to the embedded sim.
+  // We hook the existing btn-post-gcode click handler by piggybacking — when
+  // window._lastPostedGcode changes, push it.
+  let _lastSeenGcode = null;
+  setInterval(() => {
+    if (window._lastPostedGcode && window._lastPostedGcode !== _lastSeenGcode) {
+      _lastSeenGcode = window._lastPostedGcode;
+      pushGcodeToSim(_lastSeenGcode, 'cam-posted.ngc');
+    }
+  }, 500);
 })();
 </script>
 

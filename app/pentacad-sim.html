@@ -361,17 +361,18 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   flex: 1;
   display: block;
   width: 100%;
-  height: 100%;
+  height: auto;        /* let flex sizing govern; height:100% caused playback bar to be pushed off screen in tight iframes */
+  min-height: 0;
 }
 
-/* HUD cards — light translucent panels (Penta doesn't show info cards, but we keep ours
-   for DRO/tool info — restyled to fit the light theme) */
+/* HUD cards — DEPRECATED. Penta sim has no top-left Machine/Tool cards.
+   Hidden in v0.4+ but kept in DOM for backward compat. */
 .vp-hud {
+  display: none;
   position: absolute;
   left: 16px;
   top: 16px;
   z-index: 10;
-  display: flex;
   flex-direction: column;
   gap: 8px;
   pointer-events: none;
@@ -404,6 +405,146 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 
 /* Visibility toggles — Penta CameraButtons-style: stacked circular/pill FABs top-right,
    idle opacity 0.25, transition to 1.0 on hover (see .CameraButtons-button) */
+/* ─── Penta widget cluster ─── */
+.penta-widgets {
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 220px;
+  pointer-events: none;
+}
+.penta-widgets > * { pointer-events: auto; }
+
+/* ViewCube + camera-buttons row */
+.vc-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.viewcube {
+  width: 80px;
+  height: 80px;
+  position: relative;
+  perspective: 400px;
+  cursor: grab;
+}
+.vc-face {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Roboto, Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(0,0,0,0.6);
+  background: rgba(255,255,255,0.92);
+  border: 1.5px solid #6FCFEB;
+  user-select: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.vc-face:hover { background: rgba(3,177,136,0.12); color: var(--pt-green-dark); }
+.vc-face.vc-front  { transform: translate(15px,15px) translateZ(25px); }
+.vc-face.vc-back   { transform: translate(15px,15px) translateZ(-25px) rotateY(180deg); background: rgba(255,255,255,0.85); }
+.vc-face.vc-right  { transform: translate(15px,15px) rotateY(90deg) translateZ(25px); background: var(--pt-green); color: #FFFFFF; }
+.vc-face.vc-left   { transform: translate(15px,15px) rotateY(-90deg) translateZ(25px); }
+.vc-face.vc-top    { transform: translate(15px,15px) rotateX(90deg) translateZ(25px); }
+.vc-face.vc-bottom { transform: translate(15px,15px) rotateX(-90deg) translateZ(25px); }
+.viewcube { transform-style: preserve-3d; transform: rotateX(-25deg) rotateY(-30deg); }
+
+.vc-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.vc-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.95);
+  border: 1px solid var(--pt-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(0,0,0,0.6);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, transform 0.15s;
+  box-shadow: var(--pt-shadow-sm);
+}
+.vc-btn:hover {
+  background: var(--pt-green);
+  color: #FFFFFF;
+  border-color: var(--pt-green-dark);
+  transform: scale(1.05);
+}
+
+/* DRO panel — matches Penta's grey monospace readout */
+.dro-panel {
+  background: rgba(108, 113, 117, 0.92);
+  color: #FFFFFF;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-family: Monaco, Menlo, "Ubuntu Mono", Consolas, "Source Code Pro", source-code-pro, monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  align-self: flex-end;
+  width: 158px;
+  box-shadow: var(--pt-shadow);
+}
+.dro-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.dro-k { font-weight: 500; opacity: 0.95; }
+.dro-v { font-variant-numeric: tabular-nums; }
+
+/* Show Options pill button */
+.show-options-btn {
+  width: 100%;
+  background: rgba(255,255,255,0.95);
+  border: 1px solid var(--pt-border);
+  border-radius: 18px;
+  padding: 8px 16px;
+  font-family: Roboto, Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(0,0,0,0.6);
+  cursor: pointer;
+  transition: background 0.15s;
+  box-shadow: var(--pt-shadow-sm);
+}
+.show-options-btn:hover { background: var(--pt-surface-2); color: var(--pt-text); }
+
+/* CHANGE MACHINE green pill at bottom-right */
+.change-machine-pill {
+  position: absolute;
+  right: 16px;
+  bottom: 64px;             /* Above the playback bar */
+  z-index: 12;
+  background: var(--pt-green);
+  color: #FFFFFF;
+  border: 0;
+  border-radius: 22px;
+  padding: 12px 22px;
+  font-family: Roboto, Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: var(--pt-shadow);
+  transition: background 0.15s;
+}
+.change-machine-pill:hover { background: var(--pt-green-dark); }
+
+/* Original (legacy, hidden) vis-toggles cluster */
 .vp-vis-toggles {
   position: absolute;
   right: 16px;
@@ -434,40 +575,36 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .vp-vis-toggles .btn.off .tick { visibility: hidden; }
 .vp-vis-toggles .btn.off { background: #F5F5F5; color: var(--pt-text-2); }
 
-/* Playback controls bar — matches Penta .ControlsOverlay-overlay:
-   floating centered at bottom:50px, width 670px, rgba(100,100,100,0.75), border-radius 5px */
+/* Playback controls bar — INLINE solid strip at the bottom of the viewport.
+   Always visible regardless of viewport height so you never miss the controls. */
 .playback-bar {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 24px;
-  margin: 0 auto;
-  width: 720px;
-  max-width: calc(100% - 80px);
-  z-index: 1203;                        /* Matches Penta ControlsOverlay z-index */
-  background: var(--pt-overlay);        /* rgba(100,100,100,0.75) */
-  backdrop-filter: blur(4px);
-  border-radius: var(--pt-radius-lg);   /* 5px */
-  padding: 8px 14px;
+  flex-shrink: 0;
+  width: 100%;
+  background: #2A2F35;       /* solid charcoal, high contrast against white scene */
+  border-top: 1px solid #1A1F25;
+  padding: 10px 16px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: var(--pt-overlay-text);
+  gap: 12px;
+  color: #FFFFFF;
   font-size: 12px;
-  box-shadow: var(--pt-shadow);
+  z-index: 5;
+  min-height: 52px;
+  box-shadow: 0 -2px 6px rgba(0,0,0,0.08);
 }
 .playback-bar .btn {
-  background: transparent;
-  color: var(--pt-overlay-btn);         /* rgb(221,221,221) — Penta .ControlsOverlay-button */
+  background: rgba(255,255,255,0.10);
+  color: #FFFFFF;
   border: 0;
-  padding: 6px 10px;
+  padding: 6px 12px;
   min-height: 32px;
-  min-width: 32px;
+  min-width: 36px;
   font-size: 14px;
-  border-radius: 50%;                   /* Circular playback icons */
+  border-radius: 50%;
   justify-content: center;
+  font-weight: 500;
 }
-.playback-bar .btn:hover { background: rgba(255,255,255,0.12); color: #FFFFFF; }
+.playback-bar .btn:hover { background: rgba(255,255,255,0.20); }
 .playback-bar .btn.primary {
   background: var(--pt-green) !important;
   color: #FFFFFF !important;
@@ -514,15 +651,26 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   border: 0;
 }
 .speed-chip {
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.24);
+  background: rgba(255,255,255,0.16);
+  border: 1px solid rgba(255,255,255,0.32);
   color: #FFFFFF;
   border-radius: 14px;
-  padding: 4px 10px;
-  font-size: 11px;
+  padding: 5px 12px;
+  font-size: 12px;
   font-family: Roboto, Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  min-width: 64px;
 }
+.speed-chip:hover { background: rgba(255,255,255,0.24); }
 .speed-chip option { color: var(--pt-text); background: var(--pt-surface); }
+.playback-bar .speed-label {
+  font-size: 10px;
+  color: rgba(255,255,255,0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-right: -6px;
+}
 
 /* Blink animation matching Penta's .ControlsOverlay-blink */
 @keyframes blinkButton {
@@ -797,10 +945,11 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     <span class="tag">v0.3.0 · 5-axis G-code playback</span>
   </div>
 
-  <select class="machine-picker" id="machine-picker" title="Select machine">
-    <option value="v2-10" selected>V2-10 (24k ER11) — your machine</option>
-    <option value="v2-50">V2-50 (40k ER20)</option>
-    <option value="v1">V1 (legacy)</option>
+  <select class="machine-picker" id="machine-picker" title="Change machine">
+    <option value="v2-10" selected>V2-10</option>
+    <option value="v2-50">V2-50</option>
+    <option value="v1">V1</option>
+    <option value="v1kickstarter">V1 Kickstarter</option>
     <option value="solo">Solo</option>
   </select>
 
@@ -851,7 +1000,58 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       </div>
     </div>
 
-    <div class="vp-vis-toggles">
+    <!-- ─── Penta-style right-side widget cluster ─── -->
+    <div class="penta-widgets">
+
+      <!-- ViewCube + camera buttons row -->
+      <div class="vc-row">
+        <div class="viewcube" id="viewcube" title="Click a face to snap camera">
+          <div class="vc-face vc-top" data-face="top">Top</div>
+          <div class="vc-face vc-bottom" data-face="bottom">Bot</div>
+          <div class="vc-face vc-front" data-face="front">Front</div>
+          <div class="vc-face vc-back" data-face="back">Back</div>
+          <div class="vc-face vc-right" data-face="right">Right</div>
+          <div class="vc-face vc-left" data-face="left">Left</div>
+        </div>
+        <div class="vc-buttons">
+          <button class="vc-btn" id="vc-fit" title="Fit to scene">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M12 1v6 M12 17v6 M1 12h6 M17 12h6"/>
+            </svg>
+          </button>
+          <button class="vc-btn" id="vc-screenshot" title="Screenshot viewport">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- DRO panel — Penta-replica with X/Y/Z/A/B/T -->
+      <div class="dro-panel">
+        <div class="dro-row"><span class="dro-k">X:</span><span class="dro-v" id="penta-dro-x">0.0000</span></div>
+        <div class="dro-row"><span class="dro-k">Y:</span><span class="dro-v" id="penta-dro-y">0.0000</span></div>
+        <div class="dro-row"><span class="dro-k">Z:</span><span class="dro-v" id="penta-dro-z">0.0000</span></div>
+        <div class="dro-row"><span class="dro-k">A:</span><span class="dro-v" id="penta-dro-a">0.0000</span></div>
+        <div class="dro-row"><span class="dro-k">B:</span><span class="dro-v" id="penta-dro-b">0.0000</span></div>
+        <div class="dro-row"><span class="dro-k">T:</span><span class="dro-v" id="penta-dro-t">0</span></div>
+      </div>
+
+      <!-- Show Options button -->
+      <button class="show-options-btn" id="show-options" title="Toggle visibility / display options">
+        Show Options
+      </button>
+    </div>
+
+    <!-- CHANGE MACHINE — green pill at bottom-right -->
+    <button class="change-machine-pill" id="change-machine-pill" title="Switch machine variant">
+      Change Machine
+    </button>
+
+    <!-- Hidden visibility toggles cluster — kept for backward compatibility but tucked into Show Options panel -->
+    <div class="vp-vis-toggles" id="vp-vis-toggles" hidden>
       <button class="btn" id="vis-machine">Machine <span class="tick">✓</span></button>
       <button class="btn" id="vis-stock">Stock <span class="tick">✓</span></button>
       <button class="btn off" id="vis-vice">Vice <span class="tick">✓</span></button>
@@ -875,14 +1075,16 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         <span class="mono" id="t-total">0.00 s</span>
       </div>
 
-      <select class="speed-chip" id="speed-chip">
+      <span class="speed-label">Speed</span>
+      <select class="speed-chip" id="speed-chip" title="Playback speed">
+        <option value="0.1">0.1×</option>
         <option value="0.25">0.25×</option>
         <option value="0.5">0.5×</option>
         <option value="1" selected>1×</option>
         <option value="2">2×</option>
         <option value="4">4×</option>
         <option value="10">10×</option>
-        <option value="50">50× (fast)</option>
+        <option value="50">50×</option>
       </select>
     </div>
   </section>
@@ -1078,6 +1280,17 @@ const MACHINES = {
     defaultUnits: 'inch',
     stock: { x: 1.5, y: 1.0, z: 0.5, unit: 'inch' },
     color: 0xA290FF
+  },
+  'v1kickstarter': {
+    id: 'v1kickstarter', name: 'Pentamachine V1 Kickstarter',
+    linear: { x: { min: -3, max: 3, unit: 'inch' }, y: { min: -2, max: 2, unit: 'inch' }, z: { min: -1.5, max: 1.5, unit: 'inch' } },
+    rotary: { a: { min: -35, max: 135, unit: 'deg' }, b: { min: -360, max: 360, unit: 'deg', continuous: true } },
+    pivots: { a_to_table: { x: 0, y: 0, z: 0.4 }, b_to_a: { x: 0, y: 0, z: 0 }, spindle_to_a: { x: 0, y: 0, z: 2.0 } },
+    home: { x: 0, y: 0, z: 0, a: 0, b: 0 },
+    spindle: { min_rpm: 2000, max_rpm: 24000, type: 'ER11' },
+    defaultUnits: 'inch',
+    stock: { x: 1.5, y: 1.0, z: 0.5, unit: 'inch' },
+    color: 0xC8A2FF
   },
   'solo': {
     id: 'solo', name: 'Pentamachine Solo',
@@ -1484,21 +1697,15 @@ function initThree() {
   const canvas = document.getElementById('viewport-canvas');
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  // PBR-correct output: sRGB + ACES tonemapping so GLB metals don't render black
+  // Match sim.pentamachine.com — flat sRGB output, no tonemapping, no env map.
+  // Their renderer uses simple ambient + directional lighting only, which gives
+  // the matte black/grey look on the GLB's PBR materials.
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.0;
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0xFFFFFF);
-  scene.fog = new THREE.Fog(0xFFFFFF, 400, 900);
-
-  // Environment map — REQUIRED for PBR metallic materials to have any reflectance.
-  // RoomEnvironment is a procedural "showroom box" ~0.5 MB, bundled with Three.js.
-  const pmremGen = new THREE.PMREMGenerator(renderer);
-  const envTex = pmremGen.fromScene(new RoomEnvironment(), 0.04).texture;
-  scene.environment = envTex;
-  pmremGen.dispose();
+  // No fog (Penta sim doesn't use one).
+  // No scene.environment — keeps materials matte instead of reflective.
 
   const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 5000);
   // Pulled back so the real V2-10 GLB (≈14 wide × 18 tall × 12 deep authored units,
@@ -1510,13 +1717,12 @@ function initThree() {
   controls.dampingFactor = 0.08;
   controls.target.set(0, 8, 0);   // Raised to machine mid-height, not the ground
 
-  // Direct lights are now subtle — envMap does the heavy lifting for PBR
-  const ambient = new THREE.AmbientLight(0xffffff, 0.25);
-  const key = new THREE.DirectionalLight(0xffffff, 0.55);
+  // Two-light setup matching sim.pentamachine.com: bright ambient + subtle key.
+  // Without an env map this gives the matte machine look they have.
+  const ambient = new THREE.AmbientLight(0xffffff, 0.85);
+  const key = new THREE.DirectionalLight(0xffffff, 0.40);
   key.position.set(10, 20, 10);
-  const rim = new THREE.DirectionalLight(0x03B188, 0.10);
-  rim.position.set(-10, 5, -10);
-  scene.add(ambient, key, rim);
+  scene.add(ambient, key);
 
   // Groups — inch units, scale 10x for legibility in the viewport
   const root = new THREE.Group();
@@ -1536,14 +1742,21 @@ function initThree() {
   }
   scene.add(axes);
 
-  // Machine structure — try real GLB, fall back to hand-built proxy.
-  // buildMachineProxy renders immediately; if the GLB arrives later we swap it in.
+  // Machine structure — try real GLB, only fall back to proxy if all
+  // candidates fail. Keep proxy hidden initially so users don't see the
+  // white-box placeholder when a GLB loads correctly (the common case).
   const machine = buildMachineProxy(app.machine);
+  machine.visible = false;
   root.add(machine);
   loadMachineModel(app.machine, (gltfScene, url) => {
     const bbox = frameMachineModel(gltfScene, 14, app.machine.id);
     gltfScene.name = 'machineGlb';
     gltfScene.userData.glbUrl = url;
+
+    // Set up forward kinematics: parent the B-platter under the A-trunnion so
+    // when A tilts, B follows. Real Penta GLBs have 'a' and 'b' as flat siblings.
+    setupGlbKinematics(gltfScene);
+
     root.remove(machine);
     root.add(gltfScene);
     if (app.three) {
@@ -1633,44 +1846,57 @@ function initThree() {
 }
 
 /*
-  Machine model resolution order:
-    1. #glb=<url>                 — explicit override from URL hash
-    2. localStorage 'pentacad.sim.glb.<id>'   — previously cached blob URL
-    3. ./models/<machine-id>.glb  — repo-local file (user drops in app/models/)
-    4. buildMachineProxy(m)       — Three.js primitive fallback
+  Machine model resolution — multiple fallback URLs tried in order:
+    1. #glb=<url>                          — explicit override from URL hash
+    2. localStorage 'pentacad.sim.glb.<id>' — previously cached blob URL
+    3. ./models/<machine-id>.glb           — repo-local (drops in app/models/)
+    4. https://sim.pentamachine.com/gltf/<id>.glb  — Penta's public CDN
+    5. (no proxy — leave empty)
 
-  Real GLBs live on the Pentamachine itself at http://<machine-ip>/gltf/<id>.glb
-  when plugged in via USB (192.168.6.2 on macOS, 192.168.7.2 on Linux/Win).
-  They can also be extracted from the Kinetic Control disk image under
-  /opt/penta-ui-builds/gltf/.  Drop the .glb files into ~/cyclecad/app/models/
-  and they'll be auto-loaded.
+  sim.pentamachine.com serves GLBs over CORS-friendly URLs, so we can
+  hot-link them as a fallback for the public site where .glb files are
+  .gitignored. Locally the app/models/ directory wins.
 */
-function resolveMachineGlbUrl(m) {
+function resolveMachineGlbCandidates(m) {
   if (location.hash) {
     const hp = new URLSearchParams(location.hash.slice(1));
-    if (hp.get('glb')) return hp.get('glb');
+    if (hp.get('glb')) return [hp.get('glb')];
   }
   const cached = localStorage.getItem('pentacad.sim.glb.' + m.id);
-  if (cached) return cached;
-  return `./models/${m.id}.glb`;
+  const list = [];
+  if (cached) list.push(cached);
+  list.push(`./models/${m.id}.glb`);
+  list.push(`https://sim.pentamachine.com/gltf/${m.id}.glb`);
+  return list;
 }
 
 let _gltfLoader = null;
-function loadMachineModel(m, onReady, onFail) {
-  const url = resolveMachineGlbUrl(m);
+async function loadMachineModel(m, onReady, onFail) {
+  const candidates = resolveMachineGlbCandidates(m);
   if (!_gltfLoader) _gltfLoader = new GLTFLoader();
-  fetch(url, { method: 'HEAD' }).then(r => {
-    if (!r.ok) throw new Error('no glb at ' + url);
-    _gltfLoader.load(url, gltf => {
-      filterGlbMeshes(gltf.scene, m.id);   // hide enclosure / housing by default
+
+  // Try each URL in turn; first one that GLTFLoader succeeds on wins.
+  for (const url of candidates) {
+    try {
+      // Skip HEAD probe for cross-origin URLs since CORS may block HEAD but
+      // allow the actual GET. Just attempt the load.
+      const isCrossOrigin = /^https?:\/\//.test(url);
+      if (!isCrossOrigin) {
+        const r = await fetch(url, { method: 'HEAD' });
+        if (!r.ok) continue;
+      }
+      const gltf = await new Promise((resolve, reject) => {
+        _gltfLoader.load(url, resolve, undefined, reject);
+      });
+      filterGlbMeshes(gltf.scene, m.id);
+      console.info('[pentacad-sim] loaded GLB from:', url);
       onReady(gltf.scene, url);
-    }, undefined, err => {
-      console.warn('[pentacad-sim] GLB load failed:', err);
-      onFail && onFail(err);
-    });
-  }).catch(err => {
-    onFail && onFail(err);
-  });
+      return;
+    } catch (err) {
+      console.info('[pentacad-sim] GLB miss:', url, err.message || err);
+    }
+  }
+  onFail && onFail(new Error('no GLB available for ' + m.id));
 }
 
 // Hide enclosure / cover / housing meshes from a loaded GLB so we see the
@@ -1873,6 +2099,22 @@ function loadViceOverlay(platterY, onReady) {
       onReady && onReady(vice);
     }, undefined, e => console.warn('[pentacad-sim] vice load failed:', e));
   }).catch(() => {});
+}
+
+// Set up forward kinematics on a loaded GLB by reparenting nodes:
+//   - 'b' (rotary platter) becomes a child of 'a' (A-tilt trunnion) so that
+//     tilting A also tilts B with it.
+//   - We use Three.js's attach() which preserves the world transform.
+// Falls back gracefully if names are missing (e.g. proxy machine).
+function setupGlbKinematics(root3d) {
+  const a = root3d.getObjectByName('a');
+  const b = root3d.getObjectByName('b');
+  if (a && b && b.parent !== a) {
+    a.attach(b);
+  }
+  // Ensure A-axis rotation pivots about its center on the X axis
+  // (Three.js rotates about object origin; for the Penta GLB 'a' node,
+  // the origin happens to be at the trunnion pivot, so this works.)
 }
 
 // Frame camera to include an object's bounding box with a comfortable margin.
@@ -2244,11 +2486,12 @@ function resetPlayback() {
   highlightCurrentLine(null);
   if (app.three) {
     app.three.tool.position.set(0, 5, 0);
-    // reset B-rotary
-    const tableB = app.three.machine.getObjectByName('tableB');
-    if (tableB) tableB.rotation.y = 0;
-    const trunnion = app.three.machine.getObjectByName('trunnion');
-    if (trunnion) trunnion.rotation.x = 0;
+    // Reset rotary axes — try both real-GLB ('a','b') and proxy ('trunnion','tableB') names
+    const machine = app.three.machine;
+    const aMesh = machine.getObjectByName('a') || machine.getObjectByName('trunnion');
+    const bMesh = machine.getObjectByName('b') || machine.getObjectByName('tableB');
+    if (aMesh) aMesh.rotation.x = 0;
+    if (bMesh) bMesh.rotation.y = 0;
   }
   rebuildToolpath();
 }
@@ -2311,22 +2554,34 @@ function updateTool3D(pos) {
   const z = (pos.y / 25.4) * 10;
   app.three.tool.position.set(x, y, z);
 
-  // Rotate trunnion + table
-  const trunnion = app.three.machine.getObjectByName('trunnion');
-  if (trunnion) trunnion.rotation.x = (pos.a * Math.PI) / 180;
-  const tableB = app.three.machine.getObjectByName('tableB');
-  if (tableB) tableB.rotation.y = (pos.b * Math.PI) / 180;
+  // Rotate the A-trunnion + B-platter. Real Penta GLB names them 'a' and 'b'
+  // as flat siblings; proxy names them 'trunnion' and 'tableB'. Try both.
+  const machine = app.three.machine;
+  const aMesh = machine.getObjectByName('a') || machine.getObjectByName('trunnion');
+  const bMesh = machine.getObjectByName('b') || machine.getObjectByName('tableB');
+  if (aMesh) aMesh.rotation.x = (pos.a * Math.PI) / 180;
+  if (bMesh) bMesh.rotation.y = (pos.b * Math.PI) / 180;
 }
 
 function updateDRO(pos, mv) {
-  document.getElementById('dro-x').textContent = (pos.x / 25.4).toFixed(4);
-  document.getElementById('dro-y').textContent = (pos.y / 25.4).toFixed(4);
-  document.getElementById('dro-z').textContent = (pos.z / 25.4).toFixed(4);
-  document.getElementById('dro-a').textContent = pos.a.toFixed(3);
-  document.getElementById('dro-b').textContent = pos.b.toFixed(3);
+  // Old side-panel DRO (kept for backward compat)
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  set('dro-x', (pos.x / 25.4).toFixed(4));
+  set('dro-y', (pos.y / 25.4).toFixed(4));
+  set('dro-z', (pos.z / 25.4).toFixed(4));
+  set('dro-a', pos.a.toFixed(3));
+  set('dro-b', pos.b.toFixed(3));
+
+  // Penta-replica overlay DRO (right side)
+  set('penta-dro-x', (pos.x / 25.4).toFixed(4));
+  set('penta-dro-y', (pos.y / 25.4).toFixed(4));
+  set('penta-dro-z', (pos.z / 25.4).toFixed(4));
+  set('penta-dro-a', pos.a.toFixed(4));
+  set('penta-dro-b', pos.b.toFixed(4));
+  if (mv && mv.tool != null) set('penta-dro-t', mv.tool);
 
   if (mv) {
-    document.getElementById('feed-val').textContent = `${(mv.feed || 0).toFixed(2)} mm/min`;
+    set('feed-val', `${(mv.feed || 0).toFixed(2)} mm/min`);
   }
 }
 
@@ -2639,6 +2894,75 @@ function wireUI() {
     applyStateAtTime(app.elapsed);
   });
   document.getElementById('speed-chip').addEventListener('change', e => app.speed = parseFloat(e.target.value));
+
+  // ─── Penta widget cluster wiring ───
+  // ViewCube faces snap the camera to standard orthographic views.
+  const VC_VIEWS = {
+    front:  { az: 0,            el: 0 },
+    back:   { az: Math.PI,      el: 0 },
+    right:  { az: Math.PI/2,    el: 0 },
+    left:   { az: -Math.PI/2,   el: 0 },
+    top:    { az: 0,            el: Math.PI/2 - 0.05 },
+    bottom: { az: 0,            el: -Math.PI/2 + 0.05 }
+  };
+  function snapCameraTo(faceName) {
+    if (!app.three) return;
+    const view = VC_VIEWS[faceName];
+    if (!view) return;
+    const { camera, controls } = app.three;
+    const target = controls.target;
+    const dist = camera.position.distanceTo(target);
+    const x = target.x + dist * Math.cos(view.el) * Math.sin(view.az);
+    const y = target.y + dist * Math.sin(view.el);
+    const z = target.z + dist * Math.cos(view.el) * Math.cos(view.az);
+    camera.position.set(x, y, z);
+    camera.lookAt(target);
+    controls.update();
+  }
+  document.querySelectorAll('.vc-face').forEach(f => {
+    f.addEventListener('click', () => snapCameraTo(f.dataset.face));
+  });
+
+  // Fit-to-scene button
+  const vcFit = document.getElementById('vc-fit');
+  if (vcFit) vcFit.addEventListener('click', () => {
+    if (app.three) fitCameraToObject(app.three.camera, app.three.controls, app.three.root);
+  });
+
+  // Screenshot button — capture the renderer's canvas to a PNG download
+  const vcScreenshot = document.getElementById('vc-screenshot');
+  if (vcScreenshot) vcScreenshot.addEventListener('click', () => {
+    if (!app.three) return;
+    app.three.renderer.render(app.three.scene, app.three.camera);
+    const url = app.three.renderer.domElement.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pentacad-sim-${app.machine.id}-${Date.now()}.png`;
+    a.click();
+  });
+
+  // Show Options button — toggles the visibility cluster
+  const showOpts = document.getElementById('show-options');
+  if (showOpts) showOpts.addEventListener('click', () => {
+    const cluster = document.getElementById('vp-vis-toggles');
+    if (cluster) {
+      cluster.hidden = !cluster.hidden;
+      cluster.style.position = 'absolute';
+      cluster.style.right = '250px';
+      cluster.style.top = '16px';
+      showOpts.textContent = cluster.hidden ? 'Show Options' : 'Hide Options';
+    }
+  });
+
+  // CHANGE MACHINE pill — opens the machine picker
+  const changePill = document.getElementById('change-machine-pill');
+  if (changePill) changePill.addEventListener('click', () => {
+    const picker = document.getElementById('machine-picker');
+    if (picker) {
+      picker.focus();
+      picker.click();
+    }
+  });
 
   // Visibility toggles
   document.querySelectorAll('.vp-vis-toggles .btn').forEach(b => {

@@ -3208,9 +3208,14 @@ function wireUI() {
     });
   }
 
+  // Resolve all four menu DOM nodes up-front so the click handlers can
+  // reference each other without ReferenceErrors (was the 'menus do nothing' bug).
+  const vcParent        = document.getElementById('vc-parent');
+  const vcParentMenu    = document.getElementById('vc-parent-menu');
+  const vcProjection    = document.getElementById('vc-projection');
+  const vcProjectionMenu = document.getElementById('vc-projection-menu');
+
   // Camera-parenting button — opens parenting menu (Base / Part / Spindle / Table / Tool / Trunnion)
-  const vcParent = document.getElementById('vc-parent');
-  const vcParentMenu = document.getElementById('vc-parent-menu');
   if (vcParent && vcParentMenu) {
     vcParent.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -3227,8 +3232,6 @@ function wireUI() {
   }
 
   // Camera-projection button — opens projection menu (Auto / Perspective / Orthographic)
-  const vcProjection = document.getElementById('vc-projection');
-  const vcProjectionMenu = document.getElementById('vc-projection-menu');
   if (vcProjection && vcProjectionMenu) {
     vcProjection.addEventListener('click', (e) => {
       e.stopPropagation();

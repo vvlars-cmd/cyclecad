@@ -226,13 +226,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .machine-picker option { color: var(--pt-text); background: var(--pt-surface); }
 .machine-picker:hover { background: rgba(255,255,255,0.14); }
 
-/* ──────────────── MAIN LAYOUT ──────────────── */
-/* Penta GCodePane left = 320px (see .GCodePane-toolbar at [0,0 320x64]).
-   Right DRO/Stats panel is our addition (Penta has only a right-edge "Options" pop-out). */
+/* ──────────────── MAIN LAYOUT — Penta-replica ──────────────── */
+/* Penta sim layout: GCodePane (320px) + viewport. No right side panel —
+   DRO and Show Options are floating overlays on the viewport. */
 .main {
   flex: 1;
   display: grid;
-  grid-template-columns: 320px 1fr 300px;
+  grid-template-columns: 320px 1fr;
   min-height: 0;
   overflow: hidden;
 }
@@ -791,11 +791,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 }
 .playback-bar .btn.blink { animation: blinkButton 2s ease infinite; }
 
-/* ─── Right side panel — Penta MuiTabs header + form-style body ─── */
+/* ─── Right side panel — DEPRECATED in v0.5+
+   Penta sim doesn't have a side panel; DRO + Stats + Limits + Issues are
+   integrated into the right-side widget cluster overlay. Hidden by default. */
 .side-panel {
+  display: none !important;
   background: var(--pt-surface);
   border-left: 1px solid var(--pt-border);
-  display: flex;
   flex-direction: column;
   min-height: 0;
 }
@@ -2271,7 +2273,9 @@ function setupGlbKinematics(root3d) {
 
 // Frame camera to include an object's bounding box with a comfortable margin.
 // Called after the GLB loads so the real V2-10 always fills the viewport nicely.
-function fitCameraToObject(camera, controls, object, offset = 1.55) {
+function fitCameraToObject(camera, controls, object, offset = 2.2) {
+  // Margin bumped from 1.55 -> 2.2 so the whole machine fits with breathing room
+  // instead of filling the frame edge-to-edge (was the 'too close' complaint).
   const box = new THREE.Box3().setFromObject(object);
   if (box.isEmpty()) return;
   const size = new THREE.Vector3(); box.getSize(size);
@@ -2279,7 +2283,7 @@ function fitCameraToObject(camera, controls, object, offset = 1.55) {
   const maxDim = Math.max(size.x, size.y, size.z);
   const fov = camera.fov * Math.PI / 180;
   const dist = (maxDim / 2) / Math.tan(fov / 2) * offset;
-  const dir = new THREE.Vector3(0.8, 0.55, 1.0).normalize();  /* Slightly elevated iso */
+  const dir = new THREE.Vector3(0.85, 0.5, 1.0).normalize();
   camera.position.copy(center.clone().add(dir.multiplyScalar(dist)));
   camera.near = Math.max(0.1, dist / 200);
   camera.far = dist * 200;

@@ -2024,9 +2024,33 @@ function setupGlbKinematics(machineGlb, glbScale) {
   //   PentacadSimApp.kinematics.zHomeOffset = new THREE.Vector3(dx, dy, dz)
   // and we'll apply it on the next applyMachineState() pass. Initial value
   // is zero so we don't introduce a regression.
-  if (k.z) {
-    k.zHomeOffset = new THREE.Vector3(0, 0, 0);
-  }
+  // Per-mesh home-position nudges — tunable at runtime to align the
+  // Pentamachine kinematic nodes against the GLB's authored geometry.
+  // Live API: PentacadSimApp.nudge('z', dx, dy, dz)
+  k.xHomeOffset = new THREE.Vector3(0, 0, 0);
+  k.yHomeOffset = new THREE.Vector3(0, 0, 0);
+  k.zHomeOffset = new THREE.Vector3(0, 0, 0);
+}
+
+/**
+ * Live API to nudge a kinematic node's home position. Use from DevTools
+ * to dial in the spindle / trunnion / X-carriage if it floats or clips
+ * after a GLB load:
+ *
+ *   PentacadSimApp.nudge('z', 0, -0.5, 0)   // drop the spindle 0.5"
+ *   PentacadSimApp.nudge('y', 0, 0, 1.0)    // push trunnion forward 1"
+ *
+ * @param {'x'|'y'|'z'} mesh
+ * @param {number} dx
+ * @param {number} dy
+ * @param {number} dz
+ */
+function nudge(mesh, dx, dy, dz) {
+  const k = app.three && app.three.kinematics;
+  if (!k) return;
+  const key = mesh + 'HomeOffset';
+  if (!k[key]) return;
+  k[key].set(dx || 0, dy || 0, dz || 0);
 }
 
 /** Apply or revert SHORT/LONG holder visibility.
@@ -2130,13 +2154,16 @@ function applyMachineState(pos) {
     obj.position[worldAxis] = home[worldAxis] + cmd[machineAxis] * SCALE * sign;
   }
 
-  // Apply a per-machine "spindle home" offset to z so the visible spindle
-  // sits on its rails instead of floating. Tunable at runtime via
-  // PentacadSimApp.three.kinematics.zHomeOffset.set(dx, dy, dz).
-  if (k.z && k.z_home && k.zHomeOffset) {
-    k.z.position.x += k.zHomeOffset.x;
-    k.z.position.y += k.zHomeOffset.y;
-    k.z.position.z += k.zHomeOffset.z;
+  // Apply per-mesh home-position nudges so the user can dial in the
+  // visible alignment of x / y / z meshes after load — see PentacadSimApp.nudge().
+  for (const m of ['x', 'y', 'z']) {
+    const node = k[m];
+    const off  = k[m + 'HomeOffset'];
+    if (node && off) {
+      node.position.x += off.x;
+      node.position.y += off.y;
+      node.position.z += off.z;
+    }
   }
 
   // A/B rotations on top of the authored home pose.
@@ -3365,6 +3392,8 @@ async function boot() {
 // Expose the live app state on window so we can probe it via DevTools or
 // remote inspection (Chrome MCP) without re-instrumenting on every change.
 window.PentacadSimApp = app;
+// Convenience helpers for runtime kinematic tuning.
+window.PentacadSimApp.nudge = nudge;
 
 // Manual refresh — call this in DevTools after tweaking kinematics
 // settings (e.g. zHomeOffset, kinAxes, kinScale) to apply the change

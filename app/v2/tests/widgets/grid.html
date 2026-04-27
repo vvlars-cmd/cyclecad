@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8" />
+<title>grid · standalone demo</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  body { margin: 0; height: 100vh; display: grid; grid-template-rows: auto 1fr; font: 13px Inter, sans-serif; }
+  header.bar { background: #1B2228; color: #fff; padding: 10px 16px; display: flex; gap: 12px; align-items: center; }
+  header.bar a { color: var(--pt-green); text-decoration: none; }
+  #stage { position: relative; background: #fafafa; }
+  .controls { position: absolute; left: 16px; top: 16px; background: #fff; border: 1px solid #e5e7eb;
+              border-radius: 6px; padding: 12px; z-index: 10; display: flex; flex-direction: column; gap: 6px; }
+  .controls button, .controls input { font-size: 11px; padding: 4px; min-width: 140px; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three":          "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/":  "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+}}
+</script>
+</head><body>
+<header class="bar"><strong>grid</strong><span style="opacity:.6">demo</span><span style="flex:1"></span>
+  <a href="grid.spec.html">Run spec ↗</a> <a href="../index.html">All ↗</a></header>
+<div id="stage">
+  <div class="controls">
+    <button id="toggle">Toggle visible</button>
+    <label>Size: <input id="size" type="range" min="10" max="200" value="50" step="5"></label>
+    <label>Divs: <input id="divs" type="range" min="5" max="100" value="50" step="5"></label>
+  </div>
+</div>
+<script type="module">
+import { init as initViewport } from '../../widgets/viewport.js';
+import { init as initGrid } from '../../widgets/grid.js';
+
+const stage = document.getElementById('stage');
+const v = await initViewport({ mount: stage });
+const g = await initGrid({ scene: v.api.getScene(), size: 50, div: 50 });
+window.__grid = g;
+
+document.getElementById('toggle').addEventListener('click', () => g.api.toggle());
+document.getElementById('size').addEventListener('input', e => g.api.setSize(+e.target.value));
+document.getElementById('divs').addEventListener('input', e => g.api.setDivisions(+e.target.value));
+</script>
+</body></html>

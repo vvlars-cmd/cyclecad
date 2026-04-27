@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8" /><title>transparency · demo</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  body { margin: 0; height: 100vh; display: grid; grid-template-rows: auto 1fr; font: 13px Inter, sans-serif; }
+  header.bar { background: #1B2228; color: #fff; padding: 10px 16px; display: flex; gap: 12px; align-items: center; }
+  header.bar a { color: var(--pt-green); text-decoration: none; }
+  #stage { position: relative; background: #fafafa; }
+  .controls { position: absolute; left: 16px; top: 16px; background: #fff; border: 1px solid #e5e7eb;
+              border-radius: 6px; padding: 12px; z-index: 10; display: flex; flex-direction: column; gap: 6px; }
+  .controls button, .controls input { font-size: 11px; padding: 4px 8px; min-width: 140px; }
+</style>
+<script type="importmap">{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+}}</script>
+</head><body>
+<header class="bar"><strong>transparency</strong><span style="opacity:.6">demo</span><span style="flex:1"></span>
+  <a href="transparency.spec.html">Run spec ↗</a> <a href="../index.html">All ↗</a></header>
+<div id="stage"><div class="controls"><label>Opacity: <input id="op" type="range" min="0" max="1" step="0.05" value="1"></label><button id="reset">Reset</button></div></div>
+<script type="module">
+import * as THREE from 'three';
+import { init as initViewport } from '../../widgets/viewport.js';
+import { init as initTr } from '../../widgets/transparency.js';
+import { init as initGrid } from '../../widgets/grid.js';
+const stage = document.getElementById('stage');
+const v = await initViewport({ mount: stage });
+await initGrid({ scene: v.api.getScene() });
+for (let i = 0; i < 6; i++) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(3,3,3), new THREE.MeshStandardMaterial({ color: new THREE.Color().setHSL(i/6, 0.6, 0.5) }));
+  m.position.set((i-2.5)*5, 1.5, 0); v.api.attach(m);
+}
+const t = await initTr({ target: v.api.getRoot() });
+window.__tr = t;
+document.getElementById('op').addEventListener('input', e => t.api.setOpacity(+e.target.value));
+document.getElementById('reset').addEventListener('click', () => t.api.reset());
+</script>
+</body></html>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8" /><title>library-browser · demo</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  body { margin: 0; height: 100vh; display: grid; grid-template-rows: auto 1fr; font: 13px Inter, sans-serif; }
+  header.bar { background: #1B2228; color: #fff; padding: 10px 16px; display: flex; gap: 12px; align-items: center; }
+  header.bar a { color: var(--pt-green); text-decoration: none; }
+  #stage { position: relative; background: #fafafa; padding: 24px; overflow: auto; }
+  #log { position: absolute; right: 16px; bottom: 16px; max-width: 320px; max-height: 200px; overflow: auto;
+          background: rgba(0,0,0,0.78); color: #cce; padding: 10px 12px; border-radius: 4px;
+          font: 11px Menlo, monospace; }
+</style>
+<script type="importmap">{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+}}</script>
+</head><body>
+<header class="bar"><strong>library-browser</strong><span style="opacity:.6">demo</span><span style="flex:1"></span>
+  <a href="library-browser.spec.html">Run spec ↗</a> <a href="../index.html">All ↗</a></header>
+<div id="stage"><div id="log"></div></div>
+<script type="module">
+const log = (...a) => { const el = document.getElementById('log'); el.innerHTML += a.join(' ') + '<br>'; el.scrollTop = el.scrollHeight; };
+const stubMeter = { charge: async () => ({ ok: true, balance: 1000000 }) };
+const demoTree = {
+  id: 'demo-root', name: 'Demo Project', kind: 'project', path: 'Demo',
+  children: [
+    { id: 'asm-1', name: 'MainAssembly.iam', kind: 'assembly', category: 'custom',
+      children: [
+        { id: 'p-1', name: 'Bracket.ipt', kind: 'part', category: 'custom' },
+        { id: 'p-2', name: 'DIN 912 - M6 x 20.ipt', kind: 'part', category: 'standard' },
+      ]},
+    { id: 'asm-2', name: 'Subassembly.iam', kind: 'assembly', category: 'vendor',
+      children: [
+        { id: 'p-3', name: 'igus-bearing.ipt', kind: 'part', category: 'vendor' },
+      ]},
+  ],
+};
+import { init as initWidget } from '../../widgets/library-browser.js';
+const stage = document.getElementById('stage');
+const w = await initWidget({ mount: stage, app: 'cyclecad', meter: stubMeter, params: { demoTree } });
+window.__w = w;
+w.on('select', e => log(`select · ${e.id}`));
+w.on('change', e => log(`change · ${JSON.stringify(e).slice(0, 80)}…`));
+</script>
+</body></html>

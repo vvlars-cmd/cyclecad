@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8" /><title>wireframe · demo</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  body { margin: 0; height: 100vh; display: grid; grid-template-rows: auto 1fr; font: 13px Inter, sans-serif; }
+  header.bar { background: #1B2228; color: #fff; padding: 10px 16px; display: flex; gap: 12px; align-items: center; }
+  header.bar a { color: var(--pt-green); text-decoration: none; }
+  #stage { position: relative; background: #fafafa; }
+  .controls { position: absolute; left: 16px; top: 16px; background: #fff; border: 1px solid #e5e7eb;
+              border-radius: 6px; padding: 12px; z-index: 10; }
+  .controls button { font-size: 11px; padding: 4px 8px; min-width: 140px; }
+</style>
+<script type="importmap">{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+}}</script>
+</head><body>
+<header class="bar"><strong>wireframe</strong><span style="opacity:.6">demo</span><span style="flex:1"></span>
+  <a href="wireframe.spec.html">Run spec ↗</a> <a href="../index.html">All ↗</a></header>
+<div id="stage"><div class="controls"><button id="toggle">Toggle wireframe</button></div></div>
+<script type="module">
+import * as THREE from 'three';
+import { init as initViewport } from '../../widgets/viewport.js';
+import { init as initWireframe } from '../../widgets/wireframe.js';
+const stage = document.getElementById('stage');
+const v = await initViewport({ mount: stage });
+for (let i = 0; i < 5; i++) {
+  const m = new THREE.Mesh(new THREE.IcosahedronGeometry(2 + Math.random()*2, 1), new THREE.MeshStandardMaterial({ color: new THREE.Color().setHSL(i/5, 0.6, 0.5) }));
+  m.position.set(Math.random()*20-10, Math.random()*5+1, Math.random()*20-10);
+  v.api.attach(m);
+}
+const w = await initWireframe({ target: v.api.getRoot() });
+window.__wf = w;
+document.getElementById('toggle').addEventListener('click', () => w.api.toggle());
+</script>
+</body></html>

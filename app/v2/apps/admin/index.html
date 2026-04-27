@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>admin · cycleCAD Suite</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  :root {
+    --ink:        #1A1A1A;
+    --muted:      #6B7280;
+    --rule:       #e5e7eb;
+    --bg-sidebar: #0E1117;
+    --bg-app:     #F9FAFB;
+    --gold:       #D4A843;
+    --green:      #10B981;
+    --purple:     #7C3AED;
+    --rose:       #E11D48;
+    --sky:        #3B82F6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--bg-app); color: var(--ink);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+    display: grid; grid-template-rows: auto 1fr; overflow: hidden; height: 100vh;
+  }
+
+  /* ---- Suite bar ---- */
+  header.suite-bar {
+    background: var(--bg-sidebar); color: #fff; padding: 10px 20px;
+    display: flex; align-items: center; gap: 14px;
+    font-size: 12px; flex-shrink: 0; border-bottom: 1px solid #1d242e;
+  }
+  header.suite-bar .brand { font-weight: 700; letter-spacing: 4px; font-size: 11px; }
+  header.suite-bar .pill {
+    background: var(--rose); color: #fff; font-weight: 700;
+    font-size: 10px; padding: 3px 9px; border-radius: 12px; letter-spacing: 1.5px;
+  }
+  header.suite-bar nav { margin-left: auto; display: flex; gap: 18px; }
+  header.suite-bar nav a { color: #BBC2CC; text-decoration: none; }
+  header.suite-bar nav a:hover { color: #fff; }
+  header.suite-bar nav a.current { color: var(--gold); pointer-events: none; }
+  .suite-bar-spacer { width: 12px; }
+  #header-balance { display: inline-flex; align-items: center; }
+
+  /* ---- Layout ---- */
+  .admin-shell {
+    display: grid; grid-template-columns: 280px 1fr;
+    height: 100%; min-height: 0;
+  }
+  aside.sidebar {
+    background: #fff; border-right: 1px solid var(--rule);
+    overflow-y: auto; padding: 18px 14px;
+  }
+  .nav-section {
+    font: 600 10px Inter; color: var(--muted); letter-spacing: 2.5px;
+    text-transform: uppercase; margin: 14px 8px 6px;
+  }
+  .nav-section:first-of-type { margin-top: 0; }
+  .nav-link {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 10px; margin: 1px 0;
+    border-radius: 4px; cursor: pointer; font-size: 13px;
+    color: var(--ink); transition: background .12s, color .12s;
+  }
+  .nav-link:hover { background: #F3F4F6; }
+  .nav-link.active {
+    background: var(--purple); color: #fff;
+    box-shadow: inset 3px 0 0 var(--gold);
+  }
+  .nav-link .icon { width: 18px; text-align: center; opacity: .8; }
+  .nav-link .label { flex: 1; }
+  .nav-link .badge {
+    font: 600 9px monospace; padding: 1px 5px; border-radius: 8px;
+    background: #F3F4F6; color: var(--muted);
+  }
+  .nav-link.active .badge { background: rgba(255,255,255,0.2); color: #fff; }
+
+  main.workbench {
+    overflow-y: auto; padding: 28px 32px;
+    background: var(--bg-app);
+  }
+  .workbench-header {
+    display: flex; align-items: end; justify-content: space-between;
+    margin-bottom: 18px; flex-wrap: wrap; gap: 12px;
+  }
+  .workbench-header h1 {
+    font: 600 26px Georgia, serif; margin: 0;
+  }
+  .workbench-header .breadcrumb {
+    font: 11px Inter; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase;
+  }
+  .workbench-actions { display: flex; gap: 10px; }
+  .workbench-actions button {
+    padding: 6px 12px; border: 1px solid var(--rule); background: #fff;
+    border-radius: 4px; cursor: pointer; font: 600 11px Inter;
+  }
+  .workbench-actions button.primary { background: var(--green); color: #fff; border-color: var(--green); }
+
+  #widget-mount {
+    background: transparent; min-height: 600px;
+  }
+  #widget-mount > * { margin-bottom: 18px; }
+
+  /* admin-key banner if missing */
+  .admin-warning {
+    background: #FEF2F2; color: #991B1B; border: 1px solid #FCA5A5;
+    border-radius: 6px; padding: 18px 22px; max-width: 720px;
+  }
+  .admin-warning code {
+    background: #fff; padding: 2px 6px; border-radius: 3px;
+    font: 12px Menlo, monospace;
+  }
+
+  /* tiny status footer */
+  .footer-strip {
+    background: #fff; border-top: 1px solid var(--rule);
+    padding: 8px 16px; font: 11px Menlo, monospace; color: var(--muted);
+    display: flex; gap: 20px; flex-shrink: 0;
+  }
+  .footer-strip span.ok    { color: var(--green); }
+  .footer-strip span.error { color: var(--rose); }
+
+  /* responsive */
+  @media (max-width: 900px) {
+    .admin-shell { grid-template-columns: 1fr; }
+    aside.sidebar { display: none; }
+  }
+</style>
+
+<script type="importmap">
+{ "imports": {
+  "three":          "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/":  "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+}}
+</script>
+</head>
+
+<body>
+
+<header class="suite-bar">
+  <span class="brand">CYCLECAD SUITE</span>
+  <span style="opacity:.4">·</span>
+  <span>admin</span>
+  <span class="pill" id="env-pill">PROD</span>
+  <span class="suite-bar-spacer"></span>
+  <span id="header-balance"></span>
+  <nav>
+    <a href="../cyclecad/">cycleCAD</a>
+    <a href="../explodeview/">ExplodeView</a>
+    <a href="../pentacad/">Pentacad</a>
+    <a href="../admin/" class="current">admin</a>
+    <a href="../../tests/">tests</a>
+  </nav>
+</header>
+
+<div class="admin-shell">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="nav-section">Operations</div>
+    <a class="nav-link active" data-widget="admin-overview"      ><span class="icon">📊</span><span class="label">Overview</span><span class="badge">live</span></a>
+    <a class="nav-link"        data-widget="admin-realtime"      ><span class="icon">📡</span><span class="label">Realtime</span><span class="badge">tail</span></a>
+    <a class="nav-link"        data-widget="admin-health"        ><span class="icon">🩺</span><span class="label">Health</span></a>
+    <a class="nav-link"        data-widget="admin-ops"           ><span class="icon">🛠</span><span class="label">Ops · backups · flags</span></a>
+
+    <div class="nav-section">$CYCLE Token</div>
+    <a class="nav-link"        data-widget="admin-tokens"        ><span class="icon">💰</span><span class="label">Balances · credit · refund</span><span class="badge">live</span></a>
+    <a class="nav-link"        data-widget="admin-audit"         ><span class="icon">🔗</span><span class="label">Hash-chained audit</span><span class="badge">live</span></a>
+    <a class="nav-link"        data-widget="admin-payments"      ><span class="icon">💳</span><span class="label">Payments · Stripe</span></a>
+
+    <div class="nav-section">Identity &amp; Access</div>
+    <a class="nav-link"        data-widget="admin-users"         ><span class="icon">👤</span><span class="label">Users · roles</span></a>
+    <a class="nav-link"        data-widget="admin-api-keys"      ><span class="icon">🔑</span><span class="label">API keys</span></a>
+    <a class="nav-link"        data-widget="admin-tenants"       ><span class="icon">🏢</span><span class="label">Tenants · multi-org</span></a>
+    <a class="nav-link"        data-widget="admin-compliance"    ><span class="icon">📜</span><span class="label">Compliance · GDPR / SOC2</span></a>
+
+    <div class="nav-section">Widgets &amp; Workflows</div>
+    <a class="nav-link"        data-widget="admin-widget-registry"><span class="icon">🧩</span><span class="label">Widget registry · pricing</span></a>
+    <a class="nav-link"        data-widget="admin-widget-stats"  ><span class="icon">📈</span><span class="label">Widget stats · P50/P95</span></a>
+    <a class="nav-link"        data-widget="admin-workflows"     ><span class="icon">🪢</span><span class="label">Workflows</span></a>
+    <a class="nav-link"        data-widget="admin-agents"        ><span class="icon">🤖</span><span class="label">Agents · MCP</span></a>
+    <a class="nav-link"        data-widget="admin-marketplace"   ><span class="icon">🛍</span><span class="label">Marketplace</span></a>
+
+    <div class="nav-section">Storage &amp; Repo</div>
+    <a class="nav-link"        data-widget="admin-files"         ><span class="icon">🗂</span><span class="label">Files · S3 / MinIO</span></a>
+    <a class="nav-link"        data-widget="admin-repo"          ><span class="icon">🌳</span><span class="label">Repo · deploys</span></a>
+
+    <div class="nav-section">Outreach</div>
+    <a class="nav-link"        data-widget="admin-outreach-pro"  ><span class="icon">🎯</span><span class="label">OutreachPro · cold email</span><span class="badge">live</span></a>
+
+    <div class="nav-section">Platform</div>
+    <a class="nav-link"        data-widget="admin-platform-overview"><span class="icon">🌐</span><span class="label">Docker · MCP · Web · DBs</span><span class="badge">live</span></a>
+  </aside>
+
+  <main class="workbench">
+    <div class="workbench-header">
+      <div>
+        <div class="breadcrumb" id="crumb">admin · operations · overview</div>
+        <h1 id="workbench-title">Overview</h1>
+      </div>
+      <div class="workbench-actions">
+        <button id="btn-set-key">Set admin key…</button>
+        <button id="btn-clear-key">Clear key</button>
+        <button id="btn-refresh" class="primary">Refresh</button>
+      </div>
+    </div>
+
+    <div id="widget-mount"></div>
+  </main>
+</div>
+
+<div class="footer-strip">
+  <span>meter: <span id="meter-status">…</span></span>
+  <span>db: <span id="db-status">…</span></span>
+  <span>chain: <span id="chain-status">…</span></span>
+  <span>actor: <span id="actor-status">…</span></span>
+  <span style="margin-left:auto">cycleCAD Suite · admin baseplate · all 18 admin widgets registered</span>
+</div>
+
+<script type="module">
+import { meter }      from '../../shared/meter.js';
+import { loadWidget } from '../../shared/loader.js';
+import { Toast }      from '../../shared/ui-primitives.js';
+import { auth }       from '../../shared/auth.js';
+import { token }      from '../../shared/token.js';
+import { get }        from '../../shared/widget-registry.js';
+
+const APP = 'admin';
+const handles = new Map();
+let activeWidget = null;
+const $ = sel => document.querySelector(sel);
+
+const TITLES = {
+  'admin-overview':       'Overview',
+  'admin-realtime':       'Realtime tail',
+  'admin-health':         'Service health',
+  'admin-ops':            'Ops · backups · flags',
+  'admin-tokens':         '$CYCLE balances',
+  'admin-audit':          'Hash-chained ledger audit',
+  'admin-payments':       'Payments',
+  'admin-users':          'Users · roles',
+  'admin-api-keys':       'API keys',
+  'admin-tenants':        'Tenants',
+  'admin-compliance':     'Compliance',
+  'admin-widget-registry':'Widget registry',
+  'admin-widget-stats':   'Widget statistics',
+  'admin-workflows':      'Workflows',
+  'admin-agents':         'Agents',
+  'admin-marketplace':    'Marketplace',
+  'admin-files':          'Files',
+  'admin-repo':           'Repository · deploys',
+  'admin-outreach-pro':   'OutreachPro · cold email',
+  'admin-platform-overview': 'Platform · Docker · MCP · Web · DBs',
+};
+
+async function boot() {
+  // 1. footer status
+  await refreshStatus();
+
+  // 2. admin key gate
+  if (!auth.adminKey()) {
+    showAdminKeyWarning();
+  }
+
+  // 3. mount header balance widget (token-balance handles non-admin gracefully)
+  try {
+    const tb = await loadWidget('token-balance', {
+      mount: '#header-balance', app: APP, meter,
+    });
+    handles.set('token-balance', tb);
+  } catch (e) { console.warn('token-balance failed:', e); }
+
+  // 4. wire sidebar navigation
+  document.querySelectorAll('.nav-link[data-widget]').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const name = link.dataset.widget;
+      activate(name, link);
+    });
+  });
+
+  // 5. action buttons
+  $('#btn-set-key').addEventListener('click', () => {
+    const k = prompt('Paste admin key (defaults to "rk_dev_local" in dev):', 'rk_dev_local');
+    if (k && k.trim()) {
+      auth.setAdminKey(k.trim());
+      Toast.show('admin key stored — reloading');
+      setTimeout(() => location.reload(), 400);
+    }
+  });
+  $('#btn-clear-key').addEventListener('click', () => {
+    auth.clearAdminKey();
+    Toast.show('admin key cleared — reloading');
+    setTimeout(() => location.reload(), 400);
+  });
+  $('#btn-refresh').addEventListener('click', async () => {
+    await refreshStatus();
+    if (activeWidget) {
+      const h = handles.get(activeWidget);
+      if (h && h.api) {
+        if (h.api.refresh) h.api.refresh();
+        else if (h.api.lookup) h.api.lookup();
+      }
+    }
+    Toast.show('refreshed');
+  });
+
+  // 6. token-balance click → recharge dialog
+  document.body.addEventListener('token-balance:click', async () => {
+    if (!auth.adminKey()) {
+      Toast.show('admin key required');
+      return;
+    }
+    activate('admin-tokens');
+  });
+
+  // 7. boot the default widget
+  activate('admin-overview');
+  Toast.show(`admin · ${auth.adminKey() ? 'authenticated' : 'no admin key'}`);
+}
+
+async function activate(name, link) {
+  const target = link || document.querySelector(`.nav-link[data-widget="${name}"]`);
+  document.querySelectorAll('.nav-link.active').forEach(a => a.classList.remove('active'));
+  if (target) target.classList.add('active');
+  activeWidget = name;
+
+  const title = TITLES[name] || name;
+  $('#workbench-title').textContent = title;
+  $('#crumb').textContent = `admin · ${title.toLowerCase()}`;
+
+  const mount = $('#widget-mount');
+  mount.replaceChildren();        // wipe previous widget
+
+  // Tear down old handles to avoid memory leaks; the loader cache keeps the
+  // module so re-mounting is fast.
+  for (const [k, h] of handles) {
+    if (k === name || k === 'token-balance') continue;
+    try { h.destroy?.(); } catch {}
+    handles.delete(k);
+  }
+
+  const entry = get(name);
+  if (!entry) {
+    mount.innerHTML = `<div class="admin-warning">no registry entry for <code>${name}</code></div>`;
+    return;
+  }
+
+  try {
+    const h = await loadWidget(name, {
+      mount: '#widget-mount', app: APP, meter,
+    });
+    handles.set(name, h);
+  } catch (e) {
+    console.error(`[admin] ${name} failed:`, e);
+    mount.innerHTML = `<div class="admin-warning">
+      <strong>${name}</strong> failed to load.<br>
+      <code>${(e.message || e).toString()}</code>
+    </div>`;
+  }
+}
+
+async function refreshStatus() {
+  // /api/health
+  try {
+    const r = await fetch('/api/health');
+    const j = r.ok ? await r.json() : { ok: false };
+    $('#meter-status').textContent = j.ok ? 'up' : 'down';
+    $('#meter-status').className   = j.ok ? 'ok' : 'error';
+    $('#db-status').textContent    = j.db || '?';
+    $('#db-status').className      = j.db === 'up' ? 'ok' : 'error';
+  } catch {
+    $('#meter-status').textContent = 'unreachable';
+    $('#meter-status').className   = 'error';
+  }
+  // chain integrity (admin only)
+  if (auth.adminKey()) {
+    const r = await token.auditVerify();
+    if (r.ok)         { $('#chain-status').textContent = `OK · ${r.total} rows`; $('#chain-status').className = 'ok'; }
+    else if (r.error) { $('#chain-status').textContent = r.error; $('#chain-status').className = 'error'; }
+    else              { $('#chain-status').textContent = `mismatched ${r.mismatched}/${r.total}`; $('#chain-status').className = 'error'; }
+  } else {
+    $('#chain-status').textContent = '— (no admin key)';
+  }
+  // actor
+  $('#actor-status').textContent = token.actor();
+}
+
+function showAdminKeyWarning() {
+  $('#widget-mount').innerHTML = `
+    <div class="admin-warning">
+      <strong>Admin key not set.</strong> The dashboard will load read-only widgets, but
+      <code>admin-tokens</code>, <code>admin-audit</code>, and <code>/api/meter/ledger</code>
+      require <code>x-admin-key</code>.<br><br>
+      Set it now: open the JS console and run<br>
+      <code>localStorage.cyclecad.adminKey = 'rk_dev_local'</code><br>
+      then click <em>Refresh</em>. Or use the <em>Set admin key…</em> button above.
+    </div>
+  `;
+}
+
+boot().catch(err => {
+  console.error('[admin] boot failed:', err);
+  Toast.show(`boot failed: ${err.message}`);
+});
+</script>
+
+</body>
+</html>

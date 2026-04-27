@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8" /><title>screenshot · demo</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  body { margin: 0; height: 100vh; display: grid; grid-template-rows: auto 1fr; font: 13px Inter, sans-serif; }
+  header.bar { background: #1B2228; color: #fff; padding: 10px 16px; display: flex; gap: 12px; align-items: center; }
+  header.bar a { color: var(--pt-green); text-decoration: none; }
+  #stage { position: relative; background: #fafafa; }
+  .controls { position: absolute; left: 16px; top: 16px; background: #fff; border: 1px solid #e5e7eb;
+              border-radius: 6px; padding: 12px; z-index: 10; display: flex; flex-direction: column; gap: 6px; }
+  .controls button, .controls input { font-size: 11px; padding: 4px 8px; min-width: 140px; }
+</style>
+<script type="importmap">{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+}}</script>
+</head><body>
+<header class="bar"><strong>screenshot</strong><span style="opacity:.6">demo</span><span style="flex:1"></span>
+  <a href="screenshot.spec.html">Run spec ↗</a> <a href="../index.html">All ↗</a></header>
+<div id="stage"><div class="controls"><button id="cap">Capture PNG</button><button id="dl">Download PNG</button></div><div id="preview" style="position:absolute;right:16px;top:16px;width:240px;border:1px solid #ddd;background:#fff;padding:8px;z-index:10"><div style="font-size:11px;color:#666">preview</div><img id="pv" style="width:100%;display:block;margin-top:6px"></div></div>
+<script type="module">
+import * as THREE from 'three';
+import { init as initViewport } from '../../widgets/viewport.js';
+import { init as initSS } from '../../widgets/screenshot.js';
+import { init as initGrid } from '../../widgets/grid.js';
+const stage = document.getElementById('stage');
+const v = await initViewport({ mount: stage });
+await initGrid({ scene: v.api.getScene() });
+const cube = new THREE.Mesh(new THREE.BoxGeometry(4,4,4), new THREE.MeshStandardMaterial({ color: 0xd4a843 }));
+cube.position.y = 2; v.api.attach(cube);
+const ss = await initSS({ scene: v.api.getScene(), camera: v.api.getCamera(), renderer: v.api.getRenderer() });
+window.__ss = ss;
+document.getElementById('cap').addEventListener('click', async () => {
+  const url = await ss.api.capture();
+  document.getElementById('pv').src = url;
+});
+document.getElementById('dl').addEventListener('click', () => ss.api.download());
+</script>
+</body></html>

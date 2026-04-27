@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8" />
+<title>viewport · standalone demo</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  body { margin: 0; height: 100vh; display: grid; grid-template-rows: auto 1fr;
+         font: 13px Inter, sans-serif; }
+  header.bar { background: #1B2228; color: #fff; padding: 10px 16px;
+               display: flex; gap: 12px; align-items: center; }
+  header.bar a { color: var(--pt-green); text-decoration: none; }
+  #stage { position: relative; background: #fafafa; }
+  .controls {
+    position: absolute; left: 16px; top: 16px;
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 6px;
+    padding: 12px; z-index: 10; display: flex; flex-direction: column; gap: 6px;
+  }
+  .controls button {
+    background: #f3f4f6; border: 1px solid #e5e7eb; padding: 6px 10px;
+    font-size: 11px; border-radius: 4px; cursor: pointer; min-width: 140px;
+  }
+  .controls button:hover { background: #e5e7eb; }
+  #log {
+    position: absolute; right: 16px; bottom: 16px; max-width: 280px;
+    background: rgba(0,0,0,0.78); color: #cce; padding: 10px 12px;
+    border-radius: 4px; font: 11px Menlo, monospace;
+    max-height: 140px; overflow: auto;
+  }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three":          "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/":  "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+}}
+</script>
+</head><body>
+<header class="bar">
+  <strong>viewport</strong>
+  <span style="opacity:.6">standalone demo</span>
+  <span style="flex:1"></span>
+  <a href="viewport.spec.html">Run spec ↗</a>
+  <a href="../index.html">All widgets ↗</a>
+</header>
+<div id="stage">
+  <div class="controls">
+    <button id="spawn">Spawn cube</button>
+    <button id="spawn-sphere">Spawn sphere</button>
+    <button id="fit">Fit to all</button>
+    <button id="screenshot">Screenshot</button>
+    <button id="bg">Toggle background</button>
+    <button id="clear">Clear all</button>
+  </div>
+  <div id="log"></div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { init as initViewport } from '../../widgets/viewport.js';
+
+const log = (...args) => {
+  const el = document.getElementById('log');
+  el.innerHTML += args.join(' ') + '<br>';
+  el.scrollTop = el.scrollHeight;
+};
+
+const stage = document.getElementById('stage');
+const handle = await initViewport({ mount: stage });
+window.__viewport = handle;
+log('viewport ready · scene · camera · renderer · render-loop');
+
+handle.on('change', e => log('change → ' + e.kind));
+
+const mat = new THREE.MeshStandardMaterial({ color: 0x3aafa9, roughness: 0.4 });
+let dark = false;
+
+document.getElementById('spawn').addEventListener('click', () => {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(4, 4, 4), mat.clone());
+  m.position.set(Math.random()*20-10, Math.random()*4, Math.random()*20-10);
+  m.material.color.setHSL(Math.random(), 0.6, 0.5);
+  handle.api.attach(m);
+});
+document.getElementById('spawn-sphere').addEventListener('click', () => {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(2.5, 24, 16), mat.clone());
+  m.position.set(Math.random()*20-10, Math.random()*4+2, Math.random()*20-10);
+  m.material.color.setHSL(Math.random(), 0.6, 0.5);
+  handle.api.attach(m);
+});
+document.getElementById('fit').addEventListener('click', () => {
+  const ok = handle.api.fit();
+  log('fit → ' + (ok ? 'done' : 'no objects'));
+});
+document.getElementById('screenshot').addEventListener('click', () => {
+  const url = handle.api.screenshot();
+  log('screenshot → ' + url.length + ' bytes');
+  // Open in new tab
+  const w = window.open();
+  if (w) w.document.write(`<img src="${url}" style="max-width:100%">`);
+});
+document.getElementById('bg').addEventListener('click', () => {
+  dark = !dark;
+  handle.api.setBackground(dark ? 0x0e1117 : 0xfafafa);
+});
+document.getElementById('clear').addEventListener('click', () => {
+  const root = handle.api.getRoot();
+  while (root.children.length) {
+    const c = root.children[0];
+    handle.api.detach(c);
+  }
+  log('cleared all objects');
+});
+</script>
+</body></html>

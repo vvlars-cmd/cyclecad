@@ -1,0 +1,61 @@
+{
+  "$schema": "https://cyclecad.com/schemas/machine-catalog.v1.json",
+  "vendor": "Penta Machine",
+  "vendorUrl": "https://www.pentamachine.com/",
+  "kineticControlWiki": "https://pentamachine.atlassian.net/wiki/spaces/KCUR/overview",
+  "gCodeReference": "https://pentamachine.atlassian.net/wiki/spaces/KCUR/pages/1774551045/Kinetic+Control+-+G+Code+Overview",
+  "post": "shared/postprocessors/penta-machine.cps",
+  "extension": "ngc",
+  "controller": "Kinetic Control",
+  "models": [
+    {
+      "id": "v2-50",
+      "name": "Pocket NC V2-50",
+      "kind": "5-axis-mill",
+      "default": true,
+      "tcpc": true,
+      "envelope": {
+        "X": { "travel_in": 4.55, "travel_mm": 115.5, "min_in": -2.00, "max_in": 2.55 },
+        "Y": { "travel_in": 5.00, "travel_mm": 128.3, "min_in": -2.50, "max_in": 2.50 },
+        "Z": { "travel_in": 3.55, "travel_mm": 90.1, "note": "tool/holder/spindle dependent" },
+        "A": { "min_deg": -25, "max_deg": 135, "kind": "limited" },
+        "B": { "min_deg": -9999, "max_deg": 9999, "kind": "continuous" }
+      },
+      "spindle": { "max_rpm": 10000, "taper": "ER11", "controlMode": "M3 / M5" },
+      "feedrate": { "max_xy_mm_min": 1500, "max_z_mm_min": 1000, "max_a_deg_min": 6000, "max_b_deg_min": 36000 }
+    },
+    {
+      "id": "solo",
+      "name": "Penta Solo",
+      "kind": "5-axis-mill",
+      "tcpc": true,
+      "envelope": "see-vendor",
+      "notes": "Penta Solo — flagship 5-axis. Envelope spec via Penta Machine; uses same post."
+    },
+    {
+      "id": "v2-10",
+      "name": "Pocket NC V2-10",
+      "kind": "5-axis-mill",
+      "tcpc": true,
+      "envelope": "see-vendor",
+      "notes": "Smaller-table V2 variant. Same controller, same post, smaller XY."
+    },
+    {
+      "id": "v2-8l",
+      "name": "Pocket NC V2-8L",
+      "kind": "5-axis-mill",
+      "tcpc": "optional",
+      "envelope": "see-vendor",
+      "notes": "Long-Z variant. TCPC defaults OFF; requires advanced-software-upgrade."
+    },
+    {
+      "id": "v1",
+      "name": "Pocket NC V1",
+      "kind": "5-axis-mill",
+      "tcpc": "optional",
+      "envelope": "see-vendor",
+      "notes": "Legacy V1. TCPC available only after Kinetic Control upgrade."
+    }
+  ],
+  "_source": "Machine envelope for V2-50 sourced from Matt @ Penta Machine, 2026-04-27. Other models marked see-vendor pending official spec sheets."
+}

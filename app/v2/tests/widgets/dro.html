@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>dro · standalone demo</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  body { margin: 0; height: 100vh; display: grid; grid-template-rows: auto 1fr;
+         font: 13px/1.5 Roboto, -apple-system, BlinkMacSystemFont, sans-serif; }
+  header.bar { background: #1B2228; color: #fff; padding: 10px 16px;
+               display: flex; align-items: center; gap: 12px;
+               font: 500 13px Roboto, sans-serif; }
+  header.bar a { color: var(--pt-green, #10B981); text-decoration: none; }
+  header.bar a:hover { text-decoration: underline; }
+
+  /* simulated machine viewport — looks like a CAM 3D scene */
+  #stage {
+    position: relative;
+    background:
+      linear-gradient(180deg, #f3f4f6 0%, #e5e7eb 100%);
+    overflow: hidden;
+  }
+  #stage::before {
+    /* faux grid floor */
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(0deg,   transparent 0, transparent 39px, #d1d5db 39px, #d1d5db 40px),
+      linear-gradient(90deg,  transparent 0, transparent 39px, #d1d5db 39px, #d1d5db 40px);
+    background-size: 40px 40px;
+    transform: perspective(800px) rotateX(60deg) translateZ(0);
+    transform-origin: center 65%;
+    opacity: 0.4;
+  }
+  #stage::after {
+    /* faux part — a box-ish shape on the grid */
+    content: '';
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 200px; height: 120px;
+    margin-left: -100px; margin-top: -60px;
+    background: linear-gradient(135deg, #3AAFA9 0%, #2E8E89 100%);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+    transform: rotate(-3deg);
+    border-radius: 4px;
+  }
+
+  /* control panel — slider-driven inputs */
+  .controls {
+    position: absolute; left: 24px; top: 24px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb; border-radius: 8px;
+    padding: 16px 18px;
+    width: 280px; z-index: 10;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  }
+  .controls h3 { font: 600 13px Georgia, serif; margin: 0 0 10px;
+                 color: #1B2228; letter-spacing: 1px; text-transform: uppercase; }
+  .axis-row { display: grid; grid-template-columns: 18px 1fr 60px;
+              gap: 10px; align-items: center; margin: 6px 0; font-size: 12px; }
+  .axis-row label { font: 600 12px Menlo, monospace; color: #6b7280; }
+  .axis-row input[type=range] { width: 100%; accent-color: #10B981; }
+  .axis-row .val {
+    text-align: right; font: 600 12px Menlo, monospace;
+    color: #1B2228; font-variant-numeric: tabular-nums;
+  }
+  .controls .actions { display: flex; gap: 8px; margin-top: 10px; }
+  .controls .actions button {
+    flex: 1; background: #f3f4f6; border: 1px solid #e5e7eb;
+    padding: 6px 10px; border-radius: 4px; font-size: 11px;
+    cursor: pointer; color: #1B2228; font-weight: 500;
+  }
+  .controls .actions button:hover { background: #e5e7eb; }
+
+  #log {
+    position: absolute; left: 24px; bottom: 24px;
+    max-width: 340px; max-height: 160px; overflow: auto;
+    background: rgba(0,0,0,0.78); color: #cce;
+    padding: 10px 12px; border-radius: 4px;
+    font: 11px/1.5 Menlo, Monaco, Consolas, monospace;
+  }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <strong>dro</strong>
+  <span style="opacity:.6">standalone demo</span>
+  <span style="flex:1"></span>
+  <a href="dro.spec.html">Run spec ↗</a>
+  <a href="../index.html">All widgets ↗</a>
+</header>
+
+<div id="stage">
+
+  <!-- left side: slider panel that drives the DRO -->
+  <div class="controls">
+    <h3>HOST  ·  push state</h3>
+    <div class="axis-row">
+      <label for="sx">X</label>
+      <input id="sx" type="range" min="-50" max="50" step="0.01" value="0" />
+      <div class="val" id="vx">0.0000</div>
+    </div>
+    <div class="axis-row">
+      <label for="sy">Y</label>
+      <input id="sy" type="range" min="-50" max="50" step="0.01" value="0" />
+      <div class="val" id="vy">0.0000</div>
+    </div>
+    <div class="axis-row">
+      <label for="sz">Z</label>
+      <input id="sz" type="range" min="-10" max="10" step="0.01" value="0" />
+      <div class="val" id="vz">0.0000</div>
+    </div>
+    <div class="axis-row">
+      <label for="sa">A</label>
+      <input id="sa" type="range" min="-180" max="180" step="0.1" value="0" />
+      <div class="val" id="va">0.0000</div>
+    </div>
+    <div class="axis-row">
+      <label for="sb">B</label>
+      <input id="sb" type="range" min="-180" max="180" step="0.1" value="0" />
+      <div class="val" id="vb">0.0000</div>
+    </div>
+    <div class="axis-row">
+      <label for="st">T</label>
+      <input id="st" type="range" min="0" max="20" step="1" value="1" />
+      <div class="val" id="vt">1</div>
+    </div>
+    <div class="actions">
+      <button id="anim">Animate</button>
+      <button id="zero">Zero</button>
+      <button id="randomize">Randomize</button>
+    </div>
+  </div>
+
+  <!-- the DRO widget itself mounts inside #stage at top:96px right:20px (default) -->
+
+  <div id="log"></div>
+</div>
+
+<script type="module">
+import { init as initDro } from '../../widgets/dro.js';
+
+const log = (...args) => {
+  const el = document.getElementById('log');
+  el.innerHTML += args.join(' ') + '<br>';
+  el.scrollTop = el.scrollHeight;
+};
+
+const stage = document.getElementById('stage');
+
+// Mount the DRO. It will absolute-position itself top-right inside #stage.
+const handle = await initDro({ mount: stage, units: 'inch' });
+window.__dro = handle;
+
+handle.on('change', e => {
+  // keep the side-panel value cells in sync with what DRO is showing
+  for (const ax of ['x','y','z','a','b']) {
+    const cell = document.getElementById('v' + ax);
+    if (cell) cell.textContent = (e.state[ax] || 0).toFixed(4);
+  }
+  document.getElementById('vt').textContent = String(e.state.t || 0);
+});
+handle.on('units', e => log(`units → <b>${e.units}</b>`));
+
+log('dro ready. Move the sliders, click "switch" on the DRO to toggle inch/mm.');
+
+// ── Wire the slider panel to call handle.api.update() ───────────────────
+function readState() {
+  return {
+    x: +document.getElementById('sx').value,
+    y: +document.getElementById('sy').value,
+    z: +document.getElementById('sz').value,
+    a: +document.getElementById('sa').value,
+    b: +document.getElementById('sb').value,
+    t: +document.getElementById('st').value,
+  };
+}
+function pushState() { handle.api.update(readState()); }
+
+['sx','sy','sz','sa','sb','st'].forEach(id => {
+  document.getElementById(id).addEventListener('input', pushState);
+});
+
+// helper buttons
+document.getElementById('zero').addEventListener('click', () => {
+  ['sx','sy','sz','sa','sb'].forEach(id => { document.getElementById(id).value = 0; });
+  document.getElementById('st').value = 0;
+  pushState();
+  log('zero');
+});
+document.getElementById('randomize').addEventListener('click', () => {
+  document.getElementById('sx').value = (Math.random() * 80 - 40).toFixed(3);
+  document.getElementById('sy').value = (Math.random() * 80 - 40).toFixed(3);
+  document.getElementById('sz').value = (Math.random() * 16 - 8).toFixed(3);
+  document.getElementById('sa').value = (Math.random() * 360 - 180).toFixed(2);
+  document.getElementById('sb').value = (Math.random() * 360 - 180).toFixed(2);
+  document.getElementById('st').value = Math.floor(Math.random() * 20);
+  pushState();
+  log('randomize');
+});
+
+// animate — sweep all axes for 5 seconds
+let animTimer = null;
+document.getElementById('anim').addEventListener('click', () => {
+  if (animTimer) {
+    clearInterval(animTimer); animTimer = null;
+    log('animation stopped');
+    return;
+  }
+  log('animation started — 5s sweep');
+  const t0 = performance.now();
+  animTimer = setInterval(() => {
+    const t = (performance.now() - t0) / 1000;
+    if (t > 5) { clearInterval(animTimer); animTimer = null; log('animation done'); return; }
+    document.getElementById('sx').value = (40 * Math.sin(t * 1.0)).toFixed(3);
+    document.getElementById('sy').value = (40 * Math.cos(t * 0.8)).toFixed(3);
+    document.getElementById('sz').value = (8  * Math.sin(t * 0.5)).toFixed(3);
+    document.getElementById('sa').value = (180 * Math.sin(t * 0.3)).toFixed(2);
+    document.getElementById('sb').value = (180 * Math.cos(t * 0.4)).toFixed(2);
+    pushState();
+  }, 33);
+});
+
+// initial paint
+pushState();
+</script>
+</body>
+</html>

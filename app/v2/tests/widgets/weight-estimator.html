@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8" /><title>weight-estimator · demo</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  body { margin: 0; height: 100vh; display: grid; grid-template-rows: auto 1fr; font: 13px Inter, sans-serif; }
+  header.bar { background: #1B2228; color: #fff; padding: 10px 16px; display: flex; gap: 12px; align-items: center; }
+  header.bar a { color: var(--pt-green); text-decoration: none; }
+  #stage { position: relative; background: #fafafa; }
+  .controls { position: absolute; left: 16px; top: 16px; background: #fff; border: 1px solid #e5e7eb;
+              border-radius: 6px; padding: 12px; z-index: 10; display: flex; flex-direction: column; gap: 6px; max-width: 240px; }
+  .controls button, .controls select { font-size: 11px; padding: 4px 8px; min-width: 140px; }
+  #log { position: absolute; right: 16px; bottom: 16px; max-width: 280px; max-height: 160px; overflow: auto;
+          background: rgba(0,0,0,0.78); color: #cce; padding: 10px 12px; border-radius: 4px;
+          font: 11px Menlo, monospace; }
+</style>
+<script type="importmap">{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+}}</script>
+</head><body>
+<header class="bar"><strong>weight-estimator</strong><span style="opacity:.6">demo</span><span style="flex:1"></span>
+  <a href="weight-estimator.spec.html">Run spec ↗</a> <a href="../index.html">All ↗</a></header>
+<div id="stage"><div class="controls"><select id="mat"><option>steel</option><option>aluminum</option><option>brass</option><option>titanium</option><option>abs</option></select><button id="est">Estimate</button></div><div id="log"></div></div>
+<script type="module">
+const log = (...a) => { const el = document.getElementById('log'); el.innerHTML += a.join(' ') + '<br>'; el.scrollTop = el.scrollHeight; };
+import * as THREE from 'three';
+import { init as initViewport } from '../../widgets/viewport.js';
+import { init as initWt }      from '../../widgets/weight-estimator.js';
+const stage = document.getElementById('stage');
+const v = await initViewport({ mount: stage });
+const m = new THREE.Mesh(new THREE.BoxGeometry(50,30,20), new THREE.MeshStandardMaterial({ color: 0x808080 }));
+m.position.y = 15; v.api.attach(m);
+const wt = await initWt({ target: v.api.getRoot(), unit: 'mm' });
+window.__wt = wt;
+document.getElementById('est').addEventListener('click', () => {
+  const r = wt.api.estimate(document.getElementById('mat').value);
+  if (r) log(`<b>${r.mat}</b> · vol ${r.volume.toFixed(1)} cm³ · mass <b>${r.mass.toFixed(1)} g</b>`);
+});
+</script>
+</body></html>

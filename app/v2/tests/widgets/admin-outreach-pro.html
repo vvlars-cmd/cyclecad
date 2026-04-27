@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8" /><title>admin-outreach-pro · demo</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  body { margin: 0; height: 100vh; display: grid; grid-template-rows: auto 1fr; font: 13px Inter, sans-serif; background: #fafafa; }
+  header.bar { background: #0E1117; color: #fff; padding: 10px 16px; display: flex; gap: 12px; align-items: center; }
+  header.bar a { color: #FF6B2B; text-decoration: none; }
+  #stage { position: relative; padding: 18px; overflow: auto; }
+  #log { position: fixed; right: 16px; bottom: 16px; max-width: 320px; max-height: 200px; overflow: auto;
+         background: rgba(0,0,0,0.82); color: #cce; padding: 10px 12px; border-radius: 4px;
+         font: 11px Menlo, monospace; z-index: 99; }
+</style>
+<script type="importmap">{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+}}</script>
+</head><body>
+<header class="bar">
+  <strong style="letter-spacing:3px;color:#FF6B2B">OUTREACH·PRO</strong>
+  <span style="opacity:.6">admin · demo</span>
+  <span style="flex:1"></span>
+  <a href="admin-outreach-pro.spec.html">Run spec ↗</a>
+  <a href="../index.html">All ↗</a>
+</header>
+<div id="stage"></div>
+<div id="log">events:</div>
+<script type="module">
+const log = (...a) => { const el = document.getElementById('log'); el.innerHTML += '<br>' + a.join(' '); el.scrollTop = el.scrollHeight; };
+import { init as initOP } from '../../widgets/admin-outreach-pro.js';
+const stage = document.getElementById('stage');
+const op = await initOP({
+  mount: stage,
+  app:   'admin',
+  meter: { charge: async (w, m, p) => log(`meter: ${w}.${m}`) },
+});
+window.__op = op;
+['tabChange','leadUpdate','campaignStart','campaignPause','scrapeStart','scrapeProgress','draftComposed','replySent','integrationConnected','change','error'].forEach(ev => {
+  op.on(ev, p => log(ev + ' · ' + JSON.stringify(p).slice(0, 80)));
+});
+log('mounted · 10 tabs · 25 demo leads · 4 campaigns · 6 threads');
+log('try: op.api.setActiveTab("composer") in the console');
+</script>
+</body></html>

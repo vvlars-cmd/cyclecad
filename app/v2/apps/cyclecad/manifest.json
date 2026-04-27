@@ -1,0 +1,48 @@
+{
+  "app": "cyclecad",
+  "tier": "designer",
+  "minRole": "viewer",
+  "preload": [
+    "viewport", "cam-nav", "grid", "axes", "lights", "picking", "ui-primitives"
+  ],
+  "lazy": [
+    "sketch-line", "sketch-rect", "sketch-circle", "sketch-arc",
+    "sketch-polyline", "sketch-point", "sketch-constraint-solver",
+
+    "extrude", "revolve", "sweep", "loft", "hole", "thread",
+    "fillet", "chamfer", "shell", "draft", "scale",
+    "combine", "split", "mirror", "pattern",
+
+    "t-spline", "nurbs", "sheet-bend", "flange", "unfold",
+
+    "mate-constraint", "joint", "motion-study", "explode-slider",
+    "interference", "contact-set",
+
+    "section-cut", "wireframe", "fit-to-selection", "transparency",
+    "isolate", "screenshot", "blueprint", "hero-shot", "dro",
+
+    "step-import", "glb-loader", "occt-wasm", "dwg",
+    "stl-export", "obj-export", "gltf-export", "dxf-export",
+    "pdf-export", "bom-csv",
+
+    "cam-contour", "pocket", "drill", "adaptive", "face",
+    "cam-chamfer", "bore", "post-processor", "gcode-editor",
+    "sim-executor", "rockhopper-bridge", "jog-pad",
+    "machine-picker", "playback",
+
+    "measure", "weight-estimator", "part-comparison",
+    "fea", "thermal", "modal", "buckling",
+    "design-review", "dfm-check", "ai-engineering-analyst",
+
+    "ai-copilot", "ai-render", "ai-narrator", "ai-vision-id",
+    "ai-chatbot", "ai-search-nl", "ai-batch-scan",
+
+    "annotations", "qr-code", "manual-builder", "tech-report",
+    "kb-article", "standards-id", "mcmaster-search", "kiri-moto-export",
+
+    "admin-settings",
+
+    "token-balance", "token-recharge"
+  ],
+  "tokenPlan": "pro"
+}

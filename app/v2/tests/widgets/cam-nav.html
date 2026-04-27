@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>cam-nav · standalone demo</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  body { margin: 0; height: 100vh; display: grid; grid-template-rows: auto 1fr; }
+  header.bar {
+    background: #1B2228; color: #fff; padding: 10px 16px;
+    display: flex; align-items: center; gap: 12px; font: 500 13px Roboto, sans-serif;
+  }
+  header.bar a { color: var(--pt-green); text-decoration: none; }
+  header.bar a:hover { text-decoration: underline; }
+  #stage { position: relative; background: #fff; }
+  canvas#three { display: block; width: 100%; height: 100%; }
+  #log {
+    position: absolute; left: 16px; bottom: 16px; max-width: 360px;
+    background: rgba(0,0,0,0.78); color: #cce; padding: 10px 12px; border-radius: 4px;
+    font: 11px/1.5 Consolas, Menlo, monospace; max-height: 160px; overflow: auto;
+  }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+}}
+</script>
+</head>
+<body>
+<header class="bar">
+  <strong>cam-nav</strong>
+  <span style="opacity:.6">standalone demo</span>
+  <span style="flex:1"></span>
+  <a href="cam-nav.spec.html">Run spec ↗</a>
+  <a href="../index.html">All widgets ↗</a>
+</header>
+<div id="stage">
+  <canvas id="three"></canvas>
+  <div id="log"></div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
+import { init as initCamNav } from '../../widgets/cam-nav.js';
+
+const log = (...args) => {
+  const el = document.getElementById('log');
+  el.innerHTML += args.join(' ') + '<br>';
+  el.scrollTop = el.scrollHeight;
+};
+
+const stage  = document.getElementById('stage');
+const canvas = document.getElementById('three');
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xFFFFFF);
+
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 5000);
+camera.position.set(28, 22, 34);
+const controls = new TrackballControls(camera, canvas);
+controls.target.set(0, 0, 0);
+controls.rotateSpeed = 4;
+controls.zoomSpeed = 1.4;
+controls.staticMoving = false;
+controls.dynamicDampingFactor = 0.15;
+
+scene.add(new THREE.AmbientLight(0xFFFFFF, 1.2));
+const dir = new THREE.DirectionalLight(0xFFFFFF, 0.8);
+dir.position.set(8, 25, 10);
+scene.add(dir);
+
+// Demo geometry: a few labelled named meshes so parenting can target them.
+const root = new THREE.Group();
+root.name = 'demoRoot';
+scene.add(root);
+
+const matA = new THREE.MeshStandardMaterial({ color: 0xD4A843, roughness: 0.4 });
+const matB = new THREE.MeshStandardMaterial({ color: 0x3AAFA9, roughness: 0.4 });
+const matC = new THREE.MeshStandardMaterial({ color: 0x10B981, roughness: 0.4 });
+
+const part = new THREE.Mesh(new THREE.BoxGeometry(6, 6, 6), matA);
+part.name = 'part';
+part.position.set(-10, 3, 0);
+root.add(part);
+
+const spindle = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 8, 24), matB);
+spindle.name = 'spindle';
+spindle.rotation.z = Math.PI / 2;
+spindle.position.set(8, 4, 0);
+root.add(spindle);
+
+const tool = new THREE.Mesh(new THREE.ConeGeometry(0.5, 2, 16), matC);
+tool.name = 'tool';
+tool.position.set(2, 4, 0);
+tool.rotation.z = -Math.PI / 2;
+root.add(tool);
+
+const grid = new THREE.GridHelper(40, 40, 0xB0B0B0, 0xE0E0E0);
+scene.add(grid);
+
+function resize() {
+  const r = stage.getBoundingClientRect();
+  renderer.setSize(r.width, r.height, false);
+  camera.aspect = r.width / r.height;
+  camera.updateProjectionMatrix();
+  if (typeof controls.handleResize === 'function') controls.handleResize();
+}
+resize();
+window.addEventListener('resize', resize);
+
+(function tick() {
+  controls.update();
+  renderer.render(scene, camera);
+  requestAnimationFrame(tick);
+})();
+
+// Mount cam-nav with parenting targets + log every event
+const handle = await initCamNav({
+  mount: stage,
+  scene, camera, controls,
+  root,
+  parents: [
+    { label: 'Base',    target: '__origin__' },
+    { label: 'Part',    target: part },
+    { label: 'Spindle', target: spindle },
+    { label: 'Tool',    target: tool },
+  ],
+});
+window.__camnav = handle;
+
+handle.on('projection', e => log(`projection → <b>${e.mode}</b>`));
+handle.on('parent',     e => log(`parent →     <b>${e.label}</b>`));
+handle.on('change',     e => log(`change →     ${e.kind}` + (e.url ? ' (data-url ' + e.url.length + ' bytes)' : '')));
+
+log('cam-nav ready. Try the floating buttons + drag the cube.');
+</script>
+</body>
+</html>

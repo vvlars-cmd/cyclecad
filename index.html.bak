@@ -780,7 +780,7 @@ section.journeys::before {
       <a href="#stages">Lifecycle</a>
       <a href="#products">Products</a>
       <a href="https://github.com/vvlars-cmd/cyclecad#readme">Docs</a>
-      <a href="/app/v2/" class="cta">Launch →</a>
+      <a href="/app/" class="cta">Launch →</a>
     </div>
   </div>
 </nav>
@@ -800,7 +800,7 @@ section.journeys::before {
       Generate 5-axis CAM · Stream G-code to your machine — all in one tab, all in the browser.
     </p>
     <div class="hero-ctas">
-      <a href="/app/v2/" class="btn btn-primary">Launch the app <span class="arrow">→</span></a>
+      <a href="/app/" class="btn btn-primary">Launch the app <span class="arrow">→</span></a>
       <a href="#stages" class="btn btn-secondary">See how it works</a>
     </div>
   </div>
@@ -1457,7 +1457,7 @@ section.journeys::before {
         </ul>
         <div class="p-cta">
           <a href="/cyclecad.html" class="primary">Learn more</a>
-          <a href="/app/v2/">Launch</a>
+          <a href="/app/">Launch</a>
         </div>
       </div>
 
@@ -1519,7 +1519,7 @@ section.journeys::before {
     <h2>Start anywhere. <em>Ship</em> everywhere.</h2>
     <p>Use cycleCAD to design. Use ExplodeView to present. Use Pentacad to machine. Or use all three in sequence — the suite is built to flow.</p>
     <div class="ctas">
-      <a href="/app/v2/" class="btn btn-primary">Launch the app <span class="arrow">→</span></a>
+      <a href="/app/" class="btn btn-primary">Launch the app <span class="arrow">→</span></a>
       <a href="/pentacad.html" class="btn btn-secondary">Explore Pentacad</a>
     </div>
   </div>

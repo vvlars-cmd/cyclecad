@@ -1,0 +1,27 @@
+{
+  "app": "explodeview",
+  "tier": "designer",
+  "minRole": "viewer",
+  "preload": [
+    "viewport",
+    "cam-nav",
+    "grid",
+    "axes",
+    "lights",
+    "picking",
+    "ui-primitives",
+    "explode-slider"
+  ],
+  "lazy": [
+    "section-cut", "wireframe", "fit-to-selection", "transparency",
+    "isolate", "screenshot", "blueprint", "hero-shot",
+    "step-import", "glb-loader", "stl-export",
+    "bom-csv", "annotations", "qr-code", "manual-builder",
+    "tech-report", "kb-article", "standards-id",
+    "mcmaster-search", "kiri-moto-export",
+    "measure", "weight-estimator", "part-comparison",
+    "ai-render", "ai-narrator", "ai-vision-id", "ai-chatbot",
+    "ai-search-nl", "ai-batch-scan"
+  ],
+  "tokenPlan": "free"
+}

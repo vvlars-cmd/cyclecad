@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>cycleCAD Suite — widget testbed</title>
+<link rel="stylesheet" href="../shared/theme.css">
+<style>
+  body { background: #FAFAFA; padding: 32px 0;
+         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif; }
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 0 24px; }
+  h1 { font: 600 28px Georgia, serif; margin: 0 0 6px 0; }
+  .lede { color: var(--pt-muted); margin: 0 0 28px; max-width: 880px; }
+  .toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 18px; flex-wrap: wrap; }
+  .toolbar button {
+    background: var(--pt-green); color: #fff; border: none; padding: 8px 14px;
+    font: 500 12px Inter, sans-serif; text-transform: uppercase;
+    letter-spacing: 0.05em; border-radius: 4px; cursor: pointer;
+  }
+  .toolbar button:hover { background: var(--pt-green-dark); }
+  .toolbar button.secondary { background: #E5E7EB; color: #1B2228; }
+  .toolbar button.secondary:hover { background: #d1d5db; }
+  .legend { font-size: 11px; color: var(--pt-muted); }
+  .counts { display: flex; gap: 12px; margin-left: auto; font-size: 13px; }
+  .counts .count { font-weight: 600; }
+  .counts .count.live  { color: var(--pt-green); }
+  .counts .count.stub  { color: #64748B; }
+  .counts .count.draft { color: var(--pt-violet, #8B5CF6); }
+
+  .filter-row {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    margin-bottom: 18px; padding-bottom: 12px;
+    border-bottom: 1px solid var(--pt-rule);
+  }
+  .filter-row .chip {
+    font-size: 11px; padding: 4px 10px; border-radius: 12px;
+    background: #fff; border: 1px solid var(--pt-rule);
+    cursor: pointer; user-select: none;
+    font-family: 'Inter', sans-serif; color: var(--pt-ink);
+  }
+  .filter-row .chip:hover { background: #f3f4f6; }
+  .filter-row .chip.active {
+    background: var(--pt-ink); color: #fff; border-color: var(--pt-ink);
+  }
+
+  /* category headers */
+  h2.cat-h {
+    font: 600 13px Inter, sans-serif; letter-spacing: 3px; color: var(--pt-muted);
+    text-transform: uppercase; margin: 28px 0 10px;
+  }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+
+  .card {
+    background: #fff;
+    border: 1px solid var(--pt-rule);
+    border-radius: 6px;
+    padding: 14px 16px 12px;
+    display: flex; flex-direction: column; gap: 4px;
+    transition: box-shadow 120ms;
+  }
+  .card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .card .name { font: 600 14px 'Menlo', Consolas, monospace; color: var(--pt-ink); }
+  .card .desc { font-size: 11.5px; color: var(--pt-muted); line-height: 1.4; min-height: 32px; }
+  .card .links { margin-top: 6px; display: flex; gap: 12px; align-items: center; font-size: 11px; }
+  .card .links a {
+    color: var(--pt-green); text-decoration: none; font-weight: 500;
+  }
+  .card .links a:hover { text-decoration: underline; }
+  .pill {
+    display: inline-block; padding: 1px 8px; border-radius: 8px;
+    font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em; color: #fff;
+  }
+  .pill.live  { background: var(--pt-green); }
+  .pill.stub  { background: #64748B; }
+  .pill.draft { background: var(--pt-violet, #8B5CF6); }
+  .pill.deprecated { background: #991B1B; }
+  .header-row { display: flex; align-items: center; gap: 8px; }
+  .results {
+    display: flex; gap: 6px; align-items: center;
+    margin-top: 4px; font-size: 10.5px; color: var(--pt-muted);
+  }
+  .results .dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; }
+  .results .dot.pass { background: #16A34A; }
+  .results .dot.fail { background: #DC2626; }
+  .results .dot.skip { background: #94A3B8; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Widget testbed</h1>
+    <p class="lede">
+      Every widget runs alone. Click <b>Demo</b> for the visible standalone page;
+      click <b>Test</b> to open the automated spec runner. <b>Run all</b> opens each spec
+      in a hidden iframe and aggregates pass/fail.
+    </p>
+  </header>
+
+  <div class="toolbar">
+    <button id="run-all">Run all tests</button>
+    <button class="secondary" id="reset">Reset results</button>
+    <span class="legend">
+      <span class="pill live">live</span> ready &nbsp;
+      <span class="pill draft">draft</span> partial &nbsp;
+      <span class="pill stub">stub</span> not yet
+    </span>
+    <div class="counts" id="counts"></div>
+  </div>
+
+  <div class="filter-row" id="filters">
+    <span class="chip active" data-filter="all">all</span>
+    <span class="chip" data-filter="live">live</span>
+    <span class="chip" data-filter="stub">stub</span>
+    <!-- category chips appended dynamically -->
+  </div>
+
+  <div id="cats"></div>
+</div>
+
+<script type="module">
+import { registry, names, counts as countsFn, byStatus } from '../shared/widget-registry.js';
+
+const grid = document.getElementById('cats');
+const filterRow = document.getElementById('filters');
+
+// Category labels
+const CATEGORIES = {
+  'kernel':         'Kernel',
+  'universal-3d':   'Universal 3D',
+  'visualization':  'Visualization',
+  'sketch':         'Sketch',
+  'solid':          'Solid ops',
+  'assembly':       'Assembly',
+  'surface':        'Surface / sheet',
+  'cam':            'CAM',
+  'analysis':       'Analysis',
+  'ai':             'AI',
+  'documentation':  'Documentation',
+  'io':             'I/O',
+  'admin':          'Admin',
+};
+
+// Group widgets by category preserving registry order
+function buildCards() {
+  grid.innerHTML = '';
+  const groups = {};
+  for (const name of names()) {
+    const w = registry[name];
+    const cat = w.category || 'misc';
+    (groups[cat] = groups[cat] || []).push({ name, ...w });
+  }
+  for (const [cat, list] of Object.entries(groups)) {
+    const h = document.createElement('h2');
+    h.className = 'cat-h';
+    h.dataset.cat = cat;
+    h.textContent = `${CATEGORIES[cat] || cat}  ·  ${list.length} widget${list.length>1?'s':''}`;
+    grid.appendChild(h);
+
+    const grid2 = document.createElement('div');
+    grid2.className = 'grid';
+    grid2.dataset.cat = cat;
+
+    list.forEach(w => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.dataset.name   = w.name;
+      card.dataset.cat    = cat;
+      card.dataset.status = w.status;
+      card.innerHTML = `
+        <div class="header-row">
+          <span class="name">${w.name}</span>
+          <span class="pill ${w.status}">${w.status}</span>
+        </div>
+        <div class="desc">${w.description || ''}</div>
+        <div class="links">
+          <a href="widgets/${w.name}.html"      target="_blank" rel="noopener">Demo ↗</a>
+          <a href="widgets/${w.name}.spec.html" target="_blank" rel="noopener">Test ↗</a>
+          <a href="widgets/${w.name}.spec.html?embed=1" target="_blank" rel="noopener">Run inline</a>
+        </div>
+        <div class="results"><span class="dot" data-result></span><span data-text>not run</span></div>
+      `;
+      grid2.appendChild(card);
+    });
+    grid.appendChild(grid2);
+  }
+
+  // Append category filter chips
+  for (const cat of Object.keys(groups)) {
+    const c = document.createElement('span');
+    c.className = 'chip';
+    c.dataset.filter = `cat:${cat}`;
+    c.textContent = CATEGORIES[cat] || cat;
+    filterRow.appendChild(c);
+  }
+}
+
+function paintCounts() {
+  const c = countsFn();
+  document.getElementById('counts').innerHTML = `
+    <span><span class="count live">${c.live}</span> live</span>
+    <span><span class="count draft">${c.draft}</span> draft</span>
+    <span><span class="count stub">${c.stub}</span> stub</span>
+    <span style="opacity:.6">·</span>
+    <span><b>${c.total}</b> total</span>
+  `;
+}
+
+buildCards();
+paintCounts();
+
+// Filter chips
+filterRow.addEventListener('click', e => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  filterRow.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  const f = chip.dataset.filter;
+
+  document.querySelectorAll('.card').forEach(card => {
+    let show = true;
+    if (f === 'live')   show = card.dataset.status === 'live';
+    if (f === 'stub')   show = card.dataset.status === 'stub';
+    if (f.startsWith('cat:')) show = card.dataset.cat === f.slice(4);
+    card.style.display = show ? '' : 'none';
+  });
+  document.querySelectorAll('h2.cat-h, .grid').forEach(el => {
+    if (f === 'all') el.style.display = '';
+    else if (f.startsWith('cat:')) el.style.display = el.dataset.cat === f.slice(4) ? '' : 'none';
+    else el.style.display = '';
+  });
+});
+
+document.getElementById('reset').addEventListener('click', () => {
+  document.querySelectorAll('[data-result]').forEach(d => d.className = 'dot');
+  document.querySelectorAll('[data-text]').forEach(t => t.textContent = 'not run');
+});
+
+document.getElementById('run-all').addEventListener('click', runAll);
+
+async function runAll() {
+  const liveOrDraft = names().filter(n =>
+    registry[n].status === 'live' || registry[n].status === 'draft'
+  );
+  for (const name of names()) {
+    const w = registry[name];
+    if (w.status === 'stub') {
+      setStatus(name, 'skip', 'stub — no spec yet');
+      continue;
+    }
+    setStatus(name, '', 'running…');
+    try {
+      const result = await runSpec(name);
+      setStatus(name, result.pass ? 'pass' : 'fail',
+        `${result.pass ? '✓' : '✗'} ${result.passed}/${result.total}` +
+        (result.error ? ` — ${result.error}` : ''));
+    } catch (e) {
+      setStatus(name, 'fail', String(e.message || e).slice(0, 80));
+    }
+  }
+}
+
+function setStatus(name, cls, text) {
+  const card = document.querySelector(`.card[data-name="${name}"]`);
+  if (!card) return;
+  card.querySelector('[data-result]').className = 'dot ' + (cls || '');
+  card.querySelector('[data-text]').textContent = text;
+}
+
+function runSpec(name) {
+  return new Promise((resolve, reject) => {
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position: fixed; left: -9999px; width: 800px; height: 600px;';
+    iframe.src = `widgets/${name}.spec.html?embed=1`;
+    let settled = false;
+    const onMsg = (e) => {
+      if (e.source !== iframe.contentWindow) return;
+      if (!e.data || e.data.type !== 'spec-result') return;
+      settled = true;
+      window.removeEventListener('message', onMsg);
+      iframe.remove();
+      resolve(e.data);
+    };
+    window.addEventListener('message', onMsg);
+    iframe.onerror = (err) => { if (!settled) { iframe.remove(); reject(err); } };
+    document.body.appendChild(iframe);
+    setTimeout(() => {
+      if (settled) return;
+      iframe.remove();
+      window.removeEventListener('message', onMsg);
+      reject(new Error('timeout'));
+    }, 10000);
+  });
+}
+</script>
+</body>
+</html>

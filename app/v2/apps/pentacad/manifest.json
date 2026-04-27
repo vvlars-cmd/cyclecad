@@ -1,0 +1,28 @@
+{
+  "app": "pentacad",
+  "tier": "engineer",
+  "minRole": "viewer",
+  "preload": [
+    "viewport",
+    "cam-nav",
+    "grid",
+    "axes",
+    "lights",
+    "picking",
+    "ui-primitives",
+    "dro",
+    "gcode-editor",
+    "playback"
+  ],
+  "lazy": [
+    "section-cut", "fit-to-selection", "screenshot",
+    "machine-picker",
+    "cam-contour", "cam-pocket", "cam-drill",
+    "cam-adaptive", "cam-face", "cam-chamfer", "cam-bore",
+    "post-processor", "sim-executor",
+    "rockhopper-bridge", "jog-pad",
+    "step-import", "glb-loader",
+    "measure", "ai-chatbot"
+  ],
+  "tokenPlan": "pro"
+}

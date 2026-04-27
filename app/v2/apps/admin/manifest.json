@@ -1,0 +1,31 @@
+{
+  "app": "admin",
+  "tier": "admin",
+  "minRole": "admin",
+  "preload": ["ui-primitives", "token-balance", "admin-overview"],
+  "lazy": [
+    "admin-realtime",
+    "admin-health",
+    "admin-ops",
+
+    "admin-tokens",
+    "admin-audit",
+    "admin-payments",
+    "token-recharge",
+
+    "admin-users",
+    "admin-api-keys",
+    "admin-tenants",
+    "admin-compliance",
+
+    "admin-widget-registry",
+    "admin-widget-stats",
+    "admin-workflows",
+    "admin-agents",
+    "admin-marketplace",
+
+    "admin-files",
+    "admin-repo"
+  ],
+  "tokenPlan": "admin-bypass"
+}

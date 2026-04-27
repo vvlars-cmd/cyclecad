@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>cycleCAD Suite — Tutorial</title>
+<link rel="stylesheet" href="../shared/theme.css">
+<style>
+  body {
+    margin: 0; min-height: 100vh; background: #FAFAFA;
+    font: 14px/1.5 Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--pt-ink);
+  }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
+  header h1 { font: 700 32px Georgia, serif; margin: 0 0 6px; }
+  header p { color: var(--pt-muted); margin: 0 0 24px; max-width: 720px; line-height: 1.5; }
+  .pill {
+    display: inline-block; padding: 2px 10px; border-radius: 12px;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+    color: #fff;
+  }
+  .pill.live { background: var(--pt-green); }
+
+  .progress {
+    display: flex; align-items: center; gap: 12px;
+    margin: 18px 0 28px;
+  }
+  .progress .bar {
+    flex: 1; height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden;
+  }
+  .progress .bar > div {
+    height: 100%; width: 0%; background: var(--pt-green);
+    transition: width 200ms;
+  }
+  .progress .num { font-weight: 600; font-size: 13px; min-width: 60px; text-align: right; }
+
+  /* Step layout */
+  .steps { display: flex; flex-direction: column; gap: 20px; }
+  .step {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+    padding: 24px; display: grid; grid-template-columns: 60px 1fr; gap: 20px;
+    transition: box-shadow 150ms, border-color 150ms;
+  }
+  .step.active { box-shadow: 0 4px 12px rgba(0,0,0,0.06); border-color: var(--pt-green); }
+  .step.done { opacity: 0.7; }
+
+  .step .num-circle {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: #f3f4f6; color: var(--pt-muted);
+    display: flex; align-items: center; justify-content: center;
+    font: 700 20px Georgia, serif;
+  }
+  .step.active .num-circle { background: var(--pt-green); color: #fff; }
+  .step.done .num-circle  { background: var(--pt-green); color: #fff; }
+  .step.done .num-circle::before { content: '✓'; }
+  .step.done .num-circle .num { display: none; }
+
+  .step h2 {
+    font: 600 18px Georgia, serif;
+    margin: 0 0 6px;
+    display: flex; gap: 10px; align-items: center;
+  }
+  .step .widget-tag {
+    font: 600 11px 'Menlo', monospace;
+    background: #f3f4f6; padding: 2px 8px; border-radius: 4px;
+    color: var(--pt-ink);
+  }
+  .step .desc { color: var(--pt-muted); font-size: 13px; margin: 0 0 14px; line-height: 1.5; }
+  .step .checklist { padding-left: 18px; margin: 0 0 14px; font-size: 13px; }
+  .step .checklist li { margin: 4px 0; line-height: 1.5; }
+  .step .actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .step .actions a, .step .actions button {
+    background: #f3f4f6; color: var(--pt-ink); border: 1px solid #e5e7eb;
+    padding: 6px 12px; border-radius: 4px; font-size: 12px;
+    text-decoration: none; cursor: pointer; font-family: inherit;
+  }
+  .step .actions a.primary, .step .actions button.primary {
+    background: var(--pt-green); color: #fff; border-color: var(--pt-green);
+  }
+  .step .actions a:hover { background: #e5e7eb; }
+  .step .actions a.primary:hover, .step .actions button.primary:hover {
+    background: var(--pt-green-dark);
+  }
+  .step .result {
+    margin-top: 8px; font: 12px Menlo, monospace;
+  }
+  .step .result.pass { color: #166534; }
+  .step .result.fail { color: #991B1B; }
+  .step .result.run  { color: var(--pt-muted); }
+
+  .toolbar {
+    display: flex; gap: 12px; margin-bottom: 20px;
+    background: #fff; padding: 14px 18px; border-radius: 8px;
+    border: 1px solid #e5e7eb;
+  }
+  .toolbar button {
+    background: var(--pt-green); color: #fff; border: none;
+    padding: 8px 14px; border-radius: 4px; font-size: 12px; cursor: pointer;
+    text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;
+  }
+  .toolbar button:hover { background: var(--pt-green-dark); }
+  .toolbar button.secondary { background: #f3f4f6; color: var(--pt-ink); }
+  .toolbar .stat {
+    background: #f9fafb; padding: 6px 12px; border-radius: 4px;
+    font-size: 12px; font-weight: 600;
+  }
+  .toolbar .stat.pass { color: #166534; }
+  .toolbar .stat.fail { color: #991B1B; }
+  .toolbar .stat.skip { color: #94A3B8; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>cycleCAD Suite — Tutorial</h1>
+    <p>
+      Walk through every live widget. Each step has an <b>open demo</b> button that opens
+      the widget in a new tab so you can hand-drive it, plus a <b>run spec</b> button that
+      runs the automated test suite inline. The <b>autonomous agent</b> button up top runs
+      the entire tutorial end-to-end without you clicking anything.
+    </p>
+  </header>
+
+  <div class="progress">
+    <div class="bar"><div id="bar"></div></div>
+    <div class="num" id="prog">0 / 0</div>
+  </div>
+
+  <div class="toolbar">
+    <button id="run-agent">▶ Run agent (auto)</button>
+    <button id="run-all" class="secondary">Run all specs</button>
+    <button id="reset" class="secondary">Reset</button>
+    <span class="stat pass" id="stat-pass">0 pass</span>
+    <span class="stat fail" id="stat-fail">0 fail</span>
+    <span class="stat skip" id="stat-skip">0 skipped</span>
+    <span style="flex:1"></span>
+    <a href="index.html" style="font-size: 12px; color: var(--pt-green); align-self:center; text-decoration:none">Dashboard ↗</a>
+    <a href="runner.html" style="font-size: 12px; color: var(--pt-green); align-self:center; text-decoration:none">Runner ↗</a>
+  </div>
+
+  <div class="steps" id="steps"></div>
+</div>
+
+<script type="module">
+import { registry } from '../shared/widget-registry.js';
+
+// Walk through live widgets in registry order, with hand-written checklists per widget.
+const checklists = {
+  'cam-nav': [
+    'You see a 3D scene with a few labelled meshes (part · spindle · tool).',
+    'A small textured cube is visible in the top-right — that is the ViewCube.',
+    'Click any face of the ViewCube — the camera snaps to that view.',
+    'Click the projection FAB — switches between perspective / orthographic.',
+    'Click the screenshot FAB — a PNG data URL is logged.',
+  ],
+  'dro': [
+    'You see a translucent overlay with X / Y / Z / A / B / T values.',
+    'Move the X / Y / Z sliders in the side panel — DRO updates instantly.',
+    'Click the unit toggle button on the DRO — values multiply by 25.4.',
+    'Click "Animate" — values sweep automatically for 5 seconds.',
+    'Click "Randomize" — values jump to random.',
+  ],
+  'viewport': [
+    'You see an empty fafafa-coloured viewport with a grid floor.',
+    'Click "Spawn cube" / "Spawn sphere" — meshes appear at random positions.',
+    'Click "Fit to all" — camera zooms to enclose everything.',
+    'Click "Screenshot" — opens a PNG in a new tab.',
+    'Click "Toggle background" — switches between light and dark.',
+  ],
+  'grid': [
+    'You see a white viewport with a grid plane.',
+    'Click "Toggle visible" — grid disappears and reappears.',
+    'Drag the Size slider — grid extents grow / shrink.',
+    'Drag the Divs slider — grid gets denser / coarser.',
+  ],
+  'axes': [
+    'You see a small XYZ gizmo at the origin (red X · green Y · blue Z).',
+    'Click "Toggle" — gizmo disappears and reappears.',
+    'Drag the Size slider — gizmo grows / shrinks.',
+  ],
+  'lights': [
+    'You see a metallic icosahedron sitting on a grid.',
+    'Click "Studio" / "Sun" / "Sketch" — surface shading visibly changes.',
+    'Studio = even ambient + key + fill. Sun = harsh key. Sketch = flat ambient.',
+  ],
+  'picking': [
+    'You see 8 colored cubes scattered on a grid.',
+    'Click any cube — it logs the cube name and gets a glow highlight.',
+    'Click empty space — nothing logs (raycaster missed).',
+  ],
+  'section-cut': [
+    'You see a sphere on the grid — initially uncut.',
+    'Drag the Offset slider — sphere is sliced through.',
+    'Click X / Y / Z buttons — slice axis changes.',
+    'Click "Flip" — slice flips to the other side.',
+    'Click "Toggle" — clipping turns off, sphere is whole again.',
+  ],
+  'wireframe': [
+    'You see 5 colored shapes (icosahedrons).',
+    'Click "Toggle wireframe" — all surfaces render as wireframes.',
+    'Click again — restored to solid.',
+  ],
+  'fit-to-selection': [
+    'You see a red cube far away from the origin (around X = 20).',
+    'Click "Fit to all" — camera animates to enclose every object.',
+    'Click "Fit to red cube" — camera animates to focus on the red cube.',
+    'Click "Reset camera" — camera snaps back to default iso position.',
+  ],
+  'transparency': [
+    'You see 6 colored cubes lined up.',
+    'Drag the Opacity slider down — cubes become see-through.',
+    'Click "Reset" — all cubes go back to fully opaque.',
+  ],
+  'isolate': [
+    'You see a red cube + green sphere + 3 grey shapes.',
+    'Click "Isolate red cube" — only the cube remains visible.',
+    'Click "Isolate green sphere" — only the sphere remains.',
+    'Click "Restore all" — every shape is visible again.',
+  ],
+  'screenshot': [
+    'You see a gold cube on a grid.',
+    'Click "Capture PNG" — a thumbnail appears in the top-right preview pane.',
+    'Click "Download PNG" — a file downloads as cyclecad-screenshot.png.',
+  ],
+  'blueprint': [
+    'You see 3 colored shapes on a white background.',
+    'Click "Toggle blueprint" — background turns deep blue, shapes become white wireframes.',
+    'Click again — restored to original colors and white background.',
+  ],
+  'bom-csv': [
+    'You see 6 randomly-sized boxes labelled part-01 … part-06.',
+    'Click "Show CSV" — the CSV table appears in the log panel.',
+    'Click "Download CSV" — a cyclecad-bom.csv downloads with rows for every mesh.',
+  ],
+  'stl-export': [
+    'You see a gold torus knot.',
+    'Click "Download ASCII" — demo.stl downloads (text-based, large).',
+    'Click "Download Binary" — demo-binary.stl downloads (compact, ~80 % smaller).',
+  ],
+  'obj-export': [
+    'You see a teal icosahedron.',
+    'Click "Download OBJ" — cyclecad-export.obj downloads with vertex + face data.',
+  ],
+  'gltf-export': [
+    'You see 4 colored cubes.',
+    'Click "Download glTF JSON" — human-readable .gltf downloads.',
+    'Click "Download GLB" — single-file binary .glb downloads (compact).',
+  ],
+  'glb-loader': [
+    'Drag-and-drop a .glb or .gltf file anywhere on the viewport.',
+    'The mesh appears, camera fits to it. Log shows "loaded · N children".',
+    'Click "Unload all" — every loaded model is removed and disposed.',
+  ],
+  'measure': [
+    'You see 4 cubes lined up at X = -12, -4, 4, 12.',
+    'Click "Enable measure" — cursor changes to crosshair.',
+    'Click two points (any two cubes) — yellow line drawn, distance shown bottom-left.',
+    'Click "Reset" — line + readout cleared.',
+  ],
+  'weight-estimator': [
+    'You see one large grey box (50 × 30 × 20 mm).',
+    'Pick a material in the dropdown (steel · aluminum · brass · titanium · ABS).',
+    'Click "Estimate" — log shows volume in cm³ and mass in grams.',
+    'Steel = ~235 g  ·  Aluminum = ~81 g  ·  ABS = ~31 g.',
+  ],
+  'annotations': [
+    'You see 4 colored cubes.',
+    'Click "Enable adding" — cursor turns into crosshair.',
+    'Click any cube — a pink pin + "note" label appears.',
+    'Click the label — edit prompt opens.',
+    'Right-click a label — pin removed.',
+    '"Clear all" wipes every pin.',
+  ],
+  'hero-shot': [
+    'You see a metallic gold torus knot under studio lighting.',
+    'Click "Render 4 angles" — iso · front · top · side renders appear as thumbnails.',
+    'Click "Download all" — 4 PNGs download (cyclecad-hero-iso.png · -front.png · -top.png · -side.png).',
+  ],
+  'admin-overview': [
+    'You see KPI cards: Tx · 24h · Actors · 24h · $CYCLE spent · Admin bypass.',
+    'A "RECENT LEDGER · 30" table at the bottom — empty until you make a charge.',
+    'Click REFRESH — pulls /api/meter/ledger and /api/health (only with Docker stack up).',
+    'If admin key is missing, a warning appears in the header.',
+  ],
+};
+
+// Order — registry order (every live widget gets a step)
+const ORDER = Object.keys(registry).filter(name => {
+  // Skip kernel pseudo-entries (loader, meter, ui-primitives)
+  return registry[name].category && registry[name].category !== 'kernel';
+});
+
+// Build steps
+const stepsEl = document.getElementById('steps');
+const liveWidgets = ORDER.filter(n => registry[n] && registry[n].status === 'live');
+
+let idx = 1;
+for (const name of liveWidgets) {
+  const w = registry[name];
+  const checks = checklists[name] || [];
+  const step = document.createElement('div');
+  step.className = 'step';
+  step.dataset.widget = name;
+  step.innerHTML = `
+    <div class="num-circle"><span class="num">${idx}</span></div>
+    <div>
+      <h2>
+        ${stepTitle(name)}
+        <span class="widget-tag">${name}</span>
+        <span class="pill live">live</span>
+      </h2>
+      <div class="desc">${w.description}</div>
+      <ol class="checklist">
+        ${checks.map(c => `<li>${c}</li>`).join('')}
+      </ol>
+      <div class="actions">
+        <a class="primary" href="widgets/${name}.html"      target="_blank">Open demo  ↗</a>
+        <a               href="widgets/${name}.spec.html" target="_blank">Open spec  ↗</a>
+        <button data-action="run-spec">Run spec inline</button>
+      </div>
+      <div class="result run" data-result>not run</div>
+    </div>
+  `;
+  stepsEl.appendChild(step);
+  idx++;
+}
+
+document.getElementById('prog').textContent = `0 / ${liveWidgets.length}`;
+
+// nice human titles
+function stepTitle(name) {
+  const t = {
+    'viewport':         'See the viewport in action',
+    'cam-nav':          'Navigate the camera',
+    'grid':             'Show / hide the grid',
+    'axes':             'Toggle XYZ axes',
+    'lights':           'Switch lighting modes',
+    'picking':          'Pick a part with the mouse',
+    'section-cut':      'Slice a sphere with a clipping plane',
+    'wireframe':        'Toggle wireframe on every mesh',
+    'fit-to-selection': 'Fit the camera to a selection',
+    'transparency':     'Drag the opacity slider',
+    'isolate':          'Isolate one part, hide the rest',
+    'screenshot':       'Capture a PNG of the viewport',
+    'blueprint':        'Switch to blueprint theme',
+    'hero-shot':        'Render 4 angles for marketing',
+    'glb-loader':       'Drop a GLB to load it',
+    'stl-export':       'Export the scene as STL',
+    'obj-export':       'Export the scene as OBJ',
+    'gltf-export':      'Export the scene as glTF / GLB',
+    'bom-csv':          'Generate a Bill-of-Materials CSV',
+    'measure':          'Click two points to measure',
+    'weight-estimator': 'Estimate part weight by material',
+    'annotations':      'Pin a 3D note to a part',
+    'dro':              'Drive the digital read-out',
+    'admin-overview':   'Operator dashboard — KPIs + ledger',
+  };
+  return t[name] || `Try ${name}`;
+}
+
+// =====================================================================
+// Run-spec inline button
+// =====================================================================
+document.querySelectorAll('button[data-action="run-spec"]').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const step = btn.closest('.step');
+    const name = step.dataset.widget;
+    const result = step.querySelector('[data-result]');
+    result.className = 'result run'; result.textContent = 'running…';
+    try {
+      const r = await runSpec(name);
+      if (r.pass) {
+        result.className = 'result pass'; result.textContent = `✓ PASS · ${r.passed}/${r.total}`;
+        step.classList.add('done'); step.classList.remove('active');
+      } else {
+        result.className = 'result fail'; result.textContent = `✗ FAIL · ${r.passed}/${r.total}`;
+      }
+    } catch (e) {
+      result.className = 'result fail';
+      result.textContent = '✗ ' + (e.message || e);
+    }
+    updateStats();
+  });
+});
+
+// =====================================================================
+// Run-all + agent
+// =====================================================================
+document.getElementById('run-all').addEventListener('click', runAllSpecs);
+document.getElementById('run-agent').addEventListener('click', runAgent);
+document.getElementById('reset').addEventListener('click', () => {
+  document.querySelectorAll('.step').forEach(s => {
+    s.classList.remove('active', 'done');
+    const r = s.querySelector('[data-result]');
+    r.className = 'result run'; r.textContent = 'not run';
+  });
+  updateStats();
+});
+
+async function runAllSpecs() {
+  for (const step of document.querySelectorAll('.step')) {
+    const btn = step.querySelector('button[data-action="run-spec"]');
+    btn.click();
+    await waitForResult(step);
+  }
+}
+
+async function runAgent() {
+  // Same as run-all but with a delay between steps + per-step "active" indicator
+  for (const step of document.querySelectorAll('.step')) {
+    document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+    step.classList.add('active');
+    step.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    await new Promise(r => setTimeout(r, 600));
+    const btn = step.querySelector('button[data-action="run-spec"]');
+    btn.click();
+    await waitForResult(step);
+    await new Promise(r => setTimeout(r, 200));
+  }
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+}
+
+function waitForResult(step) {
+  return new Promise((resolve) => {
+    const r = step.querySelector('[data-result]');
+    const check = () => {
+      if (!r.classList.contains('run')) resolve();
+      else setTimeout(check, 100);
+    };
+    check();
+  });
+}
+
+function updateStats() {
+  let pass = 0, fail = 0, skip = 0;
+  document.querySelectorAll('[data-result]').forEach(r => {
+    if (r.classList.contains('pass')) pass++;
+    else if (r.classList.contains('fail')) fail++;
+    else skip++;
+  });
+  document.getElementById('stat-pass').textContent = `${pass} pass`;
+  document.getElementById('stat-fail').textContent = `${fail} fail`;
+  document.getElementById('stat-skip').textContent = `${skip} skipped`;
+  const total = pass + fail + skip;
+  const done = pass + fail;
+  document.getElementById('prog').textContent = `${done} / ${total}`;
+  document.getElementById('bar').style.width = total ? `${Math.round(done/total*100)}%` : '0%';
+}
+
+function runSpec(name) {
+  return new Promise((resolve, reject) => {
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed;left:-9999px;width:800px;height:600px';
+    iframe.src = `widgets/${name}.spec.html?embed=1`;
+    let settled = false;
+    const onMsg = (e) => {
+      if (e.source !== iframe.contentWindow) return;
+      if (!e.data || e.data.type !== 'spec-result') return;
+      settled = true;
+      window.removeEventListener('message', onMsg);
+      iframe.remove();
+      resolve(e.data);
+    };
+    window.addEventListener('message', onMsg);
+    iframe.onerror = (err) => { if (!settled) { iframe.remove(); reject(err); } };
+    document.body.appendChild(iframe);
+    setTimeout(() => {
+      if (settled) return;
+      iframe.remove();
+      window.removeEventListener('message', onMsg);
+      reject(new Error('timeout (10s)'));
+    }, 10000);
+  });
+}
+
+updateStats();
+</script>
+</body>
+</html>

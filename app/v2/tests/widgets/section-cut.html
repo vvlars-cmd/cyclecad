@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8" /><title>section-cut · demo</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  body { margin: 0; height: 100vh; display: grid; grid-template-rows: auto 1fr; font: 13px Inter, sans-serif; }
+  header.bar { background: #1B2228; color: #fff; padding: 10px 16px; display: flex; gap: 12px; align-items: center; }
+  header.bar a { color: var(--pt-green); text-decoration: none; }
+  #stage { position: relative; background: #fafafa; }
+  .controls { position: absolute; left: 16px; top: 16px; background: #fff;
+              border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; z-index: 10;
+              display: flex; flex-direction: column; gap: 6px; }
+  .controls button { font-size: 11px; padding: 4px 8px; min-width: 140px; }
+</style>
+<script type="importmap">{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+}}</script>
+</head><body>
+<header class="bar"><strong>section-cut</strong><span style="opacity:.6">demo</span><span style="flex:1"></span>
+  <a href="section-cut.spec.html">Run spec ↗</a> <a href="../index.html">All ↗</a></header>
+<div id="stage">
+  <div class="controls">
+    <button id="toggle">Toggle</button>
+    <button data-axis="x">X axis</button>
+    <button data-axis="y">Y axis</button>
+    <button data-axis="z">Z axis</button>
+    <label>Offset: <input id="offset" type="range" min="-10" max="10" step="0.1" value="0"></label>
+    <button id="flip">Flip</button>
+  </div>
+</div>
+<script type="module">
+import * as THREE from 'three';
+import { init as initViewport } from '../../widgets/viewport.js';
+import { init as initSection }  from '../../widgets/section-cut.js';
+import { init as initGrid }     from '../../widgets/grid.js';
+const stage = document.getElementById('stage');
+const v = await initViewport({ mount: stage });
+await initGrid({ scene: v.api.getScene() });
+const m = new THREE.Mesh(new THREE.SphereGeometry(5, 32, 16), new THREE.MeshStandardMaterial({ color: 0xd4a843 }));
+m.position.y = 5; v.api.attach(m);
+const sc = await initSection({ scene: v.api.getScene(), renderer: v.api.getRenderer() });
+window.__sc = sc;
+document.getElementById('toggle').addEventListener('click', () => sc.api.toggle());
+document.querySelectorAll('button[data-axis]').forEach(b => b.addEventListener('click', () => sc.api.setAxis(b.dataset.axis)));
+document.getElementById('offset').addEventListener('input', e => sc.api.setOffset(+e.target.value));
+document.getElementById('flip').addEventListener('click', () => sc.api.flip());
+sc.api.enable();
+</script>
+</body></html>

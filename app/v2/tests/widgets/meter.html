@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>meter · standalone demo</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  body { margin: 0; height: 100vh; display: grid; grid-template-rows: auto 1fr; }
+  header.bar { background:#1B2228; color:#fff; padding:10px 16px; display:flex; gap:12px;
+    align-items:center; font:500 13px Roboto, sans-serif; }
+  header.bar a { color: var(--pt-green); text-decoration:none; }
+  #stage { position:relative; background:#fff; padding:48px; }
+  .placeholder {
+    border: 2px dashed var(--pt-rule); border-radius: 8px; padding: 48px;
+    text-align: center; color: var(--pt-muted);
+    font: 14px/1.6 Roboto, sans-serif;
+  }
+  .placeholder code { background:#f3f4f6; padding:2px 6px; border-radius:3px; }
+</style>
+</head>
+<body>
+<header class="bar">
+  <strong>meter</strong>
+  <span style="opacity:.6">standalone demo (stub)</span>
+  <span style="flex:1"></span>
+  <a href="meter.spec.html">Run spec ↗</a>
+  <a href="../index.html">All widgets ↗</a>
+</header>
+<div id="stage">
+  <div class="placeholder">
+    <p><b>meter</b></p>
+    <p>Token meter — local ledger fallback when /api/meter is unreachable.</p>
+    <p>Implementation pending. Once <code>widgets/meter.js</code> exports an <code>init(opts)</code>,
+    this page will instantiate it on a host scene.</p>
+  </div>
+</div>
+</body>
+</html>

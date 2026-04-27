@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8" /><title>gltf-export · demo</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  body { margin: 0; height: 100vh; display: grid; grid-template-rows: auto 1fr; font: 13px Inter, sans-serif; }
+  header.bar { background: #1B2228; color: #fff; padding: 10px 16px; display: flex; gap: 12px; align-items: center; }
+  header.bar a { color: var(--pt-green); text-decoration: none; }
+  #stage { position: relative; background: #fafafa; }
+  .controls { position: absolute; left: 16px; top: 16px; background: #fff; border: 1px solid #e5e7eb;
+              border-radius: 6px; padding: 12px; z-index: 10; display: flex; flex-direction: column; gap: 6px; max-width: 240px; }
+  .controls button, .controls select { font-size: 11px; padding: 4px 8px; min-width: 140px; }
+  #log { position: absolute; right: 16px; bottom: 16px; max-width: 280px; max-height: 160px; overflow: auto;
+          background: rgba(0,0,0,0.78); color: #cce; padding: 10px 12px; border-radius: 4px;
+          font: 11px Menlo, monospace; }
+</style>
+<script type="importmap">{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+}}</script>
+</head><body>
+<header class="bar"><strong>gltf-export</strong><span style="opacity:.6">demo</span><span style="flex:1"></span>
+  <a href="gltf-export.spec.html">Run spec ↗</a> <a href="../index.html">All ↗</a></header>
+<div id="stage"><div class="controls"><button id="json">Download glTF JSON</button><button id="bin">Download GLB</button></div><div id="log"></div></div>
+<script type="module">
+const log = (...a) => { const el = document.getElementById('log'); el.innerHTML += a.join(' ') + '<br>'; el.scrollTop = el.scrollHeight; };
+import * as THREE from 'three';
+import { init as initViewport } from '../../widgets/viewport.js';
+import { init as initGltf }    from '../../widgets/gltf-export.js';
+const stage = document.getElementById('stage');
+const v = await initViewport({ mount: stage });
+for (let i = 0; i < 4; i++) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(2,2,2), new THREE.MeshStandardMaterial({ color: new THREE.Color().setHSL(i/4,.6,.5) }));
+  m.position.x = (i-1.5)*3; v.api.attach(m);
+}
+const g = await initGltf({ target: v.api.getRoot() });
+window.__gltf = g;
+document.getElementById('json').addEventListener('click', async () => { const r = await g.api.download(); log(`gltf → ${r.bytes} bytes`); });
+document.getElementById('bin').addEventListener('click', async () => { const r = await g.api.download(null, { binary: true }); log(`glb → ${r.bytes} bytes`); });
+</script>
+</body></html>

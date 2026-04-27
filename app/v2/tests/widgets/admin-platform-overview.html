@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8" /><title>admin-platform-overview · demo</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  body { margin: 0; height: 100vh; display: grid; grid-template-rows: auto 1fr; font: 13px Inter, sans-serif; }
+  header.bar { background: #1B2228; color: #fff; padding: 10px 16px; display: flex; gap: 12px; align-items: center; }
+  header.bar a { color: var(--pt-green); text-decoration: none; }
+  #stage { position: relative; background: #fafafa; padding: 0; overflow: auto; }
+  #log { position: fixed; right: 16px; bottom: 16px; max-width: 320px; max-height: 200px; overflow: auto;
+          background: rgba(0,0,0,0.78); color: #cce; padding: 10px 12px; border-radius: 4px;
+          font: 11px Menlo, monospace; z-index: 50; }
+  .ctl { position: fixed; left: 16px; bottom: 16px; background: #fff; border: 1px solid #e5e7eb;
+         border-radius: 6px; padding: 10px; z-index: 50; display: flex; flex-direction: column; gap: 4px; }
+  .ctl button { font-size: 11px; padding: 4px 8px; cursor: pointer; background: #f3f4f6;
+                border: 1px solid #e5e7eb; border-radius: 4px; }
+  .ctl button:hover { background: #e5e7eb; }
+</style>
+<script type="importmap">{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+}}</script>
+</head><body>
+<header class="bar"><strong>admin-platform-overview</strong><span style="opacity:.6">demo</span><span style="flex:1"></span>
+  <a href="admin-platform-overview.spec.html">Run spec ↗</a> <a href="../index.html">All ↗</a></header>
+<div id="stage"></div>
+<div id="log"></div>
+<div class="ctl">
+  <button data-go="docker">→ Docker</button>
+  <button data-go="mcp">→ MCP</button>
+  <button data-go="web">→ Web</button>
+  <button data-go="db">→ Databases</button>
+  <button data-go="channels">→ Channels</button>
+  <button data-refresh>Refresh</button>
+</div>
+<script type="module">
+const log = (...a) => { const el = document.getElementById('log'); el.innerHTML += a.join(' ') + '<br>'; el.scrollTop = el.scrollHeight; };
+import { init as initWidget } from '../../widgets/admin-platform-overview.js';
+const stage = document.getElementById('stage');
+try { localStorage.setItem('cyclecad.adminKey', 'rk_dev_local'); } catch {}
+const w = await initWidget({ mount: stage });
+window.__w = w;
+log('admin-platform-overview mounted · 5 tabs available · backend endpoints fall back to demo data');
+w.on('tab',     e => log(`tab → ${e.tab}`));
+w.on('refresh', e => log(`refresh ${e.tab} · src=${typeof e.source === 'string' ? e.source : JSON.stringify(e.source)}`));
+w.on('result',  e => log(`result · ${e.kind || ''} ${JSON.stringify(e).slice(0, 80)}`));
+document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => w.api.setTab(b.getAttribute('data-go'))));
+document.querySelector('[data-refresh]').addEventListener('click', () => w.api.refresh());
+</script>
+</body></html>

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>cycleCAD Suite — run all specs</title>
+<link rel="stylesheet" href="../shared/theme.css">
+<style>
+  body { background: #FAFAFA; padding: 32px;
+         font-family: 'Inter', -apple-system, sans-serif; }
+  h1 { font: 600 24px Georgia, serif; margin: 0 0 8px; }
+  .lede { color: var(--pt-muted); margin: 0 0 18px; font-size: 13px; }
+  .toolbar {
+    display: flex; gap: 12px; align-items: center; margin-bottom: 18px;
+    padding-bottom: 12px; border-bottom: 1px solid var(--pt-rule);
+    position: sticky; top: 0; background: #FAFAFA; z-index: 5;
+  }
+  button {
+    background: var(--pt-green); color: #fff; border: none; padding: 8px 14px;
+    font: 500 12px Inter, sans-serif; text-transform: uppercase;
+    letter-spacing: 0.05em; border-radius: 4px; cursor: pointer;
+  }
+  button:hover { background: var(--pt-green-dark); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .stat {
+    font: 600 13px Inter, sans-serif;
+    padding: 4px 10px; border-radius: 12px; color: #fff;
+  }
+  .stat.run  { background: #64748B; }
+  .stat.pass { background: #16A34A; }
+  .stat.fail { background: #DC2626; }
+  .stat.skip { background: #94A3B8; }
+
+  .progress {
+    width: 100%; height: 4px; background: #e5e7eb;
+    border-radius: 2px; margin-bottom: 18px; overflow: hidden;
+  }
+  .progress > div { height: 100%; background: var(--pt-green); width: 0%; transition: width 200ms; }
+
+  table { border-collapse: collapse; width: 100%; max-width: 1100px; font-size: 12.5px; }
+  thead th {
+    text-align: left; padding: 8px 10px; background: #fff;
+    font-weight: 500; color: var(--pt-muted);
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em;
+    border-bottom: 1px solid var(--pt-rule);
+    position: sticky; top: 60px; z-index: 4;
+  }
+  tbody td { padding: 7px 10px; border-bottom: 1px solid var(--pt-rule); vertical-align: middle; }
+  td.name { font-family: 'Menlo', Consolas, monospace; font-size: 11.5px; }
+  td.pass { color: #16A34A; font-weight: 600; }
+  td.fail { color: #DC2626; font-weight: 600; }
+  td.skip { color: #94A3B8; }
+  td.run  { color: #64748B; font-style: italic; }
+  td.detail { color: var(--pt-muted); font-size: 11px; }
+
+  .json-export {
+    margin-top: 24px;
+    background: #0F172A; color: #e2e8f0;
+    padding: 16px; border-radius: 6px;
+    font: 11px Menlo, Consolas, monospace;
+    max-height: 200px; overflow: auto; display: none;
+  }
+</style>
+</head>
+<body>
+
+<h1>Run all specs</h1>
+<p class="lede">Walks every widget marked <code>live</code> or <code>draft</code> in the registry, opens its spec in a hidden iframe, collects the result. Stub widgets are skipped.</p>
+
+<div class="toolbar">
+  <button id="run">Run all</button>
+  <button id="stop" disabled>Stop</button>
+  <button id="export-json">Export JSON</button>
+  <span class="stat run" id="stat-run">— / —</span>
+  <span class="stat pass" id="stat-pass">0 pass</span>
+  <span class="stat fail" id="stat-fail">0 fail</span>
+  <span class="stat skip" id="stat-skip">0 skip</span>
+</div>
+
+<div class="progress"><div id="bar"></div></div>
+
+<table>
+  <thead><tr>
+    <th style="width:38%">Widget</th>
+    <th style="width:10%">Status</th>
+    <th style="width:14%">Result</th>
+    <th>Detail</th>
+  </tr></thead>
+  <tbody id="rows"></tbody>
+</table>
+
+<pre class="json-export" id="json-export"></pre>
+
+<script type="module">
+import { registry, names } from '../shared/widget-registry.js';
+
+const rowsEl  = document.getElementById('rows');
+const runBtn  = document.getElementById('run');
+const stopBtn = document.getElementById('stop');
+const expBtn  = document.getElementById('export-json');
+const bar     = document.getElementById('bar');
+const exportEl= document.getElementById('json-export');
+
+const stat = {
+  run:  document.getElementById('stat-run'),
+  pass: document.getElementById('stat-pass'),
+  fail: document.getElementById('stat-fail'),
+  skip: document.getElementById('stat-skip'),
+};
+
+let stopRequested = false;
+const results = {};
+
+function buildRows() {
+  rowsEl.innerHTML = '';
+  for (const name of names()) {
+    const w = registry[name];
+    const tr = document.createElement('tr');
+    tr.dataset.name = name;
+    tr.innerHTML = `
+      <td class="name">${name}</td>
+      <td><span style="color:${
+        w.status==='live' ? '#16A34A' :
+        w.status==='draft' ? '#8B5CF6' :
+        '#64748B'};font-weight:600">${w.status}</span></td>
+      <td class="result skip">skipped</td>
+      <td class="detail"></td>
+    `;
+    rowsEl.appendChild(tr);
+  }
+}
+buildRows();
+
+runBtn.addEventListener('click', runAll);
+stopBtn.addEventListener('click', () => { stopRequested = true; });
+expBtn.addEventListener('click', () => {
+  exportEl.style.display = 'block';
+  exportEl.textContent = JSON.stringify({
+    timestamp: new Date().toISOString(),
+    total: names().length,
+    results,
+  }, null, 2);
+});
+
+async function runAll() {
+  stopRequested = false;
+  runBtn.disabled = true;
+  stopBtn.disabled = false;
+  Object.assign(results, {});
+  let pass = 0, fail = 0, skip = 0;
+  let i = 0;
+
+  const list = names();
+  stat.run.textContent = `0 / ${list.length}`;
+  bar.style.width = '0%';
+
+  for (const name of list) {
+    if (stopRequested) break;
+    i++;
+    bar.style.width = `${Math.round(i / list.length * 100)}%`;
+    stat.run.textContent = `${i} / ${list.length}`;
+    const w = registry[name];
+
+    if (w.status === 'stub') {
+      mark(name, 'skip', 'skipped', '— stub, no spec');
+      results[name] = { pass: false, skipped: true, status: w.status };
+      skip++;
+      stat.skip.textContent = `${skip} skip`;
+      continue;
+    }
+
+    mark(name, 'run', 'running…', '');
+    try {
+      const r = await runSpec(name);
+      results[name] = r;
+      if (r.pass) {
+        pass++;
+        mark(name, 'pass', 'PASS', `${r.passed}/${r.total}`);
+      } else {
+        fail++;
+        mark(name, 'fail', 'FAIL', `${r.passed}/${r.total}` + (r.error ? ` — ${r.error}` : ''));
+      }
+    } catch (err) {
+      fail++;
+      mark(name, 'fail', 'FAIL', String(err.message || err).slice(0, 100));
+      results[name] = { pass: false, error: String(err.message || err), status: w.status };
+    }
+    stat.pass.textContent = `${pass} pass`;
+    stat.fail.textContent = `${fail} fail`;
+  }
+
+  runBtn.disabled = false;
+  stopBtn.disabled = true;
+}
+
+function mark(name, cls, label, detail) {
+  const tr = rowsEl.querySelector(`tr[data-name="${name}"]`);
+  if (!tr) return;
+  const r = tr.querySelector('.result');
+  r.className = 'result ' + cls;
+  r.textContent = label;
+  tr.querySelector('.detail').textContent = detail || '';
+}
+
+function runSpec(name) {
+  return new Promise((resolve, reject) => {
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed;left:-9999px;width:800px;height:600px';
+    iframe.src = `widgets/${name}.spec.html?embed=1`;
+    let settled = false;
+    const onMsg = (e) => {
+      if (e.source !== iframe.contentWindow) return;
+      if (!e.data || e.data.type !== 'spec-result') return;
+      settled = true;
+      window.removeEventListener('message', onMsg);
+      iframe.remove();
+      resolve(e.data);
+    };
+    window.addEventListener('message', onMsg);
+    iframe.onerror = (err) => { if (!settled) { iframe.remove(); reject(err); } };
+    document.body.appendChild(iframe);
+    setTimeout(() => {
+      if (settled) return;
+      iframe.remove();
+      window.removeEventListener('message', onMsg);
+      reject(new Error('timeout (10s)'));
+    }, 10000);
+  });
+}
+</script>
+</body>
+</html>

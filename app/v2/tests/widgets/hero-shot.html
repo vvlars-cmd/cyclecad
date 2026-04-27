@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8" /><title>hero-shot · demo</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  body { margin: 0; height: 100vh; display: grid; grid-template-rows: auto 1fr; font: 13px Inter, sans-serif; }
+  header.bar { background: #1B2228; color: #fff; padding: 10px 16px; display: flex; gap: 12px; align-items: center; }
+  header.bar a { color: var(--pt-green); text-decoration: none; }
+  #stage { position: relative; background: #fafafa; }
+  .controls { position: absolute; left: 16px; top: 16px; background: #fff; border: 1px solid #e5e7eb;
+              border-radius: 6px; padding: 12px; z-index: 10; display: flex; flex-direction: column; gap: 6px; max-width: 240px; }
+  .controls button, .controls select { font-size: 11px; padding: 4px 8px; min-width: 140px; }
+  #log { position: absolute; right: 16px; bottom: 16px; max-width: 280px; max-height: 160px; overflow: auto;
+          background: rgba(0,0,0,0.78); color: #cce; padding: 10px 12px; border-radius: 4px;
+          font: 11px Menlo, monospace; }
+</style>
+<script type="importmap">{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+}}</script>
+</head><body>
+<header class="bar"><strong>hero-shot</strong><span style="opacity:.6">demo</span><span style="flex:1"></span>
+  <a href="hero-shot.spec.html">Run spec ↗</a> <a href="../index.html">All ↗</a></header>
+<div id="stage"><div class="controls"><button id="render">Render 4 angles</button><button id="dl">Download all</button><div id="thumbs" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px"></div></div><div id="log"></div></div>
+<script type="module">
+const log = (...a) => { const el = document.getElementById('log'); el.innerHTML += a.join(' ') + '<br>'; el.scrollTop = el.scrollHeight; };
+import * as THREE from 'three';
+import { init as initViewport } from '../../widgets/viewport.js';
+import { init as initHero }    from '../../widgets/hero-shot.js';
+import { init as initGrid }    from '../../widgets/grid.js';
+import { init as initLights }  from '../../widgets/lights.js';
+const stage = document.getElementById('stage');
+const v = await initViewport({ mount: stage });
+await initGrid({ scene: v.api.getScene() });
+await initLights({ scene: v.api.getScene(), mode: 'studio' });
+const m = new THREE.Mesh(new THREE.TorusKnotGeometry(3, 0.8, 100, 16), new THREE.MeshStandardMaterial({ color: 0xd4a843, roughness: 0.4, metalness: 0.6 }));
+m.position.y = 4; v.api.attach(m);
+const h = await initHero({ scene: v.api.getScene(), camera: v.api.getCamera(), renderer: v.api.getRenderer(), target: v.api.getRoot() });
+window.__hero = h;
+document.getElementById('render').addEventListener('click', async () => {
+  log('rendering 4 angles…');
+  const set = await h.api.render();
+  document.getElementById('thumbs').innerHTML = set.map(x => `<img src="${x.url}" style="width:50px;height:50px;border:1px solid #ddd" title="${x.angle}">`).join('');
+  log(`done · ${set.length} angles`);
+});
+document.getElementById('dl').addEventListener('click', async () => { const n = await h.api.download(); log(`downloaded ${n} files`); });
+</script>
+</body></html>

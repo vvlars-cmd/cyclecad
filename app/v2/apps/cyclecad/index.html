@@ -1,0 +1,1614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>cycleCAD — cycleCAD Suite</title>
+
+<!-- Runtime config — must load BEFORE the import map / module imports
+     so window.CYCLECAD_CONFIG is available to shared/meter.js et al. -->
+<script src="config.js"></script>
+
+<script type="importmap">
+{
+  "imports": {
+    "three":         "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
+
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+/* ===== Variables (sourced from original cycleCAD app) ===== */
+:root {
+  --bg-primary: #1e1e1e;
+  --bg-secondary: #252526;
+  --bg-tertiary: #2d2d30;
+  --border-color: #3e3e42;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --text-muted: #696969;
+  --accent-blue: #0284C7;
+  --accent-blue-hover: #0369a1;
+  --accent-green: #10b981;
+  --accent-red: #ef4444;
+  --accent-yellow: #f59e0b;
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 16px 32px rgba(0, 0, 0, 0.5);
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --suite-bar-height: 36px;
+  --menu-height: 28px;
+  --toolbar-height: 48px;
+  --statusbar-height: 32px;
+  --panel-width: 280px;
+  --properties-width: 320px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+  width: 100%; height: 100%;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 13px; color: var(--text-primary); background: var(--bg-primary);
+}
+body { display: flex; flex-direction: column; overflow: hidden; }
+input, button, select, textarea { font-family: inherit; font-size: inherit; color: inherit; }
+button { cursor: pointer; border: none; background: none; padding: 0; }
+
+/* ===== Suite bar (links siblings + admin + tests) ===== */
+.suite-bar {
+  height: var(--suite-bar-height);
+  background: #0E1117; color: #fff;
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 20px; font-size: 12px; flex-shrink: 0;
+  border-bottom: 1px solid #1d242e;
+}
+.suite-bar .brand { font-weight: 700; letter-spacing: 4px; font-size: 11px; }
+.suite-bar .accent { color: #D4A843; font-weight: 600; }
+.suite-bar nav { margin-left: auto; display: flex; gap: 18px; font-size: 12px; }
+.suite-bar nav a { color: #BBC2CC; text-decoration: none; }
+.suite-bar nav a:hover { color: #fff; }
+.suite-bar nav a.current { color: #D4A843; pointer-events: none; }
+
+/* ===== Menu Bar ===== */
+#menu-bar {
+  height: var(--menu-height); background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  display: flex; align-items: center; padding: 0 8px; gap: 2px;
+  user-select: none; flex-shrink: 0;
+}
+.menu-item {
+  padding: 4px 12px; color: var(--text-primary); font-size: 12px;
+  font-weight: 500; cursor: pointer; position: relative; border-radius: 2px;
+  transition: background var(--transition-fast);
+}
+.menu-item:hover { background: var(--bg-tertiary); }
+.menu-item.active { background: var(--accent-blue); color: white; }
+.menu-dropdown {
+  position: absolute; top: 100%; left: 0; background: var(--bg-secondary);
+  border: 1px solid var(--border-color); border-radius: 4px; min-width: 200px;
+  box-shadow: var(--shadow-md); z-index: 1000; display: none;
+  flex-direction: column; padding-top: 2px; margin-top: -2px;
+}
+.menu-item:hover .menu-dropdown { display: flex; }
+.menu-item.open .menu-dropdown { display: flex !important; }
+.menu-item.open { background: var(--bg-tertiary); }
+.menu-item-link {
+  padding: 8px 16px; color: var(--text-primary); cursor: pointer;
+  transition: background var(--transition-fast); font-size: 12px;
+  border: none; background: none; text-align: left; width: 100%;
+}
+.menu-item-link:hover { background: var(--bg-tertiary); color: var(--accent-blue); }
+.menu-separator { height: 1px; background: var(--border-color); margin: 4px 0; }
+
+/* ===== Container + Workspace bar ===== */
+#container {
+  display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden;
+}
+#workspace-bar {
+  height: var(--toolbar-height); background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color); display: flex; align-items: center;
+  padding: 0 8px; gap: 12px; overflow-x: auto; overflow-y: hidden; flex-shrink: 0;
+}
+.workspace-tab {
+  padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-secondary);
+  border: none; border-radius: 4px; cursor: pointer; font-size: 12px;
+  font-weight: 500; transition: all var(--transition-fast); white-space: nowrap;
+}
+.workspace-tab:hover { background: var(--bg-primary); color: var(--text-primary); }
+.workspace-tab.active { background: var(--accent-blue); color: white; }
+.toolbar-divider { width: 1px; height: 24px; background: var(--border-color); margin: 0 4px; }
+.toolbar-icon-btn {
+  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+  background: transparent; border: 1px solid transparent; border-radius: 4px;
+  cursor: pointer; transition: all var(--transition-fast); color: var(--text-secondary);
+  font-size: 18px;
+}
+.toolbar-icon-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); border-color: var(--border-color); }
+.toolbar-icon-btn.active { background: var(--accent-blue); color: white; border-color: var(--accent-blue); }
+.workspace-tools { display: flex; gap: 4px; align-items: center; }
+
+/* ===== Main content (left | viewport | right) ===== */
+#main-content { display: flex; flex: 1; min-height: 0; overflow: hidden; }
+#left-panel {
+  width: var(--panel-width); background: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
+  display: flex; flex-direction: column; min-height: 0; overflow: hidden; flex-shrink: 0;
+}
+#left-panel-tabs { display: flex; border-bottom: 1px solid var(--border-color); background: var(--bg-tertiary); flex-shrink: 0; }
+.left-panel-tab {
+  flex: 1; padding: 8px; text-align: center; font-size: 11px; background: transparent;
+  color: var(--text-secondary); border: none; cursor: pointer;
+  transition: all var(--transition-fast); border-bottom: 2px solid transparent;
+}
+.left-panel-tab:hover { color: var(--text-primary); background: var(--bg-secondary); }
+.left-panel-tab.active { color: var(--accent-blue); border-bottom-color: var(--accent-blue); background: var(--bg-secondary); }
+#left-panel-content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 8px; }
+
+#viewport-container {
+  flex: 1; background: #fafafa; position: relative; overflow: hidden;
+}
+
+#right-panel {
+  width: var(--properties-width); background: var(--bg-secondary);
+  border-left: 1px solid var(--border-color);
+  display: flex; flex-direction: column; min-height: 0; overflow: hidden; flex-shrink: 0;
+}
+#right-panel-tabs { display: flex; border-bottom: 1px solid var(--border-color); background: var(--bg-tertiary); flex-shrink: 0; }
+.right-panel-tab {
+  flex: 1; padding: 8px; text-align: center; font-size: 11px; background: transparent;
+  color: var(--text-secondary); border: none; cursor: pointer;
+  transition: all var(--transition-fast); border-bottom: 2px solid transparent;
+}
+.right-panel-tab:hover { color: var(--text-primary); background: var(--bg-secondary); }
+.right-panel-tab.active { color: var(--accent-blue); border-bottom-color: var(--accent-blue); background: var(--bg-secondary); }
+#right-panel-content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 8px; }
+.right-panel-content-item { display: none; }
+.right-panel-content-item.active { display: block; }
+
+/* ===== Timeline + status ===== */
+#timeline-bar {
+  height: 110px; background: var(--bg-secondary); border-top: 1px solid var(--border-color);
+  display: flex; flex-direction: column; flex-shrink: 0;
+}
+#timeline-header { padding: 8px; border-bottom: 1px solid var(--border-color); font-size: 12px; font-weight: 600; }
+#timeline-content { flex: 1; overflow-x: auto; overflow-y: auto; padding: 8px; display: flex; gap: 6px; }
+.timeline-item {
+  padding: 6px 10px; background: var(--bg-tertiary); border: 1px solid var(--border-color);
+  border-radius: 3px; font-size: 11px; cursor: pointer; transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+.timeline-item:hover { background: var(--bg-primary); border-color: var(--accent-blue); }
+.timeline-item.active { background: var(--accent-blue); color: white; border-color: var(--accent-blue); }
+
+#status-bar {
+  height: var(--statusbar-height); background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color); display: flex; align-items: center;
+  padding: 0 12px; gap: 20px; font-size: 11px; color: var(--text-secondary);
+  flex-shrink: 0; flex-wrap: wrap;
+}
+.status-item { display: flex; align-items: center; gap: 6px; padding: 0 8px; }
+.status-label { color: var(--text-muted); }
+.status-value { color: var(--text-primary); font-weight: 500; }
+
+/* ===== Tree items ===== */
+.tree-item {
+  padding: 4px 8px; margin: 2px 0; background: transparent;
+  border: 1px solid transparent; border-radius: 2px; cursor: pointer;
+  display: flex; align-items: center; gap: 6px; font-size: 12px;
+  transition: all var(--transition-fast); user-select: none;
+}
+.tree-item:hover { background: var(--bg-tertiary); border-color: var(--border-color); }
+.tree-item.selected { background: var(--accent-blue); color: white; border-color: var(--accent-blue); }
+.tree-item-icon { width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; }
+.tree-item-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ===== Property controls ===== */
+.property-group {
+  margin-bottom: 12px; border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden;
+}
+.property-group-header {
+  padding: 8px; background: var(--bg-tertiary); font-size: 11px; font-weight: 600;
+  color: var(--text-primary); cursor: pointer; user-select: none;
+  display: flex; align-items: center; gap: 4px;
+}
+.property-group-header:hover { background: var(--bg-primary); }
+.property-group-header.collapsed::before { content: '▶'; font-size: 8px; }
+.property-group-header.expanded::before  { content: '▼'; font-size: 8px; }
+.property-group-content { padding: 8px; display: none; }
+.property-group-content.visible { display: block; }
+.property-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.property-row:last-child { margin-bottom: 0; }
+.property-label { font-size: 11px; color: var(--text-secondary); min-width: 80px; flex-shrink: 0; }
+.property-input {
+  flex: 1; padding: 4px 6px; background: var(--bg-tertiary);
+  border: 1px solid var(--border-color); border-radius: 2px;
+  color: var(--text-primary); font-size: 11px; transition: all var(--transition-fast);
+}
+.property-input:focus { outline: none; border-color: var(--accent-blue); background: var(--bg-primary); }
+
+/* ===== Modal dialogs ===== */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  display: none; align-items: center; justify-content: center; z-index: 10000;
+}
+.modal-overlay.visible { display: flex; }
+.modal-dialog {
+  background: var(--bg-secondary); border: 1px solid var(--border-color);
+  border-radius: 6px; box-shadow: var(--shadow-lg);
+  max-width: 720px; width: 90%; max-height: 85vh;
+  display: flex; flex-direction: column;
+}
+.modal-header {
+  padding: 12px 16px; border-bottom: 1px solid var(--border-color);
+  display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+  cursor: move;
+}
+.modal-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.modal-close-btn {
+  width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  background: transparent; border: none; color: var(--text-secondary); cursor: pointer;
+  border-radius: 2px; font-size: 14px;
+}
+.modal-close-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+.modal-body {
+  flex: 1; padding: 16px; overflow-y: auto; min-height: 240px;
+  background: #fafafa; color: #111;
+}
+.modal-footer {
+  padding: 12px 16px; border-top: 1px solid var(--border-color);
+  display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0;
+}
+.btn {
+  padding: 8px 16px; background: var(--bg-tertiary); border: 1px solid var(--border-color);
+  border-radius: 4px; color: var(--text-primary); cursor: pointer;
+  font-size: 12px; font-weight: 500; transition: all var(--transition-fast);
+}
+.btn:hover { background: var(--bg-primary); border-color: var(--accent-blue); }
+.btn.primary { background: var(--accent-blue); color: white; border-color: var(--accent-blue); }
+.btn.primary:hover { background: var(--accent-blue-hover); border-color: var(--accent-blue-hover); }
+
+/* ===== Toast ===== */
+#toast-container {
+  position: fixed; bottom: 20px; right: 20px; z-index: 9999;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.toast {
+  background: var(--bg-secondary); border: 1px solid var(--border-color);
+  border-radius: 4px; padding: 10px 14px; font-size: 12px; color: var(--text-primary);
+  box-shadow: var(--shadow-md); animation: slideIn 0.3s ease-out;
+  min-width: 220px;
+}
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+.toast.success { border-color: var(--accent-green); background: rgba(16,185,129,0.1); color: var(--accent-green); }
+.toast.error   { border-color: var(--accent-red);   background: rgba(239,68,68,0.1);  color: var(--accent-red); }
+
+/* ===== Welcome splash ===== */
+#welcome-panel {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.78);
+  display: flex; align-items: center; justify-content: center; z-index: 9999;
+}
+.welcome-card {
+  background: #252526; border: 1px solid #3c3c3c; border-radius: 12px;
+  padding: 36px 44px; max-width: 600px; width: 90%; text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.welcome-brand { font-size: 36px; margin-bottom: 4px; }
+.welcome-brand .l { color: #0284C7; font-weight: 700; }
+.welcome-brand .r { color: #e0e0e0; font-weight: 300; }
+.welcome-tagline { color: #888; font-size: 13px; margin-bottom: 26px; }
+.welcome-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+.welcome-tile {
+  background: #374151; color: #fff; border: 1px solid #4b5563; border-radius: 8px;
+  padding: 16px 12px; cursor: pointer; font-size: 13px; font-weight: 600;
+  transition: all var(--transition-fast);
+}
+.welcome-tile:hover { background: #1f2937; border-color: var(--accent-blue); }
+.welcome-tile.primary { background: var(--accent-blue); border-color: var(--accent-blue); }
+.welcome-tile.primary:hover { background: var(--accent-blue-hover); }
+.welcome-tile .icon { font-size: 22px; margin-bottom: 4px; }
+.welcome-tile .sub { font-size: 10px; font-weight: 400; color: rgba(255,255,255,0.7); margin-top: 3px; }
+.welcome-foot { color: #666; font-size: 11px; }
+.welcome-foot a { color: #0284C7; text-decoration: none; }
+
+/* ===== Help panel ===== */
+#help-panel {
+  position: fixed; top: 0; right: 0; width: 360px; height: 100%;
+  background: var(--bg-secondary); border-left: 1px solid var(--border-color);
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.3); z-index: 5000;
+  transform: translateX(100%); transition: transform 0.3s ease-out;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+#help-panel.visible { transform: translateX(0); }
+#help-header {
+  padding: 12px 16px; border-bottom: 1px solid var(--border-color);
+  display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+  font-weight: 600;
+}
+#help-content { flex: 1; overflow-y: auto; padding: 12px; }
+.help-item { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); }
+.help-item:last-child { border-bottom: none; }
+.help-title { font-size: 12px; font-weight: 600; color: var(--accent-blue); margin-bottom: 4px; }
+.help-desc { font-size: 11px; color: var(--text-secondary); line-height: 1.5; }
+
+/* ===== Scrollbars ===== */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--bg-secondary); }
+::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+
+/* ===== Empty viewport overlay (hidden once a model exists) ===== */
+.empty-overlay {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  pointer-events: none; color: rgba(0,0,0,0.35); font: italic 13px Georgia, serif;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 1200px) {
+  #left-panel { width: 240px; }
+  #right-panel { width: 280px; }
+}
+@media (max-width: 900px) {
+  #left-panel { display: none; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- ============================================================= -->
+<!-- SUITE BAR — siblings + tests + admin                          -->
+<!-- ============================================================= -->
+<header class="suite-bar">
+  <span class="brand">CYCLECAD SUITE</span>
+  <span style="opacity:.4">·</span>
+  <span class="accent">cycleCAD</span>
+  <nav>
+    <a href="../cyclecad/" class="current">cycleCAD</a>
+    <a href="../explodeview/">ExplodeView</a>
+    <a href="../pentacad/">Pentacad</a>
+    <a href="../admin/">admin</a>
+    <a href="../../tests/">tests</a>
+  </nav>
+</header>
+
+<!-- ============================================================= -->
+<!-- MENU BAR                                                       -->
+<!-- ============================================================= -->
+<div id="menu-bar">
+
+  <div class="menu-item">File
+    <div class="menu-dropdown">
+      <button class="menu-item-link" data-action="file-new">New Project</button>
+      <button class="menu-item-link" data-action="file-open">Open...</button>
+      <button class="menu-item-link" data-action="file-recent">Recent Projects</button>
+      <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="file-save">Save</button>
+      <button class="menu-item-link" data-action="file-save-as">Save As...</button>
+      <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="file-import">Import (STEP/STL/GLB)...</button>
+      <button class="menu-item-link" data-action="library-import">Import Inventor project...</button>
+      <button class="menu-item-link" data-action="file-export">Export...</button>
+      <button class="menu-item-link" data-action="library-export-bundle">Export work package (.zip)...</button>
+    </div>
+  </div>
+
+  <div class="menu-item">Library
+    <div class="menu-dropdown">
+      <button class="menu-item-link" data-action="library-import">Import Inventor project...</button>
+      <button class="menu-item-link" data-action="library-browse">Browse library</button>
+      <button class="menu-item-link" data-action="library-project-tree">Project tree</button>
+      <button class="menu-item-link" data-action="library-attachments">Attachments</button>
+      <button class="menu-item-link" data-action="library-versions">Version history</button>
+      <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="library-reverse-engineer">Reverse engineer...</button>
+      <button class="menu-item-link" data-action="library-rebuild-guide">Rebuild guide</button>
+      <button class="menu-item-link" data-action="library-tutorial-author">Author tutorial...</button>
+      <button class="menu-item-link" data-action="library-tutorial-player">Run tutorial</button>
+      <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="library-drawing-generate">Generate drawing</button>
+      <button class="menu-item-link" data-action="library-drawing-batch">Batch drawings...</button>
+      <button class="menu-item-link" data-action="library-drawing-template">Drawing templates</button>
+      <button class="menu-item-link" data-action="library-drawing-link">Drawing ↔ source link</button>
+      <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="library-summary">Work package summary</button>
+      <button class="menu-item-link" data-action="library-build-package">Build complete work package...</button>
+    </div>
+  </div>
+
+  <div class="menu-item">Edit
+    <div class="menu-dropdown">
+      <button class="menu-item-link" data-action="edit-undo">Undo (Ctrl+Z)</button>
+      <button class="menu-item-link" data-action="edit-redo">Redo (Ctrl+Y)</button>
+      <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="edit-copy">Copy (Ctrl+C)</button>
+      <button class="menu-item-link" data-action="edit-paste">Paste (Ctrl+V)</button>
+      <button class="menu-item-link" data-action="edit-delete">Delete</button>
+      <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="edit-preferences">Preferences...</button>
+    </div>
+  </div>
+
+  <div class="menu-item">Sketch
+    <div class="menu-dropdown">
+      <button class="menu-item-link" data-action="sketch-line">Line (L)</button>
+      <button class="menu-item-link" data-action="sketch-rectangle">Rectangle (R)</button>
+      <button class="menu-item-link" data-action="sketch-circle">Circle (C)</button>
+      <button class="menu-item-link" data-action="sketch-arc">Arc (A)</button>
+      <button class="menu-item-link" data-action="sketch-polyline">Polyline (P)</button>
+      <button class="menu-item-link" data-action="sketch-point">Point</button>
+      <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="sketch-constraint">Add Constraint (K)</button>
+      <button class="menu-item-link" data-action="sketch-finish">Finish Sketch (F)</button>
+    </div>
+  </div>
+
+  <div class="menu-item">Solid
+    <div class="menu-dropdown">
+      <button class="menu-item-link" data-action="solid-extrude">Extrude (E)</button>
+      <button class="menu-item-link" data-action="solid-revolve">Revolve (V)</button>
+      <button class="menu-item-link" data-action="solid-sweep">Sweep (W)</button>
+      <button class="menu-item-link" data-action="solid-loft">Loft (O)</button>
+      <button class="menu-item-link" data-action="solid-hole">Hole</button>
+      <button class="menu-item-link" data-action="solid-thread">Thread</button>
+      <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="solid-fillet">Fillet (F)</button>
+      <button class="menu-item-link" data-action="solid-chamfer">Chamfer (H)</button>
+      <button class="menu-item-link" data-action="solid-shell">Shell (S)</button>
+      <button class="menu-item-link" data-action="solid-draft">Draft</button>
+      <button class="menu-item-link" data-action="solid-scale">Scale</button>
+      <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="solid-combine">Combine (Boolean)</button>
+      <button class="menu-item-link" data-action="solid-split">Split</button>
+      <button class="menu-item-link" data-action="solid-mirror">Mirror</button>
+      <button class="menu-item-link" data-action="solid-pattern">Pattern</button>
+    </div>
+  </div>
+
+  <div class="menu-item">Surface
+    <div class="menu-dropdown">
+      <button class="menu-item-link" data-action="surface-tspline">T-Spline</button>
+      <button class="menu-item-link" data-action="surface-nurbs">NURBS</button>
+      <button class="menu-item-link" data-action="surface-sheet-bend">Sheet Bend</button>
+      <button class="menu-item-link" data-action="surface-flange">Flange</button>
+      <button class="menu-item-link" data-action="surface-unfold">Unfold</button>
+    </div>
+  </div>
+
+  <div class="menu-item">Assembly
+    <div class="menu-dropdown">
+      <button class="menu-item-link" data-action="assembly-mate">Mate Constraint</button>
+      <button class="menu-item-link" data-action="assembly-joint">Add Joint</button>
+      <button class="menu-item-link" data-action="assembly-motion">Motion Study</button>
+      <button class="menu-item-link" data-action="assembly-contact">Contact Set</button>
+      <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="assembly-explode">Explode Slider</button>
+      <button class="menu-item-link" data-action="assembly-interference">Interference Check</button>
+    </div>
+  </div>
+
+  <div class="menu-item">Manufacture
+    <div class="menu-dropdown">
+      <button class="menu-item-link" data-action="cam-contour">Contour</button>
+      <button class="menu-item-link" data-action="cam-pocket">Pocket</button>
+      <button class="menu-item-link" data-action="cam-drill">Drill</button>
+      <button class="menu-item-link" data-action="cam-adaptive">Adaptive Clear</button>
+      <button class="menu-item-link" data-action="cam-face">Face</button>
+      <button class="menu-item-link" data-action="cam-chamfer">Chamfer (CAM)</button>
+      <button class="menu-item-link" data-action="cam-bore">Bore</button>
+      <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="cam-post">Post-Processor</button>
+      <button class="menu-item-link" data-action="cam-gcode-editor">G-Code Editor</button>
+      <button class="menu-item-link" data-action="cam-sim">Simulate Toolpath</button>
+      <button class="menu-item-link" data-action="cam-rockhopper">Rockhopper Bridge</button>
+      <button class="menu-item-link" data-action="cam-jog">Jog Pad</button>
+      <button class="menu-item-link" data-action="cam-machine">Machine Picker</button>
+      <button class="menu-item-link" data-action="cam-playback">Playback</button>
+    </div>
+  </div>
+
+  <div class="menu-item">Drawing
+    <div class="menu-dropdown">
+      <button class="menu-item-link" data-action="drawing-blueprint">Blueprint Drawing</button>
+      <button class="menu-item-link" data-action="drawing-section">Section View</button>
+      <button class="menu-item-link" data-action="drawing-pdf">Export PDF</button>
+      <button class="menu-item-link" data-action="drawing-dxf">Export DXF</button>
+    </div>
+  </div>
+
+  <div class="menu-item">Render
+    <div class="menu-dropdown">
+      <button class="menu-item-link" data-action="render-hero">Hero Shot</button>
+      <button class="menu-item-link" data-action="render-screenshot">Screenshot</button>
+      <button class="menu-item-link" data-action="render-ai">AI Render</button>
+    </div>
+  </div>
+
+  <div class="menu-item">Animation
+    <div class="menu-dropdown">
+      <button class="menu-item-link" data-action="animation-explode">Explode Animation</button>
+      <button class="menu-item-link" data-action="animation-motion">Motion Study</button>
+    </div>
+  </div>
+
+  <div class="menu-item">Inspect
+    <div class="menu-dropdown">
+      <button class="menu-item-link" data-action="inspect-measure">Measure (M)</button>
+      <button class="menu-item-link" data-action="inspect-weight">Weight Estimator</button>
+      <button class="menu-item-link" data-action="inspect-compare">Part Comparison</button>
+      <button class="menu-item-link" data-action="inspect-section">Section Cut</button>
+      <button class="menu-item-link" data-action="inspect-interference">Interference</button>
+      <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="inspect-fea">FEA (Stress)</button>
+      <button class="menu-item-link" data-action="inspect-thermal">Thermal</button>
+      <button class="menu-item-link" data-action="inspect-modal">Modal</button>
+      <button class="menu-item-link" data-action="inspect-buckling">Buckling</button>
+      <button class="menu-item-link" data-action="inspect-design-review">Design Review</button>
+      <button class="menu-item-link" data-action="inspect-dfm">DFM Check</button>
+    </div>
+  </div>
+
+  <div class="menu-item" style="color:#00ccff;">ExplodeView
+    <div class="menu-dropdown" style="min-width:220px;">
+      <button class="menu-item-link" data-action="ev-load">Load Model</button>
+      <button class="menu-item-link" data-action="ev-explode">Explode / Collapse</button>
+      <button class="menu-item-link" data-action="ev-section-cut">Section Cut (X/Y/Z)</button>
+      <button class="menu-item-link" data-action="ev-isolate">Isolate Selected</button>
+      <button class="menu-item-link" data-action="ev-transparency">Transparency</button>
+      <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="ev-bom">Bill of Materials</button>
+      <button class="menu-item-link" data-action="ev-mass">Mass Properties</button>
+      <button class="menu-item-link" data-action="ev-annotations">Annotations</button>
+      <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="ev-wireframe">Wireframe Toggle</button>
+      <button class="menu-item-link" data-action="ev-screenshot">Screenshot (2x)</button>
+      <button class="menu-item-link" data-action="ev-export-stl">Export STL</button>
+      <button class="menu-item-link" data-action="ev-export-obj">Export OBJ</button>
+      <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="ev-ai-narrator">AI Part Narrator</button>
+      <button class="menu-item-link" data-action="ev-ai-search">Smart Part Search</button>
+    </div>
+  </div>
+
+  <div class="menu-item">Tools
+    <div class="menu-dropdown">
+      <button class="menu-item-link" data-action="tools-ai-copilot">✨ AI Copilot</button>
+      <button class="menu-item-link" data-action="tools-ai-engineer">🔩 AI Engineering Analyst</button>
+      <button class="menu-item-link" data-action="tools-ai-chatbot">💬 AI Chatbot</button>
+      <button class="menu-item-link" data-action="tools-ai-vision">📷 AI Vision (Photo to CAD)</button>
+      <button class="menu-item-link" data-action="tools-ai-render">🖼 AI Render</button>
+      <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="tools-mcmaster">McMaster-Carr Search</button>
+      <button class="menu-item-link" data-action="tools-standards">Standards Identifier</button>
+      <button class="menu-item-link" data-action="tools-kiri">Kiri:Moto Export</button>
+      <button class="menu-item-link" data-action="tools-qr">QR Code</button>
+      <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="tools-marketplace">Marketplace</button>
+      <button class="menu-item-link" data-action="tools-settings">Settings...</button>
+    </div>
+  </div>
+
+  <div class="menu-item">Help
+    <div class="menu-dropdown">
+      <button class="menu-item-link" data-action="help-docs">Documentation</button>
+      <button class="menu-item-link" data-action="help-shortcuts">Keyboard Shortcuts (?)</button>
+      <button class="menu-item-link" data-action="help-quickref">Quick Reference (HELP.md)</button>
+      <button class="menu-item-link" data-action="help-tutorial">Tutorial Walkthrough (test agent)</button>
+      <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="help-tutorial-01">Tutorial 01 · Quickstart</button>
+      <button class="menu-item-link" data-action="help-tutorial-02">Tutorial 02 · Build a widget</button>
+      <button class="menu-item-link" data-action="help-tutorial-03">Tutorial 03 · Token economy</button>
+      <button class="menu-item-link" data-action="help-tutorial-04">Tutorial 04 · Admin dashboard</button>
+      <button class="menu-item-link" data-action="help-tutorial-05">Tutorial 05 · Reverse-engineer DUO</button>
+      <button class="menu-item-link" data-action="help-tutorial-06">Tutorial 06 · AI-agent build</button>
+      <div class="menu-separator"></div>
+      <button class="menu-item-link" data-action="help-about">About cycleCAD Suite</button>
+      <button class="menu-item-link" data-action="help-hard-reset" style="color:#ef4444;">Hard Reset (Clear Cache)</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================================= -->
+<!-- MAIN CONTAINER                                                 -->
+<!-- ============================================================= -->
+<div id="container">
+
+  <!-- WORKSPACE BAR -->
+  <div id="workspace-bar">
+    <button class="workspace-tab active" data-workspace="design">Design</button>
+    <button class="workspace-tab" data-workspace="sketch">Sketch</button>
+    <button class="workspace-tab" data-workspace="assembly">Assembly</button>
+    <button class="workspace-tab" data-workspace="drawing">Drawing</button>
+    <button class="workspace-tab" data-workspace="simulation">Simulation</button>
+    <button class="workspace-tab" data-workspace="manufacture">Manufacture</button>
+    <button class="workspace-tab" data-workspace="render">Render</button>
+    <button class="workspace-tab" data-workspace="animation">Animation</button>
+    <button class="workspace-tab" data-workspace="explodeview" style="color:#00ccff;">ExplodeView</button>
+
+    <div class="toolbar-divider"></div>
+
+    <!-- Design tools -->
+    <div id="design-tools" class="workspace-tools">
+      <button class="toolbar-icon-btn" title="Sketch (S)" data-action="sketch-finish">📐</button>
+      <button class="toolbar-icon-btn" title="Extrude (E)" data-action="solid-extrude">📦</button>
+      <button class="toolbar-icon-btn" title="Revolve (V)" data-action="solid-revolve">🔄</button>
+      <button class="toolbar-icon-btn" title="Sweep (W)" data-action="solid-sweep">↗</button>
+      <button class="toolbar-icon-btn" title="Loft (O)" data-action="solid-loft">〰</button>
+      <button class="toolbar-icon-btn" title="Fillet" data-action="solid-fillet">🔷</button>
+      <button class="toolbar-icon-btn" title="Chamfer" data-action="solid-chamfer">✂</button>
+      <button class="toolbar-icon-btn" title="Shell" data-action="solid-shell">🥜</button>
+      <button class="toolbar-icon-btn" title="Boolean" data-action="solid-combine">∪</button>
+      <button class="toolbar-icon-btn" title="Mirror" data-action="solid-mirror">🪞</button>
+      <button class="toolbar-icon-btn" title="Pattern" data-action="solid-pattern">⊞</button>
+    </div>
+
+    <!-- Sketch tools -->
+    <div id="sketch-tools" class="workspace-tools" style="display:none;">
+      <button class="toolbar-icon-btn" title="Line (L)" data-action="sketch-line">—</button>
+      <button class="toolbar-icon-btn" title="Rectangle" data-action="sketch-rectangle">▭</button>
+      <button class="toolbar-icon-btn" title="Circle" data-action="sketch-circle">●</button>
+      <button class="toolbar-icon-btn" title="Arc" data-action="sketch-arc">↗</button>
+      <button class="toolbar-icon-btn" title="Polyline" data-action="sketch-polyline">∿</button>
+      <button class="toolbar-icon-btn" title="Constraint" data-action="sketch-constraint">⟷</button>
+    </div>
+
+    <!-- Assembly tools -->
+    <div id="assembly-tools" class="workspace-tools" style="display:none;">
+      <button class="toolbar-icon-btn" title="Mate" data-action="assembly-mate">🔗</button>
+      <button class="toolbar-icon-btn" title="Joint" data-action="assembly-joint">⚙</button>
+      <button class="toolbar-icon-btn" title="Contact" data-action="assembly-contact">👥</button>
+      <button class="toolbar-icon-btn" title="Explode" data-action="assembly-explode">💥</button>
+      <button class="toolbar-icon-btn" title="Interference" data-action="assembly-interference">⚠</button>
+    </div>
+
+    <!-- Drawing tools -->
+    <div id="drawing-tools" class="workspace-tools" style="display:none;">
+      <button class="toolbar-icon-btn" title="Blueprint" data-action="drawing-blueprint">📄</button>
+      <button class="toolbar-icon-btn" title="Section" data-action="drawing-section">✂</button>
+      <button class="toolbar-icon-btn" title="PDF" data-action="drawing-pdf">📕</button>
+      <button class="toolbar-icon-btn" title="DXF" data-action="drawing-dxf">📐</button>
+    </div>
+
+    <!-- Simulation tools -->
+    <div id="simulation-tools" class="workspace-tools" style="display:none;">
+      <button class="toolbar-icon-btn" title="FEA" data-action="inspect-fea">⚡</button>
+      <button class="toolbar-icon-btn" title="Thermal" data-action="inspect-thermal">🔥</button>
+      <button class="toolbar-icon-btn" title="Modal" data-action="inspect-modal">🎵</button>
+      <button class="toolbar-icon-btn" title="Buckling" data-action="inspect-buckling">📈</button>
+    </div>
+
+    <!-- Manufacture tools -->
+    <div id="manufacture-tools" class="workspace-tools" style="display:none;">
+      <button class="toolbar-icon-btn" title="Pocket" data-action="cam-pocket">🕳</button>
+      <button class="toolbar-icon-btn" title="Contour" data-action="cam-contour">〰</button>
+      <button class="toolbar-icon-btn" title="Drill" data-action="cam-drill">🔩</button>
+      <button class="toolbar-icon-btn" title="Adaptive" data-action="cam-adaptive">⚡</button>
+      <button class="toolbar-icon-btn" title="Post" data-action="cam-post">⚙</button>
+      <button class="toolbar-icon-btn" title="Simulate" data-action="cam-sim">▶</button>
+      <button class="toolbar-icon-btn" title="Rockhopper" data-action="cam-rockhopper">🔌</button>
+    </div>
+
+    <!-- Render tools -->
+    <div id="render-tools" class="workspace-tools" style="display:none;">
+      <button class="toolbar-icon-btn" title="Hero Shot" data-action="render-hero">✨</button>
+      <button class="toolbar-icon-btn" title="Screenshot" data-action="render-screenshot">📸</button>
+      <button class="toolbar-icon-btn" title="AI Render" data-action="render-ai">🖼</button>
+    </div>
+
+    <!-- Animation tools -->
+    <div id="animation-tools" class="workspace-tools" style="display:none;">
+      <button class="toolbar-icon-btn" title="Explode" data-action="animation-explode">💥</button>
+      <button class="toolbar-icon-btn" title="Motion" data-action="animation-motion">🔄</button>
+    </div>
+
+    <!-- ExplodeView tools -->
+    <div id="explodeview-tools" class="workspace-tools" style="display:none;">
+      <button class="toolbar-icon-btn" title="Load" data-action="ev-load">📂</button>
+      <button class="toolbar-icon-btn" title="Explode" data-action="ev-explode">💥</button>
+      <button class="toolbar-icon-btn" title="Section" data-action="ev-section-cut">✂</button>
+      <button class="toolbar-icon-btn" title="Isolate" data-action="ev-isolate">👁</button>
+      <button class="toolbar-icon-btn" title="Transparency" data-action="ev-transparency">🌫</button>
+      <button class="toolbar-icon-btn" title="BOM" data-action="ev-bom">📊</button>
+      <button class="toolbar-icon-btn" title="Mass" data-action="ev-mass">⚖</button>
+      <button class="toolbar-icon-btn" title="Annotate" data-action="ev-annotations">📌</button>
+      <button class="toolbar-icon-btn" title="Wireframe" data-action="ev-wireframe">🔲</button>
+      <button class="toolbar-icon-btn" title="Screenshot" data-action="ev-screenshot">📸</button>
+      <button class="toolbar-icon-btn" title="AI Narrator" data-action="ev-ai-narrator">🤖</button>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <!-- View tools (always visible) -->
+    <button class="toolbar-icon-btn" title="Fit All (F5)" data-action="view-fit-all">🎯</button>
+    <button class="toolbar-icon-btn" title="Isometric (I)" data-action="view-iso">🔷</button>
+    <button class="toolbar-icon-btn" title="Top" data-action="view-top">⬆</button>
+    <button class="toolbar-icon-btn" title="Front" data-action="view-front">⬀</button>
+    <button class="toolbar-icon-btn" title="Right" data-action="view-right">➤</button>
+    <button class="toolbar-icon-btn" title="Wireframe" data-action="view-wireframe">🕸</button>
+
+    <div class="toolbar-divider"></div>
+    <button class="toolbar-icon-btn" title="Help (?)" data-action="help-show">❓</button>
+  </div>
+
+  <!-- MAIN CONTENT (left tree | viewport | right properties) -->
+  <div id="main-content">
+
+    <!-- LEFT PANEL — Model tree / Assembly / Search -->
+    <div id="left-panel">
+      <div id="left-panel-tabs">
+        <button class="left-panel-tab active" data-tab="model-tree">Model</button>
+        <button class="left-panel-tab" data-tab="assembly-tree">Assembly</button>
+        <button class="left-panel-tab" data-tab="search">Search</button>
+      </div>
+      <div id="left-panel-content">
+        <div id="model-tree-content" class="left-tab-pane">
+          <div id="feature-tree">
+            <div class="tree-item" data-feature-id="root">
+              <div class="tree-item-icon">📦</div>
+              <div class="tree-item-label">Origin</div>
+            </div>
+            <!-- features added dynamically -->
+          </div>
+        </div>
+        <div id="assembly-tree-content" class="left-tab-pane" style="display:none;">
+          <div class="tree-item">
+            <div class="tree-item-icon">⚙</div>
+            <div class="tree-item-label">Assembly1</div>
+          </div>
+        </div>
+        <div id="search-content" class="left-tab-pane" style="display:none;">
+          <input type="text" placeholder="Search components..." class="property-input" style="width:100%;margin-bottom:8px;">
+          <div id="search-results" style="font-size:11px;color:var(--text-muted);">Type to search the model tree.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEWPORT -->
+    <div id="viewport-container">
+      <div class="empty-overlay" id="empty">cycleCAD Suite shell · open File → Import to load geometry</div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div id="right-panel">
+      <div id="right-panel-tabs">
+        <button class="right-panel-tab active" data-tab="properties">Properties</button>
+        <button class="right-panel-tab" data-tab="parameters">Parameters</button>
+        <button class="right-panel-tab" data-tab="material">Material</button>
+      </div>
+      <div id="right-panel-content">
+        <div id="properties-tab" class="right-panel-content-item active">
+          <div class="property-group">
+            <div class="property-group-header expanded">📌 Selection</div>
+            <div class="property-group-content visible">
+              <div class="property-row">
+                <span class="property-label">Name:</span>
+                <input type="text" id="prop-name" value="—" class="property-input">
+              </div>
+              <div class="property-row">
+                <span class="property-label">Type:</span>
+                <input type="text" id="prop-type" value="—" class="property-input" disabled>
+              </div>
+              <div class="property-row">
+                <span class="property-label">Visible:</span>
+                <input type="checkbox" id="prop-visible" checked style="width:auto;">
+              </div>
+            </div>
+          </div>
+          <div class="property-group">
+            <div class="property-group-header expanded">📊 Transform</div>
+            <div class="property-group-content visible">
+              <div class="property-row"><span class="property-label">X:</span><input type="text" value="0.00 mm" class="property-input"></div>
+              <div class="property-row"><span class="property-label">Y:</span><input type="text" value="0.00 mm" class="property-input"></div>
+              <div class="property-row"><span class="property-label">Z:</span><input type="text" value="0.00 mm" class="property-input"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="parameters-tab" class="right-panel-content-item">
+          <div class="property-group">
+            <div class="property-group-header expanded">📏 User Parameters</div>
+            <div class="property-group-content visible">
+              <div class="property-row"><span class="property-label">Width:</span><input type="text" value="100 mm" class="property-input"></div>
+              <div class="property-row"><span class="property-label">Depth:</span><input type="text" value="60 mm" class="property-input"></div>
+              <div class="property-row"><span class="property-label">Height:</span><input type="text" value="20 mm" class="property-input"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="material-tab" class="right-panel-content-item">
+          <div class="property-group">
+            <div class="property-group-header expanded">🧪 Material</div>
+            <div class="property-group-content visible">
+              <div class="property-row">
+                <span class="property-label">Type:</span>
+                <select class="property-input" id="mat-type">
+                  <option>Steel</option><option>Aluminum</option><option>Titanium</option>
+                  <option>Brass</option><option>ABS</option><option>Nylon</option>
+                </select>
+              </div>
+              <div class="property-row"><span class="property-label">Density:</span><input type="text" value="7.85 g/cm³" class="property-input"></div>
+              <div class="property-row"><span class="property-label">Young's E:</span><input type="text" value="200 GPa" class="property-input"></div>
+              <div class="property-row"><span class="property-label">Poisson:</span><input type="text" value="0.30" class="property-input"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TIMELINE -->
+  <div id="timeline-bar">
+    <div id="timeline-header">Feature History · Timeline</div>
+    <div id="timeline-content">
+      <div class="timeline-item active">Origin</div>
+    </div>
+  </div>
+
+  <!-- STATUS BAR -->
+  <div id="status-bar">
+    <div class="status-item"><span class="status-label">Suite:</span><span class="status-value" id="status-suite">cycleCAD-Suite</span></div>
+    <div class="status-item"><span class="status-label">Units:</span><span class="status-value">mm</span></div>
+    <div class="status-item"><span class="status-label">Grid:</span><span class="status-value" id="status-grid">On</span></div>
+    <div class="status-item"><span class="status-label">Snap:</span><span class="status-value" id="status-snap">On</span></div>
+    <div class="status-item"><span class="status-label">Selection:</span><span class="status-value" id="status-selection">None</span></div>
+    <div class="status-item"><span class="status-label">FPS:</span><span class="status-value" id="status-fps">—</span></div>
+    <div class="status-item"><span class="status-label">Widgets loaded:</span><span class="status-value" id="status-widgets">0</span></div>
+    <div class="status-item"><span class="status-label">$CYCLE:</span><span class="status-value" id="status-cycle"></span></div>
+    <div class="status-item"><span class="status-label">Build:</span><span class="status-value" id="status-version">Stage 2.6 · 134 widgets live · Use Case 1 wired</span></div>
+  </div>
+
+</div>
+
+<!-- ============================================================= -->
+<!-- WELCOME SPLASH                                                 -->
+<!-- ============================================================= -->
+<div id="welcome-panel">
+  <div class="welcome-card">
+    <div class="welcome-brand"><span class="l">cycle</span><span class="r">CAD</span></div>
+    <div class="welcome-tagline">Agent-First Parametric 3D CAD · Suite shell · 134 widgets live · Use Case 1 wired</div>
+    <div class="welcome-grid">
+      <button class="welcome-tile primary" data-splash="sketch-line">
+        <div class="icon">✏️</div>New Sketch<div class="sub">Start with a 2D profile</div>
+      </button>
+      <button class="welcome-tile" data-splash="tools-ai-copilot">
+        <div class="icon">✨</div>AI Copilot<div class="sub">Describe in English</div>
+      </button>
+      <button class="welcome-tile" data-splash="tools-ai-vision">
+        <div class="icon">📷</div>Photo to CAD<div class="sub">Upload a sketch</div>
+      </button>
+      <button class="welcome-tile" data-splash="file-import">
+        <div class="icon">📂</div>Open / Import<div class="sub">STEP · STL · GLB</div>
+      </button>
+      <button class="welcome-tile" data-splash="tools-ai-engineer">
+        <div class="icon">🔩</div>AI Engineer<div class="sub">Bolted joint analysis</div>
+      </button>
+      <button class="welcome-tile" data-splash="ev-load">
+        <div class="icon">🌐</div>ExplodeView<div class="sub">Browse a model</div>
+      </button>
+    </div>
+    <div class="welcome-foot">
+      Suite kernel · 134 widgets · <a href="../../tests/" >tests</a> ·
+      <a href="../../tests/tutorial.html">tutorial agent</a> ·
+      <a href="https://github.com/vvlars-cmd/cyclecad-suite" target="_blank">GitHub</a>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================= -->
+<!-- DIALOG (widget mount target)                                   -->
+<!-- ============================================================= -->
+<div id="dialog-overlay" class="modal-overlay">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <span class="modal-title" id="dialog-title">Widget</span>
+      <button class="modal-close-btn" id="dialog-close">✕</button>
+    </div>
+    <div class="modal-body" id="dialog-body"></div>
+    <div class="modal-footer">
+      <button class="btn" id="dialog-cancel">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================= -->
+<!-- HELP PANEL                                                     -->
+<!-- ============================================================= -->
+<div id="help-panel">
+  <div id="help-header">
+    <span>Help &amp; Shortcuts</span>
+    <button class="modal-close-btn" id="help-close">✕</button>
+  </div>
+  <div id="help-content">
+    <div class="help-item">
+      <div class="help-title">Keyboard Shortcuts</div>
+      <div class="help-desc">
+        <strong>L</strong> Line · <strong>R</strong> Rect · <strong>C</strong> Circle ·
+        <strong>A</strong> Arc · <strong>P</strong> Polyline<br>
+        <strong>E</strong> Extrude · <strong>V</strong> Revolve · <strong>F</strong> Fillet ·
+        <strong>H</strong> Chamfer · <strong>S</strong> Shell<br>
+        <strong>M</strong> Measure · <strong>F5</strong> Fit · <strong>I</strong> Iso ·
+        <strong>Esc</strong> Cancel<br>
+        <strong>?</strong> Help · <strong>Cmd+S</strong> Save · <strong>Cmd+Z</strong> Undo
+      </div>
+    </div>
+    <div class="help-item">
+      <div class="help-title">Mouse Controls</div>
+      <div class="help-desc">
+        <strong>Left</strong> select · <strong>Middle</strong> rotate · <strong>Right</strong> pan ·
+        <strong>Scroll</strong> zoom
+      </div>
+    </div>
+    <div class="help-item">
+      <div class="help-title">About this build</div>
+      <div class="help-desc">
+        cycleCAD shell rendered on the cycleCAD Suite kernel. Every menu action loads
+        the matching widget from <code>/widgets/</code> through <code>loadWidget()</code>,
+        which charges the meter (free during scaffold phase).
+      </div>
+    </div>
+    <div class="help-item">
+      <div class="help-title">Test agent</div>
+      <div class="help-desc">
+        <a href="../../tests/tutorial.html" style="color:var(--accent-blue);">Open the tutorial walkthrough</a>
+        to auto-test every widget.
+      </div>
+    </div>
+    <div class="help-item">
+      <div class="help-title">Library — Use Case 1</div>
+      <div class="help-desc" style="margin-bottom:8px;">
+        Reverse-engineer an Inventor project end-to-end. Each row opens the
+        relevant widget. See <a href="../../docs/tutorials/05-reverse-engineer-duo.md" style="color:var(--accent-blue);">tutorial 05</a>
+        for the full walkthrough.
+      </div>
+      <div class="help-uc1-list" style="display:flex;flex-direction:column;gap:6px;font-size:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <span><strong>Import Inventor project</strong> — pick a folder, parse, push to library.</span>
+          <button class="help-uc1-btn" data-action="library-import" style="padding:2px 8px;border:1px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-primary);border-radius:3px;cursor:pointer;">Try it</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <span><strong>Browse library</strong> — Fusion-style tree, search, filter pills.</span>
+          <button class="help-uc1-btn" data-action="library-browse" style="padding:2px 8px;border:1px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-primary);border-radius:3px;cursor:pointer;">Try it</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <span><strong>Project tree</strong> — hierarchical project view with KPIs.</span>
+          <button class="help-uc1-btn" data-action="library-project-tree" style="padding:2px 8px;border:1px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-primary);border-radius:3px;cursor:pointer;">Try it</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <span><strong>Attachments</strong> — link PDFs / specs to components.</span>
+          <button class="help-uc1-btn" data-action="library-attachments" style="padding:2px 8px;border:1px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-primary);border-radius:3px;cursor:pointer;">Try it</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <span><strong>Version history</strong> — timeline of revisions with diff.</span>
+          <button class="help-uc1-btn" data-action="library-versions" style="padding:2px 8px;border:1px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-primary);border-radius:3px;cursor:pointer;">Try it</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <span><strong>Reverse engineer</strong> — synthesize a probable build sequence.</span>
+          <button class="help-uc1-btn" data-action="library-reverse-engineer" style="padding:2px 8px;border:1px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-primary);border-radius:3px;cursor:pointer;">Try it</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <span><strong>Rebuild guide</strong> — step-by-step rebuild walkthrough.</span>
+          <button class="help-uc1-btn" data-action="library-rebuild-guide" style="padding:2px 8px;border:1px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-primary);border-radius:3px;cursor:pointer;">Try it</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <span><strong>Author tutorial</strong> — edit narration, capture snapshots, save.</span>
+          <button class="help-uc1-btn" data-action="library-tutorial-author" style="padding:2px 8px;border:1px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-primary);border-radius:3px;cursor:pointer;">Try it</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <span><strong>Run tutorial</strong> — viewport sync, scrubber, replay.</span>
+          <button class="help-uc1-btn" data-action="library-tutorial-player" style="padding:2px 8px;border:1px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-primary);border-radius:3px;cursor:pointer;">Try it</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <span><strong>Generate drawing</strong> — base / iso / section / detail SVG.</span>
+          <button class="help-uc1-btn" data-action="library-drawing-generate" style="padding:2px 8px;border:1px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-primary);border-radius:3px;cursor:pointer;">Try it</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <span><strong>Batch drawings</strong> — every (component × view) sheet at once.</span>
+          <button class="help-uc1-btn" data-action="library-drawing-batch" style="padding:2px 8px;border:1px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-primary);border-radius:3px;cursor:pointer;">Try it</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <span><strong>Drawing templates</strong> — title blocks, sheet sizes, branding.</span>
+          <button class="help-uc1-btn" data-action="library-drawing-template" style="padding:2px 8px;border:1px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-primary);border-radius:3px;cursor:pointer;">Try it</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <span><strong>Drawing &harr; source link</strong> — drift detection vs source.</span>
+          <button class="help-uc1-btn" data-action="library-drawing-link" style="padding:2px 8px;border:1px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-primary);border-radius:3px;cursor:pointer;">Try it</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <span><strong>Work package summary</strong> — KPIs + recent activity.</span>
+          <button class="help-uc1-btn" data-action="library-summary" style="padding:2px 8px;border:1px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-primary);border-radius:3px;cursor:pointer;">Try it</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <span><strong>Build complete work package</strong> — all 5 phases, end-to-end.</span>
+          <button class="help-uc1-btn" data-action="library-build-package" style="padding:2px 8px;border:1px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-primary);border-radius:3px;cursor:pointer;">Try it</button>
+        </div>
+      </div>
+    </div>
+    <div class="help-item">
+      <div class="help-title">Tutorials</div>
+      <div class="help-desc">
+        <a href="../../docs/tutorials/01-quickstart.md" style="color:var(--accent-blue);">01 · Quickstart</a> ·
+        <a href="../../docs/tutorials/02-build-a-widget.md" style="color:var(--accent-blue);">02 · Build a widget</a> ·
+        <a href="../../docs/tutorials/03-token-economy.md" style="color:var(--accent-blue);">03 · Token economy</a> ·
+        <a href="../../docs/tutorials/04-admin-dashboard.md" style="color:var(--accent-blue);">04 · Admin dashboard</a> ·
+        <a href="../../docs/tutorials/05-reverse-engineer-duo.md" style="color:var(--accent-blue);">05 · Reverse-engineer DUO</a> ·
+        <a href="../../docs/tutorials/06-ai-agent-driven-build.md" style="color:var(--accent-blue);">06 · AI-agent build</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================= -->
+<!-- TOAST                                                          -->
+<!-- ============================================================= -->
+<div id="toast-container"></div>
+
+<!-- ============================================================= -->
+<!-- BOOT — kernel widgets + dispatch wiring                        -->
+<!-- ============================================================= -->
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { meter }       from '../../shared/meter.js';
+import { loadWidget }  from '../../shared/loader.js';
+import { Toast }       from '../../shared/ui-primitives.js';
+import { get }         from '../../shared/widget-registry.js';
+
+const APP = 'cyclecad';
+const handles  = new Map();              // widgetName → handle
+const host     = {                       // populated after viewport mounts
+  scene: null, camera: null, renderer: null, controls: null, root: null, canvas: null,
+};
+
+window.cycleCAD = window.cycleCAD || {};
+window.cycleCAD.host    = host;
+window.cycleCAD.handles = handles;
+window.cycleCAD.dispatch = dispatch;     // exposed for tests + agent
+
+const $ = sel => document.querySelector(sel);
+
+// ---------------------------------------------------------------
+// ACTION → WIDGET map. Each entry resolves to:
+//   { widget: '<name>', method?: '<api method>', mount?: '<selector>' }
+// If method is omitted, init() is enough (panel widgets that show their own UI).
+// If mount is omitted, the widget mounts into the dialog body (auto-opens).
+// Special widget '__viewport__' means the action runs against the viewport / cam-nav.
+// ---------------------------------------------------------------
+const ACTION_MAP = {
+  // ------ FILE ------
+  'file-new':       { fn: () => Toast.show('New project — clear scene (todo: scene reset)') },
+  'file-open':      { widget: 'glb-loader' },
+  'file-recent':    { fn: () => Toast.show('Recent projects (todo)') },
+  'file-save':      { fn: () => Toast.show('Save — local persistence (todo)') },
+  'file-save-as':   { fn: () => Toast.show('Save As — picker (todo)') },
+  'file-import':    { widget: 'step-import' },
+  'file-export':    { widget: 'stl-export' },
+
+  // ------ EDIT ------
+  'edit-undo':      { fn: () => Toast.show('Undo (history widget — todo)') },
+  'edit-redo':      { fn: () => Toast.show('Redo (history widget — todo)') },
+  'edit-copy':      { fn: () => Toast.show('Copy') },
+  'edit-paste':     { fn: () => Toast.show('Paste') },
+  'edit-delete':    { fn: () => Toast.show('Delete selected') },
+  'edit-preferences':{ widget: 'admin-settings' },
+
+  // ------ SKETCH ------
+  'sketch-line':       { widget: 'sketch-line' },
+  'sketch-rectangle':  { widget: 'sketch-rect' },
+  'sketch-circle':     { widget: 'sketch-circle' },
+  'sketch-arc':        { widget: 'sketch-arc' },
+  'sketch-polyline':   { widget: 'sketch-polyline' },
+  'sketch-point':      { widget: 'sketch-point' },
+  'sketch-constraint': { widget: 'sketch-constraint-solver' },
+  'sketch-finish':     { fn: () => Toast.show('Sketch finished — back to 3D') },
+
+  // ------ SOLID ------
+  'solid-extrude':  { widget: 'extrude' },
+  'solid-revolve':  { widget: 'revolve' },
+  'solid-sweep':    { widget: 'sweep' },
+  'solid-loft':     { widget: 'loft' },
+  'solid-hole':     { widget: 'hole' },
+  'solid-thread':   { widget: 'thread' },
+  'solid-fillet':   { widget: 'fillet' },
+  'solid-chamfer':  { widget: 'chamfer' },
+  'solid-shell':    { widget: 'shell' },
+  'solid-draft':    { widget: 'draft' },
+  'solid-scale':    { widget: 'scale' },
+  'solid-combine':  { widget: 'combine' },
+  'solid-split':    { widget: 'split' },
+  'solid-mirror':   { widget: 'mirror' },
+  'solid-pattern':  { widget: 'pattern' },
+
+  // ------ SURFACE ------
+  'surface-tspline':    { widget: 't-spline' },
+  'surface-nurbs':      { widget: 'nurbs' },
+  'surface-sheet-bend': { widget: 'sheet-bend' },
+  'surface-flange':     { widget: 'flange' },
+  'surface-unfold':     { widget: 'unfold' },
+
+  // ------ ASSEMBLY ------
+  'assembly-mate':         { widget: 'mate-constraint' },
+  'assembly-joint':        { widget: 'joint' },
+  'assembly-motion':       { widget: 'motion-study' },
+  'assembly-contact':      { widget: 'contact-set' },
+  'assembly-explode':      { widget: 'explode-slider' },
+  'assembly-interference': { widget: 'interference' },
+
+  // ------ MANUFACTURE ------
+  'cam-contour':    { widget: 'cam-contour' },
+  'cam-pocket':     { widget: 'pocket' },
+  'cam-drill':      { widget: 'drill' },
+  'cam-adaptive':   { widget: 'adaptive' },
+  'cam-face':       { widget: 'face' },
+  'cam-chamfer':    { widget: 'cam-chamfer' },
+  'cam-bore':       { widget: 'bore' },
+  'cam-post':       { widget: 'post-processor' },
+  'cam-gcode-editor':{ widget: 'gcode-editor' },
+  'cam-sim':        { widget: 'sim-executor' },
+  'cam-rockhopper': { widget: 'rockhopper-bridge' },
+  'cam-jog':        { widget: 'jog-pad' },
+  'cam-machine':    { widget: 'machine-picker' },
+  'cam-playback':   { widget: 'playback' },
+
+  // ------ DRAWING ------
+  'drawing-blueprint': { widget: 'blueprint' },
+  'drawing-section':   { widget: 'section-cut' },
+  'drawing-pdf':       { widget: 'pdf-export' },
+  'drawing-dxf':       { widget: 'dxf-export' },
+
+  // ------ RENDER ------
+  'render-hero':       { widget: 'hero-shot' },
+  'render-screenshot': { widget: 'screenshot' },
+  'render-ai':         { widget: 'ai-render' },
+
+  // ------ ANIMATION ------
+  'animation-explode': { widget: 'explode-slider' },
+  'animation-motion':  { widget: 'motion-study' },
+
+  // ------ INSPECT ------
+  'inspect-measure':       { widget: 'measure' },
+  'inspect-weight':        { widget: 'weight-estimator' },
+  'inspect-compare':       { widget: 'part-comparison' },
+  'inspect-section':       { widget: 'section-cut' },
+  'inspect-interference':  { widget: 'interference' },
+  'inspect-fea':           { widget: 'fea' },
+  'inspect-thermal':       { widget: 'thermal' },
+  'inspect-modal':         { widget: 'modal' },
+  'inspect-buckling':      { widget: 'buckling' },
+  'inspect-design-review': { widget: 'design-review' },
+  'inspect-dfm':           { widget: 'dfm-check' },
+
+  // ------ EXPLODEVIEW ------
+  'ev-load':         { widget: 'glb-loader' },
+  'ev-explode':      { widget: 'explode-slider' },
+  'ev-section-cut':  { widget: 'section-cut' },
+  'ev-isolate':      { widget: 'isolate' },
+  'ev-transparency': { widget: 'transparency' },
+  'ev-bom':          { widget: 'bom-csv' },
+  'ev-mass':         { widget: 'weight-estimator' },
+  'ev-annotations':  { widget: 'annotations' },
+  'ev-wireframe':    { widget: 'wireframe' },
+  'ev-screenshot':   { widget: 'screenshot' },
+  'ev-export-stl':   { widget: 'stl-export' },
+  'ev-export-obj':   { widget: 'obj-export' },
+  'ev-ai-narrator':  { widget: 'ai-narrator' },
+  'ev-ai-search':    { widget: 'ai-search-nl' },
+
+  // ------ TOOLS ------
+  'tools-ai-copilot':   { widget: 'ai-copilot' },
+  'tools-ai-engineer':  { widget: 'ai-engineering-analyst' },
+  'tools-ai-chatbot':   { widget: 'ai-chatbot' },
+  'tools-ai-vision':    { widget: 'ai-vision-id' },
+  'tools-ai-render':    { widget: 'ai-render' },
+  'tools-mcmaster':     { widget: 'mcmaster-search' },
+  'tools-standards':    { widget: 'standards-id' },
+  'tools-kiri':         { widget: 'kiri-moto-export' },
+  'tools-qr':           { widget: 'qr-code' },
+  'tools-marketplace':  { fn: () => window.open('../admin/', '_blank') },
+  'tools-settings':     { widget: 'admin-settings' },
+
+  // ------ TOKEN ECONOMY ------
+  'token-recharge':     { widget: 'token-recharge' },
+
+  // ------ LIBRARY (Use Case 1: Inventor reverse-engineer) ------
+  'library-import':              { widget: 'inventor-project-loader' },
+  'library-browse':              { widget: 'library-browser' },
+  'library-project-tree':        { widget: 'project-tree' },
+  'library-attachments':         { widget: 'attachment-manager' },
+  'library-versions':            { widget: 'version-history' },
+  'library-drawing-generate':    { widget: 'drawing-generator' },
+  'library-drawing-template':    { widget: 'drawing-template' },
+  'library-drawing-link':        { widget: 'drawing-link' },
+  'library-drawing-batch':       { widget: 'drawing-batch' },
+  'library-reverse-engineer':    { widget: 'reverse-engineer' },
+  'library-rebuild-guide':       { widget: 'rebuild-guide' },
+  'library-tutorial-author':     { widget: 'tutorial-author' },
+  'library-tutorial-player':     { widget: 'tutorial-player' },
+  'library-export-bundle':       { widget: 'export-bundle' },
+  'library-summary':             { widget: 'work-package-summary' },
+  'library-build-package':       { widget: 'work-package-builder' },
+
+  // Aliases for the right-click context-menu actions emitted by library-browser:
+  // see widgets/library-browser.js openContextMenu()
+  'open':                        { widget: 'library-browser' },
+  'show':                        { fn: () => Toast.show('Show in viewport — load via glb-loader') },
+  're':                          { widget: 'reverse-engineer' },
+  'create-tutorial':             { widget: 'tutorial-author' },
+  'run-tutorial':                { widget: 'tutorial-player' },
+  'generate-drawings':           { widget: 'drawing-generator' },
+  'build-work-package':          { widget: 'work-package-builder' },
+  'versions':                    { widget: 'version-history' },
+  'attachments':                 { widget: 'attachment-manager' },
+  'export-bundle':               { widget: 'export-bundle' },
+  'copy-path':                   { fn: () => Toast.show('Path copied to clipboard') },
+  'reveal':                      { fn: () => Toast.show('Reveal in finder (desktop only)') },
+
+  // ------ HELP ------
+  'help-docs':       { fn: () => window.open('https://github.com/vvlars-cmd/cyclecad-suite#readme', '_blank') },
+  'help-shortcuts':  { fn: () => $('#help-panel').classList.add('visible') },
+  'help-show':       { fn: () => $('#help-panel').classList.add('visible') },
+  'help-tutorial':   { fn: () => window.open('../../tests/tutorial.html', '_blank') },
+  'help-quickref':   { fn: () => window.open('../../docs/HELP.md', '_blank') },
+  'help-tutorial-01':{ fn: () => window.open('../../docs/tutorials/01-quickstart.md', '_blank') },
+  'help-tutorial-02':{ fn: () => window.open('../../docs/tutorials/02-build-a-widget.md', '_blank') },
+  'help-tutorial-03':{ fn: () => window.open('../../docs/tutorials/03-token-economy.md', '_blank') },
+  'help-tutorial-04':{ fn: () => window.open('../../docs/tutorials/04-admin-dashboard.md', '_blank') },
+  'help-tutorial-05':{ fn: () => window.open('../../docs/tutorials/05-reverse-engineer-duo.md', '_blank') },
+  'help-tutorial-06':{ fn: () => window.open('../../docs/tutorials/06-ai-agent-driven-build.md', '_blank') },
+  'help-about':      { fn: () => Toast.show('cycleCAD Suite — Stage 2.6 · 134 widgets live · Use Case 1 wired') },
+  'help-hard-reset': { fn: hardReset },
+
+  // ------ VIEW ------
+  'view-fit-all':   { fn: viewFitAll },
+  'view-iso':       { fn: () => viewSnap('iso') },
+  'view-top':       { fn: () => viewSnap('top') },
+  'view-front':     { fn: () => viewSnap('front') },
+  'view-right':     { fn: () => viewSnap('right') },
+  'view-wireframe': { widget: 'wireframe' },
+};
+
+// ---------------------------------------------------------------
+// Boot — mount kernel widgets, then wire UI
+// ---------------------------------------------------------------
+async function boot() {
+  // 1. viewport — owns scene/camera/renderer/render loop
+  const vp = await loadWidget('viewport', {
+    mount: '#viewport-container', app: APP, meter,
+    bg: 0xfafafa,
+    antialias: true,
+  });
+  handles.set('viewport', vp);
+  host.scene    = vp.api.getScene();
+  host.camera   = vp.api.getCamera();
+  host.renderer = vp.api.getRenderer();
+  host.root     = vp.api.getRoot();
+  host.canvas   = host.renderer.domElement;
+
+  // 2. orbit controls — needed by cam-nav + picking
+  host.controls = new OrbitControls(host.camera, host.canvas);
+  host.controls.enableDamping = true;
+  host.controls.dampingFactor = 0.08;
+
+  // OrbitControls update each frame via viewport's onTick — but we cheat
+  // and update on render listener (cheap)
+  vp.on('render', () => host.controls.update());
+
+  // 3. kernel widgets that decorate the scene
+  const kernel = ['cam-nav', 'grid', 'axes', 'lights', 'picking'];
+  for (const name of kernel) {
+    try {
+      const h = await loadWidget(name, {
+        mount:    '#viewport-container',
+        app:      APP, meter,
+        scene:    host.scene,
+        camera:   host.camera,
+        renderer: host.renderer,
+        controls: host.controls,
+        root:     host.root,
+        target:   host.canvas, // for picking
+      });
+      handles.set(name, h);
+    } catch (err) {
+      console.warn(`[cyclecad] kernel widget ${name} failed:`, err);
+    }
+  }
+
+  // 4. menu / toolbar / splash wiring
+  wireMenuClickPin();
+  wireDispatch();
+  wireWorkspaceTabs();
+  wireRightPanelTabs();
+  wireLeftPanelTabs();
+  wireSplash();
+  wireDialogClose();
+  wireKeyboard();
+
+  // 5. status counter
+  refreshStatus();
+
+  // 5a. mount the $CYCLE balance badge into the status bar
+  try {
+    const tb = await loadWidget('token-balance', {
+      mount: '#status-cycle', app: APP, meter,
+    });
+    handles.set('token-balance', tb);
+    document.body.addEventListener('token-balance:click', () => dispatch('token-recharge'));
+  } catch (e) { /* non-fatal */ }
+
+  // 6. handle splash pending action (set by inline script before module loaded)
+  if (window._pendingSplashAction) {
+    const a = window._pendingSplashAction;
+    window._pendingSplashAction = null;
+    setTimeout(() => dispatch(a), 80);
+  }
+
+  Toast.show(`cycleCAD ready · kernel + ${kernel.length} widgets loaded`);
+}
+
+// ---------------------------------------------------------------
+// Dispatch — central action handler
+// ---------------------------------------------------------------
+async function dispatch(action) {
+  const map = ACTION_MAP[action];
+  if (!map) {
+    Toast.show(`${action}: not yet wired`);
+    console.warn(`[cyclecad] unmapped action: ${action}`);
+    return;
+  }
+  if (typeof map.fn === 'function') {
+    try { map.fn(); } catch (e) { console.error(e); Toast.show(`${action} failed: ${e.message}`); }
+    return;
+  }
+  if (map.widget) {
+    await runWidget(map.widget, map.method, map.params);
+  }
+}
+
+async function runWidget(name, method, params) {
+  // Hide empty overlay on first user action
+  const empty = $('#empty');
+  if (empty) empty.style.display = 'none';
+
+  const entry = get(name);
+  if (!entry || entry.status === 'stub') {
+    Toast.show(`widget ${name} is a stub — coming soon`);
+    return;
+  }
+
+  let h = handles.get(name);
+  if (!h) {
+    // First use → mount it. Decide where:
+    //   - 3D-only widgets (no UI panel) → mount into viewport-container
+    //   - Panel widgets → open the modal and mount into its body
+    const cat = entry.category || '';
+    const SCENE_ONLY = new Set(['universal-3d', 'visualization']);
+    const opts = {
+      app: APP, meter,
+      scene: host.scene, camera: host.camera, renderer: host.renderer,
+      controls: host.controls, root: host.root, target: host.canvas,
+    };
+
+    if (SCENE_ONLY.has(cat)) {
+      opts.mount = '#viewport-container';
+      try {
+        h = await loadWidget(name, opts);
+      } catch (e) {
+        return failOpen(name, e);
+      }
+    } else {
+      openDialog(name);
+      opts.mount = '#dialog-body';
+      try {
+        h = await loadWidget(name, opts);
+      } catch (e) {
+        return failOpen(name, e);
+      }
+    }
+    handles.set(name, h);
+    refreshStatus();
+  } else {
+    // Re-invocation — re-open dialog if it has a panel
+    const cat = (get(name) || {}).category || '';
+    if (!new Set(['universal-3d', 'visualization']).has(cat)) {
+      openDialog(name);
+    }
+  }
+
+  if (method && h.api && typeof h.api[method] === 'function') {
+    try { h.api[method](params || {}); }
+    catch (e) { console.error(e); Toast.show(`${name}.${method} failed: ${e.message}`); }
+  } else {
+    Toast.show(`${name} · ready`);
+  }
+}
+
+function failOpen(name, err) {
+  console.error(`[cyclecad] ${name} failed to load:`, err);
+  Toast.show(`${name}: ${err.message || 'load error'}`);
+}
+
+function openDialog(title) {
+  $('#dialog-title').textContent = title;
+  $('#dialog-overlay').classList.add('visible');
+  // Clear prior body so the next loadWidget can mount fresh
+  // (only when remounting; for cached handles we just show the overlay)
+  // We deliberately do not destroy the handle; calling api.show() is up to widget.
+}
+
+function wireDialogClose() {
+  const close = () => $('#dialog-overlay').classList.remove('visible');
+  $('#dialog-close').addEventListener('click', close);
+  $('#dialog-cancel').addEventListener('click', close);
+  $('#dialog-overlay').addEventListener('click', (e) => {
+    if (e.target.id === 'dialog-overlay') close();
+  });
+  $('#help-close').addEventListener('click', () => $('#help-panel').classList.remove('visible'));
+}
+
+function wireDispatch() {
+  document.body.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    // Close any open menu dropdown
+    document.querySelectorAll('.menu-item.open').forEach(m => m.classList.remove('open'));
+    dispatch(btn.dataset.action);
+  });
+}
+
+function wireMenuClickPin() {
+  document.querySelectorAll('#menu-bar .menu-item').forEach(item => {
+    if (!item.querySelector('.menu-dropdown')) return;
+    item.addEventListener('click', (e) => {
+      // Only pin when clicking the label area (not links inside)
+      if (e.target.classList.contains('menu-item-link')) return;
+      e.stopPropagation();
+      const wasOpen = item.classList.contains('open');
+      document.querySelectorAll('.menu-item.open').forEach(m => m.classList.remove('open'));
+      if (!wasOpen) item.classList.add('open');
+    });
+  });
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.menu-item.open').forEach(m => m.classList.remove('open'));
+  });
+}
+
+function wireWorkspaceTabs() {
+  document.querySelectorAll('.workspace-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.workspace-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const ws = tab.dataset.workspace;
+      document.querySelectorAll('.workspace-tools').forEach(g => { g.style.display = 'none'; });
+      const tools = document.getElementById(`${ws}-tools`);
+      if (tools) tools.style.display = 'flex';
+    });
+  });
+}
+
+function wireRightPanelTabs() {
+  document.querySelectorAll('.right-panel-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.right-panel-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      document.querySelectorAll('.right-panel-content-item').forEach(p => p.classList.remove('active'));
+      const target = document.getElementById(`${tab.dataset.tab}-tab`);
+      if (target) target.classList.add('active');
+    });
+  });
+}
+
+function wireLeftPanelTabs() {
+  document.querySelectorAll('.left-panel-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.left-panel-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      document.querySelectorAll('.left-tab-pane').forEach(p => { p.style.display = 'none'; });
+      const target = {
+        'model-tree':    'model-tree-content',
+        'assembly-tree': 'assembly-tree-content',
+        'search':        'search-content',
+      }[tab.dataset.tab];
+      if (target) document.getElementById(target).style.display = 'block';
+    });
+  });
+}
+
+function wireSplash() {
+  document.querySelectorAll('[data-splash]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const action = btn.dataset.splash;
+      $('#welcome-panel').style.display = 'none';
+      setTimeout(() => dispatch(action), 60);
+    });
+  });
+}
+
+function wireKeyboard() {
+  document.addEventListener('keydown', (e) => {
+    if (e.target.matches('input, textarea, [contenteditable]')) return;
+    const k = e.key.toLowerCase();
+    const map = {
+      'l': 'sketch-line', 'r': 'sketch-rectangle', 'c': 'sketch-circle',
+      'a': 'sketch-arc', 'p': 'sketch-polyline',
+      'e': 'solid-extrude', 'v': 'solid-revolve',
+      'h': 'solid-chamfer', 's': 'solid-shell',
+      'm': 'inspect-measure',
+      'i': 'view-iso',
+      'f': e.shiftKey ? null : 'solid-fillet',
+      '?': 'help-show',
+    };
+    if (e.key === 'F5') { e.preventDefault(); return dispatch('view-fit-all'); }
+    if (e.key === 'Escape') { $('#dialog-overlay').classList.remove('visible'); return; }
+    if (map[k]) { e.preventDefault(); dispatch(map[k]); }
+  });
+}
+
+// ---------------------------------------------------------------
+// View helpers (no widget needed)
+// ---------------------------------------------------------------
+function viewFitAll() {
+  const vp = handles.get('viewport');
+  if (vp && vp.api.fit) {
+    if (!vp.api.fit({ padding: 1.6 })) Toast.show('Nothing to fit yet');
+    else Toast.show('Fit all');
+  }
+}
+
+function viewSnap(face) {
+  const cam = host.camera; if (!cam) return;
+  const d = 80;
+  const positions = {
+    iso:   [d, d, d],
+    top:   [0, d, 0.001],
+    front: [0, 0.001, d],
+    right: [d, 0.001, 0.001],
+  };
+  const [x, y, z] = positions[face] || positions.iso;
+  cam.position.set(x, y, z);
+  cam.lookAt(0, 0, 0);
+  cam.updateProjectionMatrix();
+  if (host.controls) host.controls.target.set(0, 0, 0);
+  Toast.show(`View · ${face}`);
+}
+
+function refreshStatus() {
+  const el = $('#status-widgets');
+  if (el) el.textContent = String(handles.size);
+}
+
+async function hardReset() {
+  if (!confirm('Clear browser caches and reload?')) return;
+  try {
+    if ('caches' in window) {
+      const names = await caches.keys();
+      await Promise.all(names.map(n => caches.delete(n)));
+    }
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      regs.forEach(r => r.unregister());
+    }
+    localStorage.clear();
+    sessionStorage.clear();
+  } catch {}
+  location.href = location.pathname + '?reset=' + Date.now();
+}
+
+// ---------------------------------------------------------------
+// Boot guard
+// ---------------------------------------------------------------
+boot().catch(err => {
+  console.error('[cyclecad] boot failed:', err);
+  Toast.show(`Boot failed: ${err.message}`);
+});
+</script>
+
+</body>
+</html>

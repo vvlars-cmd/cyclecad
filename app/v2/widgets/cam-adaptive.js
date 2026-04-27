@@ -1,60 +1,86 @@
 /**
  * @file widgets/cam-adaptive.js
- * @description CAM · adaptive clear concentric
+ * @description CAM · adaptive clearing — trochoidal roughing demo.
+ *
+ *   Reads its descriptor from `shared/strategies/index.json` (id `adaptive`).
+ *   Generates a sequence of small trochoidal loops marching along a line
+ *   inside the boundary box. Real adaptive paths require an offset-curve /
+ *   medial-axis kernel (OCCT WASM, Phase 2) — this synthesises the visual
+ *   signature so the simulator and post can be driven end-to-end.
+ *
  * @author  Sachin Kumar
  * @license MIT
  */
 
+import { defaultMachine } from '../shared/machines/index.js';
+import {
+  getStrategy, fallbackStrategy, paramFormHtml, panelHtml, wirePanel,
+} from '../shared/cam/widget-base.js';
+
+const STRATEGY_ID = 'adaptive';
+const WIDGET = 'cam-adaptive';
+
+/**
+ * Build a trochoidal-loop motion stream marching along +X.
+ * @param {Object<string,any>} p
+ * @returns {import('./post-processor.js').MotionRecord[]}
+ */
+function buildMotions(p) {
+  const c  = Array.isArray(p.boundary) ? p.boundary : [0, 0, 0];
+  const so = Number(p.stepOver || 1.5);
+  const sd = Number(p.stepDown || 4);
+  const f  = Number(p.feedrate || 1500);
+  const rpm = Number(p.spindleRpm || 12000);
+  const loops = 12;
+  const loopR = so * 0.8;
+
+  /** @type {import('./post-processor.js').MotionRecord[]} */
+  const m = [
+    { kind: 'comment', text: `adaptive · stepover=${so} stepdown=${sd} engagement=${p.engagementAngle}°` },
+    { kind: 'tool-change', toolNumber: 5, description: '6 mm 3-flute carbide (HSM)' },
+    { kind: 'workCoord', code: 'G54' },
+    { kind: 'spindle', mode: 'on', rpm, dir: 'cw' },
+    { kind: 'coolant', mode: 'mist' },
+    { kind: 'rapid', X: c[0], Y: c[1], Z: 5 },
+    { kind: 'rapid', Z: 0.5 },
+    { kind: 'linear', Z: c[2] - sd, F: 400 },
+  ];
+  for (let i = 0; i < loops; i++) {
+    const x = c[0] + i * so * 1.6;
+    // Trochoidal loop = forward + circular sweep.
+    m.push({ kind: 'linear', X: x, Y: c[1], F: f });
+    m.push({ kind: 'arc', dir: 'cw', X: x, Y: c[1], I: 0, J: loopR, F: f });
+  }
+  m.push({ kind: 'rapid', Z: 5 });
+  m.push({ kind: 'spindle', mode: 'off' });
+  m.push({ kind: 'coolant', mode: 'off' });
+  m.push({ kind: 'home' });
+  m.push({ kind: 'end' });
+  return m;
+}
+
+/**
+ * @param {{ mount:string|HTMLElement, app?:string,
+ *           meter?:{ charge:Function },
+ *           params?:{ machineId?:string } }} opts
+ */
 export async function init(opts) {
   const root = typeof opts.mount === 'string' ? document.querySelector(opts.mount) : opts.mount;
-  if (!root) throw new Error('cam-adaptive: mount not found');
+  if (!root) throw new Error(`${WIDGET}: mount not found`);
+  const desc = getStrategy(STRATEGY_ID) || fallbackStrategy(STRATEGY_ID);
+  const machineId = opts.params?.machineId || defaultMachine().id;
 
   const dom = document.createElement('div');
   dom.className = 'pt-cam-adaptive';
-  dom.style.cssText = 'padding:16px;font:13px Inter,sans-serif;background:#fff;border:1px solid #e5e7eb;border-radius:6px;max-width:520px';
-  dom.innerHTML = `
-    <div style="font:600 11px Inter;color:#E11D48;letter-spacing:3px;margin-bottom:6px">CAM-ADAPTIVE</div>
-    <div style="font:600 18px Georgia;margin-bottom:8px">CAM · adaptive clear concentric</div>
-    <div style="color:#6B7280;font-size:12px;margin-bottom:10px">Stage 2 scaffold · contract-compliant · ready for full impl pass.</div>
-    <button data-run style="background:#E11D48;color:#fff;border:none;padding:6px 14px;border-radius:4px;font:600 11px Inter;cursor:pointer">RUN</button>
-    <span data-status style="margin-left:10px;font:11px Menlo,monospace;color:#6B7280">idle</span>
-    <pre data-out style="margin-top:12px;background:#0F172A;color:#E2E8F0;padding:10px;border-radius:4px;font:11px Menlo,monospace;max-height:140px;overflow:auto;display:none"></pre>
-  `;
+  dom.style.cssText = 'padding:18px 20px;font:13px Inter,sans-serif;background:#fff;color:#0F172A;border:1px solid #E5E7EB;border-radius:8px;max-width:780px';
+  const { html: formHtml } = paramFormHtml(desc);
+  dom.innerHTML = panelHtml({ widget: WIDGET, name: desc.name, kind: desc.kind, description: desc.description, formHtml });
   root.appendChild(dom);
-  const status = dom.querySelector('[data-status]');
-  const out    = dom.querySelector('[data-out]');
 
-  const listeners = { change: [], result: [] };
-  const emit = (ev, p) => (listeners[ev] || []).forEach(fn => { try { fn(p); } catch {} });
-
-  let state = { runs: 0, lastResult: null };
-
-  async function run(params = {}) {
-    state.runs++;
-    status.textContent = `run #${state.runs}…`;
-    
-    const result = {
-      ok: true, runs: state.runs, ts: new Date().toISOString(),
-      params, widget: 'cam-adaptive',
-    };
-    state.lastResult = result;
-    out.style.display = 'block';
-    out.textContent = JSON.stringify(result, null, 2);
-    status.textContent = `done · runs=${state.runs}`;
-    emit('result', result);
-    emit('change', { kind: 'run', runs: state.runs });
-    return result;
-  }
-
-  dom.querySelector('[data-run]').addEventListener('click', () => run());
-
-  return {
-    api: {
-      run,
-      getState() { return { ...state }; },
-      reset() { state = { runs: 0, lastResult: null }; status.textContent = 'idle'; out.style.display = 'none'; emit('change', { kind: 'reset' }); },
-    },
-    on(event, fn) { (listeners[event] = listeners[event] || []).push(fn); },
-    destroy() { dom.remove(); },
-  };
+  /** @type {Record<string, Function[]>} */
+  const listeners = { change: [], generate: [], error: [] };
+  return wirePanel({
+    strategyId: STRATEGY_ID, widget: WIDGET, desc, dom,
+    meter: opts.meter, machineId, buildMotions, listeners,
+  });
 }

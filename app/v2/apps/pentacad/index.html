@@ -17,15 +17,15 @@
   header.suite-bar nav { margin-left: auto; display: flex; gap: 18px; font-size: 12px; }
   header.suite-bar nav a { color: #BBC2CC; text-decoration: none; }
   header.suite-bar nav a:hover { color: #fff; }
-  main#app { position: relative; background: #fafafa; }
-  #viewport { position: absolute; inset: 0; background: #ffffff; }
+  main#app { position: relative; background: #0E1117; }
+  #sim-host { position: absolute; inset: 0; }
   .empty-overlay {
     position: absolute; inset: 50% 0 auto 0; transform: translateY(-50%);
-    text-align: center; color: var(--pt-muted); padding: 32px; pointer-events: none;
+    text-align: center; color: #94a3b8; padding: 32px; pointer-events: none;
   }
-  .empty-overlay h2 { font: 600 22px Georgia, serif; margin-bottom: 6px; color: var(--pt-ink); }
+  .empty-overlay h2 { font: 600 22px Georgia, serif; margin-bottom: 6px; color: #fff; }
   .empty-overlay p { font-size: 13px; margin: 4px 0; }
-  .empty-overlay a { color: var(--pt-green); pointer-events: auto; }
+  .empty-overlay a { color: #10B981; pointer-events: auto; }
 </style>
 
 <script type="importmap">
@@ -50,41 +50,35 @@
 </header>
 
 <main id="app">
-  <div id="viewport"></div>
+  <div id="sim-host"></div>
   <div class="empty-overlay" id="empty">
-    <h2>Pentacad · Stage 1 shell</h2>
-    <p>Manifest read. Kernel loaded. Viewport will fill when widget #1 (<code>viewport</code>) lands.</p>
-    <p><a href="../../tests/">Open test dashboard →</a></p>
+    <h2>Pentacad · 5-axis simulator</h2>
+    <p>Loading kinematic chain · Penta Machine envelope · NGC parser…</p>
   </div>
 </main>
 
 <script type="module">
 import { meter } from '../../shared/meter.js';
-import { loadWidget } from '../../shared/loader.js';
 import { Toast } from '../../shared/ui-primitives.js';
-import { get } from '../../shared/widget-registry.js';
+import { init as initSim } from '../../widgets/pentacad-simulator.js';
 
 const APP = 'pentacad';
-const manifest = await fetch('./manifest.json').then(r => r.json());
 
-let mountedAny = false;
-for (const name of manifest.preload) {
-  const entry = get(name);
-  if (!entry || entry.status === 'stub') continue;
-  try {
-    await loadWidget(name, {
-      mount: name === 'viewport' ? '#viewport' : '#app',
-      app:   APP,
-      meter,
-    });
-    mountedAny = true;
-  } catch (err) {
-    console.warn(`[pentacad] ${name} failed:`, err);
-  }
+try {
+  const handle = await initSim({
+    mount: '#sim-host',
+    app:   APP,
+    meter,
+    params: { machineId: 'v2-50', autoplay: false },
+  });
+  document.getElementById('empty').style.display = 'none';
+  /** @type {any} */ (window).PentacadSim = handle.api;
+  Toast.show(`${APP} ready · simulator armed · click ▶ to play`);
+} catch (err) {
+  document.getElementById('empty').innerHTML =
+    `<h2>Pentacad — boot error</h2><p>${err && err.message ? err.message : err}</p>`;
+  console.error('[pentacad] simulator failed to mount', err);
 }
-
-if (mountedAny) document.getElementById('empty').style.display = 'none';
-Toast.show(`${APP} ready · ${manifest.preload.length} preload widgets`);
 </script>
 
 </body>

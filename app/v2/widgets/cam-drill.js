@@ -1,60 +1,93 @@
 /**
  * @file widgets/cam-drill.js
- * @description CAM · drill cycle (G83/G73)
+ * @description CAM · drill — peck drilling pattern (G83-style synthesised
+ *   from G0/G1 because Kinetic Control's canned G83 cycle is reproduced
+ *   inline in the post.
+ *
+ *   Reads its descriptor from `shared/strategies/index.json` (id `drill`).
+ *   Generates a square grid of `points × points` holes around the WCS
+ *   origin and pecks each one to `depth`, rapid-retracting between pecks.
+ *
  * @author  Sachin Kumar
  * @license MIT
  */
 
+import { defaultMachine } from '../shared/machines/index.js';
+import {
+  getStrategy, fallbackStrategy, paramFormHtml, panelHtml, wirePanel,
+} from '../shared/cam/widget-base.js';
+
+const STRATEGY_ID = 'drill';
+const WIDGET = 'cam-drill';
+
+/**
+ * Build a peck-drill motion stream over a square grid pattern.
+ * @param {Object<string,any>} p
+ * @returns {import('./post-processor.js').MotionRecord[]}
+ */
+function buildMotions(p) {
+  const n = Math.max(1, Math.floor(Number(p.points) || 4));
+  const depth = Number(p.depth || 6);
+  const peck  = Number(p.peckIncrement || 1.5);
+  const dwell = Number(p.dwell || 0.2);
+  const cycle = String(p.cycle || 'G83');
+  const spacing = 8;
+
+  /** @type {import('./post-processor.js').MotionRecord[]} */
+  const m = [
+    { kind: 'comment', text: `drill · ${n}x${n} grid · ${cycle} d=${depth} q=${peck}` },
+    { kind: 'tool-change', toolNumber: 3, description: '5 mm carbide drill' },
+    { kind: 'workCoord', code: 'G54' },
+    { kind: 'spindle', mode: 'on', rpm: 5000, dir: 'cw' },
+    { kind: 'coolant', mode: 'flood' },
+  ];
+  for (let iy = 0; iy < n; iy++) {
+    for (let ix = 0; ix < n; ix++) {
+      const x = ix * spacing;
+      const y = iy * spacing;
+      m.push({ kind: 'comment', text: `hole (${ix + 1},${iy + 1})` });
+      m.push({ kind: 'rapid', X: x, Y: y, Z: 5 });
+      m.push({ kind: 'rapid', Z: 0.5 });
+      let z = 0;
+      while (z < depth) {
+        const next = Math.min(z + peck, depth);
+        m.push({ kind: 'linear', Z: -next, F: 150 });
+        if (cycle === 'G83') m.push({ kind: 'rapid', Z: 0.5 });   // peck retract
+        z = next;
+      }
+      if (cycle === 'G82' || cycle === 'G84') m.push({ kind: 'dwell', seconds: dwell });
+      m.push({ kind: 'rapid', Z: 5 });
+    }
+  }
+  m.push({ kind: 'spindle', mode: 'off' });
+  m.push({ kind: 'coolant', mode: 'off' });
+  m.push({ kind: 'home' });
+  m.push({ kind: 'end' });
+  return m;
+}
+
+/**
+ * @param {{ mount:string|HTMLElement, app?:string,
+ *           meter?:{ charge:Function },
+ *           params?:{ machineId?:string } }} opts
+ */
 export async function init(opts) {
   const root = typeof opts.mount === 'string' ? document.querySelector(opts.mount) : opts.mount;
-  if (!root) throw new Error('cam-drill: mount not found');
+  if (!root) throw new Error(`${WIDGET}: mount not found`);
+  const desc = getStrategy(STRATEGY_ID) || fallbackStrategy(STRATEGY_ID);
+  const machineId = opts.params?.machineId || defaultMachine().id;
 
   const dom = document.createElement('div');
   dom.className = 'pt-cam-drill';
-  dom.style.cssText = 'padding:16px;font:13px Inter,sans-serif;background:#fff;border:1px solid #e5e7eb;border-radius:6px;max-width:520px';
-  dom.innerHTML = `
-    <div style="font:600 11px Inter;color:#E11D48;letter-spacing:3px;margin-bottom:6px">CAM-DRILL</div>
-    <div style="font:600 18px Georgia;margin-bottom:8px">CAM · drill cycle (G83/G73)</div>
-    <div style="color:#6B7280;font-size:12px;margin-bottom:10px">Stage 2 scaffold · contract-compliant · ready for full impl pass.</div>
-    <button data-run style="background:#E11D48;color:#fff;border:none;padding:6px 14px;border-radius:4px;font:600 11px Inter;cursor:pointer">RUN</button>
-    <span data-status style="margin-left:10px;font:11px Menlo,monospace;color:#6B7280">idle</span>
-    <pre data-out style="margin-top:12px;background:#0F172A;color:#E2E8F0;padding:10px;border-radius:4px;font:11px Menlo,monospace;max-height:140px;overflow:auto;display:none"></pre>
-  `;
+  dom.style.cssText = 'padding:18px 20px;font:13px Inter,sans-serif;background:#fff;color:#0F172A;border:1px solid #E5E7EB;border-radius:8px;max-width:780px';
+  const { html: formHtml } = paramFormHtml(desc);
+  dom.innerHTML = panelHtml({ widget: WIDGET, name: desc.name, kind: desc.kind, description: desc.description, formHtml });
   root.appendChild(dom);
-  const status = dom.querySelector('[data-status]');
-  const out    = dom.querySelector('[data-out]');
 
-  const listeners = { change: [], result: [] };
-  const emit = (ev, p) => (listeners[ev] || []).forEach(fn => { try { fn(p); } catch {} });
-
-  let state = { runs: 0, lastResult: null };
-
-  async function run(params = {}) {
-    state.runs++;
-    status.textContent = `run #${state.runs}…`;
-    
-    const result = {
-      ok: true, runs: state.runs, ts: new Date().toISOString(),
-      params, widget: 'cam-drill',
-    };
-    state.lastResult = result;
-    out.style.display = 'block';
-    out.textContent = JSON.stringify(result, null, 2);
-    status.textContent = `done · runs=${state.runs}`;
-    emit('result', result);
-    emit('change', { kind: 'run', runs: state.runs });
-    return result;
-  }
-
-  dom.querySelector('[data-run]').addEventListener('click', () => run());
-
-  return {
-    api: {
-      run,
-      getState() { return { ...state }; },
-      reset() { state = { runs: 0, lastResult: null }; status.textContent = 'idle'; out.style.display = 'none'; emit('change', { kind: 'reset' }); },
-    },
-    on(event, fn) { (listeners[event] = listeners[event] || []).push(fn); },
-    destroy() { dom.remove(); },
-  };
+  /** @type {Record<string, Function[]>} */
+  const listeners = { change: [], generate: [], error: [] };
+  return wirePanel({
+    strategyId: STRATEGY_ID, widget: WIDGET, desc, dom,
+    meter: opts.meter, machineId, buildMotions, listeners,
+  });
 }

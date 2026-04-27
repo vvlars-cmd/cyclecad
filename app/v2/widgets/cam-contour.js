@@ -1,60 +1,107 @@
 /**
  * @file widgets/cam-contour.js
- * @description CAM · 2D contour milling
+ * @description CAM · 2D contour milling — Phase 1 real CAM widget.
+ *
+ *   Reads its descriptor from `shared/strategies/index.json` (id `contour`).
+ *   The form is built from the registry's `params` list. On Generate the
+ *   widget synthesises a rectangular profile at constant Z, broken into
+ *   per-pass step-downs, and pushes the resulting MotionRecord stream
+ *   through `widgets/post-processor.js`'s `emitProgram()` to produce a
+ *   Kinetic-Control-flavoured NGC preview.
+ *
+ *   The motion stream is parametric — Pentacad's true CAM kernel needs an
+ *   OCCT WASM build to convert real CAD profiles into offset toolpaths.
+ *   For Phase 1 we sample a rectangle around the supplied profile origin
+ *   so the post-processor and simulator can be exercised end-to-end.
+ *
  * @author  Sachin Kumar
  * @license MIT
  */
 
+import { defaultMachine } from '../shared/machines/index.js';
+import {
+  getStrategy, fallbackStrategy, paramFormHtml, panelHtml, wirePanel,
+} from '../shared/cam/widget-base.js';
+
+const STRATEGY_ID = 'contour';
+const WIDGET = 'cam-contour';
+
+/**
+ * Synthesise a rectangular contour at constant Z, repeating per pass with a
+ * per-pass step-down. Honours `side` (inside / outside / on) by inflating
+ * the rectangle by `stockToLeave`.
+ *
+ * @param {Object<string,any>} p
+ * @returns {import('./post-processor.js').MotionRecord[]}
+ */
+function buildMotions(p) {
+  /** @type {number[]} */
+  const origin = Array.isArray(p.profile) ? p.profile : [0, 0, 0];
+  const w = 30, h = 20;                 // demo profile size (mm)
+  const sideOffset = p.side === 'inside' ? -p.stockToLeave : p.side === 'outside' ? p.stockToLeave : 0;
+  const x0 = origin[0] + sideOffset;
+  const y0 = origin[1] + sideOffset;
+  const x1 = origin[0] + w - sideOffset;
+  const y1 = origin[1] + h - sideOffset;
+  const passes = Math.max(1, Number(p.passes || 1));
+  const stepDown = Number(p.stepDown || 1);
+  const f = Number(p.feedrate || 600);
+  const rpm = Number(p.spindleRpm || 8000);
+
+  /** @type {import('./post-processor.js').MotionRecord[]} */
+  const m = [
+    { kind: 'comment', text: `2D contour · ${p.side} · ${passes}x${stepDown}mm` },
+    { kind: 'tool-change', toolNumber: 1, description: 'flat endmill' },
+    { kind: 'workCoord', code: 'G54' },
+    { kind: 'spindle', mode: 'on', rpm, dir: 'cw' },
+    { kind: 'coolant', mode: 'flood' },
+    { kind: 'rapid', X: x0 - p.leadIn, Y: y0, Z: 5 },
+    { kind: 'rapid', Z: 0.5 },
+  ];
+
+  for (let i = 1; i <= passes; i++) {
+    const z = origin[2] - i * stepDown;
+    m.push({ kind: 'comment', text: `pass ${i}/${passes} · Z=${z.toFixed(3)}` });
+    m.push({ kind: 'linear', X: x0 - p.leadIn, Y: y0, Z: z, F: f * 0.5 });
+    m.push({ kind: 'linear', X: x0, Y: y0, F: f });
+    m.push({ kind: 'linear', X: x1, Y: y0 });
+    m.push({ kind: 'linear', X: x1, Y: y1 });
+    m.push({ kind: 'linear', X: x0, Y: y1 });
+    m.push({ kind: 'linear', X: x0, Y: y0 });
+    m.push({ kind: 'linear', X: x0 - p.leadOut, Y: y0 });
+  }
+
+  m.push({ kind: 'rapid', Z: 5 });
+  m.push({ kind: 'spindle', mode: 'off' });
+  m.push({ kind: 'coolant', mode: 'off' });
+  m.push({ kind: 'home' });
+  m.push({ kind: 'end' });
+  return m;
+}
+
+/**
+ * @param {{ mount:string|HTMLElement, app?:string,
+ *           meter?:{ charge:Function },
+ *           params?:{ machineId?:string } }} opts
+ * @returns {Promise<{ api:object, on:Function, destroy:Function }>}
+ */
 export async function init(opts) {
   const root = typeof opts.mount === 'string' ? document.querySelector(opts.mount) : opts.mount;
-  if (!root) throw new Error('cam-contour: mount not found');
+  if (!root) throw new Error(`${WIDGET}: mount not found`);
+  const desc = getStrategy(STRATEGY_ID) || fallbackStrategy(STRATEGY_ID);
+  const machineId = opts.params?.machineId || defaultMachine().id;
 
   const dom = document.createElement('div');
   dom.className = 'pt-cam-contour';
-  dom.style.cssText = 'padding:16px;font:13px Inter,sans-serif;background:#fff;border:1px solid #e5e7eb;border-radius:6px;max-width:520px';
-  dom.innerHTML = `
-    <div style="font:600 11px Inter;color:#E11D48;letter-spacing:3px;margin-bottom:6px">CAM-CONTOUR</div>
-    <div style="font:600 18px Georgia;margin-bottom:8px">CAM · 2D contour milling</div>
-    <div style="color:#6B7280;font-size:12px;margin-bottom:10px">Stage 2 scaffold · contract-compliant · ready for full impl pass.</div>
-    <button data-run style="background:#E11D48;color:#fff;border:none;padding:6px 14px;border-radius:4px;font:600 11px Inter;cursor:pointer">RUN</button>
-    <span data-status style="margin-left:10px;font:11px Menlo,monospace;color:#6B7280">idle</span>
-    <pre data-out style="margin-top:12px;background:#0F172A;color:#E2E8F0;padding:10px;border-radius:4px;font:11px Menlo,monospace;max-height:140px;overflow:auto;display:none"></pre>
-  `;
+  dom.style.cssText = 'padding:18px 20px;font:13px Inter,sans-serif;background:#fff;color:#0F172A;border:1px solid #E5E7EB;border-radius:8px;max-width:780px';
+  const { html: formHtml } = paramFormHtml(desc);
+  dom.innerHTML = panelHtml({ widget: WIDGET, name: desc.name, kind: desc.kind, description: desc.description, formHtml });
   root.appendChild(dom);
-  const status = dom.querySelector('[data-status]');
-  const out    = dom.querySelector('[data-out]');
 
-  const listeners = { change: [], result: [] };
-  const emit = (ev, p) => (listeners[ev] || []).forEach(fn => { try { fn(p); } catch {} });
-
-  let state = { runs: 0, lastResult: null };
-
-  async function run(params = {}) {
-    state.runs++;
-    status.textContent = `run #${state.runs}…`;
-    
-    const result = {
-      ok: true, runs: state.runs, ts: new Date().toISOString(),
-      params, widget: 'cam-contour',
-    };
-    state.lastResult = result;
-    out.style.display = 'block';
-    out.textContent = JSON.stringify(result, null, 2);
-    status.textContent = `done · runs=${state.runs}`;
-    emit('result', result);
-    emit('change', { kind: 'run', runs: state.runs });
-    return result;
-  }
-
-  dom.querySelector('[data-run]').addEventListener('click', () => run());
-
-  return {
-    api: {
-      run,
-      getState() { return { ...state }; },
-      reset() { state = { runs: 0, lastResult: null }; status.textContent = 'idle'; out.style.display = 'none'; emit('change', { kind: 'reset' }); },
-    },
-    on(event, fn) { (listeners[event] = listeners[event] || []).push(fn); },
-    destroy() { dom.remove(); },
-  };
+  /** @type {Record<string, Function[]>} */
+  const listeners = { change: [], generate: [], error: [] };
+  return wirePanel({
+    strategyId: STRATEGY_ID, widget: WIDGET, desc, dom,
+    meter: opts.meter, machineId, buildMotions, listeners,
+  });
 }

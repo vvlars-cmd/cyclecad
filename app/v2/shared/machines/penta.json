@@ -25,6 +25,38 @@
       "feedrate": { "max_xy_mm_min": 1500, "max_z_mm_min": 1000, "max_a_deg_min": 6000, "max_b_deg_min": 36000 }
     },
     {
+      "id": "v2-50chb",
+      "name": "Pocket NC V2-50CHB",
+      "kind": "5-axis-mill",
+      "tcpc": true,
+      "envelope": {
+        "X": { "travel_in": 4.55, "travel_mm": 115.5, "min_in": -2.00, "max_in": 2.55 },
+        "Y": { "travel_in": 5.00, "travel_mm": 128.3, "min_in": -2.50, "max_in": 2.50 },
+        "Z": { "travel_in": 3.55, "travel_mm": 90.1, "note": "tool/holder/spindle dependent" },
+        "A": { "min_deg": -25, "max_deg": 135, "kind": "limited" },
+        "B": { "min_deg": -9999, "max_deg": 9999, "kind": "continuous" }
+      },
+      "spindle": { "max_rpm": 50000, "taper": "ER11", "controlMode": "M3 / M5", "highSpeed": true },
+      "feedrate": { "max_xy_mm_min": 1500, "max_z_mm_min": 1000, "max_a_deg_min": 6000, "max_b_deg_min": 36000 },
+      "notes": "V2-50 chassis with high-speed brushless spindle (CHB). Same envelope, 5× spindle RPM ceiling — short HSS / micro-tooling friendly."
+    },
+    {
+      "id": "v2-50chk",
+      "name": "Pocket NC V2-50CHK",
+      "kind": "5-axis-mill",
+      "tcpc": true,
+      "envelope": {
+        "X": { "travel_in": 4.55, "travel_mm": 115.5, "min_in": -2.00, "max_in": 2.55 },
+        "Y": { "travel_in": 5.00, "travel_mm": 128.3, "min_in": -2.50, "max_in": 2.50 },
+        "Z": { "travel_in": 3.55, "travel_mm": 90.1, "note": "tool/holder/spindle dependent" },
+        "A": { "min_deg": -25, "max_deg": 135, "kind": "limited" },
+        "B": { "min_deg": -9999, "max_deg": 9999, "kind": "continuous" }
+      },
+      "spindle": { "max_rpm": 60000, "taper": "ER11", "controlMode": "M3 / M5", "highSpeed": true, "kineticControlIntegrated": true },
+      "feedrate": { "max_xy_mm_min": 1500, "max_z_mm_min": 1000, "max_a_deg_min": 6000, "max_b_deg_min": 36000 },
+      "notes": "V2-50 chassis with Kinetic-Control-integrated high-speed spindle (CHK). Same envelope, full TCPC and rigid tapping."
+    },
+    {
       "id": "solo",
       "name": "Penta Solo",
       "kind": "5-axis-mill",

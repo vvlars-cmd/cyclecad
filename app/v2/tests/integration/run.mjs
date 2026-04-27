@@ -23,6 +23,7 @@ const FILES = [
   'zip-writer.test.mjs',
   'workflow-runner.test.mjs',
   'server-endpoints.test.mjs',
+  'modal-executor.test.mjs',
 ];
 
 globalThis.__INTEGRATION_ORCHESTRATED__ = true;

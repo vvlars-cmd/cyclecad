@@ -1,0 +1,149 @@
+{
+  "$schema": "https://cyclecad.com/schemas/strategy-registry.v1.json",
+  "version": "1.0.0",
+  "description": "Pentacad CAM strategy registry — 12 strategies covering 2D, 2.5D, and the first wave of 3D finishing. Each entry is a stable contract: a CAM widget consumes the params, the post-processor consumes the toolpath, the simulator plays it back. Flow is the 13th strategy reserved for Phase 2.",
+  "strategies": [
+    {
+      "id": "contour",
+      "name": "2D Contour",
+      "kind": "2d",
+      "phase": 1,
+      "widget": "cam-contour",
+      "description": "Cuts along a 2D profile at a constant Z. Inside / outside / on-line offset · per-pass step-down · lead-in / lead-out · tool comp G41/G42.",
+      "params": ["profile", "side", "stockToLeave", "stepDown", "passes", "leadIn", "leadOut", "feedrate", "spindleRpm"],
+      "axes": ["X", "Y", "Z"],
+      "minimumMachine": "v1"
+    },
+    {
+      "id": "pocket",
+      "name": "2D Pocket",
+      "kind": "2d",
+      "phase": 1,
+      "widget": "cam-pocket",
+      "description": "Clears the area inside a closed 2D boundary. Spiral / zig-zag / parallel · ramp / plunge entry · island avoidance.",
+      "params": ["boundary", "islands", "stepOver", "stepDown", "rampType", "rampAngle", "feedrate", "plungeFeed"],
+      "axes": ["X", "Y", "Z"],
+      "minimumMachine": "v1"
+    },
+    {
+      "id": "drill",
+      "name": "Drill",
+      "kind": "2d",
+      "phase": 1,
+      "widget": "cam-drill",
+      "description": "Canned drilling cycles — peck (G83) · simple (G81) · breakthrough (G82) · tapping (G84).",
+      "params": ["points", "depth", "peckIncrement", "dwell", "cycle", "retractType"],
+      "axes": ["X", "Y", "Z"],
+      "minimumMachine": "v1"
+    },
+    {
+      "id": "face",
+      "name": "Face",
+      "kind": "2d",
+      "phase": 1,
+      "widget": "cam-face",
+      "description": "Top-face stock removal. Linear / spiral / 90° / 45° · leaves a flat reference surface for downstream ops.",
+      "params": ["boundary", "stockToLeaveTop", "stepOver", "pattern", "feedrate"],
+      "axes": ["X", "Y", "Z"],
+      "minimumMachine": "v1"
+    },
+    {
+      "id": "adaptive",
+      "name": "Adaptive Clearing",
+      "kind": "2d",
+      "phase": 1,
+      "widget": "cam-adaptive",
+      "description": "High-speed roughing — keeps a constant tool-engagement angle, uses trochoidal motion, supports deeper axial step-downs at higher feeds.",
+      "params": ["boundary", "stepOver", "stepDown", "engagementAngle", "feedrate", "spindleRpm"],
+      "axes": ["X", "Y", "Z"],
+      "minimumMachine": "v2-50"
+    },
+    {
+      "id": "chamfer",
+      "name": "Chamfer",
+      "kind": "2d",
+      "phase": 1,
+      "widget": "cam-chamfer",
+      "description": "Edge-break / chamfer along a 2D contour with a vee or bullnose tool. Width · angle · clear-pass.",
+      "params": ["edges", "tool", "width", "angle", "passes"],
+      "axes": ["X", "Y", "Z"],
+      "minimumMachine": "v1"
+    },
+    {
+      "id": "bore",
+      "name": "Bore",
+      "kind": "2.5d",
+      "phase": 1,
+      "widget": "cam-bore",
+      "description": "Helical or rigid boring of a circular hole. Concentric ramp · final cleanup pass · spring-pass option.",
+      "params": ["centre", "diameter", "depth", "rampType", "ramp", "finishingPass"],
+      "axes": ["X", "Y", "Z"],
+      "minimumMachine": "v1"
+    },
+    {
+      "id": "thread",
+      "name": "Thread Mill",
+      "kind": "2.5d",
+      "phase": 1,
+      "widget": "cam-thread",
+      "description": "Thread-milling helix — internal / external · metric / unified · single-point or full-form tool.",
+      "params": ["centre", "diameter", "depth", "pitch", "type", "tool", "passes"],
+      "axes": ["X", "Y", "Z"],
+      "minimumMachine": "v1"
+    },
+    {
+      "id": "parallel",
+      "name": "3D Parallel",
+      "kind": "3d",
+      "phase": 2,
+      "widget": "cam-parallel",
+      "description": "3D finishing — parallel scallop lines projected onto a surface at a fixed angle. Stepover-controlled scallop height.",
+      "params": ["surface", "boundary", "stepOver", "scallopHeight", "angle", "tool"],
+      "axes": ["X", "Y", "Z"],
+      "minimumMachine": "v2-10"
+    },
+    {
+      "id": "radial",
+      "name": "3D Radial",
+      "kind": "3d",
+      "phase": 2,
+      "widget": "cam-radial",
+      "description": "3D finishing — radial passes around a centre point. Ideal for round bosses / pockets where parallel would leave starvation marks.",
+      "params": ["surface", "centre", "innerRadius", "outerRadius", "angularStep", "tool"],
+      "axes": ["X", "Y", "Z"],
+      "minimumMachine": "v2-10"
+    },
+    {
+      "id": "scallop",
+      "name": "3D Scallop",
+      "kind": "3d",
+      "phase": 2,
+      "widget": "cam-scallop",
+      "description": "Constant-scallop-height finishing — toolpath follows the surface curvature, keeping cusp height uniform regardless of slope.",
+      "params": ["surface", "boundary", "scallopHeight", "tool"],
+      "axes": ["X", "Y", "Z"],
+      "minimumMachine": "v2-50"
+    },
+    {
+      "id": "projection",
+      "name": "3D Projection",
+      "kind": "3d",
+      "phase": 2,
+      "widget": "cam-projection",
+      "description": "Projects a 2D pattern (curve / drawing) onto a 3D surface — engraving, decorative finishing, reference scribing.",
+      "params": ["surface", "pattern", "depth", "directionMode", "tool"],
+      "axes": ["X", "Y", "Z"],
+      "minimumMachine": "v2-10"
+    }
+  ],
+  "deferred": [
+    {
+      "id": "flow",
+      "name": "3D Flow",
+      "kind": "3d",
+      "phase": 2,
+      "status": "deferred",
+      "reason": "Reserved for Phase 2 — flow-line finishing follows surface u/v parameter lines and needs a parametric surface representation Pentacad doesn't ship until OCCT WASM lands."
+    }
+  ]
+}

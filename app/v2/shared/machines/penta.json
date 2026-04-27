@@ -4,14 +4,57 @@
   "vendorUrl": "https://www.pentamachine.com/",
   "kineticControlWiki": "https://pentamachine.atlassian.net/wiki/spaces/KCUR/overview",
   "gCodeReference": "https://pentamachine.atlassian.net/wiki/spaces/KCUR/pages/1774551045/Kinetic+Control+-+G+Code+Overview",
+  "officialSimulator": "https://sim.pentamachine.com",
   "post": "shared/postprocessors/penta-machine.cps",
   "extension": "ngc",
   "controller": "Kinetic Control",
+  "_layout": {
+    "canonical": ["solo", "v1", "v1-kickstarter", "v2-10", "v2-50"],
+    "extended":  ["v2-50chb", "v2-50chk", "v2-8l"],
+    "note": "The 'canonical' list mirrors sim.pentamachine.com v0.9.20's Change Machine menu exactly. The 'extended' list captures real Penta hardware variants (CHB/CHK spindle upgrades, V2-8L long-Z) that ship as production hardware but aren't published in the official simulator's machine catalogue today."
+  },
   "models": [
+    {
+      "id": "solo",
+      "name": "Penta Solo",
+      "kind": "5-axis-mill",
+      "tier": "canonical",
+      "tcpc": true,
+      "envelope": "see-vendor",
+      "notes": "Penta Solo — entry-level 5-axis. Same kinematic chain as V2-50; envelope per Penta Machine spec sheet."
+    },
+    {
+      "id": "v1",
+      "name": "Pocket NC V1",
+      "kind": "5-axis-mill",
+      "tier": "canonical",
+      "tcpc": "optional",
+      "envelope": "see-vendor",
+      "notes": "Original V1 (post-2014 production). TCPC available only after Kinetic Control upgrade."
+    },
+    {
+      "id": "v1-kickstarter",
+      "name": "Pocket NC V1 Kickstarter",
+      "kind": "5-axis-mill",
+      "tier": "canonical",
+      "tcpc": "optional",
+      "envelope": "see-vendor",
+      "notes": "Original Kickstarter-edition V1 (the very first batch). Slightly different homing and limit-switch wiring vs production V1; envelope identical."
+    },
+    {
+      "id": "v2-10",
+      "name": "Pocket NC V2-10",
+      "kind": "5-axis-mill",
+      "tier": "canonical",
+      "tcpc": true,
+      "envelope": "see-vendor",
+      "notes": "Smaller-table V2. Same controller, same post, smaller XY. Modern Pocket NC entry point."
+    },
     {
       "id": "v2-50",
       "name": "Pocket NC V2-50",
       "kind": "5-axis-mill",
+      "tier": "canonical",
       "default": true,
       "tcpc": true,
       "envelope": {
@@ -22,12 +65,14 @@
         "B": { "min_deg": -9999, "max_deg": 9999, "kind": "continuous" }
       },
       "spindle": { "max_rpm": 10000, "taper": "ER11", "controlMode": "M3 / M5" },
-      "feedrate": { "max_xy_mm_min": 1500, "max_z_mm_min": 1000, "max_a_deg_min": 6000, "max_b_deg_min": 36000 }
+      "feedrate": { "max_xy_mm_min": 1500, "max_z_mm_min": 1000, "max_a_deg_min": 6000, "max_b_deg_min": 36000 },
+      "notes": "Default machine in the simulator. Envelope confirmed by Penta Machine (Matt, 2026-04-27)."
     },
     {
       "id": "v2-50chb",
       "name": "Pocket NC V2-50CHB",
       "kind": "5-axis-mill",
+      "tier": "extended",
       "tcpc": true,
       "envelope": {
         "X": { "travel_in": 4.55, "travel_mm": 115.5, "min_in": -2.00, "max_in": 2.55 },
@@ -38,12 +83,13 @@
       },
       "spindle": { "max_rpm": 50000, "taper": "ER11", "controlMode": "M3 / M5", "highSpeed": true },
       "feedrate": { "max_xy_mm_min": 1500, "max_z_mm_min": 1000, "max_a_deg_min": 6000, "max_b_deg_min": 36000 },
-      "notes": "V2-50 chassis with high-speed brushless spindle (CHB). Same envelope, 5× spindle RPM ceiling — short HSS / micro-tooling friendly."
+      "notes": "V2-50 chassis with high-speed brushless spindle (CHB). Same envelope, 5× spindle RPM ceiling — short HSS / micro-tooling friendly. Suite-only; not in sim.pentamachine.com."
     },
     {
       "id": "v2-50chk",
       "name": "Pocket NC V2-50CHK",
       "kind": "5-axis-mill",
+      "tier": "extended",
       "tcpc": true,
       "envelope": {
         "X": { "travel_in": 4.55, "travel_mm": 115.5, "min_in": -2.00, "max_in": 2.55 },
@@ -54,40 +100,17 @@
       },
       "spindle": { "max_rpm": 60000, "taper": "ER11", "controlMode": "M3 / M5", "highSpeed": true, "kineticControlIntegrated": true },
       "feedrate": { "max_xy_mm_min": 1500, "max_z_mm_min": 1000, "max_a_deg_min": 6000, "max_b_deg_min": 36000 },
-      "notes": "V2-50 chassis with Kinetic-Control-integrated high-speed spindle (CHK). Same envelope, full TCPC and rigid tapping."
-    },
-    {
-      "id": "solo",
-      "name": "Penta Solo",
-      "kind": "5-axis-mill",
-      "tcpc": true,
-      "envelope": "see-vendor",
-      "notes": "Penta Solo — flagship 5-axis. Envelope spec via Penta Machine; uses same post."
-    },
-    {
-      "id": "v2-10",
-      "name": "Pocket NC V2-10",
-      "kind": "5-axis-mill",
-      "tcpc": true,
-      "envelope": "see-vendor",
-      "notes": "Smaller-table V2 variant. Same controller, same post, smaller XY."
+      "notes": "V2-50 chassis with Kinetic-Control-integrated high-speed spindle (CHK). Same envelope, full TCPC and rigid tapping. Suite-only; not in sim.pentamachine.com."
     },
     {
       "id": "v2-8l",
       "name": "Pocket NC V2-8L",
       "kind": "5-axis-mill",
+      "tier": "extended",
       "tcpc": "optional",
       "envelope": "see-vendor",
-      "notes": "Long-Z variant. TCPC defaults OFF; requires advanced-software-upgrade."
-    },
-    {
-      "id": "v1",
-      "name": "Pocket NC V1",
-      "kind": "5-axis-mill",
-      "tcpc": "optional",
-      "envelope": "see-vendor",
-      "notes": "Legacy V1. TCPC available only after Kinetic Control upgrade."
+      "notes": "Long-Z variant. TCPC defaults OFF; requires advanced-software-upgrade. Suite-only; not in sim.pentamachine.com."
     }
   ],
-  "_source": "Machine envelope for V2-50 sourced from Matt @ Penta Machine, 2026-04-27. Other models marked see-vendor pending official spec sheets."
+  "_source": "Canonical 5 (Solo, V1, V1 Kickstarter, V2-10, V2-50) mirror the Change Machine dropdown at sim.pentamachine.com v0.9.20 (audited 2026-04-27 via Chrome MCP). V2-50 envelope confirmed by Matt @ Penta Machine. Extended models (CHB, CHK, V2-8L) are real Penta hardware variants tracked in the Suite for completeness but absent from the official sim catalogue."
 }

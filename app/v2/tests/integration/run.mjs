@@ -24,6 +24,8 @@ const FILES = [
   'workflow-runner.test.mjs',
   'server-endpoints.test.mjs',
   'modal-executor.test.mjs',
+  'cam-3d-widgets.test.mjs',
+  'phase3.test.mjs',
 ];
 
 globalThis.__INTEGRATION_ORCHESTRATED__ = true;

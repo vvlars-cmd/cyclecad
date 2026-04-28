@@ -5,14 +5,15 @@
  *   https://cyclecad.com/app/pentacad-sim.html (3,423-line clone of the
  *   official sim at sim.pentamachine.com).
  *
- *   The legacy v0.4 standalone is a light-themed MUI clone (#03B188 green
- *   accent, white panes). The Suite-widget port keeps the legacy STRUCTURE
- *   — DOM scaffold, scene/camera/controls wiring, GLB rigging on `x/y/z/a/b`
- *   nodes, kinematic state model, NGC playback state machine, drag-and-drop
- *   file load with Toast confirmation, M0/M30 semantics, click-line-to-seek
- *   G-code panel — but adopts the Suite's dark-glass aesthetic with the
- *   Penta yellow `#FFB800` accent so it matches every other Suite widget
- *   (machine-picker, jog-pad, post-processor, etc.).
+ *   The widget is a light-themed Material-UI clone of the actual
+ *   sim.pentamachine.com (#03B188 Penta green accent, white panes,
+ *   #333 dark grey AppBar). It keeps the engine UNCHANGED from the
+ *   previous Suite port — DOM scaffold, scene/camera/controls wiring,
+ *   GLB rigging on `x/y/z/a/b` nodes, kinematic state model, NGC playback
+ *   state machine, drag-and-drop file load with Toast confirmation,
+ *   M0/M30 semantics, click-line-to-seek G-code panel — and only swaps
+ *   the chrome (palette, fonts, layout, button styling) to match the
+ *   real sim.pentamachine.com that Penta ships at v0.9.20.
  *
  *   What's REUSED from the legacy v0.4 file:
  *     - viewport scaffold (canvas host + floating panels above it)
@@ -31,7 +32,8 @@
  *       Suite widgets)
  *
  *   What's CHANGED vs. the legacy v0.4:
- *     - Palette: dark `#0A0E14` glass + Penta yellow `#FFB800` (was light MUI)
+ *     - Palette: identical to sim.pentamachine.com — `#FFFFFF` body,
+ *       `#333` AppBar, `#03B188` Penta green accent, `#E0E0E0` MUI buttons.
  *     - NGC parser: swapped to `shared/cam/modal-executor.js` so the simulator
  *       and the post-processor share one G-code interpreter. `parseNgc()` is
  *       kept as a thin wrapper over `executeProgram()` for the public contract.
@@ -73,7 +75,7 @@
 
 import { THREE, TrackballControls, GLTFLoader } from '../shared/lib/three-imports.js';
 import {
-  defaultMachine, getMachine, envelopeSummary, checkEnvelope,
+  defaultMachine, getMachine, envelopeSummary, checkEnvelope, listMachines,
 } from '../shared/machines/index.js';
 import { executeProgram } from '../shared/cam/modal-executor.js';
 
@@ -121,31 +123,46 @@ import { executeProgram } from '../shared/cam/modal-executor.js';
  * }} [params]
  */
 
-// ─── Palette · dark glass with Penta yellow accent ─────────────────────────
+// ─── Palette · sim.pentamachine.com light Material-UI clone ────────────────
+// Hex codes lifted live from sim.pentamachine.com — see the README at
+// docs/sim-parity-audit.md for the extraction methodology. Penta GREEN
+// (#03B188) replaces the previous Penta yellow accent; backdrop is white,
+// header is `#333` Material grey.
 const PAL = Object.freeze({
-  bg:          '#0A0E14',  // canvas background
-  glass:       'rgba(10,14,20,0.84)',
-  glassBorder: 'rgba(255,255,255,0.06)',
-  text:        '#E2E8F0',
-  textDim:     '#94A3B8',
-  textFaint:   '#475569',
-  rule:        '#1f2937',
-  accent:      '#FFB800',  // Penta yellow — play btn, current line, brand
-  accentDim:   'rgba(255,184,0,0.18)',
-  ok:          '#10B981',
-  warn:        '#FB923C',
-  err:         '#E11D48',
-  rapid:       '#94A3B8',
-  cut:         '#10B981',
-  arc:         '#FFB800',
+  appBarBg:    '#333333',
+  appBarText:  '#FFFFFF',
+  bodyBg:      '#FFFFFF',
+  bodyText:    '#000000',
+  pentaGreen:  '#03B188',
+  tabInactive: '#333333',
+  btnBg:       '#E0E0E0',
+  btnText:     '#000000',
+  sidebarBg:   '#FFFFFF',
+  sidebarRule: '#E0E0E0',
+  gutterText:  '#999999',
+  gcodeKw:     '#1565C0',
+  gcodeNum:    '#1B5E20',
+  gcodeCom:    '#999999',
+  currentLine: '#FFFDE7',
+  droBg:       '#F0F0F0',
+  droBorder:   '#D0D0D0',
+  vpTop:       '#FAFAFA',
+  vpBottom:    '#E5E7EB',
   axisX:       '#E11D48',
   axisY:       '#10B981',
   axisZ:       '#3B82F6',
-  toastBg:     'rgba(20,26,38,0.96)',
+  ok:          '#10B981',
+  warn:        '#FB923C',
+  err:         '#E11D48',
+  toastBg:     'rgba(51,51,51,0.95)',
+  toastText:   '#FFFFFF',
 });
 
-const FONT_MONO = '13px "JetBrains Mono", "SF Mono", Menlo, ui-monospace, monospace';
-const FONT_UI   = '13px Inter, -apple-system, BlinkMacSystemFont, sans-serif';
+const FONT_UI    = '14px Roboto, Helvetica, Arial, sans-serif';
+const FONT_BODY  = '16px Roboto, Helvetica, Arial, sans-serif';
+const FONT_MONO  = '13px Monaco, Menlo, "Ubuntu Mono", Consolas, "Source Code Pro", source-code-pro, monospace';
+const FONT_BTN   = '500 14px Roboto, Helvetica, Arial, sans-serif';
+const FONT_TITLE = '500 18px Roboto, Helvetica, Arial, sans-serif';
 
 /**
  * 30-line warm-up program — exercises every motion kind so the sim has
@@ -455,116 +472,249 @@ export async function init(opts) {
   const STOCK_TOP_THRESHOLD = 22; // mm — rough Z above which the tool can't engage stock
 
   // ─── DOM ──────────────────────────────────────────────────────────────────
-  // Floating-panel scaffold borrowed from the legacy v0.4 viewport layout
-  // (canvas-host beneath, panels absolutely positioned over it, all built
-  // with inline styles — no <style> tags per Suite-widget convention).
+  // sim.pentamachine.com clone: 64px dark Material-UI AppBar, 325px white
+  // sidebar with GCODE/SUMMARY tabs + monospace code area, light-gradient
+  // viewport with floating DRO + tool buttons + bottom-centre mini-bar +
+  // bottom-right CHANGE MACHINE green button. All CSS scoped to
+  // `.pt-pentacad-simulator` via the injected <style> block below.
   const dom = document.createElement('div');
   dom.className = 'pt-pentacad-simulator';
   dom.style.cssText = `
     position: relative;
     width: 100%; height: 100%; min-height: 480px;
-    font: ${FONT_UI};
-    background: ${PAL.bg}; color: ${PAL.text};
-    border-radius: 8px; overflow: hidden;
-    border: 1px solid ${PAL.rule};
+    font: ${FONT_BODY};
+    background: ${PAL.bodyBg}; color: ${PAL.bodyText};
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: 64px 1fr;
+    grid-template-columns: 325px 1fr;
   `;
-  dom.innerHTML = `
-    <div data-canvas-host style="position:absolute; inset:0; background:${PAL.bg}"></div>
 
-    <div data-drop-overlay style="position:absolute; inset:0; display:none; align-items:center; justify-content:center; background:rgba(255,184,0,0.08); border:2px dashed ${PAL.accent}; pointer-events:none; z-index:50">
-      <div style="background:${PAL.toastBg}; border:1px solid ${PAL.accentDim}; padding:14px 20px; border-radius:8px; font:${FONT_UI}; font-size:13px; color:${PAL.text}; box-shadow:0 6px 24px rgba(0,0,0,0.5)">
-        <span style="color:${PAL.accent}; font-weight:700; letter-spacing:.16em; font-size:11px">DROP TO LOAD</span>
-        <div style="margin-top:4px; color:${PAL.textDim}">.ngc · .nc · .gcode · .tap · .glb</div>
+  // Scoped <style> block — every selector lives under .pt-pentacad-simulator
+  // so nothing leaks into the host page (Suite-widget convention).
+  const styleEl = document.createElement('style');
+  styleEl.textContent = `
+    .pt-pentacad-simulator { font: ${FONT_BODY}; }
+    .pt-pentacad-simulator .pt-appbar-btn {
+      background: transparent; color: ${PAL.appBarText};
+      border: none; font: ${FONT_BTN}; letter-spacing: .04em;
+      padding: 6px 10px; border-radius: 4px; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 6px;
+      transition: background-color 150ms ease;
+    }
+    .pt-pentacad-simulator .pt-appbar-btn:hover { background: rgba(255,255,255,0.10); }
+    .pt-pentacad-simulator .pt-icon-btn {
+      background: transparent; color: ${PAL.appBarText};
+      border: none; padding: 6px; border-radius: 50%; cursor: pointer;
+      width: 36px; height: 36px; display: inline-flex;
+      align-items: center; justify-content: center;
+      transition: background-color 150ms ease;
+    }
+    .pt-pentacad-simulator .pt-icon-btn:hover { background: rgba(255,255,255,0.10); }
+    .pt-pentacad-simulator .pt-tab {
+      flex: 1; background: transparent; border: none;
+      color: ${PAL.tabInactive};
+      font: ${FONT_BTN}; letter-spacing: .04em;
+      padding: 12px 16px; cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: background-color 150ms ease, color 150ms ease;
+    }
+    .pt-pentacad-simulator .pt-tab:hover { background: rgba(0,0,0,0.04); }
+    .pt-pentacad-simulator .pt-tab.is-active {
+      color: ${PAL.pentaGreen};
+      border-bottom-color: ${PAL.pentaGreen};
+    }
+    .pt-pentacad-simulator .pt-mui-btn {
+      background: ${PAL.btnBg}; color: ${PAL.btnText};
+      border: none; padding: 6px 12px; border-radius: 4px;
+      font: ${FONT_BTN}; letter-spacing: .04em; cursor: pointer;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+      transition: background-color 150ms ease, box-shadow 150ms ease;
+      min-width: 36px;
+    }
+    .pt-pentacad-simulator .pt-mui-btn:hover {
+      background: #D5D5D5;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.16);
+    }
+    .pt-pentacad-simulator .pt-mui-btn:disabled {
+      color: rgba(0,0,0,0.38); background: rgba(0,0,0,0.06);
+      cursor: default; box-shadow: none;
+    }
+    .pt-pentacad-simulator .pt-green-btn {
+      background: ${PAL.pentaGreen}; color: ${PAL.appBarText};
+      border: none; padding: 8px 16px; border-radius: 4px;
+      font: ${FONT_BTN}; letter-spacing: .04em; cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.20);
+      transition: background-color 150ms ease, box-shadow 150ms ease;
+    }
+    .pt-pentacad-simulator .pt-green-btn:hover {
+      background: #02926F; box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    }
+    .pt-pentacad-simulator .pt-tool-btn {
+      width: 36px; height: 36px; padding: 0;
+      background: rgba(255,255,255,0.92);
+      color: ${PAL.bodyText}; border: 1px solid ${PAL.droBorder};
+      border-radius: 4px; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+      transition: background-color 150ms ease;
+    }
+    .pt-pentacad-simulator .pt-tool-btn:hover { background: #FFFFFF; }
+    .pt-pentacad-simulator .pt-gcode-line {
+      display: flex; padding: 0 8px 0 0; cursor: pointer;
+      white-space: pre; line-height: 1.55;
+    }
+    .pt-pentacad-simulator .pt-gcode-line:hover { background: #F5F5F5; }
+    .pt-pentacad-simulator .pt-gcode-line.is-current { background: ${PAL.currentLine}; }
+    .pt-pentacad-simulator .pt-gcode-gutter {
+      display: inline-block; min-width: 38px; padding: 0 8px;
+      color: ${PAL.gutterText}; text-align: right; user-select: none;
+      border-right: 1px solid ${PAL.sidebarRule}; margin-right: 8px;
+    }
+    .pt-pentacad-simulator .pt-machine-menu {
+      position: absolute; bottom: 50px; right: 16px;
+      background: ${PAL.bodyBg}; border-radius: 4px;
+      box-shadow: 0 5px 14px rgba(0,0,0,0.25), 0 2px 4px rgba(0,0,0,0.15);
+      min-width: 220px; padding: 6px 0; z-index: 70;
+    }
+    .pt-pentacad-simulator .pt-machine-item {
+      padding: 8px 16px; cursor: pointer; font: ${FONT_UI};
+      color: ${PAL.bodyText};
+    }
+    .pt-pentacad-simulator .pt-machine-item:hover { background: rgba(0,0,0,0.06); }
+    .pt-pentacad-simulator .pt-machine-item.is-active { color: ${PAL.pentaGreen}; font-weight: 500; }
+  `;
+  dom.appendChild(styleEl);
+
+  dom.innerHTML += `
+    <header data-appbar style="grid-row:1; grid-column:1 / -1; background:${PAL.appBarBg}; color:${PAL.appBarText}; display:flex; align-items:center; gap:16px; padding:0 16px; box-shadow:0 1px 4px rgba(0,0,0,0.18); z-index:10">
+      <div style="display:flex; align-items:center; gap:12px">
+        <div style="width:32px; height:32px; border-radius:50%; border:2px solid ${PAL.appBarText}; display:flex; align-items:center; justify-content:center; font:600 14px Roboto"></div>
+        <span style="font:${FONT_TITLE}">Penta Simulator <span data-version style="opacity:.7; font-weight:400">v0.9.20</span></span>
+      </div>
+      <div style="margin-left:auto; display:flex; align-items:center; gap:4px">
+        <button class="pt-appbar-btn" data-act="export-zip" title="Download simulation ZIP">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>
+          <span>SIMULATION ZIP</span>
+        </button>
+        <button class="pt-appbar-btn" data-act="export-gcode" title="Download G-code">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+          <span>GCODE</span>
+        </button>
+        <button class="pt-appbar-btn" data-act="export-model" title="Download 3D model">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          <span>MODEL</span>
+        </button>
+        <button class="pt-icon-btn" data-act="share" title="Share simulator">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
+        </button>
+        <button class="pt-icon-btn" data-act="help" title="Help">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <aside data-sidebar style="grid-row:2; grid-column:1; background:${PAL.sidebarBg}; border-right:1px solid ${PAL.sidebarRule}; display:flex; flex-direction:column; overflow:hidden">
+      <div role="tablist" style="display:flex; border-bottom:1px solid ${PAL.sidebarRule}">
+        <button class="pt-tab is-active" data-tab="gcode" role="tab" aria-selected="true">GCODE</button>
+        <button class="pt-tab" data-tab="summary" role="tab" aria-selected="false">SUMMARY</button>
+      </div>
+
+      <div data-tab-gcode style="flex:1; overflow:hidden; display:flex; flex-direction:column">
+        <pre data-gcode style="margin:0; flex:1; overflow:auto; padding:8px 0; font:${FONT_MONO}; color:${PAL.bodyText}; background:${PAL.bodyBg}"></pre>
+      </div>
+
+      <div data-tab-summary style="flex:1; overflow:auto; padding:16px; font:${FONT_UI}; display:none">
+        <div style="font-weight:500; margin-bottom:8px">Program Summary</div>
+        <div data-summary style="font:${FONT_MONO}; color:${PAL.bodyText}; line-height:1.7"></div>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:8px; padding:8px 12px; border-top:1px solid ${PAL.sidebarRule}; background:${PAL.bodyBg}">
+        <span data-file-pill style="flex:1; padding:4px 10px; background:${PAL.btnBg}; border-radius:12px; font:${FONT_MONO}; font-size:12px; color:${PAL.bodyText}; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">sim.ngc</span>
+        <button class="pt-icon-btn" data-act="upload" title="Upload .ngc" style="color:${PAL.bodyText}; width:32px; height:32px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16h6v-6h4l-7-7-7 7h4zM5 18h14v2H5z"/></svg>
+        </button>
+        <button class="pt-icon-btn" data-act="download" title="Download .ngc" style="color:${PAL.bodyText}; width:32px; height:32px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        </button>
+      </div>
+    </aside>
+
+    <main data-viewport style="grid-row:2; grid-column:2; position:relative; overflow:hidden; background:linear-gradient(180deg, ${PAL.vpTop} 0%, ${PAL.vpBottom} 100%)">
+      <div data-canvas-host style="position:absolute; inset:0"></div>
+
+      <div data-coord-widget style="position:absolute; bottom:80px; left:14px; width:64px; height:64px; pointer-events:none">
+        <svg viewBox="-40 -40 80 80" width="64" height="64" xmlns="http://www.w3.org/2000/svg" data-coord-svg style="overflow:visible"></svg>
+      </div>
+
+      <div data-envelope-warning style="position:absolute; top:14px; left:50%; transform:translateX(-50%); display:none; background:#FFF3F3; color:#7F1D1D; padding:8px 14px; border-radius:4px; font:${FONT_UI}; font-size:13px; line-height:1.45; border:1px solid #FCA5A5; box-shadow:0 1px 3px rgba(0,0,0,0.12); z-index:30; max-width:520px"></div>
+
+      <div data-tools style="position:absolute; top:24px; right:32px; display:flex; flex-direction:column; gap:8px; z-index:20">
+        <button class="pt-tool-btn" data-act="view-cube" title="Reset view">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 9h16M9 4v16"/></svg>
+        </button>
+        <button class="pt-tool-btn" data-act="screenshot" title="Screenshot">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
+        </button>
+      </div>
+
+      <div data-dro-panel style="position:absolute; top:24px; right:280px; width:140px; background:${PAL.droBg}; border:1px solid ${PAL.droBorder}; border-radius:4px; padding:12px; box-shadow:0 1px 3px rgba(0,0,0,0.10); z-index:15">
+        <div data-dro style="font:${FONT_MONO}; color:${PAL.bodyText}; line-height:1.65"></div>
+      </div>
+
+      <button class="pt-mui-btn" data-act="show-options" disabled style="position:absolute; top:200px; right:280px; width:140px">SHOW OPTIONS</button>
+
+      <div data-mini-bar style="position:absolute; bottom:18px; left:50%; transform:translateX(-50%); background:${PAL.bodyBg}; border-radius:24px; box-shadow:0 2px 8px rgba(0,0,0,0.16), 0 1px 3px rgba(0,0,0,0.10); padding:6px 10px; display:flex; align-items:center; gap:8px; z-index:25">
+        <button class="pt-mui-btn" data-act="prev" title="Step back" style="min-width:36px; padding:6px">⏮</button>
+        <button class="pt-mui-btn" data-act="play" title="Play / pause (Space)" style="min-width:36px; padding:6px">▶</button>
+        <button class="pt-mui-btn" data-act="step" title="Step forward (S)" style="min-width:36px; padding:6px">⏭</button>
+        <button class="pt-mui-btn" data-act="stop" title="Stop &amp; reset (R)" style="min-width:36px; padding:6px">■</button>
+        <span style="width:1px; height:20px; background:${PAL.sidebarRule}; margin:0 4px"></span>
+        <span data-progress-text style="font:${FONT_MONO}; color:${PAL.bodyText}; min-width:60px; text-align:center">0 / 0</span>
+        <input data-speed type="range" min="0.1" max="8" step="0.1" value="1" style="width:80px; accent-color:${PAL.pentaGreen}">
+        <span data-speed-out style="font:${FONT_MONO}; color:${PAL.bodyText}; min-width:34px">1.0×</span>
+      </div>
+
+      <div data-progress-bar-wrap style="position:absolute; bottom:0; left:0; right:0; height:3px; background:transparent; z-index:14">
+        <div data-progress-bar style="height:100%; width:0%; background:${PAL.pentaGreen}; transition:width .15s ease"></div>
+      </div>
+
+      <button class="pt-green-btn" data-act="change-machine" style="position:absolute; bottom:18px; right:18px; z-index:25">
+        <span data-machine-label></span>
+        <span style="margin-left:8px">CHANGE MACHINE</span>
+      </button>
+
+      <div data-machine-menu class="pt-machine-menu" style="display:none"></div>
+
+      <div data-status style="position:absolute; bottom:60px; left:18px; font:${FONT_MONO}; font-size:12px; color:#666; z-index:14">idle</div>
+    </main>
+
+    <div data-drop-overlay style="position:absolute; inset:0; display:none; align-items:center; justify-content:center; background:rgba(3,177,136,0.08); border:3px dashed ${PAL.pentaGreen}; pointer-events:none; z-index:80">
+      <div style="background:${PAL.bodyBg}; border:1px solid ${PAL.pentaGreen}; padding:18px 28px; border-radius:4px; font:${FONT_UI}; color:${PAL.bodyText}; box-shadow:0 5px 14px rgba(0,0,0,0.20)">
+        <span style="color:${PAL.pentaGreen}; font:${FONT_BTN}; letter-spacing:.08em">DROP TO LOAD</span>
+        <div style="margin-top:6px; color:#666; font-size:13px">.ngc · .nc · .gcode · .tap · .glb</div>
       </div>
     </div>
 
-    <div data-toast style="position:absolute; bottom:80px; left:50%; transform:translateX(-50%) translateY(8px); background:${PAL.toastBg}; color:${PAL.text}; padding:9px 16px; border-radius:6px; font:${FONT_UI}; font-size:12px; border:1px solid ${PAL.glassBorder}; box-shadow:0 4px 16px rgba(0,0,0,0.4); opacity:0; pointer-events:none; transition:opacity 200ms ease, transform 200ms ease; z-index:60; white-space:nowrap"></div>
-
-    <div data-header-pill style="position:absolute; top:14px; left:50%; transform:translateX(-50%); ${glassStyle()} border-radius:999px; padding:7px 18px; font:${FONT_UI}; font-size:12px; color:${PAL.text}; display:flex; align-items:center; gap:10px; pointer-events:none; transition:opacity 250ms ease; white-space:nowrap">
-      <span style="color:${PAL.accent}; font-weight:700; letter-spacing:.18em; font-size:11px">PENTACAD</span>
-      <span style="opacity:.35">·</span>
-      <span data-pill-machine style="font-weight:600"></span>
-      <span style="opacity:.35">·</span>
-      <span data-pill-env style="font:${FONT_MONO}; font-size:11px; color:${PAL.textDim}"></span>
-    </div>
-
-    <div data-gcode-panel style="position:absolute; top:62px; left:14px; width:340px; max-height:50%; ${glassStyle()} border-radius:8px; display:flex; flex-direction:column; transition:opacity 250ms ease; overflow:hidden">
-      <div data-gcode-head style="display:flex; align-items:center; gap:8px; padding:8px 12px; cursor:pointer; user-select:none; border-bottom:1px solid ${PAL.glassBorder}; font-size:11px; letter-spacing:.18em; font-weight:600; color:${PAL.textDim}">
-        <span data-gcode-caret>▾</span><span>G-CODE</span><span style="opacity:.4">·</span>
-        <span data-gcode-count style="font:${FONT_MONO}; font-size:11px; color:${PAL.textFaint}">0 lines</span>
-        <span data-gcode-name style="margin-left:auto; font:${FONT_MONO}; font-size:11px; color:${PAL.textDim}; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap"></span>
-      </div>
-      <pre data-gcode style="margin:0; padding:8px 0; flex:1; overflow:auto; font:${FONT_MONO}; line-height:1.55; color:${PAL.textDim}; background:transparent"></pre>
-    </div>
-
-    <div data-dro-panel style="position:absolute; top:62px; right:14px; width:220px; ${glassStyle()} border-radius:8px; padding:10px 12px; transition:opacity 250ms ease">
-      <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px; letter-spacing:.18em; font-weight:600; color:${PAL.textDim}; margin-bottom:8px">
-        <span>DRO</span>
-        <span data-dro-status style="font:${FONT_MONO}; font-size:10px; color:${PAL.textFaint}">idle</span>
-      </div>
-      <div data-dro style="font:${FONT_MONO}; line-height:1.7"></div>
-    </div>
-
-    <div data-coord-widget style="position:absolute; bottom:14px; left:14px; width:64px; height:64px; pointer-events:none; transition:opacity 250ms ease">
-      <svg viewBox="-40 -40 80 80" width="64" height="64" xmlns="http://www.w3.org/2000/svg" data-coord-svg style="overflow:visible"></svg>
-    </div>
-
-    <div data-envelope-warning style="position:absolute; bottom:14px; left:90px; max-width:320px; display:none; background:rgba(127,29,29,0.92); color:#fecaca; padding:8px 12px; border-radius:6px; font:${FONT_UI}; font-size:11px; line-height:1.45; border:1px solid rgba(252,165,165,0.25); transition:opacity 250ms ease"></div>
-
-    <div data-playback style="position:absolute; bottom:18px; left:50%; transform:translateX(-50%); width:640px; max-width:calc(100% - 28px); ${glassStyle()} border-radius:10px; padding:10px 14px; display:grid; grid-template-columns:auto auto 1fr auto; grid-template-rows:auto auto; gap:8px 14px; align-items:center; transition:opacity 250ms ease">
-      <div style="display:flex; gap:6px; grid-row:1; grid-column:1">
-        <button data-act="prev" title="Step back" style="${btn()}">⏮</button>
-        <button data-act="play" title="Play / pause (Space)" style="${btn('primary')}">▶</button>
-        <button data-act="step" title="Step forward (S)" style="${btn()}">⏭</button>
-        <button data-act="stop" title="Stop &amp; reset (R)" style="${btn()}">■</button>
-      </div>
-      <label style="display:flex; align-items:center; gap:8px; grid-row:1; grid-column:2; font-size:11px; color:${PAL.textDim}">
-        <span>SPD</span>
-        <input data-speed type="range" min="0.1" max="8" step="0.1" value="1" style="width:90px; accent-color:${PAL.accent}">
-        <span data-speed-out style="font:${FONT_MONO}; font-size:11px; color:${PAL.text}; min-width:34px">1.0×</span>
-      </label>
-      <div style="grid-row:1; grid-column:3; display:flex; align-items:center; gap:8px">
-        <span data-progress-text style="font:${FONT_MONO}; font-size:11px; color:${PAL.textDim}; white-space:nowrap">0 / 0</span>
-        <div style="flex:1; height:4px; background:${PAL.rule}; border-radius:2px; overflow:hidden">
-          <div data-progress-bar style="height:100%; width:0%; background:${PAL.accent}; transition:width .15s ease"></div>
-        </div>
-      </div>
-      <div style="grid-row:1; grid-column:4; font-size:11px; color:${PAL.textDim}; white-space:nowrap">
-        <span data-machine-label style="color:${PAL.text}; font-weight:600"></span>
-      </div>
-      <div data-status style="grid-row:2; grid-column:1 / -1; font:${FONT_MONO}; font-size:10px; color:${PAL.textFaint}; text-align:left; padding-left:2px">idle</div>
-    </div>
+    <div data-toast style="position:absolute; bottom:90px; left:50%; transform:translateX(-50%) translateY(8px); background:${PAL.toastBg}; color:${PAL.toastText}; padding:10px 18px; border-radius:4px; font:${FONT_UI}; font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,0.30); opacity:0; pointer-events:none; transition:opacity 200ms ease, transform 200ms ease; z-index:90; white-space:nowrap"></div>
   `;
   root.appendChild(dom);
 
-  /** @param {'primary'} [variant] */
-  function btn(variant) {
-    if (variant === 'primary') {
-      return `width:34px; height:34px; padding:0; background:${PAL.accent}; color:#1A1100; border:none; border-radius:6px; font:600 14px Inter; cursor:pointer; transition:filter .15s, transform .1s; box-shadow:0 2px 8px rgba(255,184,0,0.3)`;
-    }
-    return `width:34px; height:34px; padding:0; background:rgba(255,255,255,0.08); color:${PAL.text}; border:1px solid ${PAL.glassBorder}; border-radius:6px; font:600 13px Inter; cursor:pointer; transition:background .15s`;
-  }
-
-  /** Shared dark-glass style block for floating panels. */
-  function glassStyle() {
-    return `background:${PAL.glass}; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border:1px solid ${PAL.glassBorder}; box-shadow:0 6px 20px rgba(0,0,0,0.35);`;
-  }
-
   // Header & label text
-  /** @type {HTMLElement} */ (dom.querySelector('[data-pill-machine]')).textContent = machine.name;
-  /** @type {HTMLElement} */ (dom.querySelector('[data-pill-env]')).textContent = envelopeSummary(machine.id);
   /** @type {HTMLElement} */ (dom.querySelector('[data-machine-label]')).textContent = machine.name;
 
   // ─── THREE scene ──────────────────────────────────────────────────────────
   const canvasHost = /** @type {HTMLElement} */ (dom.querySelector('[data-canvas-host]'));
   const scene    = new THREE.Scene();
-  scene.background = new THREE.Color(PAL.bg);
+  // Scene background: transparent so the gradient on the viewport shows through
+  scene.background = null;
 
   const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 5000);
   camera.position.set(180, 140, 220);
   camera.lookAt(0, 30, 0);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setClearColor(0x000000, 0);
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
   canvasHost.appendChild(renderer.domElement);
   Object.assign(renderer.domElement.style, { width: '100%', height: '100%', display: 'block' });
@@ -590,8 +740,8 @@ export async function init(opts) {
   fill.position.set(-100, 60, -60);
   scene.add(fill);
 
-  // Grid + axes
-  const grid = new THREE.GridHelper(400, 40, 0x334155, 0x1f2937);
+  // Grid + axes — neutral grey on the light viewport
+  const grid = new THREE.GridHelper(400, 40, 0xB0B0B0, 0xD8D8D8);
   scene.add(grid);
   const axes = new THREE.AxesHelper(40);
   axes.position.y = 0.1;
@@ -705,7 +855,7 @@ export async function init(opts) {
     zGroup.add(tool);
     const tooltip = new THREE.Mesh(
       new THREE.SphereGeometry(2.5, 16, 16),
-      new THREE.MeshBasicMaterial({ color: PAL.ok }),
+      new THREE.MeshBasicMaterial({ color: PAL.pentaGreen }),
     );
     tooltip.position.set(0, 45, 12);
     zGroup.add(tooltip);
@@ -958,71 +1108,68 @@ export async function init(opts) {
 
   // ─── Panel queries ────────────────────────────────────────────────────────
   const droEl       = /** @type {HTMLElement} */ (dom.querySelector('[data-dro]'));
-  const droStatusEl = /** @type {HTMLElement} */ (dom.querySelector('[data-dro-status]'));
   const progressTextEl = /** @type {HTMLElement} */ (dom.querySelector('[data-progress-text]'));
   const progressBar = /** @type {HTMLElement} */ (dom.querySelector('[data-progress-bar]'));
   const gcodeEl     = /** @type {HTMLElement} */ (dom.querySelector('[data-gcode]'));
-  const gcodeCount  = /** @type {HTMLElement} */ (dom.querySelector('[data-gcode-count]'));
-  const gcodeName   = /** @type {HTMLElement} */ (dom.querySelector('[data-gcode-name]'));
-  const gcodeHead   = /** @type {HTMLElement} */ (dom.querySelector('[data-gcode-head]'));
-  const gcodeCaret  = /** @type {HTMLElement} */ (dom.querySelector('[data-gcode-caret]'));
-  const gcodePanel  = /** @type {HTMLElement} */ (dom.querySelector('[data-gcode-panel]'));
+  const summaryEl   = /** @type {HTMLElement} */ (dom.querySelector('[data-summary]'));
+  const tabGcodeEl   = /** @type {HTMLElement} */ (dom.querySelector('[data-tab-gcode]'));
+  const tabSummaryEl = /** @type {HTMLElement} */ (dom.querySelector('[data-tab-summary]'));
+  const filePillEl  = /** @type {HTMLElement} */ (dom.querySelector('[data-file-pill]'));
+  const sidebarEl   = /** @type {HTMLElement} */ (dom.querySelector('[data-sidebar]'));
+  const viewportEl  = /** @type {HTMLElement} */ (dom.querySelector('[data-viewport]'));
+  const machineMenuEl = /** @type {HTMLElement} */ (dom.querySelector('[data-machine-menu]'));
+  const machineLabelEl = /** @type {HTMLElement} */ (dom.querySelector('[data-machine-label]'));
   const statusEl    = /** @type {HTMLElement} */ (dom.querySelector('[data-status]'));
   const envWarnEl   = /** @type {HTMLElement} */ (dom.querySelector('[data-envelope-warning]'));
   const speedSlider = /** @type {HTMLInputElement} */ (dom.querySelector('[data-speed]'));
   const speedOut    = /** @type {HTMLElement} */ (dom.querySelector('[data-speed-out]'));
   const coordSvg    = /** @type {SVGElement} */ (dom.querySelector('[data-coord-svg]'));
-  const playbackEl  = /** @type {HTMLElement} */ (dom.querySelector('[data-playback]'));
-  const droPanelEl  = /** @type {HTMLElement} */ (dom.querySelector('[data-dro-panel]'));
-  const headerPillEl = /** @type {HTMLElement} */ (dom.querySelector('[data-header-pill]'));
-  const coordWidgetEl = /** @type {HTMLElement} */ (dom.querySelector('[data-coord-widget]'));
   const dropOverlayEl = /** @type {HTMLElement} */ (dom.querySelector('[data-drop-overlay]'));
   const toastEl       = /** @type {HTMLElement} */ (dom.querySelector('[data-toast]'));
 
-  /** @type {HTMLElement[]} */
-  const fadingPanels = [playbackEl, droPanelEl, gcodePanel, headerPillEl, coordWidgetEl];
-
   function renderDro() {
-    const f3 = (n) => Number(n).toFixed(3).padStart(8, ' ');
-    const f1 = (n) => Number(n).toFixed(1).padStart(6, ' ');
-    /** @param {boolean} on @param {string} c */
-    const led = (on, c) => `<span style="display:inline-block; width:8px; height:8px; border-radius:50%;
-      background:${on ? c : 'rgba(255,255,255,0.12)'}; box-shadow:${on ? `0 0 6px ${c}` : 'none'};
-      vertical-align:middle"></span>`;
+    const f4 = (/** @type {number} */ n) => Number(n).toFixed(4);
     droEl.innerHTML = `
-      <div><span style="color:${PAL.textDim}">X</span> <b style="color:${PAL.text}">${f3(state.X)}</b><span style="color:${PAL.textFaint}">mm</span></div>
-      <div><span style="color:${PAL.textDim}">Y</span> <b style="color:${PAL.text}">${f3(state.Y)}</b><span style="color:${PAL.textFaint}">mm</span></div>
-      <div><span style="color:${PAL.textDim}">Z</span> <b style="color:${PAL.text}">${f3(state.Z)}</b><span style="color:${PAL.textFaint}">mm</span></div>
-      <div><span style="color:${PAL.textDim}">A</span> <b style="color:${PAL.text}">${f1(state.A)}</b><span style="color:${PAL.textFaint}">°</span></div>
-      <div><span style="color:${PAL.textDim}">B</span> <b style="color:${PAL.text}">${f1(state.B)}</b><span style="color:${PAL.textFaint}">°</span></div>
-      <div style="margin-top:6px; padding-top:6px; border-top:1px solid ${PAL.glassBorder};
-                  font-size:11px; color:${PAL.textDim}">
-        F <span style="color:${PAL.text}">${state.F}</span>
-        · S <span style="color:${PAL.text}">${state.S}</span>
-        · T <span style="color:${PAL.text}">${state.T}</span>
-      </div>
-      <div style="margin-top:6px; font-size:11px; color:${PAL.textDim};
-                  display:flex; align-items:center; gap:10px">
-        <span>${led(state.spindleOn, PAL.ok)} spindle</span>
-        <span>${led(state.coolant !== 'off', PAL.axisZ)} ${state.coolant}</span>
-      </div>
+      <div style="display:flex; justify-content:space-between"><span>X:</span><span>${f4(state.X)}</span></div>
+      <div style="display:flex; justify-content:space-between"><span>Y:</span><span>${f4(state.Y)}</span></div>
+      <div style="display:flex; justify-content:space-between"><span>Z:</span><span>${f4(state.Z)}</span></div>
+      <div style="display:flex; justify-content:space-between"><span>A:</span><span>${f4(state.A)}</span></div>
+      <div style="display:flex; justify-content:space-between"><span>B:</span><span>${f4(state.B)}</span></div>
+      <div style="display:flex; justify-content:space-between"><span>T:</span><span>${state.T}</span></div>
     `;
   }
 
   function renderProgress() {
     const total = motions.length || 1;
     const idx = state.motionIndex + 1;
-    progressTextEl.textContent = `${idx} / ${total}  ·  L${motions[state.motionIndex]?.line ?? '–'}`;
+    progressTextEl.textContent = `${idx} / ${total}`;
     progressBar.style.width = `${Math.min(100, (idx / total) * 100)}%`;
+  }
+
+  /**
+   * Light-theme syntax highlighter: G/M codes blue, numeric tokens dark green,
+   * comments grey. Run on each line at render time so motion clicks still
+   * map back to the source line via `data-l`.
+   *
+   * @param {string} s
+   * @returns {string}
+   */
+  function highlightGcode(s) {
+    const escaped = escHtml(s);
+    return escaped
+      .replace(/(\([^)]*\))/g, `<span style="color:${PAL.gcodeCom}">$1</span>`)
+      .replace(/(;.*$)/g, `<span style="color:${PAL.gcodeCom}">$1</span>`)
+      .replace(/\b([GMgm]\d+(?:\.\d+)?)\b/g, `<span style="color:${PAL.gcodeKw}; font-weight:500">$1</span>`)
+      .replace(/(?<![A-Za-z])([XYZAaBbIiJjKkFfSsTtHh]-?\d+(?:\.\d+)?)/g, `<span style="color:${PAL.gcodeNum}">$1</span>`);
   }
 
   /** @param {number} line */
   function highlightLine(line) {
-    const lines = gcodeEl.querySelectorAll('span[data-l]');
-    lines.forEach(l => /** @type {HTMLElement} */ (l).style.background = 'transparent');
+    const lines = gcodeEl.querySelectorAll('.pt-gcode-line');
+    lines.forEach(l => l.classList.remove('is-current'));
     const target = gcodeEl.querySelector(`[data-l="${line}"]`);
     if (target instanceof HTMLElement) {
-      target.style.background = PAL.accentDim;
+      target.classList.add('is-current');
       target.scrollIntoView({ block: 'center', behavior: 'smooth' });
     }
   }
@@ -1030,11 +1177,37 @@ export async function init(opts) {
   function renderGcode() {
     const src = (opts.params?.ngc || DEMO_NGC).split('\n');
     gcodeEl.innerHTML = src.map((s, i) =>
-      `<span data-l="${i + 1}" style="display:block; padding:0 10px; cursor:pointer">` +
-      `<span style="color:${PAL.textFaint}">${String(i + 1).padStart(3, ' ')}</span>  ` +
-      `<span style="color:${PAL.text}">${escHtml(s)}</span></span>`,
+      `<div class="pt-gcode-line" data-l="${i + 1}">` +
+      `<span class="pt-gcode-gutter">${i + 1}</span>` +
+      `<span>${highlightGcode(s)}</span></div>`,
     ).join('');
-    gcodeCount.textContent = `${src.length} lines`;
+    renderSummary();
+  }
+
+  /** Summary tab — rapid count, cut count, machine envelope summary. */
+  function renderSummary() {
+    let rapid = 0, cut = 0, arcs = 0, tool = 0, m0 = 0, m30 = 0;
+    for (const m of motions) {
+      if (m.kind === 'G0') rapid++;
+      else if (m.kind === 'G1') cut++;
+      else if (m.kind === 'G2' || m.kind === 'G3') arcs++;
+      else if (m.kind === 'TOOL') tool++;
+      else if (m.kind === 'PAUSE') m0++;
+      else if (m.kind === 'END') m30++;
+    }
+    summaryEl.innerHTML = `
+      <div>motions:    <b>${motions.length}</b></div>
+      <div>rapids:     <b>${rapid}</b></div>
+      <div>cuts:       <b>${cut}</b></div>
+      <div>arcs:       <b>${arcs}</b></div>
+      <div>tool ch:    <b>${tool}</b></div>
+      <div>M0 pauses:  <b>${m0}</b></div>
+      <div>M30 ends:   <b>${m30}</b></div>
+      <div style="margin-top:10px; padding-top:8px; border-top:1px solid ${PAL.sidebarRule}">
+        <div>machine: <b>${escHtml(machine.name)}</b></div>
+        <div style="color:#666; font-size:12px; margin-top:2px">${escHtml(envelopeSummary(machine.id))}</div>
+      </div>
+    `;
   }
 
   // Click a G-code line → seek
@@ -1065,6 +1238,22 @@ export async function init(opts) {
     setStatus(`seek · line ${line}`);
   }
 
+  // Tab switching — GCODE | SUMMARY
+  for (const tab of dom.querySelectorAll('.pt-tab')) {
+    tab.addEventListener('click', () => {
+      const which = /** @type {HTMLElement} */ (tab).getAttribute('data-tab');
+      for (const t of dom.querySelectorAll('.pt-tab')) {
+        const el = /** @type {HTMLElement} */ (t);
+        const active = el.getAttribute('data-tab') === which;
+        el.classList.toggle('is-active', active);
+        el.setAttribute('aria-selected', active ? 'true' : 'false');
+      }
+      tabGcodeEl.style.display = which === 'gcode' ? 'flex' : 'none';
+      tabSummaryEl.style.display = which === 'summary' ? 'block' : 'none';
+      if (which === 'summary') renderSummary();
+    });
+  }
+
   /** @param {string} s */
   function escHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
@@ -1074,14 +1263,13 @@ export async function init(opts) {
   function showEnvelopeWarning(errs) {
     envWarnEl.style.display = 'block';
     envWarnEl.innerHTML =
-      `<b style="color:#fff">envelope</b><br>${errs.slice(0, 3).map(escHtml).join('<br>')}`;
+      `<b>envelope</b> · ${errs.slice(0, 3).map(escHtml).join(' · ')}`;
   }
   function hideEnvelopeWarning() { envWarnEl.style.display = 'none'; }
 
   /** @param {string} s */
   function setStatus(s) {
     statusEl.textContent = s;
-    droStatusEl.textContent = s;
   }
 
   /**
@@ -1105,7 +1293,7 @@ export async function init(opts) {
 
   function updatePlayBtn() {
     const b = /** @type {HTMLButtonElement} */ (dom.querySelector('[data-act="play"]'));
-    b.textContent = playing ? '⏸' : '▶';
+    if (b) b.textContent = playing ? '⏸' : '▶';
   }
 
   // ─── Coordinate-system widget (camera-aligned RGB axes) ──────────────────
@@ -1131,58 +1319,48 @@ export async function init(opts) {
              stroke="${p.col}" stroke-width="2.4" stroke-linecap="round"/>` +
       `<circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="6.5" fill="${p.col}" />` +
       `<text x="${p.x.toFixed(2)}" y="${(p.y + 3).toFixed(2)}"
-             fill="#0A0E14" font-family="Inter,sans-serif" font-size="8" font-weight="700"
+             fill="#FFFFFF" font-family="Roboto,sans-serif" font-size="8" font-weight="700"
              text-anchor="middle">${p.label}</text>`,
     ).join('');
   }
 
-  // ─── Auto-hide chrome ─────────────────────────────────────────────────────
-  // Panels fade out 3 seconds after the last user interaction with the
-  // canvas; any mousemove / mouseenter brings them back. Matches the
-  // legacy v0.4 pt-controls is-faded behaviour (legacy used 5s; we ride
-  // the Suite-wide 3s convention).
-  let hideTimer = /** @type {number|null} */ (null);
-  let hidden = false;
-  const HIDE_AFTER_MS = 3000;
+  // Chrome is always visible in the light Material-UI layout — no auto-hide.
 
-  function showChrome() {
-    if (hidden) {
-      for (const p of fadingPanels) p.style.opacity = '1';
-      hidden = false;
+  // ─── CHANGE MACHINE menu ──────────────────────────────────────────────────
+  // Populated from listMachines() filtered to penta.json's _layout.canonical
+  // array (the same 5 machines sim.pentamachine.com offers in v0.9.20).
+  const CANONICAL_MACHINES = ['solo', 'v1', 'v1-kickstarter', 'v2-10', 'v2-50'];
+  function renderMachineMenu() {
+    const all = listMachines().filter(m => CANONICAL_MACHINES.includes(m.id));
+    machineMenuEl.innerHTML = all.map(m =>
+      `<div class="pt-machine-item${m.id === machine.id ? ' is-active' : ''}" data-machine-id="${m.id}">${escHtml(m.name)}</div>`,
+    ).join('');
+    for (const item of machineMenuEl.querySelectorAll('.pt-machine-item')) {
+      item.addEventListener('click', () => {
+        const id = /** @type {HTMLElement} */ (item).getAttribute('data-machine-id');
+        if (id) setMachine(id);
+        machineMenuEl.style.display = 'none';
+      });
     }
-    if (hideTimer != null) clearTimeout(hideTimer);
-    hideTimer = /** @type {*} */ (setTimeout(() => {
-      hidden = true;
-      for (const p of fadingPanels) p.style.opacity = '0';
-    }, HIDE_AFTER_MS));
   }
-  // Kick the timer
-  showChrome();
-  canvasHost.addEventListener('mousemove', showChrome);
-  canvasHost.addEventListener('mouseenter', showChrome);
-  canvasHost.addEventListener('mousedown', showChrome);
-  canvasHost.addEventListener('wheel', showChrome, { passive: true });
-  // Hovering a panel keeps it visible too
-  for (const p of fadingPanels) {
-    p.addEventListener('mouseenter', showChrome);
-    p.addEventListener('mousemove', showChrome);
-  }
-
-  // G-code panel collapse
-  let gcodeCollapsed = false;
-  gcodeHead.addEventListener('click', () => {
-    gcodeCollapsed = !gcodeCollapsed;
-    gcodeEl.style.display = gcodeCollapsed ? 'none' : '';
-    gcodeCaret.textContent = gcodeCollapsed ? '▸' : '▾';
+  const changeBtn = /** @type {HTMLButtonElement} */ (dom.querySelector('[data-act="change-machine"]'));
+  changeBtn?.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    const open = machineMenuEl.style.display !== 'none';
+    if (!open) renderMachineMenu();
+    machineMenuEl.style.display = open ? 'none' : 'block';
+  });
+  document.addEventListener('click', (ev) => {
+    if (!(ev.target instanceof Node)) return;
+    if (machineMenuEl.contains(ev.target) || changeBtn?.contains(ev.target)) return;
+    machineMenuEl.style.display = 'none';
   });
 
   // ─── Drag-and-drop ────────────────────────────────────────────────────────
-  // Scoped to the canvas host (not document-wide as the legacy v0.4 was —
-  // the Suite hosts multiple widgets in one page so we can't grab every
-  // dragenter). Two file kinds are accepted:
+  // Drop targets: sidebar AND viewport (the overlay paints over both since it's
+  // pinned to the widget root). Two file kinds are accepted:
   //   .ngc / .nc / .gcode / .tap / .txt → text-load via api.load(text)
   //   .glb / .gltf                       → swap kinematic GLB on the fly
-  // Same dispatch logic as the legacy v0.4 'drop' handler at line 2875.
   let dragDepth = 0;
   function isFileDrag(/** @type {DragEvent} */ ev) {
     const types = ev.dataTransfer?.types;
@@ -1192,22 +1370,22 @@ export async function init(opts) {
     }
     return false;
   }
-  canvasHost.addEventListener('dragenter', (/** @type {DragEvent} */ ev) => {
+  dom.addEventListener('dragenter', (/** @type {DragEvent} */ ev) => {
     if (!isFileDrag(ev)) return;
     ev.preventDefault();
     dragDepth++;
     dropOverlayEl.style.display = 'flex';
   });
-  canvasHost.addEventListener('dragover', (/** @type {DragEvent} */ ev) => {
+  dom.addEventListener('dragover', (/** @type {DragEvent} */ ev) => {
     if (!isFileDrag(ev)) return;
     ev.preventDefault();
     if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'copy';
   });
-  canvasHost.addEventListener('dragleave', (/** @type {DragEvent} */ ev) => {
+  dom.addEventListener('dragleave', () => {
     dragDepth = Math.max(0, dragDepth - 1);
     if (dragDepth === 0) dropOverlayEl.style.display = 'none';
   });
-  canvasHost.addEventListener('drop', async (/** @type {DragEvent} */ ev) => {
+  dom.addEventListener('drop', async (/** @type {DragEvent} */ ev) => {
     ev.preventDefault();
     dragDepth = 0;
     dropOverlayEl.style.display = 'none';
@@ -1239,6 +1417,7 @@ export async function init(opts) {
       try {
         const text = await readFileAsText(f);
         load(text);
+        filePillEl.textContent = f.name;
         showToast(`loaded: ${f.name} · ${motions.length} motions`);
       } catch (err) {
         showToast(`failed to read ${f.name}`);
@@ -1347,10 +1526,9 @@ export async function init(opts) {
     const next = getMachine(id);
     if (!next) return;
     machine = next;
-    /** @type {HTMLElement} */ (dom.querySelector('[data-pill-machine]')).textContent = machine.name;
-    /** @type {HTMLElement} */ (dom.querySelector('[data-pill-env]')).textContent = envelopeSummary(machine.id);
-    /** @type {HTMLElement} */ (dom.querySelector('[data-machine-label]')).textContent = machine.name;
+    machineLabelEl.textContent = machine.name;
     setStatus(`machine → ${machine.name}`);
+    renderSummary();
   }
 
   // Wire buttons
@@ -1366,6 +1544,59 @@ export async function init(opts) {
       if (m) applyMotionTarget(m);
       applyKinematics(); renderDro(); renderProgress();
     }],
+    ['view-cube', () => {
+      camera.position.set(180, 140, 220);
+      camera.lookAt(0, 30, 0);
+      controls.target.set(0, 30, 0);
+      controls.update?.();
+      showToast('view reset');
+    }],
+    ['screenshot', () => {
+      try {
+        const url = renderer.domElement.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = url; a.download = 'pentacad-simulator.png';
+        a.click();
+      } catch (_) { showToast('screenshot failed'); }
+    }],
+    ['upload', () => {
+      const inp = document.createElement('input');
+      inp.type = 'file';
+      inp.accept = '.ngc,.nc,.gcode,.tap,.txt';
+      inp.onchange = async () => {
+        const f = inp.files?.[0];
+        if (!f) return;
+        try {
+          const text = await readFileAsText(f);
+          load(text);
+          filePillEl.textContent = f.name;
+          showToast(`loaded: ${f.name}`);
+        } catch { showToast('failed to load'); }
+      };
+      inp.click();
+    }],
+    ['download', () => {
+      const text = opts.params?.ngc || DEMO_NGC;
+      const blob = new Blob([text], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filePillEl.textContent || 'sim.ngc';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+    }],
+    ['export-zip', () => showToast('simulation ZIP — coming soon')],
+    ['export-gcode', () => {
+      const text = opts.params?.ngc || DEMO_NGC;
+      const blob = new Blob([text], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filePillEl.textContent || 'sim.ngc';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+    }],
+    ['export-model', () => showToast('model export — coming soon')],
+    ['share', () => showToast('share — copy URL from address bar')],
+    ['help', () => showToast('SPACE play/pause · S step · R reset · [/] speed')],
   ];
   for (const [act, fn] of buttonHandlers) {
     const b = dom.querySelector(`[data-act="${act}"]`);

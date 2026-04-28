@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Pentacad Simulator v0.4 — 5-axis G-code playback</title>
+<title>Pentacad Simulator v0.5 — 5-axis G-code playback</title>
 <meta name="description" content="Browser-native 5-axis G-code simulator for Pentamachine V1 / V2-10 / V2-50 / V1 Kickstarter / Solo. Runs offline, no install." />
 <meta name="theme-color" content="#333333" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Ctext%20y%3D%22.9em%22%20font-size%3D%2290%22%3E%F0%9F%9B%A0%EF%B8%8F%3C%2Ftext%3E%3C%2Fsvg%3E" />
@@ -25,11 +25,12 @@
 
 <style>
 /* =============================================================================
-   Pentacad Simulator v0.4 — clone visual / functional parity with the
-   reference 5-axis simulator at sim.pentamachine.com.
+   Pentacad Simulator v0.5 — clone visual / functional parity with the
+   reference 5-axis simulator at sim.pentamachine.com (v0.9.20).
 
-   Tokens distilled from live computed-style sampling (Chrome MCP, 2026-04-25).
-   Layout, palette, MUI button styling, dimensions reproduced for parity.
+   Tokens distilled from live computed-style sampling (Chrome MCP, 2026-04-25)
+   plus a structural diff against the Penta bundled CSS+JS (2026-04-28). See
+   PENTACAD-V1-VS-PENTA-DIFF.md (Suite repo) for the diff.
 
    Design tokens
    ─────────────────────────────────────────────────────────────────────────────
@@ -39,14 +40,17 @@
    --pt-options-btn-bg        #E0E0E0   Show Options idle bg
    --pt-options-btn-bg-open   #F5F5F5   Show Options open bg
    --pt-backplot-bg           #F3F3F3   Back Plot panel bg
-   --pt-divider               #D8D8D8   vertical divider between pane and viewport
+   --pt-divider               #cbcbcb   vertical divider between pane and viewport
+                                        (Penta bundle: #cbcbcb — v0.4 used #D8D8D8)
    --pt-overlay               rgba(100,100,100,0.75)  DRO + ControlsOverlay bg
    --pt-text                  rgba(0,0,0,0.87)
    --pt-text-2                rgba(0,0,0,0.60)
    --pt-text-3                rgba(0,0,0,0.38)
    --pt-warn                  #ED6C02   warning amber (MUI warning.main)
-   --pt-info                  #0288D1   info blue (MUI info.main)
-   --pt-error                 #D32F2F   error red
+   --pt-info                  #266798   navy blue (Penta bundle — v0.4 used MUI #0288D1)
+   --pt-error                 #DE5555   error red (Penta bundle — v0.4 used MUI #D32F2F)
+   --pt-feed                  #ED6C02   default feed-color for cut moves (Back Plot)
+   --pt-rapid                 #236e24   default rapid-color (Penta bundle's 'green' family)
    ============================================================================= */
 :root {
   --pt-green:               #03B188;
@@ -57,15 +61,17 @@
   --pt-options-btn-bg:      #E0E0E0;
   --pt-options-btn-bg-open: #F5F5F5;
   --pt-backplot-bg:         #F3F3F3;
-  --pt-divider:             #D8D8D8;
+  --pt-divider:             #cbcbcb;
   --pt-divider-strong:      rgba(0, 0, 0, 0.25);
   --pt-overlay:             rgba(100, 100, 100, 0.75);
   --pt-text:                rgba(0, 0, 0, 0.87);
   --pt-text-2:              rgba(0, 0, 0, 0.60);
   --pt-text-3:              rgba(0, 0, 0, 0.38);
   --pt-warn:                #ED6C02;
-  --pt-info:                #0288D1;
-  --pt-error:               #D32F2F;
+  --pt-info:                #266798;
+  --pt-error:               #DE5555;
+  --pt-feed:                #ED6C02;
+  --pt-rapid:               #236e24;
   --pt-radius-sm:           4px;
   --pt-radius:              5px;
   --pt-radius-lg:           8px;
@@ -792,6 +798,87 @@ input, textarea { font-family: inherit; color: inherit; }
   font-size: 12px;
 }
 
+/* ── Monaco line-decoration classes ──
+   Monaco applies these via deltaDecorations on the active line / on
+   error lines. They mirror v0.4's `.pt-line.is-current` and `.is-error`
+   colouring so the experience matches when Monaco swaps in for the
+   regex tokeniser. */
+.pt-mon-line-current { background: rgba(3, 177, 136, 0.12) !important; }
+.pt-mon-line-error   { background: rgba(222, 85, 85, 0.10) !important; box-shadow: inset 3px 0 0 var(--pt-error); }
+.pt-mon-glyph-warn::after {
+  content: "⚠";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--pt-warn);
+}
+
+/* ── Interactive tutorial coachmarks ──
+   The overlay lays an SVG mask over the entire viewport that darkens
+   everything except a 6 px-rounded cutout positioned over the current
+   step's target element. The cutout is pointer-events:auto so the user
+   can interact with the highlighted control while the rest of the page
+   is gated. A pointer-card sits adjacent to the cutout with the next-
+   action label and Next / Exit Demo buttons. */
+.pt-tutorial {
+  position: fixed;
+  inset: 0;
+  z-index: 9700;
+  pointer-events: none;
+}
+.pt-tutorial-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: auto;
+}
+.pt-tutorial-card {
+  position: absolute;
+  background: #FFFFFF;
+  border-radius: var(--pt-radius-lg);
+  box-shadow: var(--pt-elev-8);
+  padding: 14px 18px 12px 18px;
+  min-width: 280px;
+  max-width: 360px;
+  pointer-events: auto;
+  z-index: 9701;
+}
+.pt-tutorial-title { font-size: 15px; font-weight: 500; margin: 0 0 4px 0; color: var(--pt-text); }
+.pt-tutorial-body  { font-size: 13px; line-height: 1.5; margin: 0 0 12px 0; color: var(--pt-text); }
+.pt-tutorial-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pt-tutorial-step {
+  flex: 1;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pt-text-2);
+}
+.pt-tutorial-btn {
+  height: 32px;
+  padding: 6px 14px;
+  background: var(--pt-green);
+  color: #FFFFFF;
+  border: none;
+  border-radius: var(--pt-radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 120ms;
+}
+.pt-tutorial-btn:hover { background: var(--pt-green-dark); }
+.pt-tutorial-btn.secondary { background: #E0E0E0; color: var(--pt-text); }
+.pt-tutorial-btn.secondary:hover { background: rgb(214, 214, 214); }
+
 /* ── Toast (transient feedback) ── */
 .pt-toast {
   position: fixed;
@@ -841,7 +928,7 @@ input, textarea { font-family: inherit; color: inherit; }
     </svg>
   </a>
   <p class="pt-title">
-    <a href="https://www.pentamachine.com" target="_blank" rel="noopener" class="pt-title-link" id="pt-title-link">Pentacad Simulator v0.4.0</a>
+    <a href="https://www.pentamachine.com" target="_blank" rel="noopener" class="pt-title-link" id="pt-title-link">Pentacad Simulator v0.5.0</a>
   </p>
 
   <div class="pt-appbar-actions">
@@ -890,7 +977,15 @@ input, textarea { font-family: inherit; color: inherit; }
 
     <div class="pt-pane-body" id="pane-body-gcode" data-tab="gcode">
       <div class="pt-editor" id="editor">
+        <!-- Two co-existing editor surfaces:
+              - #editor-pre is the v0.4 regex-tokeniser fallback. It's the
+                only surface visible until Monaco finishes loading from CDN.
+              - #editor-monaco hosts the Monaco instance once mountMonaco()
+                resolves. Monaco brings find/replace, multi-cursor, command
+                palette, fold, and full keyboard shortcuts — matching the
+                Penta sim's editor capabilities. -->
         <pre id="editor-pre"></pre>
+        <div id="editor-monaco" style="position: absolute; inset: 0; display: none;"></div>
       </div>
     </div>
 
@@ -920,7 +1015,7 @@ input, textarea { font-family: inherit; color: inherit; }
     </div>
 
     <div class="pt-camerabtns">
-      <button class="pt-fab" id="btn-parent" title="Camera parenting — what the camera follows">
+      <button class="pt-fab" id="btn-parent" title="Center of rotation — what the camera follows">
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>
       </button>
       <button class="pt-fab" id="btn-projection" title="Camera projection — perspective / orthographic / auto">
@@ -982,9 +1077,22 @@ input, textarea { font-family: inherit; color: inherit; }
         <span>Show time window</span>
       </label>
       <div class="pt-bp-field"><label>Seconds</label><input type="number" id="bp-time-seconds" value="10" min="1" disabled /></div>
+      <!-- Three time-mode radios — Past / Future / Centred. Penta exposes
+           "Show past only" + "Show future only"; v0.4 only had "past". -->
+      <div class="pt-bp-modes" role="radiogroup" aria-label="Time-window direction">
+        <label class="pt-sum-radio"><input type="radio" name="bp-time-mode" value="past"     id="bp-mode-past" />Past only</label>
+        <label class="pt-sum-radio"><input type="radio" name="bp-time-mode" value="future"   id="bp-mode-future" />Future only</label>
+        <label class="pt-sum-radio"><input type="radio" name="bp-time-mode" value="centred" checked id="bp-mode-centred" />Centred</label>
+      </div>
+      <!-- Feed / Rapid colour pickers — v0.4 hard-coded the same orange for
+           both. Penta exposes them as configurable settings. -->
+      <div class="pt-bp-field" style="grid-template-columns: 80px 1fr;"><label>Feed colour</label><input type="color" id="bp-feed-color" value="#ED6C02" /></div>
+      <div class="pt-bp-field" style="grid-template-columns: 80px 1fr;"><label>Rapid colour</label><input type="color" id="bp-rapid-color" value="#236e24" /></div>
+      <!-- Smooth camera transitions — when ON, parent-target lerps; when
+           OFF, target snaps each frame. Penta exposes this as a setting. -->
       <label class="pt-bp-check">
-        <input type="checkbox" id="bp-show-past" />
-        <span>Show past only</span>
+        <input type="checkbox" id="bp-smooth-cam" checked />
+        <span>Smooth camera transitions</span>
       </label>
     </div>
 
@@ -1069,7 +1177,42 @@ input, textarea { font-family: inherit; color: inherit; }
       <div><kbd>Esc</kbd></div><div>close dialog / menu</div>
     </div>
 
-    <button class="pt-modal-close" id="help-close">Close</button>
+    <div style="display: flex; gap: 8px; align-items: center; justify-content: flex-end; margin-top: 12px;">
+      <button class="pt-modal-close secondary" id="help-tutorial">Start Tutorial</button>
+      <button class="pt-modal-close" id="help-close">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────── TUTORIAL OVERLAY ─────────────── -->
+<!--
+  Interactive coachmarks that walk a new user through the basics:
+  Show Options → ViewCube → CHANGE MACHINE → Help. Each step puts a
+  cutout spotlight on the target element and shows a pointer-card with
+  the next-action label, mirroring sim.pentamachine.com's tutorial.
+-->
+<div class="pt-tutorial" id="tutorial" hidden>
+  <svg class="pt-tutorial-svg" id="tutorial-svg" aria-hidden="true">
+    <defs>
+      <mask id="pt-tut-mask">
+        <rect width="100%" height="100%" fill="white" />
+        <rect id="pt-tut-hole" x="0" y="0" width="0" height="0" rx="6" ry="6" fill="black" />
+      </mask>
+    </defs>
+    <rect width="100%" height="100%" fill="rgba(0,0,0,0.55)" mask="url(#pt-tut-mask)" />
+    <rect id="pt-tut-ring" x="0" y="0" width="0" height="0" rx="6" ry="6"
+          fill="none" stroke="#03B188" stroke-width="2.5" />
+  </svg>
+  <div class="pt-tutorial-card" id="tutorial-card" role="status" aria-live="polite">
+    <h3 class="pt-tutorial-title" id="tutorial-title">Penta Simulator Tutorial</h3>
+    <p class="pt-tutorial-body" id="tutorial-body">
+      Welcome — this short walk-through shows the four controls you'll use most.
+    </p>
+    <div class="pt-tutorial-actions">
+      <span class="pt-tutorial-step" id="tutorial-step">Step 1 of 5</span>
+      <button class="pt-tutorial-btn secondary" id="tutorial-skip">Exit Demo</button>
+      <button class="pt-tutorial-btn" id="tutorial-next">Next</button>
+    </div>
   </div>
 </div>
 
@@ -1183,7 +1326,11 @@ const MACHINES = {
   }
 };
 
-const STORAGE_KEY = 'pentacad.sim.state.v0_4';
+/* v0_5 schema adds bp.timeMode (past/future/centred), bp.feedColor, bp.rapidColor,
+   camera.smoothTransitions, tutorial.dismissed. Old v0_4 entries are still
+   readable since the loader merges defaults onto the persisted blob — fields
+   that didn't exist before fall through to the defaults below. */
+const STORAGE_KEY = 'pentacad.sim.state.v0_5';
 
 /** Single source of truth for live UI state. */
 const app = {
@@ -1201,17 +1348,39 @@ const app = {
   viewcube: null,
   /** UI flags */
   showOptions: false,
-  bp: { showBetween: true, from: 1, to: 1, autoUpdate: true, isolate: false, timeWindow: false, timeSeconds: 10, showPast: false },
+  /**
+   * Back Plot panel state.
+   *   timeMode  — 'past' | 'future' | 'centred'. v0.4 was past-or-centred only;
+   *               Penta exposes all three so we now match.
+   *   feedColor — colour of cut-move polylines.   Default = MUI warning.main.
+   *   rapidColor— colour of rapid-move polylines. Default = Penta-bundle dark green.
+   *   showPast  — kept for v0_4 storage compatibility; now derived from timeMode.
+   */
+  bp: {
+    showBetween: true,
+    from: 1,
+    to: 1,
+    autoUpdate: true,
+    isolate: false,
+    timeWindow: false,
+    timeSeconds: 10,
+    timeMode: 'centred',
+    showPast: false,
+    feedColor: '#ED6C02',
+    rapidColor: '#236e24'
+  },
   /** Per-tool overrides set by SUMMARY tab inputs. Keyed by tool number. */
   toolOverrides: {},
   /** Session restore */
   restored: null,
   /** 'inch' (Pentamachine default) or 'mm' — flips on G21 detection */
   displayUnits: 'inch',
-  /** Camera parenting target — see PARENT_TO_MESH */
+  /** Camera centre-of-rotation target — see PARENT_TO_MESH */
   cameraParent: 'base',
   /** Camera projection mode — perspective / orthographic / auto */
-  cameraProjection: 'auto'
+  cameraProjection: 'auto',
+  /** Smooth camera transitions on parent-target change. Penta default = on. */
+  smoothCamera: true
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1292,6 +1461,205 @@ function renderEditor(text, errorLineSet, markerMap) {
     return `<span class="${cls.join(' ')}" data-ln="${ln}">${markHtml}<span class="pt-lno">${ln}</span>${tokenised}${cmtHtml}${semiHtml}</span>`;
   });
   $('editor-pre').innerHTML = html.join('\n');
+
+  /* Mirror to Monaco if it has finished mounting. The editor is the
+     authoritative surface once active — typed edits round-trip through
+     loadGcode() (see onMonacoChange). */
+  if (monaco.editor) {
+    monaco.editor.setValue(text);
+    monaco.editor.deltaDecorations(monaco.errorDecos, []);
+    monaco.errorDecos = [];
+    if (errorLineSet && errorLineSet.size > 0) {
+      const decos = [];
+      for (const ln of errorLineSet) {
+        decos.push({
+          range: new monaco.lib.Range(ln, 1, ln, 1),
+          options: { isWholeLine: true, className: 'pt-mon-line-error', glyphMarginClassName: 'pt-mon-glyph-warn' },
+        });
+      }
+      monaco.errorDecos = monaco.editor.deltaDecorations([], decos);
+    }
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   Monaco editor — lazy-loaded from CDN, mounted into #editor-monaco.
+   The regex `<pre>` editor (renderEditor above) stays available as a
+   fallback if the CDN is unreachable.
+   ──────────────────────────────────────────────────────────────────────── */
+
+const MONACO_VERSION = '0.45.0';
+const MONACO_CDN = `https://cdn.jsdelivr.net/npm/monaco-editor@${MONACO_VERSION}/min`;
+
+/**
+ * Live Monaco state. `lib` is the AMD module (a.k.a. window.monaco).
+ * `editor` is the live editor instance once mounted. `errorDecos`,
+ * `currentLineDecos`, and `currentLineNo` are cached decoration ids so
+ * we can clear them on subsequent updates.
+ */
+const monaco = {
+  lib: null,
+  editor: null,
+  errorDecos: [],
+  currentLineDecos: [],
+  currentLineNo: 0,
+  loadPromise: null,
+};
+
+/**
+ * Lazy-load Monaco's AMD bundle from jsdelivr and mount the editor into
+ * #editor-monaco. Resolves once the editor is fully created. Subsequent
+ * calls are idempotent. On failure the regex `<pre>` editor remains the
+ * sole surface — the simulator stays fully usable, just without
+ * find/replace + multi-cursor.
+ */
+function mountMonaco() {
+  if (monaco.editor) return Promise.resolve(monaco.editor);
+  if (monaco.loadPromise) return monaco.loadPromise;
+  monaco.loadPromise = new Promise((resolve, reject) => {
+    /* Monaco ships AMD-style. Inject the loader, then require the editor
+       chunk, then construct. */
+    const loader = document.createElement('script');
+    loader.src = `${MONACO_CDN}/vs/loader.js`;
+    loader.onerror = () => reject(new Error('monaco loader failed'));
+    loader.onload = () => {
+      try {
+        // eslint-disable-next-line no-undef
+        require.config({ paths: { vs: `${MONACO_CDN}/vs` } });
+        // eslint-disable-next-line no-undef
+        require(['vs/editor/editor.main'], () => {
+          /* eslint-disable no-undef */
+          monaco.lib = window.monaco;
+          /* G-code language registration. Monaco's Monarch tokenizer
+             recognises whole "letter+number" pairs as a single token so
+             colours line up with the v1 palette. */
+          monaco.lib.languages.register({ id: 'gcode' });
+          monaco.lib.languages.setMonarchTokensProvider('gcode', {
+            tokenizer: {
+              root: [
+                [/\([^)]*\)/, 'comment'],
+                [/;.*$/, 'comment'],
+                [/[Gg][-+]?\d*\.?\d+/, 'gcode-g'],
+                [/[Mm][-+]?\d*\.?\d+/, 'gcode-m'],
+                [/[Nn][-+]?\d*\.?\d+/, 'gcode-n'],
+                [/[Ff][-+]?\d*\.?\d+/, 'gcode-f'],
+                [/[Ss][-+]?\d*\.?\d+/, 'gcode-s'],
+                [/[Tt][-+]?\d*\.?\d+/, 'gcode-t'],
+                [/[XYZxyz][-+]?\d*\.?\d+/, 'gcode-xyz'],
+                [/[ABCabc][-+]?\d*\.?\d+/, 'gcode-abc'],
+                [/[IJKijk][-+]?\d*\.?\d+/, 'gcode-xyz'],
+                [/[%]/, 'gcode-pct'],
+              ],
+            },
+          });
+          monaco.lib.editor.defineTheme('pentacad-light', {
+            base: 'vs',
+            inherit: true,
+            rules: [
+              { token: 'gcode-g',   foreground: 'B92BBB', fontStyle: 'bold' },
+              { token: 'gcode-m',   foreground: 'B92BBB', fontStyle: 'bold' },
+              { token: 'gcode-n',   foreground: '888888' },
+              { token: 'gcode-f',   foreground: '2868D8' },
+              { token: 'gcode-s',   foreground: '2868D8' },
+              { token: 'gcode-t',   foreground: 'C5751F' },
+              { token: 'gcode-xyz', foreground: '1A8A1A' },
+              { token: 'gcode-abc', foreground: '199EA8' },
+              { token: 'gcode-pct', foreground: '888888' },
+              { token: 'comment',   foreground: '888888', fontStyle: 'italic' },
+            ],
+            colors: {
+              'editor.background': '#FFFFFF',
+              'editor.foreground': '#000000',
+              'editorLineNumber.foreground': '#999999',
+              'editor.lineHighlightBackground': '#F5F5F5',
+            },
+          });
+          /* eslint-enable no-undef */
+          const host = document.getElementById('editor-monaco');
+          host.style.display = 'block';
+          monaco.editor = monaco.lib.editor.create(host, {
+            value: app.gcode || '',
+            language: 'gcode',
+            theme: 'pentacad-light',
+            fontFamily: '"Source Code Pro", Menlo, Monaco, Consolas, monospace',
+            fontSize: 12,
+            lineNumbers: 'on',
+            glyphMargin: true,
+            automaticLayout: true,
+            minimap: { enabled: false },
+            scrollBeyondLastLine: false,
+            renderLineHighlight: 'line',
+            wordWrap: 'off',
+          });
+          /* User edits flow back through loadGcode so the parser, summary,
+             toolpath preview and DRO all stay in sync with what's typed.
+             Debounced so each keystroke isn't a full re-parse. */
+          let editTimer = null;
+          monaco.editor.onDidChangeModelContent(() => {
+            if (editTimer) clearTimeout(editTimer);
+            editTimer = setTimeout(() => {
+              const next = monaco.editor.getValue();
+              if (next === app.gcode) return;
+              loadGcodeFromMonaco(next);
+            }, 200);
+          });
+          /* Hide the regex fallback once Monaco is up. */
+          const fallback = document.getElementById('editor-pre');
+          if (fallback) fallback.style.display = 'none';
+          resolve(monaco.editor);
+        });
+      } catch (e) {
+        reject(e);
+      }
+    };
+    document.head.appendChild(loader);
+  }).catch((err) => {
+    /* Reset so a future call can retry; no-op if the user never invokes
+       a path that needs the editor. */
+    monaco.loadPromise = null;
+    /* eslint-disable-next-line no-console */
+    console.warn('[pentacad-sim] Monaco failed to load — falling back to pre tokeniser:', err);
+    return null;
+  });
+  return monaco.loadPromise;
+}
+
+/**
+ * loadGcode entry-point that knows the source is already-loaded text in
+ * Monaco (i.e., user typed in it). Skips re-rendering Monaco's value from
+ * the editor's own state.
+ *
+ * @param {string} text
+ */
+function loadGcodeFromMonaco(text) {
+  const filename = app.filename || 'sim.ngc';
+  app.gcode = text;
+  app.parsed = sim.parseGCode(text);
+  app.displayUnits = detectUnits(app.parsed);
+  const errSet = new Set((app.parsed.errors || []).map((e) => e.line));
+  const markers = buildMarkers(app.parsed);
+  /* Re-paint the regex `<pre>` fallback (currently hidden) so it stays
+     consistent if Monaco ever fails after a successful mount and we need
+     to fall back. */
+  const lines = text.split(/\r?\n/);
+  $('editor-pre').innerHTML = lines.map((raw, i) =>
+    `<span class="pt-line" data-ln="${i + 1}"><span class="pt-lno">${i + 1}</span>${escHtml(raw)}</span>`).join('\n');
+  /* Re-apply Monaco error decorations directly. */
+  if (monaco.editor) {
+    const decos = [...errSet].map((ln) => ({
+      range: new monaco.lib.Range(ln, 1, ln, 1),
+      options: { isWholeLine: true, className: 'pt-mon-line-error', glyphMarginClassName: 'pt-mon-glyph-warn' },
+    }));
+    monaco.errorDecos = monaco.editor.deltaDecorations(monaco.errorDecos, decos);
+  }
+  $('file-name').value = filename;
+  runExecutor();
+  renderSummary();
+  updateBackplotRange();
+  resetPlayback();
+  $('btn-options').disabled = app.moves.length === 0;
+  if (app.moves.length > 0) $('controls').classList.add('is-visible');
+  saveSession();
 }
 
 /**
@@ -2256,14 +2624,30 @@ function rebuildToolpath() {
   const fromLn = useRange ? app.bp.from : -Infinity;
   const toLn   = useRange ? app.bp.to   :  Infinity;
 
-  // Time-window trim: when bp.timeWindow is on, only show moves whose end-time
-  // falls within ±bp.timeSeconds of the current playhead. With bp.showPast
-  // additionally on, the window collapses to "last N seconds before playhead".
+  /* Time-window trim. When bp.timeWindow is on, only show moves whose
+     end-time falls within the active mode's window of the current playhead.
+       past    — [playhead - N s, playhead]            (history trail)
+       future  — [playhead, playhead + N s]            (look-ahead trail)
+       centred — [playhead - N s, playhead + N s]      (default)
+     v0.4 only had past + centred. */
   const useTime = app.bp.timeWindow && app.bp.timeSeconds > 0;
   const playSec = app.elapsed;
   const windowSec = app.bp.timeSeconds;
-  const winLow  = useTime ? (app.bp.showPast ? playSec - windowSec : playSec - windowSec) : -Infinity;
-  const winHigh = useTime ? (app.bp.showPast ? playSec               : playSec + windowSec) :  Infinity;
+  const mode = app.bp.timeMode || (app.bp.showPast ? 'past' : 'centred');
+  let winLow  = -Infinity;
+  let winHigh =  Infinity;
+  if (useTime) {
+    if (mode === 'past') {
+      winLow  = playSec - windowSec;
+      winHigh = playSec;
+    } else if (mode === 'future') {
+      winLow  = playSec;
+      winHigh = playSec + windowSec;
+    } else {
+      winLow  = playSec - windowSec;
+      winHigh = playSec + windowSec;
+    }
+  }
 
   let acc = 0;
   for (const mv of moves) {
@@ -2287,27 +2671,42 @@ function rebuildToolpath() {
     acc = tEnd;
   }
 
-  // Penta-parity: a single thin orange polyline traces the planned tool
-  // path. Cut moves (G1/G2/G3) get a brighter, slightly thicker line;
-  // rapid moves get a dimmer dashed line so the eye distinguishes
-  // them without the screen looking busy. (Previously: blue solid for
-  // cuts + dashed orange rapids — too colourful and didn't match
-  // the reference visual.)
+  /* Cut moves (G1/G2/G3) → solid feed-coloured line.
+     Rapid moves (G0)     → dashed rapid-coloured line, dimmer.
+     Penta exposes Feed Color + Rapid Color as user settings (Back Plot
+     panel) so users can pick contrast that suits their machine / setup.
+     v0.4 hard-coded both to MUI warning amber. */
+  const feedColor  = parseHexColor(app.bp.feedColor,  0xED6C02);
+  const rapidColor = parseHexColor(app.bp.rapidColor, 0x236e24);
   if (feedPts.length) {
     const g = new THREE.BufferGeometry().setFromPoints(feedPts);
-    const m = new THREE.LineBasicMaterial({ color: 0xED6C02, transparent: true, opacity: 0.95 });
+    const m = new THREE.LineBasicMaterial({ color: feedColor, transparent: true, opacity: 0.95 });
     tp.add(new THREE.LineSegments(g, m));
   }
   if (rapidPts.length) {
     const g = new THREE.BufferGeometry().setFromPoints(rapidPts);
     const m = new THREE.LineDashedMaterial({
-      color: 0xED6C02, dashSize: 0.06, gapSize: 0.05,
-      transparent: true, opacity: 0.45,
+      color: rapidColor, dashSize: 0.06, gapSize: 0.05,
+      transparent: true, opacity: 0.55,
     });
     const ls = new THREE.LineSegments(g, m);
     ls.computeLineDistances();
     tp.add(ls);
   }
+}
+
+/**
+ * Parse a `#rrggbb` (or `rrggbb`) hex string to a numeric Three.js
+ * color. Falls back to the supplied default on malformed input.
+ *
+ * @param {string|undefined} s
+ * @param {number} fallback
+ * @returns {number}
+ */
+function parseHexColor(s, fallback) {
+  if (typeof s !== 'string') return fallback;
+  const m = s.replace(/^#/, '').match(/^[0-9a-fA-F]{6}$/);
+  return m ? parseInt(m[0], 16) : fallback;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2392,14 +2791,27 @@ function moveToolMarker(pos) {
 
 function highlightCurrentLine(move) {
   if (!move || !move.lineNumber) return;
+  /* Regex `<pre>` fallback path (hidden once Monaco mounts). */
   document.querySelectorAll('.pt-line.is-current').forEach(el => el.classList.remove('is-current'));
   const el = document.querySelector(`.pt-line[data-ln="${move.lineNumber}"]`);
-  if (!el) return;
-  el.classList.add('is-current');
-  // Keep current line visible. Use nearest scroll behaviour so the editor
-  // doesn't yank around when the user is already looking at the right area.
-  if (typeof el.scrollIntoView === 'function') {
-    try { el.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (e) {}
+  if (el) {
+    el.classList.add('is-current');
+    if (typeof el.scrollIntoView === 'function') {
+      try { el.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (e) {}
+    }
+  }
+  /* Monaco path. Use deltaDecorations to mark the active line green; scroll
+     into view only if the line moved (avoids yanking on every move boundary
+     when the user is already looking at the right area). */
+  if (monaco.editor && move.lineNumber !== monaco.currentLineNo) {
+    const ln = move.lineNumber;
+    const decos = [{
+      range: new monaco.lib.Range(ln, 1, ln, 1),
+      options: { isWholeLine: true, className: 'pt-mon-line-current' },
+    }];
+    monaco.currentLineDecos = monaco.editor.deltaDecorations(monaco.currentLineDecos, decos);
+    monaco.editor.revealLineInCenterIfOutsideViewport(ln);
+    monaco.currentLineNo = ln;
   }
 }
 
@@ -2690,9 +3102,36 @@ function wireOptions() {
     app.bp.timeSeconds = parseFloat(e.target.value) || 10;
     if (app.bp.timeWindow) rebuildToolpath();
   });
-  $('bp-show-past').addEventListener('change', e => {
-    app.bp.showPast = e.target.checked;
+
+  /* Time-mode radios — Past only / Future only / Centred. The legacy
+     `bp.showPast` boolean is kept in sync for v0_4 storage compatibility. */
+  const wireMode = (id) => $(id).addEventListener('change', (e) => {
+    if (!e.target.checked) return;
+    app.bp.timeMode = e.target.value;
+    app.bp.showPast = (e.target.value === 'past');
     if (app.bp.timeWindow) rebuildToolpath();
+    saveSession();
+  });
+  wireMode('bp-mode-past');
+  wireMode('bp-mode-future');
+  wireMode('bp-mode-centred');
+
+  /* Feed/Rapid colour pickers. */
+  $('bp-feed-color').addEventListener('change', (e) => {
+    app.bp.feedColor = e.target.value;
+    rebuildToolpath();
+    saveSession();
+  });
+  $('bp-rapid-color').addEventListener('change', (e) => {
+    app.bp.rapidColor = e.target.value;
+    rebuildToolpath();
+    saveSession();
+  });
+
+  /* Smooth camera transitions toggle. Read in applyCameraParenting(). */
+  $('bp-smooth-cam').addEventListener('change', (e) => {
+    app.smoothCamera = e.target.checked;
+    saveSession();
   });
 }
 
@@ -3008,7 +3447,7 @@ function setCameraParent(name) {
     app.three.controls.update();
   }
   saveSession();
-  toast(`Camera parent: ${name}`);
+  toast(`Center of rotation: ${name}`);
 }
 
 /** Called every frame from the animate loop to apply the chosen parent. */
@@ -3024,8 +3463,11 @@ function applyCameraParenting() {
   if (!obj) return;
   const p = new THREE.Vector3();
   obj.getWorldPosition(p);
-  // Lerp toward the new target so the camera doesn't snap each frame.
-  target.lerp(p, 0.15);
+  /* Smooth Camera Transitions: when on, lerp toward the new target so the
+     camera glides between parents. When off, snap each frame — same
+     behavior Penta gates behind the same toggle. */
+  const lerpFactor = app.smoothCamera === false ? 1.0 : 0.15;
+  target.lerp(p, lerpFactor);
 }
 
 const PROJECTION_FOV = Object.freeze({
@@ -3278,6 +3720,143 @@ function wireHelp() {
   $('btn-help').addEventListener('click', () => m.classList.add('is-open'));
   $('help-close').addEventListener('click', () => m.classList.remove('is-open'));
   m.addEventListener('click', e => { if (e.target === m) m.classList.remove('is-open'); });
+  $('help-tutorial').addEventListener('click', () => {
+    m.classList.remove('is-open');
+    startTutorial();
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tutorial — interactive coachmarks
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Tutorial step descriptors. Each step targets a real DOM element, paints
+ * a spotlight cutout over it, and shows a card with copy + a Next button.
+ * The `prep()` callback runs before the step (e.g. open the Back Plot
+ * panel so its target controls are visible) and the `done()` callback
+ * runs after the user clicks Next (e.g. close the panel before the next
+ * step). Wording mirrors sim.pentamachine.com's tutorial copy.
+ */
+const TUTORIAL_STEPS = [
+  {
+    target: '#btn-options',
+    title: 'Press Show Options',
+    body:  'The Options panel hides toolpath range, automatic update, time-window playback, and feed/rapid colour pickers.',
+    prep:  () => { /* nothing — the button is always visible */ },
+  },
+  {
+    target: '#backplot',
+    title: 'Back Plot panel',
+    body:  'Pick a line range, set time-window playback to Past / Future / Centred, and choose Feed and Rapid colours.',
+    prep:  () => { if (!app.showOptions) $('btn-options').click(); },
+  },
+  {
+    target: '#viewcube-canvas',
+    title: 'Press a face of the View Cube',
+    body:  'Drag to orbit. Click a face — Front, Top, Right — to snap the camera to that view.',
+    prep:  () => { if (app.showOptions) $('btn-options').click(); },
+  },
+  {
+    target: '#btn-change-machine',
+    title: 'Change Machine',
+    body:  'Switch between Solo, V1, V1 Kickstarter, V2-10 and V2-50. Your tool overrides and program stay loaded.',
+    prep:  () => {},
+  },
+  {
+    target: '#ctl-play',
+    title: 'Press Play',
+    body:  'Space also works. Step with ← / →, jump with Home / End, and scrub with the timeline.',
+    prep:  () => {},
+  },
+];
+
+/** Currently-displayed step index. -1 when the tutorial is closed. */
+let tutorialStep = -1;
+let tutorialResizeHandler = null;
+
+function startTutorial() {
+  tutorialStep = 0;
+  $('tutorial').hidden = false;
+  paintTutorialStep();
+  /* Re-paint on resize so the spotlight tracks the target element. */
+  tutorialResizeHandler = () => paintTutorialStep();
+  window.addEventListener('resize', tutorialResizeHandler);
+}
+
+function endTutorial() {
+  tutorialStep = -1;
+  $('tutorial').hidden = true;
+  if (tutorialResizeHandler) {
+    window.removeEventListener('resize', tutorialResizeHandler);
+    tutorialResizeHandler = null;
+  }
+}
+
+function paintTutorialStep() {
+  if (tutorialStep < 0 || tutorialStep >= TUTORIAL_STEPS.length) {
+    endTutorial();
+    return;
+  }
+  const step = TUTORIAL_STEPS[tutorialStep];
+  if (typeof step.prep === 'function') {
+    try { step.prep(); } catch (e) { /* swallow */ }
+  }
+  /* Wait one frame so any prep-driven layout (e.g. Back Plot opening)
+     settles before measurement. */
+  requestAnimationFrame(() => {
+    const target = document.querySelector(step.target);
+    if (!target) {
+      tutorialStep++;
+      return paintTutorialStep();
+    }
+    const rect = target.getBoundingClientRect();
+    const PAD = 6;
+    const x = Math.max(0, rect.left - PAD);
+    const y = Math.max(0, rect.top  - PAD);
+    const w = rect.width  + PAD * 2;
+    const h = rect.height + PAD * 2;
+
+    const hole = document.getElementById('pt-tut-hole');
+    const ring = document.getElementById('pt-tut-ring');
+    [hole, ring].forEach((el) => {
+      el.setAttribute('x', String(x));
+      el.setAttribute('y', String(y));
+      el.setAttribute('width',  String(w));
+      el.setAttribute('height', String(h));
+    });
+
+    /* Position the card adjacent to the cutout, biased to the side that
+       has more room. The card is fixed at ~320 px wide. */
+    const card = $('tutorial-card');
+    const cardW = 320;
+    const cardH = 140;
+    const right = x + w + 16;
+    const useRight = right + cardW < window.innerWidth - 16;
+    card.style.left = useRight ? `${right}px` : `${Math.max(16, x - cardW - 16)}px`;
+    const top = Math.min(window.innerHeight - cardH - 16, Math.max(16, y));
+    card.style.top = `${top}px`;
+
+    $('tutorial-title').textContent = step.title;
+    $('tutorial-body').textContent  = step.body;
+    $('tutorial-step').textContent  = `Step ${tutorialStep + 1} of ${TUTORIAL_STEPS.length}`;
+    $('tutorial-next').textContent  = (tutorialStep === TUTORIAL_STEPS.length - 1) ? 'Finish' : 'Next';
+  });
+}
+
+function nextTutorialStep() {
+  if (tutorialStep < 0) return;
+  tutorialStep++;
+  if (tutorialStep >= TUTORIAL_STEPS.length) {
+    endTutorial();
+  } else {
+    paintTutorialStep();
+  }
+}
+
+function wireTutorial() {
+  $('tutorial-next').addEventListener('click', nextTutorialStep);
+  $('tutorial-skip').addEventListener('click', endTutorial);
 }
 
 function wireShare() {
@@ -3307,6 +3886,7 @@ function wireKeyboard() {
       case 'Escape':
         $('help-modal').classList.remove('is-open');
         $('machine-menu').classList.remove('is-open');
+        if (tutorialStep >= 0) endTutorial();
         break;
       default:
         if ((e.metaKey || e.ctrlKey) && (e.key === 'o' || e.key === 'O')) {
@@ -3368,6 +3948,7 @@ async function boot() {
   wireCameraButtons();
   wireExamples();
   wireHelp();
+  wireTutorial();
   wireShare();
   wireKeyboard();
 
@@ -3387,6 +3968,13 @@ async function boot() {
 
   const initialGcode = (restore && restore.gcode) || $('demo-gcode').textContent.trim();
   loadGcode(initialGcode, (restore && restore.filename) || 'sim.ngc');
+
+  /* Mount Monaco off the critical path. The regex `<pre>` editor stays
+     visible until Monaco is ready, so first paint isn't blocked on the
+     ~600 KB Monaco bundle. Once mounted, Monaco hides the fallback. */
+  mountMonaco().then((ed) => {
+    if (ed) ed.setValue(app.gcode || '');
+  });
 }
 
 // Expose the live app state on window so we can probe it via DevTools or

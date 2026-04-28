@@ -780,6 +780,61 @@ export async function init(opts) {
   // derived empirically from the v2-50 GLB's authoring units.
   let glbMotionScale = 1.0;
 
+  // Tool model (spindle + endmill). Lives at the top of the z-axis group
+  // (whether procedural or GLB) so it always rides with Z translation. The
+  // tool is independent of the machine model — the GLB usually doesn't ship
+  // a tool of its own, so we build one parametrically and re-parent it to
+  // whatever the active `kin.z` is. Keeping it as a Group means we can
+  // attach/detach in O(1) when swapping machines.
+  /** @type {THREE.Group} */
+  const toolGroup = new THREE.Group();
+  toolGroup.name = 'pentacad-tool';
+  ;(() => {
+    const holder = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.10, 0.10, 0.50, 24),
+      new THREE.MeshStandardMaterial({ color: 0x9CA3AF, metalness: 0.7, roughness: 0.4 }),
+    );
+    holder.position.y = 0.25;
+    toolGroup.add(holder);
+    const collet = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.07, 0.10, 0.12, 24),
+      new THREE.MeshStandardMaterial({ color: 0x4B5563, metalness: 0.8, roughness: 0.3 }),
+    );
+    collet.position.y = 0.06;
+    toolGroup.add(collet);
+    const endmill = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.025, 0.025, 0.45, 16),
+      new THREE.MeshStandardMaterial({ color: 0xE0E7EF, metalness: 0.92, roughness: 0.18 }),
+    );
+    endmill.position.y = -0.225;
+    toolGroup.add(endmill);
+    const tip = new THREE.Mesh(
+      new THREE.SphereGeometry(0.030, 16, 16),
+      new THREE.MeshBasicMaterial({ color: 0x15B573 }),
+    );
+    tip.position.y = -0.450;
+    toolGroup.add(tip);
+  })();
+
+  /**
+   * Re-parent the tool to whatever node is currently the active z-axis.
+   * Called after every kinematic rebind (procedural OR GLB).
+   */
+  function attachToolToZ() {
+    if (!kin || !kin.z) return;
+    if (toolGroup.parent && toolGroup.parent !== kin.z) {
+      toolGroup.parent.remove(toolGroup);
+    }
+    if (toolGroup.parent !== kin.z) kin.z.add(toolGroup);
+    // Scale tool to match the current rig's coordinate frame.
+    const s = glbActive ? 1.0 : 60;        // procedural rig is mm-scale; GLB ~inches
+    toolGroup.scale.setScalar(s);
+    // Procedural rig's spindle sits at y≈90, GLB usually y≈0. Place tool at
+    // the spindle nose pointing down-Y (Three.js up = +Y).
+    if (!glbActive) toolGroup.position.set(0, 90, 12);
+    else            toolGroup.position.set(0, 0, 0);
+  }
+
   buildProcedural();
 
   function buildProcedural() {
@@ -876,7 +931,21 @@ export async function init(opts) {
     zGroup.add(tooltip);
 
     kin = { x: xGroup, y: yGroup, z: zGroup, a: aGroup, b: bGroup };
+    procKin = kin;
+    // Procedural rig already has its own tool mesh in zGroup (the original
+    // built-in 30-mm cylinder + tooltip sphere) — keep those AND attach the
+    // new toolGroup so the same tool model rides the rig in both modes.
+    attachToolToZ();
   }
+
+  /**
+   * Snapshot of the procedural kinematic map so `resetToProcedural()` can
+   * restore it after a GLB swap-out.
+   *
+   * @type {{ x: THREE.Object3D, y: THREE.Object3D, z: THREE.Object3D, a: THREE.Object3D, b: THREE.Object3D }}
+   */
+  // @ts-ignore — populated in buildProcedural()
+  let procKin = {};
 
   /**
    * Look up a node on a loaded GLB by case-insensitive name. Mirrors the
@@ -949,48 +1018,84 @@ export async function init(opts) {
         : 0.0276);
     }
     glbActive = true;
+    attachToolToZ();
     applyKinematics();
     return true;
   }
 
-  // ─── GLB attempt (HEAD-probe → load → rebind) ────────────────────────────
-  // The legacy v0.4 standalone publishes machine GLBs at
-  //   https://cyclecad.com/app/models/<id>.glb        (primary)
-  //   https://cyclecad.com/machines/<id>/<id>.glb     (fallback)
-  // Each canonical machine in `shared/machines/penta.json` carries a
-  // `glbUrls` array — try each in order, fall through to procedural chain
-  // on any failure. `opts.params.glbUrl` overrides the catalog (single URL).
-  /** @type {string[]} */
-  const glbCandidates = opts.params?.glbUrl
-    ? [opts.params.glbUrl]
-    : (/** @type {{glbUrls?: string[]}} */ (machine).glbUrls
-       || ['../shared/lib/penta-machines/' + machine.id + '.glb']);
+  // ─── GLB load helper ────────────────────────────────────────────────────
+  // Hoisted to module scope so `setMachine()` can call it on every machine
+  // swap. Walks `machine.glbUrls` (override → catalog → suite-local), HEAD-
+  // probes each candidate, loads the first hit, binds its x/y/z/a/b nodes,
+  // and re-parents the tool group to the new z-axis. Falls back to the
+  // procedural chain (with tool re-attached) on any failure.
+  /** @type {boolean} */
   let glbActive = false;
 
-  ;(async () => {
-    for (const url of glbCandidates) {
+  /**
+   * Reset the rig back to procedural. Removes any active GLB scene from
+   * the world, restores procedural visibility, drops fitted-grid helpers,
+   * resets motion-scale + camera + tool attachment.
+   */
+  function resetToProcedural() {
+    if (glbRoot) { scene.remove(glbRoot); glbRoot = null; }
+    procRoot.visible = true;
+    glbActive = false;
+    glbMotionScale = 1.0;
+    kin = procKin;
+    grid.visible = true;
+    // Drop any fitted-grid helpers we added when the previous GLB bound
+    /** @type {THREE.Object3D[]} */
+    const toRemove = [];
+    scene.traverse((n) => { if (n.userData && n.userData.isFittedGrid) toRemove.push(n); });
+    toRemove.forEach((n) => scene.remove(n));
+    camera.position.set(180, 140, 220);
+    controls.target.set(0, 30, 0);
+    controls.update();
+    attachToolToZ();
+    applyKinematics();
+  }
+
+  /**
+   * Load the active machine's GLB and bind kinematics. Returns the URL on
+   * success, null on full miss.
+   *
+   * @returns {Promise<string | null>}
+   */
+  async function loadActiveMachineGlb() {
+    /** @type {string[]} */
+    const candidates = opts.params?.glbUrl
+      ? [opts.params.glbUrl]
+      : (/** @type {{glbUrls?: string[]}} */ (machine).glbUrls
+         || ['../shared/lib/penta-machines/' + machine.id + '.glb']);
+    for (const url of candidates) {
       try {
         const head = await fetch(url, { method: 'HEAD' });
         if (!head.ok) {
-          console.info(`[pentacad-simulator] GLB miss ${url} (HTTP ${head.status}) — trying next candidate.`);
+          console.info(`[pentacad-simulator] GLB miss ${url} (HTTP ${head.status}) — trying next.`);
           continue;
         }
         const loader = new GLTFLoader();
         const gltf = await new Promise((res, rej) => loader.load(url, res, undefined, rej));
         const root3 = /** @type {THREE.Object3D} */ (gltf.scene);
         if (!bindGlbKinematics(root3)) {
-          console.info(`[pentacad-simulator] ${url} loaded but missing x/y/z/a/b nodes — trying next candidate.`);
+          console.info(`[pentacad-simulator] ${url} loaded but missing x/y/z/a/b nodes — trying next.`);
           continue;
         }
-        glbActive = true;
         console.info(`[pentacad-simulator] GLB bound from ${url} (x/y/z/a/b nodes found).`);
-        return;
+        return url;
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        console.info(`[pentacad-simulator] GLB load failed for ${url}: ${msg} — trying next candidate.`);
+        console.info(`[pentacad-simulator] GLB load failed for ${url}: ${msg} — trying next.`);
       }
     }
-    console.info('[pentacad-simulator] No GLB candidate resolved — using procedural chain.');
+    return null;
+  }
+
+  // Initial GLB attempt — fire-and-forget.
+  ;(async () => {
+    const url = await loadActiveMachineGlb();
+    if (!url) console.info('[pentacad-simulator] No GLB candidate resolved — staying procedural.');
   })();
 
   // ─── Resize ───────────────────────────────────────────────────────────────
@@ -1587,8 +1692,22 @@ export async function init(opts) {
     if (!next) return;
     machine = next;
     machineLabelEl.textContent = machine.name;
-    setStatus(`machine → ${machine.name}`);
+    setStatus(`switching → ${machine.name}…`);
     renderSummary();
+    emit('change', { kind: 'machine', id });
+
+    // Tear down the previous GLB and try to load the new one. If the new
+    // machine has no GLB, we end up on the procedural chain — still a
+    // valid sim.
+    resetToProcedural();
+    ;(async () => {
+      const url = await loadActiveMachineGlb();
+      setStatus(url
+        ? `machine → ${machine.name}`
+        : `machine → ${machine.name} (procedural)`);
+      // re-render summary so the new envelope shows
+      renderSummary();
+    })();
   }
 
   // Wire buttons

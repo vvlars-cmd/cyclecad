@@ -4,64 +4,99 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Pentacad — cycleCAD Suite</title>
-<style>
-  /*
-   * Pentacad app shell — uses the EXISTING simulator at
-   * /app/pentacad-sim.html verbatim via iframe.
-   *
-   * Sachin maintains the canonical Pentacad simulator as a single 3,423-LOC
-   * standalone HTML at https://cyclecad.com/app/pentacad-sim.html — a
-   * hand-tuned clone of sim.pentamachine.com. It already has the right
-   * look, the right machine GLBs, the right kinematic scaling, and a
-   * working DRO + playback + CHANGE MACHINE flow.
-   *
-   * Repeated attempts to re-implement it as a Suite-native widget kept
-   * missing the look or introducing TDZ / scaling / model-too-small bugs.
-   * Lesson: don't rebuild what already works. The Suite shell hosts the
-   * standalone via iframe — same domain, no cross-origin issues, identical
-   * look-and-feel because it IS the standalone.
-   *
-   * The Suite's per-app navigation bar sits above the iframe so links
-   * back to cycleCAD / ExplodeView / admin / tests still work.
-   */
-  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden;
-               font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
-  body { display: grid; grid-template-rows: auto 1fr; }
 
+<!--
+  Pentacad app shell — mounts widgets/pentacad-v1.js, a single-widget
+  wrapper that inlines the canonical v1 simulator from
+  https://cyclecad.com/app/pentacad-sim.html.
+
+  The previous shell iframed the v1 standalone. Six rebuild attempts
+  before then drifted from v1 behavior on every iteration (palette,
+  scale, kinematics). The current strategy is a verbatim wrapper —
+  fetch v1's <style> + <body> + module script and inline them — so
+  Sachin's hand-tuning of the v1 propagates automatically.
+
+  See HANDOVER-PENTACAD-V2.md for the full story.
+
+  The importmap MUST be declared here in <head> (and BEFORE any
+  module script tag is created). The wrapper's module-script injection
+  uses top-level `import 'three'` and would fail if no importmap is
+  present.
+-->
+
+<script type="importmap">
+{
+  "imports": {
+    "three":         "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  body {
+    display: grid;
+    grid-template-rows: auto 1fr;
+  }
+
+  /* Suite per-app navigation strip — sits above the v1 chrome. */
   header.suite-bar {
-    background: #1A2828; color: #D7DCDE;
+    background: #1A2828;
+    color: #D7DCDE;
     padding: 10px 20px;
-    display: flex; align-items: center; gap: 14px;
-    font-size: 12px; line-height: 1; flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 12px;
+    line-height: 1;
+    flex-shrink: 0;
     border-bottom: 1px solid #0E1717;
   }
-  header.suite-bar .brand {
-    font-weight: 700; letter-spacing: 4px; color: #FFFFFF;
-  }
-  header.suite-bar .accent {
-    color: #15B573; font-weight: 600;
-  }
-  header.suite-bar nav {
-    margin-left: auto; display: flex; gap: 16px; font-size: 12px;
-  }
-  header.suite-bar nav a {
-    color: #8A949D; text-decoration: none;
-    transition: color 0.15s;
-  }
+  header.suite-bar .brand   { font-weight: 700; letter-spacing: 4px; color: #FFFFFF; }
+  header.suite-bar .accent  { color: #15B573; font-weight: 600; }
+  header.suite-bar nav      { margin-left: auto; display: flex; gap: 16px; font-size: 12px; }
+  header.suite-bar nav a    { color: #8A949D; text-decoration: none; transition: color 0.15s; }
   header.suite-bar nav a:hover { color: #FFFFFF; }
   header.suite-bar a.standalone {
-    color: #15B573; font-size: 11px;
+    color: #15B573;
+    font-size: 11px;
     border-left: 1px solid #2A3838;
     padding-left: 14px;
     text-decoration: none;
   }
   header.suite-bar a.standalone:hover { color: #2DC589; }
 
-  iframe.sim {
-    width: 100%; height: 100%;
-    border: 0; display: block;
-    background: #F5F7F8;
+  /* Mount slot for the v1 wrapper. The wrapper builds .pt-widget-root
+     with `position: relative; width: 100%; height: 100%` inside this
+     container. */
+  #pentacad-mount {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #FFFFFF;
+    overflow: hidden;
   }
+
+  /* Inline boot status while the widget initialises. Hidden once the
+     wrapper appends .pt-widget-root. */
+  #pentacad-boot {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #5C6770;
+    font-size: 13px;
+    pointer-events: none;
+  }
+  #pentacad-boot.is-error { color: #D32F2F; }
 </style>
 </head>
 <body>
@@ -84,13 +119,34 @@
   </nav>
 </header>
 
-<iframe
-  class="sim"
-  src="https://cyclecad.com/app/pentacad-sim.html"
-  title="Pentacad Simulator"
-  allow="clipboard-write; fullscreen"
-  allowfullscreen
-></iframe>
+<div id="pentacad-mount">
+  <div id="pentacad-boot">Loading Pentacad simulator…</div>
+</div>
+
+<script type="module">
+  import { init as initPentacad } from '../../widgets/pentacad-v1.js';
+
+  const boot = document.getElementById('pentacad-boot');
+
+  try {
+    await initPentacad({
+      mount: document.getElementById('pentacad-mount'),
+      app: 'pentacad',
+      meter: { charge: async () => null, refund: () => {} },
+    });
+    /* The wrapper appends its own DOM into #pentacad-mount; the boot
+       message is positioned absolutely behind it and only visible if the
+       wrapper hasn't built its DOM yet. Removing it once boot succeeds
+       keeps the DOM tidy. */
+    boot?.remove();
+  } catch (err) {
+    if (boot) {
+      boot.classList.add('is-error');
+      boot.textContent = `Pentacad failed to load: ${err?.message || err}`;
+    }
+    throw err;
+  }
+</script>
 
 </body>
 </html>

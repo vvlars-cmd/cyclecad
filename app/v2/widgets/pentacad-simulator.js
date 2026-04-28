@@ -125,31 +125,38 @@ import { executeProgram } from '../shared/cam/modal-executor.js';
 
 // ─── Palette · sim.pentamachine.com light Material-UI clone ────────────────
 // Hex codes lifted live from sim.pentamachine.com — see the README at
-// docs/sim-parity-audit.md for the extraction methodology. Penta GREEN
-// (#03B188) replaces the previous Penta yellow accent; backdrop is white,
-// header is `#333` Material grey.
+// Palette is the Kinetic Control palette from /app/pentacad.html (the Penta-
+// branded CAM dashboard) — Sachin specifically asked for that look. KC green
+// `#15B573`, KC dark teal-tinted black `#1A2828` for the header, warm pale
+// `#F5F7F8` body, `#E3E7EA` borders. Matches the rest of the Pentacad family.
 const PAL = Object.freeze({
-  appBarBg:    '#333333',
-  appBarText:  '#FFFFFF',
-  bodyBg:      '#FFFFFF',
-  bodyText:    '#000000',
-  pentaGreen:  '#03B188',
-  tabInactive: '#333333',
-  btnBg:       '#E0E0E0',
-  btnText:     '#000000',
-  sidebarBg:   '#FFFFFF',
-  sidebarRule: '#E0E0E0',
-  gutterText:  '#999999',
-  gcodeKw:     '#1565C0',
-  gcodeNum:    '#1B5E20',
-  gcodeCom:    '#999999',
-  currentLine: '#FFFDE7',
-  droBg:       '#F0F0F0',
-  droBorder:   '#D0D0D0',
-  vpTop:       '#FAFAFA',
-  vpBottom:    '#E5E7EB',
-  axisX:       '#E11D48',
-  axisY:       '#10B981',
+  appBarBg:    '#1A2828',   // --kc-status (dark teal-tinted black)
+  appBarText:  '#D7DCDE',   // --kc-status-text
+  bodyBg:      '#F5F7F8',   // --kc-bg (warm pale gray)
+  bodyText:    '#1F2529',   // --kc-text
+  pentaGreen:  '#15B573',   // --kc-green (Kinetic Control primary)
+  greenDark:   '#0E8F5A',   // --kc-green-dark (button hover)
+  amber:       '#F5A623',   // --kc-amber (warnings / RESET banner)
+  red:         '#E04444',   // --kc-red (errors / estop)
+  infoBlue:    '#2E90E8',   // --kc-info-blue
+  tabInactive: '#5C6770',   // --kc-text-2 (less prominent than primary text)
+  btnBg:       '#FFFFFF',   // --kc-surface
+  btnBorder:   '#E3E7EA',   // --kc-border
+  btnText:     '#1F2529',   // --kc-text
+  sidebarBg:   '#FFFFFF',   // --kc-surface
+  sidebarRule: '#E3E7EA',   // --kc-border
+  gutterText:  '#8A949D',   // --kc-text-3
+  gcodeKw:     '#1565C0',   // G/M code keyword blue (kept from sim.pentamachine.com)
+  gcodeNum:    '#0E8F5A',   // --kc-green-dark for numeric tokens
+  gcodeCom:    '#8A949D',   // --kc-text-3 for comments
+  currentLine: 'rgba(21,181,115,0.18)', // --kc-green-glow (highlighted line)
+  droBg:       '#FAFBFC',   // --kc-surface-2
+  droBorder:   '#E3E7EA',   // --kc-border
+  droRowEven:  '#EEF1F3',   // --kc-bg-soft (alternate row striping)
+  vpTop:       '#F5F7F8',   // --kc-bg
+  vpBottom:    '#EEF1F3',   // --kc-bg-soft
+  axisX:       '#E04444',   // --kc-red
+  axisY:       '#15B573',   // --kc-green
   axisZ:       '#3B82F6',
   ok:          '#10B981',
   warn:        '#FB923C',
@@ -765,6 +772,14 @@ export async function init(opts) {
   /** @type {THREE.Object3D | null} */
   let glbRoot = null;
 
+  // When a machine GLB is bound the kinematic motion deltas have to scale
+  // from G-code mm into the GLB's authored frame. Penta's GLBs are authored
+  // at machine-true scale, so the linear axes only travel a few cm at most;
+  // an unscaled `state.X = 30` would shoot the carriage 30 GLB-units (way
+  // outside the model). Legacy pentacad-sim v0.4 used kinScale 0.0276,
+  // derived empirically from the v2-50 GLB's authoring units.
+  let glbMotionScale = 1.0;
+
   buildProcedural();
 
   function buildProcedural() {
@@ -901,6 +916,39 @@ export async function init(opts) {
     glbRoot = root3;
     scene.add(root3);
     kin = { x: gx, y: gy, z: gz, a: ga, b: gb };
+
+    // Fit camera + grid to the GLB's natural extents. Penta's GLBs are
+    // authored at machine-true scale (Pocket NC ≈ 5 cm bounding box in the
+    // GLB's authoring units) and need a much closer camera than the
+    // procedural rig (which lives at ~200 mm scale).
+    /** @type {THREE.Box3} */
+    const bbox = new THREE.Box3().setFromObject(root3);
+    if (!bbox.isEmpty()) {
+      const size = bbox.getSize(new THREE.Vector3());
+      const centre = bbox.getCenter(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z) || 1;
+      // Tuck the camera ~2.4× the largest dim away, off-axis, looking at centre
+      camera.position.set(
+        centre.x + maxDim * 1.8,
+        centre.y + maxDim * 1.4,
+        centre.z + maxDim * 2.0,
+      );
+      controls.target.copy(centre);
+      controls.update();
+      // Resize the floor grid to roughly 5× the GLB size, with sane minimum.
+      // Drop the old procedural-scale grid first.
+      grid.visible = false;
+      const fittedGrid = new THREE.GridHelper(maxDim * 5, 20, 0x999999, 0xdddddd);
+      fittedGrid.position.y = bbox.min.y - 0.001;
+      fittedGrid.userData.isFittedGrid = true;
+      scene.add(fittedGrid);
+      // motion-deltas scaled so 1 mm in G-code === native GLB unit
+      // (legacy v0.4 used kinScale 0.0276, derived from authored mm→inch×scale)
+      glbMotionScale = (machine.glbMotionScale != null
+        ? Number(machine.glbMotionScale)
+        : 0.0276);
+    }
+    glbActive = true;
     applyKinematics();
     return true;
   }
@@ -1007,9 +1055,11 @@ export async function init(opts) {
    * GLB nodes — whichever is currently bound to `kin`).
    */
   function applyKinematics() {
-    kin.y.position.z = -state.Y;
-    kin.x.position.x =  state.X;
-    kin.z.position.y =  Math.max(-30, state.Z * 1.0);
+    if (!kin || !kin.x) return;
+    const s = glbActive ? glbMotionScale : 1.0;
+    kin.y.position.z = -state.Y * s;
+    kin.x.position.x =  state.X * s;
+    kin.z.position.y =  glbActive ? state.Z * s : Math.max(-30, state.Z * 1.0);
     kin.a.rotation.x =  THREE.MathUtils.degToRad(state.A);
     kin.b.rotation.y =  THREE.MathUtils.degToRad(state.B);
   }

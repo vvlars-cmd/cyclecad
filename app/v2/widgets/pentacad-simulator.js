@@ -772,6 +772,15 @@ export async function init(opts) {
   /** @type {THREE.Object3D | null} */
   let glbRoot = null;
 
+  /**
+   * Snapshot of the procedural kinematic map so `resetToProcedural()` can
+   * restore it after a GLB swap-out. Populated by `buildProcedural()`.
+   *
+   * @type {{ x: THREE.Object3D, y: THREE.Object3D, z: THREE.Object3D, a: THREE.Object3D, b: THREE.Object3D }}
+   */
+  // @ts-ignore — populated by buildProcedural() before any consumer reads it
+  let procKin = {};
+
   // When a machine GLB is bound the kinematic motion deltas have to scale
   // from G-code mm into the GLB's authored frame. Penta's GLBs are authored
   // at machine-true scale, so the linear axes only travel a few cm at most;
@@ -937,15 +946,6 @@ export async function init(opts) {
     // new toolGroup so the same tool model rides the rig in both modes.
     attachToolToZ();
   }
-
-  /**
-   * Snapshot of the procedural kinematic map so `resetToProcedural()` can
-   * restore it after a GLB swap-out.
-   *
-   * @type {{ x: THREE.Object3D, y: THREE.Object3D, z: THREE.Object3D, a: THREE.Object3D, b: THREE.Object3D }}
-   */
-  // @ts-ignore — populated in buildProcedural()
-  let procKin = {};
 
   /**
    * Look up a node on a loaded GLB by case-insensitive name. Mirrors the

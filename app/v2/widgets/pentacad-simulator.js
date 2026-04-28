@@ -906,33 +906,43 @@ export async function init(opts) {
   }
 
   // ─── GLB attempt (HEAD-probe → load → rebind) ────────────────────────────
-  /** @type {string} */
-  const glbUrl = opts.params?.glbUrl || '../shared/lib/penta-machines/v2-50.glb';
+  // The legacy v0.4 standalone publishes machine GLBs at
+  //   https://cyclecad.com/app/models/<id>.glb        (primary)
+  //   https://cyclecad.com/machines/<id>/<id>.glb     (fallback)
+  // Each canonical machine in `shared/machines/penta.json` carries a
+  // `glbUrls` array — try each in order, fall through to procedural chain
+  // on any failure. `opts.params.glbUrl` overrides the catalog (single URL).
+  /** @type {string[]} */
+  const glbCandidates = opts.params?.glbUrl
+    ? [opts.params.glbUrl]
+    : (/** @type {{glbUrls?: string[]}} */ (machine).glbUrls
+       || ['../shared/lib/penta-machines/' + machine.id + '.glb']);
   let glbActive = false;
 
   ;(async () => {
-    try {
-      const head = await fetch(glbUrl, { method: 'HEAD' });
-      if (!head.ok) {
-        // eslint-disable-next-line no-console
-        console.info(`[pentacad-simulator] GLB not found at ${glbUrl} (HTTP ${head.status}) — using procedural chain.`);
+    for (const url of glbCandidates) {
+      try {
+        const head = await fetch(url, { method: 'HEAD' });
+        if (!head.ok) {
+          console.info(`[pentacad-simulator] GLB miss ${url} (HTTP ${head.status}) — trying next candidate.`);
+          continue;
+        }
+        const loader = new GLTFLoader();
+        const gltf = await new Promise((res, rej) => loader.load(url, res, undefined, rej));
+        const root3 = /** @type {THREE.Object3D} */ (gltf.scene);
+        if (!bindGlbKinematics(root3)) {
+          console.info(`[pentacad-simulator] ${url} loaded but missing x/y/z/a/b nodes — trying next candidate.`);
+          continue;
+        }
+        glbActive = true;
+        console.info(`[pentacad-simulator] GLB bound from ${url} (x/y/z/a/b nodes found).`);
         return;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.info(`[pentacad-simulator] GLB load failed for ${url}: ${msg} — trying next candidate.`);
       }
-      const loader = new GLTFLoader();
-      const gltf = await new Promise((res, rej) => loader.load(glbUrl, res, undefined, rej));
-      const root3 = /** @type {THREE.Object3D} */ (gltf.scene);
-      if (!bindGlbKinematics(root3)) {
-        // eslint-disable-next-line no-console
-        console.info('[pentacad-simulator] GLB loaded but missing x/y/z/a/b nodes — staying on procedural.');
-        return;
-      }
-      glbActive = true;
-      // eslint-disable-next-line no-console
-      console.info(`[pentacad-simulator] GLB ${glbUrl} bound (x/y/z/a/b nodes found).`);
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.info('[pentacad-simulator] GLB load failed — falling back to procedural.', err);
     }
+    console.info('[pentacad-simulator] No GLB candidate resolved — using procedural chain.');
   })();
 
   // ─── Resize ───────────────────────────────────────────────────────────────

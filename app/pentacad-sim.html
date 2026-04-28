@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Pentacad Simulator v0.5 — 5-axis G-code playback</title>
+<title>Pentacad Simulator v0.5.1 — 5-axis G-code playback</title>
 <meta name="description" content="Browser-native 5-axis G-code simulator for Pentamachine V1 / V2-10 / V2-50 / V1 Kickstarter / Solo. Runs offline, no install." />
 <meta name="theme-color" content="#333333" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Ctext%20y%3D%22.9em%22%20font-size%3D%2290%22%3E%F0%9F%9B%A0%EF%B8%8F%3C%2Ftext%3E%3C%2Fsvg%3E" />
@@ -928,7 +928,7 @@ input, textarea { font-family: inherit; color: inherit; }
     </svg>
   </a>
   <p class="pt-title">
-    <a href="https://www.pentamachine.com" target="_blank" rel="noopener" class="pt-title-link" id="pt-title-link">Pentacad Simulator v0.5.0</a>
+    <a href="https://www.pentamachine.com" target="_blank" rel="noopener" class="pt-title-link" id="pt-title-link">Pentacad Simulator v0.5.1</a>
   </p>
 
   <div class="pt-appbar-actions">
@@ -1093,6 +1093,12 @@ input, textarea { font-family: inherit; color: inherit; }
       <label class="pt-bp-check">
         <input type="checkbox" id="bp-smooth-cam" checked />
         <span>Smooth camera transitions</span>
+      </label>
+      <!-- Show stock outline — opt-in green wireframe box on the B-platter.
+           Penta doesn't show one by default; v0.4 always did. -->
+      <label class="pt-bp-check">
+        <input type="checkbox" id="bp-show-stock" />
+        <span>Show stock outline</span>
       </label>
     </div>
 
@@ -1283,6 +1289,22 @@ if (!sim) {
  *
  * Stock + envelope numbers are inch-units, matching Penta's G20 default.
  */
+/*
+ * `homeNudge` per machine: per-axis [dx, dy, dz] offsets in world units
+ * (the same scale `applyMachineState` uses internally). Lets us anchor
+ * the spindle (z-group) so it parks at the visible home position
+ * Penta shows, instead of the GLB's authored origin which on V2-50
+ * lands the spindle inside the trunnion.
+ *
+ * The current values are eyeballed against sim.pentamachine.com's
+ * boot pose. Refine via DevTools at runtime:
+ *
+ *     PentacadSimApp.nudge('z',  1.0,  0,  0)   // pull spindle out +X
+ *     PentacadSimApp.nudge('y',  0,    0.5, 0) // raise trunnion +Y
+ *
+ * then read the working values back from PentacadSimApp.three.kinematics
+ * and copy them here to make them the new defaults.
+ */
 const MACHINES = {
   'solo': {
     id: 'solo',
@@ -1290,7 +1312,8 @@ const MACHINES = {
     glb: ['./models/solo.glb', '../machines/solo/solo.glb'],
     envelope: { x: [-2.0, 2.0], y: [-2.0, 2.0], z: [-3.0, 0.0], a: [-90, 90], b: [-360, 360] },
     stock:    { x: 1.5, y: 1.5, z: 0.75 },
-    home:     { x: 0, y: 0, z: 0, a: 0, b: 0 }
+    home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
+    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [1.0, 0, 0] }
   },
   'v1': {
     id: 'v1',
@@ -1298,7 +1321,8 @@ const MACHINES = {
     glb: ['./models/v1.glb', '../machines/v1/v1.glb'],
     envelope: { x: [-2.5, 2.5], y: [-2.0, 2.0], z: [-3.5, 0.0], a: [-25, 135], b: [-360, 360] },
     stock:    { x: 1.5, y: 1.5, z: 1.0 },
-    home:     { x: 0, y: 0, z: 0, a: 0, b: 0 }
+    home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
+    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [1.0, 0, 0] }
   },
   'v1kickstarter': {
     id: 'v1kickstarter',
@@ -1306,7 +1330,8 @@ const MACHINES = {
     glb: ['./models/v1kickstarter.glb', '../machines/v1/v1kickstarter.glb'],
     envelope: { x: [-2.5, 2.5], y: [-2.0, 2.0], z: [-3.5, 0.0], a: [-25, 135], b: [-360, 360] },
     stock:    { x: 1.5, y: 1.5, z: 1.0 },
-    home:     { x: 0, y: 0, z: 0, a: 0, b: 0 }
+    home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
+    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [1.0, 0, 0] }
   },
   'v2-10': {
     id: 'v2-10',
@@ -1314,7 +1339,8 @@ const MACHINES = {
     glb: ['./models/v2-10.glb', '../machines/v2-10/v2-10.glb'],
     envelope: { x: [-2.5, 2.5], y: [-2.5, 2.5], z: [-3.5, 0.0], a: [-25, 135], b: [-360, 360] },
     stock:    { x: 1.75, y: 1.75, z: 1.0 },
-    home:     { x: 0, y: 0, z: 0, a: 0, b: 0 }
+    home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
+    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [1.5, 0, 0] }
   },
   'v2-50': {
     id: 'v2-50',
@@ -1322,7 +1348,8 @@ const MACHINES = {
     glb: ['./models/v2-50.glb', '../machines/v2-50/v2-50.glb'],
     envelope: { x: [-3.0, 3.0], y: [-2.5, 2.5], z: [-3.5, 0.0], a: [-25, 135], b: [-360, 360] },
     stock:    { x: 2.0, y: 2.0, z: 1.25 },
-    home:     { x: 0, y: 0, z: 0, a: 0, b: 0 }
+    home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
+    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [1.8, 0, 0] }
   }
 };
 
@@ -1367,7 +1394,10 @@ const app = {
     timeMode: 'centred',
     showPast: false,
     feedColor: '#ED6C02',
-    rapidColor: '#236e24'
+    rapidColor: '#236e24',
+    /* Stock outline — opt-in. Penta renders no outline by default; users
+       turn it on if they need a visual anchor for the workpiece bounds. */
+    showStock: false
   },
   /** Per-tool overrides set by SUMMARY tab inputs. Keyed by tool number. */
   toolOverrides: {},
@@ -1900,11 +1930,15 @@ function initViewport() {
   controls.dynamicDampingFactor = 0.15;
   controls.noPan = false;
 
-  // Lights — bright, neutral so charcoal-grey machines read correctly on white
-  const ambient = new THREE.AmbientLight(0xFFFFFF, 1.4);
-  const key = new THREE.DirectionalLight(0xFFFFFF, 0.6);
+  /* Lights — tuned to match sim.pentamachine.com which renders the
+     machine near-black (#1A1A1A). v0.4 had ambient 1.4 + hemi 0.55 that
+     washed everything to grey. We drop ambient + hemi sharply and
+     reweight the key directional so authored dark surfaces stay dark
+     while the silhouette is still readable on white. */
+  const ambient = new THREE.AmbientLight(0xFFFFFF, 0.45);
+  const key = new THREE.DirectionalLight(0xFFFFFF, 0.85);
   key.position.set(8, 25, 10);
-  const hemi = new THREE.HemisphereLight(0xFFFFFF, 0xCCCCCC, 0.55);
+  const hemi = new THREE.HemisphereLight(0xFFFFFF, 0x404040, 0.30);
   scene.add(ambient, key, hemi);
 
   // Root group — units inch, scale x10 for legibility
@@ -2173,10 +2207,17 @@ async function loadMachineModel() {
   if (gltf) {
     const obj = gltf.scene;
     obj.name = 'machineGlb';
+    /* Material override — Penta renders the machine as a near-matte
+       black surface. v0.4 used metalness 0.2 + roughness 0.6 which
+       reflected the bright ambient light back as grey. Push metalness
+       toward 0 and roughness toward 1 so the GLB's authored dark base
+       colour reads correctly. The silver tool / collet pieces have
+       their own materials and are unaffected — they're attached at
+       runtime via buildAndAttachToolMesh, not loaded from the GLB. */
     obj.traverse(n => {
       if (n.isMesh && n.material) {
-        n.material.metalness = 0.2;
-        n.material.roughness = 0.6;
+        n.material.metalness = 0.05;
+        n.material.roughness = 0.95;
       }
     });
     // Hide the static placeholder stock cube whenever a real GLB is loaded —
@@ -2209,6 +2250,7 @@ async function loadMachineModel() {
     // Hide the legacy red cone — the new tool mesh replaces it.
     if (t.toolMarker) t.toolMarker.visible = false;
     applyMachineState({ x: 0, y: 0, z: 0, a: 0, b: 0 });   // park to home
+    applyStockVisibility();                                 // honour Show stock outline
     fitCamera();
   } else {
     t.machineGroup.add(buildMachineProxy(app.machine));
@@ -2392,12 +2434,18 @@ function setupGlbKinematics(machineGlb, glbScale) {
   //   PentacadSimApp.kinematics.zHomeOffset = new THREE.Vector3(dx, dy, dz)
   // and we'll apply it on the next applyMachineState() pass. Initial value
   // is zero so we don't introduce a regression.
-  // Per-mesh home-position nudges — tunable at runtime to align the
-  // Pentamachine kinematic nodes against the GLB's authored geometry.
-  // Live API: PentacadSimApp.nudge('z', dx, dy, dz)
-  k.xHomeOffset = new THREE.Vector3(0, 0, 0);
-  k.yHomeOffset = new THREE.Vector3(0, 0, 0);
-  k.zHomeOffset = new THREE.Vector3(0, 0, 0);
+  /* Per-mesh home-position nudges — tunable at runtime to align the
+     Pentamachine kinematic nodes against the GLB's authored geometry.
+     Live API: PentacadSimApp.nudge('z', dx, dy, dz). Defaults seeded
+     from the active machine's `homeNudge` so the spindle parks outside
+     the trunnion on first paint instead of clipping into it. */
+  const tune = (app.machine && app.machine.homeNudge) || {};
+  const seed = (axis) => Array.isArray(tune[axis])
+    ? new THREE.Vector3(tune[axis][0] || 0, tune[axis][1] || 0, tune[axis][2] || 0)
+    : new THREE.Vector3(0, 0, 0);
+  k.xHomeOffset = seed('x');
+  k.yHomeOffset = seed('y');
+  k.zHomeOffset = seed('z');
 }
 
 /**
@@ -2422,13 +2470,23 @@ function nudge(mesh, dx, dy, dz) {
 }
 
 /** Apply or revert SHORT/LONG holder visibility.
- *  The GLB authors both holders at Scene-root level so they render
- *  simultaneously by default — the SHORT and LONG meshes are oriented at
- *  right angles to each other, producing the "perpendicular tool holder"
- *  silhouette. We sweep the entire GLB and hide the inactive set by
- *  name-pattern, so suffixed variants (SHORT001, LONG001, collet002, …)
- *  are caught too.
+ *  Penta GLBs ship BOTH the LONG and SHORT holders authored at scene
+ *  root, oriented at right angles to each other. Without explicit
+ *  hiding, both render → the "perpendicular tool holder" silhouette
+ *  the user reports. Penta's runtime hides whichever isn't selected.
+ *
+ *  v0.4 used regex-prefix matching but variants kept slipping through.
+ *  v0.5 strengthens the matcher and also walks every node whose name
+ *  contains the words 'holder' / 'collet' / 'tool' — anything that
+ *  looks like a tool-assembly part — so authoring quirks across V1 /
+ *  V2-10 / V2-50 / Solo are all caught.
+ *
+ *  First call after a GLB load also dumps every candidate name to the
+ *  console (window.PentacadSimApp.holderCandidates) so we can verify
+ *  the matcher against the actual GLB content.
  */
+const HOLDER_DEBUG_KEY = '__pcHolderInspected';
+
 function applyToolHolderVisibility() {
   const k = app.three && app.three.kinematics;
   if (!k || !k.glb) return;
@@ -2446,18 +2504,33 @@ function applyToolHolderVisibility() {
                   && app.toolOverrides[activeTool].holder) || 'long';
   const wantShort = holder === 'short';
 
-  // Penta's GLBs pair holders with specific collets:
-  //   LONG  + collet
-  //   SHORT + collet001
-  // Match by case-insensitive name prefix so authoring quirks across V1 /
-  // V2-10 / V2-50 / Solo are all caught.
-  const isShortLike = (n) => /^short/i.test(n) || /^collet0*1/i.test(n) || /^collet0*0?2/i.test(n);
-  const isLongLike  = (n) => /^long/i.test(n)  || (/^collet$/i.test(n) || /^collet0*0?$/i.test(n));
+  /* Match the LONG variant if the name starts with `long` OR is exactly
+     `collet` / `collet0` / `collet00`. Match the SHORT variant if the
+     name starts with `short` OR matches a collet with a numeric suffix
+     ≥ 1 (collet1, collet001, collet01, collet02, …). */
+  const isLongLike  = (n) => /^long/i.test(n) || /^collet0*$/i.test(n);
+  const isShortLike = (n) => /^short/i.test(n) || /^collet0*[1-9]\d*$/i.test(n);
+
+  /* First-load diagnostic: capture every node name that looks like a
+     tool-assembly part. Surfaces the actual GLB inventory at the
+     ready in case the regex needs tightening for a new variant. */
+  const candidates = [];
+  k.glb.traverse((node) => {
+    const name = node.name || '';
+    if (!name) return;
+    if (isShortLike(name) || isLongLike(name) || /tool|holder|collet/i.test(name)) {
+      candidates.push(name);
+    }
+  });
+  if (!k.glb.userData[HOLDER_DEBUG_KEY]) {
+    k.glb.userData[HOLDER_DEBUG_KEY] = true;
+    if (window.PentacadSimApp) window.PentacadSimApp.holderCandidates = candidates;
+  }
 
   k.glb.traverse(node => {
     const name = node.name || '';
-    if (isShortLike(name)) node.visible = wantShort;
-    else if (isLongLike(name)) node.visible = !wantShort;
+    if (isShortLike(name))      node.visible = wantShort;
+    else if (isLongLike(name))  node.visible = !wantShort;
   });
 }
 
@@ -3132,6 +3205,30 @@ function wireOptions() {
   $('bp-smooth-cam').addEventListener('change', (e) => {
     app.smoothCamera = e.target.checked;
     saveSession();
+  });
+
+  /* Show stock outline toggle — flips visibility on every stockIndicator-
+     named node and the userData.__pcStock-tagged group built at GLB load. */
+  $('bp-show-stock').addEventListener('change', (e) => {
+    app.bp.showStock = e.target.checked;
+    applyStockVisibility();
+    saveSession();
+  });
+}
+
+/**
+ * Walk the active machine GLB and flip visibility on every stock-indicator
+ * mesh according to app.bp.showStock. Penta hides these by default; v0.4
+ * always showed them. Called from the Back Plot toggle and right after
+ * GLB load.
+ */
+function applyStockVisibility() {
+  if (!app.three) return;
+  const want = !!app.bp.showStock;
+  /* Flip the dynamically-attached indicators (userData.__pcStock). */
+  app.three.scene.traverse((n) => {
+    if (n && n.userData && n.userData.__pcStock) n.visible = want;
+    if (n && n.name === 'stockIndicator') n.visible = want;
   });
 }
 

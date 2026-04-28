@@ -6,21 +6,28 @@
 <title>Pentacad — cycleCAD Suite</title>
 <style>
   /*
-   * Pentacad app shell.
+   * Pentacad app shell — uses the EXISTING simulator at
+   * /app/pentacad-sim.html verbatim via iframe.
    *
-   * Sachin's standalone simulator at /app/pentacad-sim.html is the canonical
-   * Pentacad UI — a hand-tuned clone of sim.pentamachine.com that he's been
-   * iterating on for weeks. The Suite-widget rebuild kept missing the look
-   * and had loader edge cases on cyclecad.com Pages, so this app now embeds
-   * the standalone directly via an iframe. Same domain, no cross-origin
-   * issues, identical look-and-feel because it IS the standalone.
+   * Sachin maintains the canonical Pentacad simulator as a single 3,423-LOC
+   * standalone HTML at https://cyclecad.com/app/pentacad-sim.html — a
+   * hand-tuned clone of sim.pentamachine.com. It already has the right
+   * look, the right machine GLBs, the right kinematic scaling, and a
+   * working DRO + playback + CHANGE MACHINE flow.
    *
-   * The Suite's per-app chrome (top brand bar) sits above the iframe so the
-   * navigation back to cycleCAD / ExplodeView / admin / tests still works.
+   * Repeated attempts to re-implement it as a Suite-native widget kept
+   * missing the look or introducing TDZ / scaling / model-too-small bugs.
+   * Lesson: don't rebuild what already works. The Suite shell hosts the
+   * standalone via iframe — same domain, no cross-origin issues, identical
+   * look-and-feel because it IS the standalone.
+   *
+   * The Suite's per-app navigation bar sits above the iframe so links
+   * back to cycleCAD / ExplodeView / admin / tests still work.
    */
   html, body { margin: 0; padding: 0; height: 100%; overflow: hidden;
                font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
   body { display: grid; grid-template-rows: auto 1fr; }
+
   header.suite-bar {
     background: #1A2828; color: #D7DCDE;
     padding: 10px 20px;
@@ -53,6 +60,7 @@
   iframe.sim {
     width: 100%; height: 100%;
     border: 0; display: block;
+    background: #F5F7F8;
   }
 </style>
 </head>

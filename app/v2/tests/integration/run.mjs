@@ -26,6 +26,7 @@ const FILES = [
   'modal-executor.test.mjs',
   'cam-3d-widgets.test.mjs',
   'phase3.test.mjs',
+  'pentacad-engine.test.mjs',
 ];
 
 globalThis.__INTEGRATION_ORCHESTRATED__ = true;

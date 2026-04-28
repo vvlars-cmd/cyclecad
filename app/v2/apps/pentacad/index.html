@@ -4,82 +4,85 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Pentacad — cycleCAD Suite</title>
-<link rel="stylesheet" href="../../shared/theme.css">
 <style>
-  body { margin: 0; min-height: 100vh; display: grid; grid-template-rows: auto 1fr;
-         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif; }
+  /*
+   * Pentacad app shell.
+   *
+   * Sachin's standalone simulator at /app/pentacad-sim.html is the canonical
+   * Pentacad UI — a hand-tuned clone of sim.pentamachine.com that he's been
+   * iterating on for weeks. The Suite-widget rebuild kept missing the look
+   * and had loader edge cases on cyclecad.com Pages, so this app now embeds
+   * the standalone directly via an iframe. Same domain, no cross-origin
+   * issues, identical look-and-feel because it IS the standalone.
+   *
+   * The Suite's per-app chrome (top brand bar) sits above the iframe so the
+   * navigation back to cycleCAD / ExplodeView / admin / tests still works.
+   */
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden;
+               font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+  body { display: grid; grid-template-rows: auto 1fr; }
   header.suite-bar {
-    background: #0E1117; color: #fff; padding: 12px 24px;
-    display: flex; align-items: center; gap: 16px; font-size: 13px;
+    background: #1A2828; color: #D7DCDE;
+    padding: 10px 20px;
+    display: flex; align-items: center; gap: 14px;
+    font-size: 12px; line-height: 1; flex-shrink: 0;
+    border-bottom: 1px solid #0E1717;
   }
-  header.suite-bar .brand { font-weight: 700; letter-spacing: 4px; }
-  header.suite-bar .accent { color: #10B981; font-weight: 600; }
-  header.suite-bar nav { margin-left: auto; display: flex; gap: 18px; font-size: 12px; }
-  header.suite-bar nav a { color: #BBC2CC; text-decoration: none; }
-  header.suite-bar nav a:hover { color: #fff; }
-  main#app { position: relative; background: #0E1117; }
-  #sim-host { position: absolute; inset: 0; }
-  .empty-overlay {
-    position: absolute; inset: 50% 0 auto 0; transform: translateY(-50%);
-    text-align: center; color: #94a3b8; padding: 32px; pointer-events: none;
+  header.suite-bar .brand {
+    font-weight: 700; letter-spacing: 4px; color: #FFFFFF;
   }
-  .empty-overlay h2 { font: 600 22px Georgia, serif; margin-bottom: 6px; color: #fff; }
-  .empty-overlay p { font-size: 13px; margin: 4px 0; }
-  .empty-overlay a { color: #10B981; pointer-events: auto; }
-</style>
+  header.suite-bar .accent {
+    color: #15B573; font-weight: 600;
+  }
+  header.suite-bar nav {
+    margin-left: auto; display: flex; gap: 16px; font-size: 12px;
+  }
+  header.suite-bar nav a {
+    color: #8A949D; text-decoration: none;
+    transition: color 0.15s;
+  }
+  header.suite-bar nav a:hover { color: #FFFFFF; }
+  header.suite-bar a.standalone {
+    color: #15B573; font-size: 11px;
+    border-left: 1px solid #2A3838;
+    padding-left: 14px;
+    text-decoration: none;
+  }
+  header.suite-bar a.standalone:hover { color: #2DC589; }
 
-<script type="importmap">
-{ "imports": {
-  "three":          "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
-  "three/addons/":  "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
-}}
-</script>
+  iframe.sim {
+    width: 100%; height: 100%;
+    border: 0; display: block;
+  }
+</style>
 </head>
 <body>
 
 <header class="suite-bar">
   <span class="brand">CYCLECAD SUITE</span>
-  <span style="opacity:.6">·</span>
+  <span style="opacity:.4">·</span>
   <span class="accent">Pentacad</span>
+  <span style="opacity:.4; margin-left: 8px">5-axis CAM · Penta Machine</span>
   <nav>
     <a href="../cyclecad/">cycleCAD</a>
-    <a href="../explodeview/">ExplodeView</a>
     <a href="../admin/">admin</a>
+    <a href="../explodeview/">ExplodeView</a>
     <a href="../../tests/">tests</a>
+    <a class="standalone"
+       href="https://cyclecad.com/app/pentacad-sim.html"
+       target="_blank" rel="noopener">
+      ⤴ open in standalone
+    </a>
   </nav>
 </header>
 
-<main id="app">
-  <div id="sim-host"></div>
-  <div class="empty-overlay" id="empty">
-    <h2>Pentacad · 5-axis simulator</h2>
-    <p>Loading kinematic chain · Penta Machine envelope · NGC parser…</p>
-  </div>
-</main>
-
-<script type="module">
-import { meter } from '../../shared/meter.js';
-import { Toast } from '../../shared/ui-primitives.js';
-import { init as initSim } from '../../widgets/pentacad-simulator.js';
-
-const APP = 'pentacad';
-
-try {
-  const handle = await initSim({
-    mount: '#sim-host',
-    app:   APP,
-    meter,
-    params: { machineId: 'v2-50', autoplay: false },
-  });
-  document.getElementById('empty').style.display = 'none';
-  /** @type {any} */ (window).PentacadSim = handle.api;
-  Toast.show(`${APP} ready · simulator armed · click ▶ to play`);
-} catch (err) {
-  document.getElementById('empty').innerHTML =
-    `<h2>Pentacad — boot error</h2><p>${err && err.message ? err.message : err}</p>`;
-  console.error('[pentacad] simulator failed to mount', err);
-}
-</script>
+<iframe
+  class="sim"
+  src="https://cyclecad.com/app/pentacad-sim.html"
+  title="Pentacad Simulator"
+  allow="clipboard-write; fullscreen"
+  allowfullscreen
+></iframe>
 
 </body>
 </html>

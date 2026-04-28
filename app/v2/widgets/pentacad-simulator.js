@@ -781,6 +781,11 @@ export async function init(opts) {
   // @ts-ignore — populated by buildProcedural() before any consumer reads it
   let procKin = {};
 
+  // Hoisted above buildProcedural() so the helpers it calls (attachToolToZ
+  // → reads glbActive to pick the right tool scale) don't trip the
+  // temporal-dead-zone error during boot.
+  let glbActive = false;
+
   // When a machine GLB is bound the kinematic motion deltas have to scale
   // from G-code mm into the GLB's authored frame. Penta's GLBs are authored
   // at machine-true scale, so the linear axes only travel a few cm at most;
@@ -1024,13 +1029,14 @@ export async function init(opts) {
   }
 
   // ─── GLB load helper ────────────────────────────────────────────────────
-  // Hoisted to module scope so `setMachine()` can call it on every machine
-  // swap. Walks `machine.glbUrls` (override → catalog → suite-local), HEAD-
-  // probes each candidate, loads the first hit, binds its x/y/z/a/b nodes,
-  // and re-parents the tool group to the new z-axis. Falls back to the
-  // procedural chain (with tool re-attached) on any failure.
-  /** @type {boolean} */
-  let glbActive = false;
+  // `setMachine()` calls these on every machine swap. `loadActiveMachineGlb`
+  // walks `machine.glbUrls` (override → catalog → suite-local), HEAD-probes
+  // each candidate, loads the first hit, binds its x/y/z/a/b nodes, and
+  // re-parents the tool group to the new z-axis. Falls back to the
+  // procedural chain (with tool re-attached) on any failure. The
+  // `glbActive` flag itself is declared at the top of init() so the
+  // earlier helpers (attachToolToZ, applyKinematics) can read it without
+  // tripping a temporal-dead-zone error.
 
   /**
    * Reset the rig back to procedural. Removes any active GLB scene from

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Pentacad Simulator v0.5.5 — 5-axis G-code playback</title>
+<title>Pentacad Simulator v0.5.7 — 5-axis G-code playback</title>
 <meta name="description" content="Browser-native 5-axis G-code simulator for Pentamachine V1 / V2-10 / V2-50 / V1 Kickstarter / Solo. Runs offline, no install." />
 <meta name="theme-color" content="#333333" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Ctext%20y%3D%22.9em%22%20font-size%3D%2290%22%3E%F0%9F%9B%A0%EF%B8%8F%3C%2Ftext%3E%3C%2Fsvg%3E" />
@@ -1030,7 +1030,7 @@ input, textarea { font-family: inherit; color: inherit; }
     </svg>
   </a>
   <p class="pt-title">
-    <a href="https://www.pentamachine.com" target="_blank" rel="noopener" class="pt-title-link" id="pt-title-link">Pentacad Simulator v0.5.5</a>
+    <a href="https://www.pentamachine.com" target="_blank" rel="noopener" class="pt-title-link" id="pt-title-link">Pentacad Simulator v0.5.7</a>
   </p>
 
   <div class="pt-appbar-actions">
@@ -1209,6 +1209,14 @@ input, textarea { font-family: inherit; color: inherit; }
       <label class="pt-bp-check">
         <input type="checkbox" id="bp-always-show" />
         <span>Always show</span>
+      </label>
+      <!-- Voxel stock removal — when on, the workpiece is rendered as a
+           voxel grid (32×32×24 cells) that the cutter actually carves
+           during playback. The voxel block parents to the B-platter so
+           it tilts with A and spins with B. -->
+      <label class="pt-bp-check">
+        <input type="checkbox" id="bp-voxel-stock" />
+        <span>Voxel stock removal</span>
       </label>
     </div>
 
@@ -1494,7 +1502,11 @@ const MACHINES = {
     envelope: { x: [-2.5, 2.5], y: [-2.5, 2.5], z: [-3.5, 0.0], a: [-25, 135], b: [-360, 360] },
     stock:    { x: 1.75, y: 1.75, z: 1.0 },
     home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
-    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
+    /* `homeNudge.x = [0, 0, +10]` drops the X-carriage along world -Y by ~10
+       world units to close the visible gap between its bottom and the
+       base's top. Base is rotated +90° around X so local +Z maps to
+       world -Y; offsetting x's local Z by +10 = world -Y by 10. */
+    homeNudge:{ x: [0, 0, 10], y: [0, 0, 0], z: [0, 0, 0] }
   },
   'v2-50': {
     id: 'v2-50',
@@ -1503,7 +1515,7 @@ const MACHINES = {
     envelope: { x: [-3.0, 3.0], y: [-2.5, 2.5], z: [-3.5, 0.0], a: [-25, 135], b: [-360, 360] },
     stock:    { x: 2.0, y: 2.0, z: 1.25 },
     home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
-    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
+    homeNudge:{ x: [0, 0, 12], y: [0, 0, 0], z: [0, 0, 0] }
   }
 };
 
@@ -1554,7 +1566,9 @@ const app = {
     showStock: false,
     /* Always show — Penta toggle that bypasses the line-range trim so the
        full toolpath is rendered regardless of the From/To values. */
-    alwaysShow: false
+    alwaysShow: false,
+    /* Voxel stock removal — opt-in real material removal during playback. */
+    voxelStock: false
   },
   /** Per-tool overrides set by SUMMARY tab inputs. Keyed by tool number. */
   toolOverrides: {},
@@ -2323,6 +2337,152 @@ function buildStockIndicator(dims) {
   return g;
 }
 
+/* ────────────────────────────────────────────────────────────────────────
+   Voxel-grid stock removal — every frame, the cutter's world-space tip
+   is transformed into B-platter local space and any voxel within a
+   tool-radius sphere of the tip is marked removed. The voxel mesh is
+   rebuilt periodically (debounced) and lives as a child of `b` so it
+   tilts with A and spins with B. Mirrors Penta's behaviour where the
+   workpiece visibly thins out as the program runs.
+
+   Resolution is moderate (32×32×24 = ~25k cells) so even a long program
+   completes a full mesh rebuild in <40ms on M-class hardware.
+   ──────────────────────────────────────────────────────────────────── */
+
+/**
+ * @typedef {Object} StockRemovalOpts
+ * @property {number} sizeX   stock dimension along local X (inches)
+ * @property {number} sizeY   stock dimension along local Y (height, inches)
+ * @property {number} sizeZ   stock dimension along local Z (inches)
+ * @property {number} gridX   voxel resolution X
+ * @property {number} gridY   voxel resolution Y
+ * @property {number} gridZ   voxel resolution Z
+ * @property {{x:number,y:number,z:number}} origin   local origin of the stock block
+ */
+
+class StockRemoval {
+  /** @param {StockRemovalOpts} opts */
+  constructor(opts) {
+    this.sizeX = opts.sizeX;
+    this.sizeY = opts.sizeY;
+    this.sizeZ = opts.sizeZ;
+    this.gridX = opts.gridX;
+    this.gridY = opts.gridY;
+    this.gridZ = opts.gridZ;
+    this.origin = { ...opts.origin };
+    this.cellX = this.sizeX / this.gridX;
+    this.cellY = this.sizeY / this.gridY;
+    this.cellZ = this.sizeZ / this.gridZ;
+    /* 1-byte cell flag: 1 = present, 0 = removed. Backed by a typed array
+       so iteration is cache-friendly even at 64³ resolution. */
+    this.cells = new Uint8Array(this.gridX * this.gridY * this.gridZ);
+    this.cells.fill(1);
+    this.group = new THREE.Group();
+    this.group.name = 'stockRemovalGrid';
+    /* Solid placeholder mesh shown while no material has been removed. */
+    this.solidMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(this.sizeX, this.sizeY, this.sizeZ),
+      new THREE.MeshStandardMaterial({
+        color: 0x35C29A, transparent: true, opacity: 0.18,
+        metalness: 0.0, roughness: 0.85,
+      }),
+    );
+    this.solidMesh.position.set(this.origin.x, this.origin.y + this.sizeY / 2, this.origin.z);
+    this.group.add(this.solidMesh);
+    this.mesh = null;          // populated by rebuildMesh on first removal
+    this.dirty = false;
+    this.removed = 0;
+  }
+  reset() {
+    this.cells.fill(1);
+    this.removed = 0;
+    if (this.mesh) {
+      this.group.remove(this.mesh);
+      this.mesh.geometry.dispose();
+      this.mesh = null;
+    }
+    this.solidMesh.visible = true;
+  }
+  /**
+   * Mark every voxel within `toolRadius` of the tip as removed. Tip is in
+   * the same local frame as `origin` — caller is responsible for the
+   * world→local transform.
+   *
+   * @param {{x:number,y:number,z:number}} tipLocal
+   * @param {number} toolRadius
+   */
+  removeAtTip(tipLocal, toolRadius) {
+    const tx = tipLocal.x - this.origin.x;
+    const ty = tipLocal.y - this.origin.y;
+    const tz = tipLocal.z - this.origin.z;
+    const ix = Math.floor((tx + this.sizeX / 2) / this.cellX);
+    const iy = Math.floor((ty) / this.cellY);
+    const iz = Math.floor((tz + this.sizeZ / 2) / this.cellZ);
+    const r = Math.ceil(toolRadius / Math.min(this.cellX, this.cellY, this.cellZ)) + 1;
+    let removedThisCall = 0;
+    for (let dx = -r; dx <= r; dx++) {
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dz = -r; dz <= r; dz++) {
+          const x = ix + dx, y = iy + dy, z = iz + dz;
+          if (x < 0 || y < 0 || z < 0) continue;
+          if (x >= this.gridX || y >= this.gridY || z >= this.gridZ) continue;
+          if (Math.hypot(dx * this.cellX, dy * this.cellY, dz * this.cellZ) > toolRadius) continue;
+          const idx = x * this.gridY * this.gridZ + y * this.gridZ + z;
+          if (this.cells[idx]) {
+            this.cells[idx] = 0;
+            removedThisCall++;
+          }
+        }
+      }
+    }
+    if (removedThisCall > 0) {
+      this.removed += removedThisCall;
+      this.dirty = true;
+    }
+  }
+  /**
+   * Rebuild the displayed mesh as a Points cloud of the still-present
+   * voxels. Cheap enough to call every ~6 frames during active cutting.
+   * Skipped if not dirty or no removal has happened yet.
+   */
+  rebuildMesh() {
+    if (!this.dirty) return;
+    if (this.mesh) {
+      this.group.remove(this.mesh);
+      this.mesh.geometry.dispose();
+      this.mesh = null;
+    }
+    const positions = [];
+    for (let x = 0; x < this.gridX; x++) {
+      for (let y = 0; y < this.gridY; y++) {
+        for (let z = 0; z < this.gridZ; z++) {
+          if (!this.cells[x * this.gridY * this.gridZ + y * this.gridZ + z]) continue;
+          positions.push(
+            this.origin.x - this.sizeX / 2 + (x + 0.5) * this.cellX,
+            this.origin.y + (y + 0.5) * this.cellY,
+            this.origin.z - this.sizeZ / 2 + (z + 0.5) * this.cellZ,
+          );
+        }
+      }
+    }
+    if (positions.length === 0) {
+      this.solidMesh.visible = false;
+      this.dirty = false;
+      return;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    this.mesh = new THREE.Points(geo, new THREE.PointsMaterial({
+      color: 0x35C29A, size: this.cellX * 0.85, sizeAttenuation: true,
+    }));
+    this.group.add(this.mesh);
+    /* Hide the solid placeholder once any material has been carved away
+       — the voxel mesh now represents the workpiece. */
+    this.solidMesh.visible = false;
+    this.dirty = false;
+  }
+}
+
 /**
  * Build a real spindle-tool mesh — stainless shank tapering to a cutter
  * tip — that mounts on the spindle nose so the user can see what's
@@ -2461,6 +2621,11 @@ async function loadMachineModel() {
       t.kinematics.toolMesh = buildAndAttachToolMesh(spindleParent);
     }
     t.kinematics.stockMesh = buildAndAttachStockIndicator(t.kinematics.b, app.machine);
+    /* Voxel stock-removal grid — sits on the B-platter alongside the
+       wireframe stockIndicator. Hidden by default; toggled via the Back
+       Plot "Voxel stock removal" checkbox. */
+    t.kinematics.voxelStock = buildAndAttachVoxelStock(t.kinematics.b, app.machine);
+    if (t.kinematics.voxelStock) t.kinematics.voxelStock.group.visible = !!app.bp.voxelStock;
     // Hide the legacy red cone — the new tool mesh replaces it.
     if (t.toolMarker) t.toolMarker.visible = false;
     applyMachineState({ x: 0, y: 0, z: 0, a: 0, b: 0 });   // park to home
@@ -2573,6 +2738,41 @@ function buildAndAttachStockIndicator(parent, machine) {
   grp.add(edges);
   parent.add(grp);
   return grp;
+}
+
+/**
+ * Build a StockRemoval voxel grid sized to the active machine's stock
+ * dimensions and attach it to the B-platter so it inherits A + B
+ * transforms. Sits on top of the wireframe stockIndicator at the same
+ * local origin. Removed first if a previous machine had attached one,
+ * so swapping machines doesn't accumulate stale grids.
+ *
+ * @param {THREE.Object3D} parent  the B-platter mesh
+ * @param {{stock: {x:number,y:number,z:number}}} machine
+ * @returns {StockRemoval|null}
+ */
+function buildAndAttachVoxelStock(parent, machine) {
+  if (!parent) return null;
+  /* Strip any prior voxel-stock attached to this parent. */
+  for (let i = parent.children.length - 1; i >= 0; i--) {
+    if (parent.children[i].userData.__pcVoxel) parent.remove(parent.children[i]);
+  }
+  const dims = machine?.stock || { x: 1.0, y: 1.0, z: 0.25 };
+  const sr = new StockRemoval({
+    sizeX: dims.x,
+    sizeY: dims.z,            // local Y is the stock height (+platter face = -Z in world)
+    sizeZ: dims.y,
+    /* Resolution chosen empirically: 32×32×24 = ~25k cells. Mesh rebuild
+       under 40ms even on cold caches. Bump to 64×64×48 for higher detail
+       at the cost of ~6× the rebuild time. */
+    gridX: 32,
+    gridY: 24,
+    gridZ: 32,
+    origin: { x: 0, y: 0.05, z: 0 },
+  });
+  sr.group.userData.__pcVoxel = true;
+  parent.add(sr.group);
+  return sr;
 }
 
 function setupGlbKinematics(machineGlb, glbScale) {
@@ -3042,6 +3242,8 @@ function resetPlayback() {
   // which produced a confusing Y=1.75 that the user noticed.)
   updateDRO({ x: 0, y: 0, z: 0, a: 0, b: 0 }, 0);
   rebuildToolpath();
+  /* Reset voxel stock so a re-run starts with an intact workpiece. */
+  resetVoxelStock();
 }
 
 function advancePlayback(dt) {
@@ -3078,11 +3280,71 @@ function applyPlaybackState() {
     // Drive the rigged GLB so the user actually sees the machine move.
     applyMachineState(display);
     highlightCurrentLine(pt.move);
+    /* Voxel stock removal — when enabled, transform the tool tip into
+       B-platter local space and carve. Only runs during cuts (mode !=
+       'rapid') to avoid carving on tool-change rapids. */
+    if (app.bp.voxelStock && app.three?.kinematics?.voxelStock && app.three.kinematics.b) {
+      const isCut = pt.move && pt.move.mode !== 'rapid';
+      if (isCut) {
+        carveStockAtTip(droPos, pt.move);
+      }
+    }
   }
   // Time-window trail rendering depends on the playhead, so rebuild on each
   // tick while that mode is on. Outside time-window the toolpath is static
   // and rebuilt only on program / settings changes.
   if (app.bp.timeWindow) rebuildToolpath();
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   Stock-removal binding — transforms world tool position into the B-
+   platter's local frame and asks StockRemoval to carve. Mesh rebuild is
+   debounced to once every 6 frames during active cutting so the cost
+   stays under a frame budget even at high cell counts.
+   ──────────────────────────────────────────────────────────────────── */
+
+let _carveTickCounter = 0;
+
+/**
+ * Carve material out of the voxel stock based on the current tool tip
+ * position. Tool tip is in display units (inches by default). Convert
+ * to B-platter local coordinates before passing to removeAtTip.
+ *
+ * @param {{x:number,y:number,z:number}} droPos  tip position in display units
+ * @param {Object} move                          executor move record
+ */
+function carveStockAtTip(droPos, move) {
+  const k = app.three.kinematics;
+  const sr = k.voxelStock;
+  if (!sr) return;
+  /* Tool tip world position — moveToolMarker already places the tool
+     marker at (droPos.x, droPos.z + 0.2, droPos.y). Use that as the
+     world reference, then convert to b's local frame. */
+  const m = app.three.toolMarker;
+  if (!m) return;
+  const wp = new THREE.Vector3();
+  m.getWorldPosition(wp);
+  const local = sr.group.worldToLocal(wp.clone());
+  /* Tool radius — half the active tool's diameter, default 1/16" if
+     unknown. Display units (inches by default). */
+  const tool = app.activeTool;
+  const dia = (tool && app.toolOverrides[tool] && app.toolOverrides[tool].dia) || 0.125;
+  const radius = dia / 2;
+  sr.removeAtTip(local, radius);
+  /* Rebuild every 6 frames during active cutting — keeps mesh updates
+     fluid without recomputing on every tick. */
+  _carveTickCounter++;
+  if (_carveTickCounter % 6 === 0 && sr.dirty) {
+    sr.rebuildMesh();
+  }
+}
+
+/* When playback is reset, also reset the voxel stock so a re-run starts
+   from an intact workpiece. */
+function resetVoxelStock() {
+  const sr = app.three?.kinematics?.voxelStock;
+  if (sr) sr.reset();
+  _carveTickCounter = 0;
 }
 
 const MM_PER_INCH = 25.4;
@@ -3463,6 +3725,19 @@ function wireOptions() {
   $('bp-always-show').addEventListener('change', (e) => {
     app.bp.alwaysShow = e.target.checked;
     rebuildToolpath();
+    saveSession();
+  });
+
+  /* Voxel stock removal toggle — flips visibility on the StockRemoval
+     group attached to the B-platter and resets the cells so the workpiece
+     starts intact when re-enabled mid-program. */
+  $('bp-voxel-stock').addEventListener('change', (e) => {
+    app.bp.voxelStock = e.target.checked;
+    if (app.three?.kinematics?.voxelStock) {
+      const sr = app.three.kinematics.voxelStock;
+      sr.group.visible = app.bp.voxelStock;
+      if (app.bp.voxelStock) sr.reset();
+    }
     saveSession();
   });
 }

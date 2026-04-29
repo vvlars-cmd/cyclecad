@@ -73,3 +73,43 @@ and already has the right joint geometry.
 - `~/cycleCAD-Suite/HANDOVER-PENTACAD-V2.md` §"What you have to start the next attempt"
 - `~/cycleCAD-Suite/PENTACAD-V1-VS-PENTA-DIFF.md`
 - `pentacad-sim.html` `setupGlbKinematics()` and `MACHINES.<id>.homeNudge`
+
+---
+
+## v0.5.7 — automated rename pipeline shipped
+
+`~/cycleCAD-Suite/scripts/step-to-pentacad-glb.py` now does the rename
++ re-parent pass automatically. Run it on either uploaded STEP and
+get a GLB whose hierarchy matches v1's `Base → x → z` / `Base → y → a → b`
+convention. Two outputs land here:
+
+| File | Source STEP | Total nodes | x/y/z/a/b children counts |
+|---|---|--:|---|
+| `v2-50-renamed.glb`        | `v2-50-simplified-v11.step`              | 49 | 5 / 4 / 4 / 4 / 1 |
+| `v2-pocketnc-renamed.glb`  | `v2-pocketnc-kinematic-v19.step`         | 21 | 2 / 1 / 1 / 0 / 2 |
+
+`v2-50-renamed.glb` has the cleaner kinematic chain — every named
+sub-mesh from the v11 STEP file landed in the right group. To make it
+the live model:
+
+```bash
+cp ~/cyclecad-website/app/models/from-step/v2-50-renamed.glb \
+   ~/cyclecad-website/app/models/v2-50.glb
+```
+
+Note that the renamed GLB still doesn't include the `LONG`/`SHORT`/`collet`
+holders — those came from the original Pentamachine GLBs. To preserve
+holder geometry, the next iteration should merge the two: keep
+authoritative kinematic geometry from the renamed STEP-GLB, splice in
+the LONG/SHORT/collet meshes from the original Pentamachine GLB.
+
+To regenerate from a fresh STEP:
+
+```bash
+python3 ~/cycleCAD-Suite/scripts/step-to-pentacad-glb.py \
+  /path/to/source.step \
+  /path/to/output.glb \
+  --variant v2-50 --verbose
+```
+
+Dependencies: `pip install cascadio pygltflib`.

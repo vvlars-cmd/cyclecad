@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Pentacad Simulator v0.5.14 — 5-axis G-code playback</title>
+<title>Pentacad Simulator v0.5.15 — 5-axis G-code playback</title>
 <meta name="description" content="Browser-native 5-axis G-code simulator for Pentamachine V1 / V2-10 / V2-50 / V1 Kickstarter / Solo. Runs offline, no install." />
 <meta name="theme-color" content="#333333" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Ctext%20y%3D%22.9em%22%20font-size%3D%2290%22%3E%F0%9F%9B%A0%EF%B8%8F%3C%2Ftext%3E%3C%2Fsvg%3E" />
@@ -1043,7 +1043,7 @@ body.pt-adjust-spindle-mode .pt-viewport-canvas { cursor: move; }
     </svg>
   </a>
   <p class="pt-title">
-    <a href="https://www.pentamachine.com" target="_blank" rel="noopener" class="pt-title-link" id="pt-title-link">Pentacad Simulator v0.5.14</a>
+    <a href="https://www.pentamachine.com" target="_blank" rel="noopener" class="pt-title-link" id="pt-title-link">Pentacad Simulator v0.5.15</a>
   </p>
 
   <div class="pt-appbar-actions">
@@ -1499,7 +1499,7 @@ const MACHINES = {
     envelope: { x: [-2.0, 2.0], y: [-2.0, 2.0], z: [-3.0, 0.0], a: [-90, 90], b: [-360, 360] },
     stock:    { x: 1.5, y: 1.5, z: 0.75 },
     home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
-    homeNudge:{ x: [4, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
+    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
   },
   'v1': {
     id: 'v1',
@@ -1508,7 +1508,7 @@ const MACHINES = {
     envelope: { x: [-2.5, 2.5], y: [-2.0, 2.0], z: [-3.5, 0.0], a: [-25, 135], b: [-360, 360] },
     stock:    { x: 1.5, y: 1.5, z: 1.0 },
     home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
-    homeNudge:{ x: [4, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
+    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
   },
   'v1kickstarter': {
     id: 'v1kickstarter',
@@ -1517,7 +1517,7 @@ const MACHINES = {
     envelope: { x: [-2.5, 2.5], y: [-2.0, 2.0], z: [-3.5, 0.0], a: [-25, 135], b: [-360, 360] },
     stock:    { x: 1.5, y: 1.5, z: 1.0 },
     home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
-    homeNudge:{ x: [4, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
+    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
   },
   'v2-10': {
     id: 'v2-10',
@@ -1541,7 +1541,7 @@ const MACHINES = {
        at 0 keeps the GLB's authored geometry; users dial in their own
        offset via the "Adjust spindle position (drag)" toggle in the
        Back Plot panel — the result is persisted per-machine. */
-    homeNudge:{ x: [4, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
+    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
   },
   'v2-50': {
     id: 'v2-50',
@@ -1552,7 +1552,7 @@ const MACHINES = {
     envelope: { x: [-2.0, 2.55], y: [-2.5, 2.5], z: [-3.55, 0.0], a: [-25, 135], b: [-9999, 9999] },
     stock:    { x: 2.0, y: 2.0, z: 1.25 },
     home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
-    homeNudge:{ x: [4, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
+    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
   }
 };
 
@@ -3249,43 +3249,15 @@ function fitCamera() {
   if (!app.three) return;
   const { camera, controls, root, kinematics } = app.three;
 
-  /* Camera target: the platter (the user's work area).
-     Frame size: the WIDEST horizontal extent of the platter+spindle pair —
-     this auto-scales to whatever homeNudge value the active machine has,
-     so a +60-world-unit spindle nudge widens the frame without losing
-     the platter. Falls back to whole-root bbox if the kinematic chain
-     isn't fully rigged yet. */
+  /* Frame on the B-platter (the user's work area). Same as v0.4..v0.5.9.
+     If the user's nudge pushes the spindle out of frame, they can orbit
+     to see it. Simple > clever here — past attempts to auto-include
+     the spindle in the frame produced wonky angles. */
   let center = new THREE.Vector3();
-  let frameSize = 60;            // generous default that frames a Pocket NC-sized machine
+  let frameSize = 14;            // inch — slightly larger than the trunnion
   if (kinematics && kinematics.b) {
     kinematics.b.getWorldPosition(center);
     center.y += 1.5;             // bias above platter so camera isn't nose-to-disc
-    /* Compute horizontal extent platter + spindle. Use only X-axis bbox
-       (the dimension homeNudge.x affects). Vertical bboxes are stable
-       across nudges; ignore them so the camera doesn't pull back too
-       far when the spindle column is tall. */
-    let mn = Infinity, mx = -Infinity;
-    const sample = (obj) => {
-      if (!obj) return;
-      obj.updateMatrixWorld(true);
-      obj.traverse((n) => {
-        if (!n.isMesh || !n.geometry) return;
-        if (!n.geometry.boundingBox) n.geometry.computeBoundingBox();
-        const bb = n.geometry.boundingBox;
-        for (const x of [bb.min.x, bb.max.x]) for (const y of [bb.min.y, bb.max.y]) for (const z of [bb.min.z, bb.max.z]) {
-          const m = n.matrixWorld.elements;
-          const tx = m[0]*x + m[4]*y + m[8]*z + m[12];
-          if (tx<mn) mn=tx; if (tx>mx) mx=tx;
-        }
-      });
-    };
-    sample(kinematics.b);
-    sample(kinematics.z);
-    if (kinematics.a) sample(kinematics.a);
-    if (isFinite(mn) && isFinite(mx)) {
-      frameSize = Math.max(60, (mx - mn) * 1.2);   /* +20% margin */
-      center.x = (mn + mx) / 2;                    /* horizontal center on the union */
-    }
   } else {
     const box = new THREE.Box3().setFromObject(root);
     if (box.isEmpty()) return;

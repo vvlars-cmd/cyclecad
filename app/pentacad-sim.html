@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Pentacad Simulator v0.5.11 — 5-axis G-code playback</title>
+<title>Pentacad Simulator v0.5.12 — 5-axis G-code playback</title>
 <meta name="description" content="Browser-native 5-axis G-code simulator for Pentamachine V1 / V2-10 / V2-50 / V1 Kickstarter / Solo. Runs offline, no install." />
 <meta name="theme-color" content="#333333" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Ctext%20y%3D%22.9em%22%20font-size%3D%2290%22%3E%F0%9F%9B%A0%EF%B8%8F%3C%2Ftext%3E%3C%2Fsvg%3E" />
@@ -1043,7 +1043,7 @@ body.pt-adjust-spindle-mode .pt-viewport-canvas { cursor: move; }
     </svg>
   </a>
   <p class="pt-title">
-    <a href="https://www.pentamachine.com" target="_blank" rel="noopener" class="pt-title-link" id="pt-title-link">Pentacad Simulator v0.5.11</a>
+    <a href="https://www.pentamachine.com" target="_blank" rel="noopener" class="pt-title-link" id="pt-title-link">Pentacad Simulator v0.5.12</a>
   </p>
 
   <div class="pt-appbar-actions">
@@ -1534,13 +1534,14 @@ const MACHINES = {
     envelope: { x: [-2.0, 2.55], y: [-2.5, 2.5], z: [-3.55, 0.0], a: [-25, 135], b: [-9999, 9999] },
     stock:    { x: 1.75, y: 1.75, z: 1.0 },
     home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
-    /* homeNudge.x[0] = 4.5 nudges the X-carriage to the RIGHT by ~67
-       world units. With the trunnion's right edge at world X=45.6, that
-       puts the spindle housing's left edge at ~50 — clear gap between
-       the housing and the trunnion bore, matching Penta's framing.
-       Math: 1 unit nudge.x = ~15 world units (Base local frame × the
-       parent scale chain ~15×). Verified linear post-v0.5.10. */
-    homeNudge:{ x: [4.5, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
+    /* homeNudge zeroed by default — v0.5.11 baked nudge.x=4.5 thinking
+       it'd put the spindle right next to the trunnion, but the parent-
+       scale chain (root×10 × machineGlb×1.5 = ~15×) made it ×3 the
+       intended distance and the spindle ended up off-screen. Default
+       at 0 keeps the GLB's authored geometry; users dial in their own
+       offset via the "Adjust spindle position (drag)" toggle in the
+       Back Plot panel — the result is persisted per-machine. */
+    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
   },
   'v2-50': {
     id: 'v2-50',
@@ -1551,7 +1552,7 @@ const MACHINES = {
     envelope: { x: [-2.0, 2.55], y: [-2.5, 2.5], z: [-3.55, 0.0], a: [-25, 135], b: [-9999, 9999] },
     stock:    { x: 2.0, y: 2.0, z: 1.25 },
     home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
-    homeNudge:{ x: [4.5, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
+    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
   }
 };
 

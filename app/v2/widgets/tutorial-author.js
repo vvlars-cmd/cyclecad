@@ -167,6 +167,25 @@ export async function init(opts) {
     renderAll();
     emit('synthesized', { steps: draft.length });
     emit('change', { kind: 'synthesize' });
+    /* Background pass — upgrade each step's narration to LLM output if a
+       key is configured. Runs after the synchronous draft is returned so
+       the UI doesn't block. Each step is upgraded as its narration
+       resolves; iteration is sequential to keep API rate limits sane. */
+    (async () => {
+      for (const s of draft) {
+        try {
+          const narr = await aiNarrate(s.kind, s.params, s.title, component);
+          if (!narr || typeof narr !== 'string') continue;
+          const fresh = tutorial.steps.find((x) => x.id === s.id);
+          if (!fresh) continue;
+          fresh.narration = narr;
+          renderAll();
+          emit('stepEdited', { id: s.id, patch: { narration: narr } });
+        } catch (e) {
+          /* keep the template fallback — renderNarration value already in step */
+        }
+      }
+    })();
     return draft;
   }
 
@@ -224,10 +243,22 @@ export async function init(opts) {
   function regenerateNarration(stepId) {
     const s = tutorial.steps.find(x => x.id === stepId);
     if (!s) return false;
+    /* Optimistic template fallback so the UI updates immediately. The
+       async LLM result, if any, replaces it once it returns. */
     s.narration = renderNarration(s.kind, s.params, s.title, component);
     chargeAi('narrate', { tokensIn: 80, tokensOut: 120, modelTier: 'sonnet' });
     renderAll();
     emit('stepEdited', { id: stepId, patch: { narration: s.narration } });
+    /* Real LLM upgrade — runs only if an API key is configured. Errors
+       are swallowed so the template stays as the safe fallback. */
+    aiNarrate(s.kind, s.params, s.title, component).then((narr) => {
+      if (!narr || typeof narr !== 'string') return;
+      const fresh = tutorial.steps.find((x) => x.id === stepId);
+      if (!fresh) return;
+      fresh.narration = narr;
+      renderAll();
+      emit('stepEdited', { id: stepId, patch: { narration: narr } });
+    }).catch(() => { /* keep template fallback */ });
     return true;
   }
 
@@ -483,6 +514,121 @@ function renderNarration(kind, params, title, component) {
   const head  = `${title || kind}${cname}: `;
   const tail  = paramSummary(params);
   return head + tail;
+}
+
+/**
+ * Real LLM narration — uses the same provider stack ai-copilot.js + ai-
+ * engineer.js use (Claude Sonnet / Gemini Flash / Groq Llama). API keys
+ * are read from localStorage['cyclecad_api_keys'] (with a fallback to
+ * the legacy 'explodeview_api_keys' key the older widgets use).
+ *
+ * Returns a Promise that resolves to a one-paragraph narration of the
+ * step. On any failure the caller should fall back to renderNarration().
+ *
+ * @param {string} kind        step kind (sketch / extrude / ...)
+ * @param {Object} params      step params
+ * @param {string} title       step title
+ * @param {Object|null} component  parent component context, optional
+ * @returns {Promise<string>}
+ */
+async function aiNarrate(kind, params, title, component) {
+  const keys = readApiKeys();
+  if (!keys.gemini && !keys.groq && !keys.anthropic) {
+    return renderNarration(kind, params, title, component);
+  }
+  const componentName = component?.name || 'this part';
+  const paramsBlob = JSON.stringify(params || {}, null, 2);
+  const prompt =
+`You are writing a one-paragraph narration for a CAD tutorial step.
+
+Component: ${componentName}
+Step kind: ${kind}
+Step title: ${title || kind}
+Step parameters:
+${paramsBlob}
+
+Write a friendly, concrete instruction to the user (50-90 words). Do
+not include preamble or numbering. Mention the parameter values
+relevant to the step. End with a period.`;
+
+  /* Provider preference: Anthropic > Gemini > Groq. Anthropic gives the
+     best narration quality; Gemini is the free-tier fallback. */
+  if (keys.anthropic) {
+    return await callClaudeSonnet(prompt, keys.anthropic);
+  }
+  if (keys.gemini) {
+    return await callGeminiFlash(prompt, keys.gemini);
+  }
+  if (keys.groq) {
+    return await callGroqLlama(prompt, keys.groq);
+  }
+  return renderNarration(kind, params, title, component);
+}
+
+function readApiKeys() {
+  try {
+    const raw = localStorage.getItem('cyclecad_api_keys')
+             || localStorage.getItem('explodeview_api_keys') || '{}';
+    return JSON.parse(raw);
+  } catch (e) {
+    return {};
+  }
+}
+
+async function callClaudeSonnet(prompt, key) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 240,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
+  if (!res.ok) throw new Error(`anthropic ${res.status}`);
+  const data = await res.json();
+  return (data.content && data.content[0] && data.content[0].text || '').trim();
+}
+
+async function callGeminiFlash(prompt, key) {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(key)}`,
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 240, temperature: 0.7 },
+      }),
+    },
+  );
+  if (!res.ok) throw new Error(`gemini ${res.status}`);
+  const data = await res.json();
+  return (data?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+}
+
+async function callGroqLlama(prompt, key) {
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${key}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      max_tokens: 240,
+      temperature: 0.7,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
+  if (!res.ok) throw new Error(`groq ${res.status}`);
+  const data = await res.json();
+  return (data?.choices?.[0]?.message?.content || '').trim();
 }
 
 function paramSummary(params) {

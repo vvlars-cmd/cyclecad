@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Pentacad Simulator v0.5.3 — 5-axis G-code playback</title>
+<title>Pentacad Simulator v0.5.4 — 5-axis G-code playback</title>
 <meta name="description" content="Browser-native 5-axis G-code simulator for Pentamachine V1 / V2-10 / V2-50 / V1 Kickstarter / Solo. Runs offline, no install." />
 <meta name="theme-color" content="#333333" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Ctext%20y%3D%22.9em%22%20font-size%3D%2290%22%3E%F0%9F%9B%A0%EF%B8%8F%3C%2Ftext%3E%3C%2Fsvg%3E" />
@@ -1030,7 +1030,7 @@ input, textarea { font-family: inherit; color: inherit; }
     </svg>
   </a>
   <p class="pt-title">
-    <a href="https://www.pentamachine.com" target="_blank" rel="noopener" class="pt-title-link" id="pt-title-link">Pentacad Simulator v0.5.3</a>
+    <a href="https://www.pentamachine.com" target="_blank" rel="noopener" class="pt-title-link" id="pt-title-link">Pentacad Simulator v0.5.4</a>
   </p>
 
   <div class="pt-appbar-actions">
@@ -2101,7 +2101,12 @@ function initViewport() {
   scene.background = new THREE.Color(0xFFFFFF);
 
   const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 5000);
-  camera.position.set(28, 22, 34);
+  /* Default ISO position mirrors Penta's view direction — camera on
+     the LEFT-TOP-FRONT of the machine so the user sees the trunnion's
+     bore opening (with bolt circle) and the spindle housing separated
+     on the right. The previous (28, 22, 34) put us on the RIGHT side,
+     showing the trunnion's solid back and obscuring the bore. */
+  camera.position.set(-28, 22, 34);
 
   // TrackballControls instead of OrbitControls so the camera can rotate
   // FREELY in every direction — including flipping past the top / bottom
@@ -2900,8 +2905,11 @@ function fitCamera() {
   }
 
   const dist = frameSize / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2)) * 1.6;
-  // Use the boot iso direction so the framing is the same every reset.
-  const dir = new THREE.Vector3(0.55, 0.45, 0.7).normalize();
+  /* Mirror of v0.4's (0.55, 0.45, 0.7). Camera sits on the LEFT-TOP-FRONT
+     side of the machine so the trunnion bore + bolt-circle face the camera,
+     and the spindle housing reads as a separate block on the right —
+     matching how sim.pentamachine.com frames the V2-10 / V2-50 by default. */
+  const dir = new THREE.Vector3(-0.55, 0.45, 0.7).normalize();
   camera.position.copy(center).add(dir.multiplyScalar(dist));
   controls.target.copy(center);
   controls.update();
@@ -3779,7 +3787,9 @@ function setCameraParent(name) {
     const t = app.three.controls.target;
     const dist = c.position.distanceTo(t);
     // Iso direction matching the boot default (28, 22, 34) normalised.
-    const isoDir = new THREE.Vector3(28, 22, 34).normalize();
+    /* Iso direction matches the boot default in initViewport — mirrored
+       to LEFT-TOP-FRONT so the trunnion bore faces the camera. */
+    const isoDir = new THREE.Vector3(-28, 22, 34).normalize();
     c.position.copy(t).add(isoDir.multiplyScalar(dist));
     app.three.controls.update();
   }

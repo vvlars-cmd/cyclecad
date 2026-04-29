@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Pentacad Simulator v0.5.1 — 5-axis G-code playback</title>
+<title>Pentacad Simulator v0.5.2 — 5-axis G-code playback</title>
 <meta name="description" content="Browser-native 5-axis G-code simulator for Pentamachine V1 / V2-10 / V2-50 / V1 Kickstarter / Solo. Runs offline, no install." />
 <meta name="theme-color" content="#333333" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Ctext%20y%3D%22.9em%22%20font-size%3D%2290%22%3E%F0%9F%9B%A0%EF%B8%8F%3C%2Ftext%3E%3C%2Fsvg%3E" />
@@ -225,7 +225,8 @@ input, textarea { font-family: inherit; color: inherit; }
   font-size: 14px;
   font-weight: 500;
   letter-spacing: 0.4px;
-  text-transform: uppercase;
+  /* No text-transform — Penta renders the tab labels as literal "GCode"
+     and "Summary" (mixed case), not uppercase. */
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -928,7 +929,7 @@ input, textarea { font-family: inherit; color: inherit; }
     </svg>
   </a>
   <p class="pt-title">
-    <a href="https://www.pentamachine.com" target="_blank" rel="noopener" class="pt-title-link" id="pt-title-link">Pentacad Simulator v0.5.1</a>
+    <a href="https://www.pentamachine.com" target="_blank" rel="noopener" class="pt-title-link" id="pt-title-link">Pentacad Simulator v0.5.2</a>
   </p>
 
   <div class="pt-appbar-actions">
@@ -959,8 +960,8 @@ input, textarea { font-family: inherit; color: inherit; }
   <!-- ── GCODE / SUMMARY pane ── -->
   <aside class="pt-pane">
     <div class="pt-pane-tabs">
-      <button class="pt-pane-tab is-active" data-tab="gcode" id="tab-gcode">GCODE</button>
-      <button class="pt-pane-tab" data-tab="summary" id="tab-summary">SUMMARY</button>
+      <button class="pt-pane-tab is-active" data-tab="gcode" id="tab-gcode">GCode</button>
+      <button class="pt-pane-tab" data-tab="summary" id="tab-summary">Summary</button>
       <div class="pt-pane-tabs-spacer"></div>
       <button class="pt-pane-iconbtn" id="btn-examples" title="Load an example program">
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 5v6H5l7 7 7-7h-4V5z"/></svg>
@@ -1099,6 +1100,14 @@ input, textarea { font-family: inherit; color: inherit; }
       <label class="pt-bp-check">
         <input type="checkbox" id="bp-show-stock" />
         <span>Show stock outline</span>
+      </label>
+      <!-- Always show — keep the entire toolpath visible regardless of
+           the line-range filter. Penta exposes this as the "Always show"
+           toggle in the Back Plot panel. When ON, the showBetween line-
+           range trim is bypassed. -->
+      <label class="pt-bp-check">
+        <input type="checkbox" id="bp-always-show" />
+        <span>Always show</span>
       </label>
     </div>
 
@@ -1313,7 +1322,7 @@ const MACHINES = {
     envelope: { x: [-2.0, 2.0], y: [-2.0, 2.0], z: [-3.0, 0.0], a: [-90, 90], b: [-360, 360] },
     stock:    { x: 1.5, y: 1.5, z: 0.75 },
     home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
-    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [1.0, 0, 0] }
+    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
   },
   'v1': {
     id: 'v1',
@@ -1322,7 +1331,7 @@ const MACHINES = {
     envelope: { x: [-2.5, 2.5], y: [-2.0, 2.0], z: [-3.5, 0.0], a: [-25, 135], b: [-360, 360] },
     stock:    { x: 1.5, y: 1.5, z: 1.0 },
     home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
-    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [1.0, 0, 0] }
+    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
   },
   'v1kickstarter': {
     id: 'v1kickstarter',
@@ -1331,7 +1340,7 @@ const MACHINES = {
     envelope: { x: [-2.5, 2.5], y: [-2.0, 2.0], z: [-3.5, 0.0], a: [-25, 135], b: [-360, 360] },
     stock:    { x: 1.5, y: 1.5, z: 1.0 },
     home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
-    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [1.0, 0, 0] }
+    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
   },
   'v2-10': {
     id: 'v2-10',
@@ -1340,7 +1349,7 @@ const MACHINES = {
     envelope: { x: [-2.5, 2.5], y: [-2.5, 2.5], z: [-3.5, 0.0], a: [-25, 135], b: [-360, 360] },
     stock:    { x: 1.75, y: 1.75, z: 1.0 },
     home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
-    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [1.5, 0, 0] }
+    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
   },
   'v2-50': {
     id: 'v2-50',
@@ -1349,7 +1358,7 @@ const MACHINES = {
     envelope: { x: [-3.0, 3.0], y: [-2.5, 2.5], z: [-3.5, 0.0], a: [-25, 135], b: [-360, 360] },
     stock:    { x: 2.0, y: 2.0, z: 1.25 },
     home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
-    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [1.8, 0, 0] }
+    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
   }
 };
 
@@ -1397,7 +1406,10 @@ const app = {
     rapidColor: '#236e24',
     /* Stock outline — opt-in. Penta renders no outline by default; users
        turn it on if they need a visual anchor for the workpiece bounds. */
-    showStock: false
+    showStock: false,
+    /* Always show — Penta toggle that bypasses the line-range trim so the
+       full toolpath is rendered regardless of the From/To values. */
+    alwaysShow: false
   },
   /** Per-tool overrides set by SUMMARY tab inputs. Keyed by tool number. */
   toolOverrides: {},
@@ -2211,13 +2223,20 @@ async function loadMachineModel() {
        black surface. v0.4 used metalness 0.2 + roughness 0.6 which
        reflected the bright ambient light back as grey. Push metalness
        toward 0 and roughness toward 1 so the GLB's authored dark base
-       colour reads correctly. The silver tool / collet pieces have
+       colour reads correctly. ALSO hide any lights baked into the
+       GLB itself (Penta's GLB ships with 4 SpotLights named Spot,
+       Spot001..Spot004 that double up our ambient/key/hemi and wash
+       the machine to grey). The silver tool / collet pieces have
        their own materials and are unaffected — they're attached at
        runtime via buildAndAttachToolMesh, not loaded from the GLB. */
     obj.traverse(n => {
       if (n.isMesh && n.material) {
         n.material.metalness = 0.05;
         n.material.roughness = 0.95;
+      }
+      if (n.isLight) {
+        n.visible = false;
+        n.intensity = 0;
       }
     });
     // Hide the static placeholder stock cube whenever a real GLB is loaded —
@@ -2437,8 +2456,7 @@ function setupGlbKinematics(machineGlb, glbScale) {
   /* Per-mesh home-position nudges — tunable at runtime to align the
      Pentamachine kinematic nodes against the GLB's authored geometry.
      Live API: PentacadSimApp.nudge('z', dx, dy, dz). Defaults seeded
-     from the active machine's `homeNudge` so the spindle parks outside
-     the trunnion on first paint instead of clipping into it. */
+     from the active machine's `homeNudge`. */
   const tune = (app.machine && app.machine.homeNudge) || {};
   const seed = (axis) => Array.isArray(tune[axis])
     ? new THREE.Vector3(tune[axis][0] || 0, tune[axis][1] || 0, tune[axis][2] || 0)
@@ -2446,6 +2464,29 @@ function setupGlbKinematics(machineGlb, glbScale) {
   k.xHomeOffset = seed('x');
   k.yHomeOffset = seed('y');
   k.zHomeOffset = seed('z');
+
+  /* CRITICAL — re-parent LONG/SHORT tool holders into the `z` group.
+     Pentamachine GLBs author both holders at scene root (siblings of
+     Base) at the same world position the spindle sits at when fully
+     home. The GLB's runtime is supposed to attach the active holder to
+     the spindle so it inherits X/Y/Z motion. Without this, every move
+     the spindle makes leaves the holder behind at scene origin —
+     visually reading as "perpendicular tool holder" or "floating tool".
+
+     We use Object3D.attach() (NOT add()) so the holder's WORLD position
+     is preserved when re-parenting, then snap local coords back to zero
+     so the holder is locked rigidly to the spindle from this frame on.
+     Idempotent: a re-parented holder simply skips this branch. */
+  if (k.z) {
+    for (const h of [k.LONG, k.SHORT]) {
+      if (!h) continue;
+      if (h.parent !== k.z) {
+        k.z.attach(h);
+        h.position.set(0, 0, 0);
+        h.rotation.set(0, 0, 0);
+      }
+    }
+  }
 }
 
 /**
@@ -2692,8 +2733,11 @@ function rebuildToolpath() {
   const feedPts = [];
   const rapidPts = [];
   const k = app.displayUnits === 'mm' ? 1 : (1 / MM_PER_INCH);
-  // Optional line-range trim from the Back Plot panel ("Show between lines").
-  const useRange = app.bp.showBetween && app.bp.from > 0 && app.bp.to >= app.bp.from;
+  /* Line-range trim from the Back Plot panel ("Show between lines").
+     When `alwaysShow` is on, the trim is bypassed entirely — Penta's
+     "Always show" Back Plot toggle. */
+  const useRange = !app.bp.alwaysShow && app.bp.showBetween
+                && app.bp.from > 0 && app.bp.to >= app.bp.from;
   const fromLn = useRange ? app.bp.from : -Infinity;
   const toLn   = useRange ? app.bp.to   :  Infinity;
 
@@ -3212,6 +3256,14 @@ function wireOptions() {
   $('bp-show-stock').addEventListener('change', (e) => {
     app.bp.showStock = e.target.checked;
     applyStockVisibility();
+    saveSession();
+  });
+
+  /* Always show toggle — when on, rebuildToolpath ignores the line-range
+     trim so the full path renders. Mirrors Penta's Back Plot setting. */
+  $('bp-always-show').addEventListener('change', (e) => {
+    app.bp.alwaysShow = e.target.checked;
+    rebuildToolpath();
     saveSession();
   });
 }

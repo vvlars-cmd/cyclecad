@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Pentacad Simulator v0.5.10 — 5-axis G-code playback</title>
+<title>Pentacad Simulator v0.5.11 — 5-axis G-code playback</title>
 <meta name="description" content="Browser-native 5-axis G-code simulator for Pentamachine V1 / V2-10 / V2-50 / V1 Kickstarter / Solo. Runs offline, no install." />
 <meta name="theme-color" content="#333333" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Ctext%20y%3D%22.9em%22%20font-size%3D%2290%22%3E%F0%9F%9B%A0%EF%B8%8F%3C%2Ftext%3E%3C%2Fsvg%3E" />
@@ -576,6 +576,19 @@ input, textarea { font-family: inherit; color: inherit; }
 }
 .pt-bp-btn:hover { background: rgb(214, 214, 214); }
 
+/* Adjust-spindle mode — visual hint via cursor + a small readout. */
+body.pt-adjust-spindle-mode .pt-viewport-canvas { cursor: move; }
+.pt-bp-readout {
+  font-family: 'Source Code Pro', Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  color: var(--pt-text-2);
+  margin-top: 6px;
+  padding: 4px 6px;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: var(--pt-radius-sm);
+}
+.pt-bp-readout span { color: var(--pt-text); margin: 0 4px; }
+
 /* ── CHANGE MACHINE pill (bottom right of viewport) ── */
 .pt-change-machine {
   position: absolute;
@@ -1030,7 +1043,7 @@ input, textarea { font-family: inherit; color: inherit; }
     </svg>
   </a>
   <p class="pt-title">
-    <a href="https://www.pentamachine.com" target="_blank" rel="noopener" class="pt-title-link" id="pt-title-link">Pentacad Simulator v0.5.10</a>
+    <a href="https://www.pentamachine.com" target="_blank" rel="noopener" class="pt-title-link" id="pt-title-link">Pentacad Simulator v0.5.11</a>
   </p>
 
   <div class="pt-appbar-actions">
@@ -1218,6 +1231,17 @@ input, textarea { font-family: inherit; color: inherit; }
         <input type="checkbox" id="bp-voxel-stock" />
         <span>Voxel stock removal</span>
       </label>
+      <!-- Adjust Spindle drag mode — when ON, the user can pointer-down
+           on the spindle assembly and drag it horizontally / vertically
+           to fine-tune its position. The result is persisted to
+           localStorage so it survives reloads. -->
+      <label class="pt-bp-check">
+        <input type="checkbox" id="bp-adjust-spindle" />
+        <span>Adjust spindle position (drag)</span>
+      </label>
+      <div class="pt-bp-readout" id="bp-spindle-readout">
+        Spindle nudge: <span data-x>0</span> / <span data-z>0</span>
+      </div>
     </div>
 
     <!-- CHANGE MACHINE pill -->
@@ -1499,26 +1523,35 @@ const MACHINES = {
     id: 'v2-10',
     label: 'V2-10',
     glb: ['./models/v2-10.glb', '../machines/v2-10/v2-10.glb'],
-    envelope: { x: [-2.5, 2.5], y: [-2.5, 2.5], z: [-3.5, 0.0], a: [-25, 135], b: [-360, 360] },
+    /* Authoritative envelope from Pentamachine wiki (KCUR/Kinetic Control —
+       G-Code Overview, confirmed via Matt 2026-04-29):
+         X: 4.55 in (115.5 mm) — range -2.00" to +2.55"
+         Y: 5.00 in (128.3 mm) — range -2.50" to +2.50"
+         Z: 3.55 in (90.1 mm)  — range tool/holder/spindle dependent
+         A: -25° to +135°
+         B: continuous rotation (-9999° to +9999°)
+       v0.5.10 had X = -2.5..+2.5 which is wrong; X is asymmetric. */
+    envelope: { x: [-2.0, 2.55], y: [-2.5, 2.5], z: [-3.55, 0.0], a: [-25, 135], b: [-9999, 9999] },
     stock:    { x: 1.75, y: 1.75, z: 1.0 },
     home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
-    /* homeNudge values are interpreted in Base's local frame, which
-       gets multiplied by all parent scales (machineGlb ~1.5 × root 10
-       = ~15× per unit). v0.5.6 set z = +10 thinking that meant 10
-       world units of drop; actually it was 150 world units, dragging
-       the spindle below the floor. v0.5.9 zeros all values — the GLB's
-       authored Y already places the spindle at trunnion height. Tune
-       via `PentacadSimApp.nudge('x', dx, dy, dz)` if needed. */
-    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
+    /* homeNudge.x[0] = 4.5 nudges the X-carriage to the RIGHT by ~67
+       world units. With the trunnion's right edge at world X=45.6, that
+       puts the spindle housing's left edge at ~50 — clear gap between
+       the housing and the trunnion bore, matching Penta's framing.
+       Math: 1 unit nudge.x = ~15 world units (Base local frame × the
+       parent scale chain ~15×). Verified linear post-v0.5.10. */
+    homeNudge:{ x: [4.5, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
   },
   'v2-50': {
     id: 'v2-50',
     label: 'V2-50',
     glb: ['./models/v2-50.glb', '../machines/v2-50/v2-50.glb'],
-    envelope: { x: [-3.0, 3.0], y: [-2.5, 2.5], z: [-3.5, 0.0], a: [-25, 135], b: [-360, 360] },
+    /* Same envelope as V2-10 per Matt's spec — both V2 variants share the
+       same X/Y/Z/A/B travel. */
+    envelope: { x: [-2.0, 2.55], y: [-2.5, 2.5], z: [-3.55, 0.0], a: [-25, 135], b: [-9999, 9999] },
     stock:    { x: 2.0, y: 2.0, z: 1.25 },
     home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
-    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
+    homeNudge:{ x: [4.5, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
   }
 };
 
@@ -2207,6 +2240,73 @@ function initViewport() {
 
   resizeViewport();
   window.addEventListener('resize', resizeViewport);
+
+  /* Drag-to-position the spindle (only active when bp-adjust-spindle is on).
+     Mouse X delta → nudge.x; mouse Y delta → nudge.y. Disables
+     TrackballControls during the drag so the camera doesn't fight the
+     gesture. Persists the chosen offset to localStorage so reloads keep
+     it. The pointer-down ignores misses (only fires when in adjust mode
+     and pointer-down lands on the canvas). */
+  let dragState = null;
+  canvas.addEventListener('pointerdown', (e) => {
+    if (!app.adjustSpindleMode) return;
+    if (!app.three?.kinematics) return;
+    e.preventDefault();
+    canvas.setPointerCapture(e.pointerId);
+    dragState = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      startNudgeX: app.three.kinematics.xHomeOffset?.x || 0,
+      startNudgeY: app.three.kinematics.xHomeOffset?.y || 0,
+    };
+    /* Disable orbit/zoom so they don't fight the drag. */
+    if (app.three.controls) app.three.controls.enabled = false;
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    if (!dragState || dragState.pointerId !== e.pointerId) return;
+    /* 1 unit of nudge = 15 world units (verified live).
+       Sensitivity ≈ 1 nudge unit per 100 px of drag (hand-tuned to feel
+       natural at typical viewport sizes). */
+    const SENS = 0.01;   /* nudge units per pixel */
+    const dx = (e.clientX - dragState.startX) * SENS;
+    const dy = (e.clientY - dragState.startY) * SENS;
+    nudge('x', dragState.startNudgeX + dx, dragState.startNudgeY - dy, 0);
+    if (typeof applyPlaybackState === 'function') applyPlaybackState();
+    refreshSpindleReadout();
+  });
+  const endDrag = (e) => {
+    if (!dragState || dragState.pointerId !== e.pointerId) return;
+    canvas.releasePointerCapture(e.pointerId);
+    dragState = null;
+    if (app.three.controls) app.three.controls.enabled = true;
+    persistSpindleNudge();
+    toast(`Spindle nudge saved: x=${(app.three.kinematics.xHomeOffset.x).toFixed(2)} / y=${(app.three.kinematics.xHomeOffset.y).toFixed(2)}`);
+  };
+  canvas.addEventListener('pointerup', endDrag);
+  canvas.addEventListener('pointercancel', endDrag);
+}
+
+/* Persist the user's manual spindle nudge so it survives reloads. Keyed
+   per machine so different machines can keep different offsets. */
+function persistSpindleNudge() {
+  try {
+    const key = `pentacad.spindleNudge.${app.machineId}`;
+    const k = app.three?.kinematics;
+    if (!k?.xHomeOffset) return;
+    localStorage.setItem(key, JSON.stringify({
+      x: k.xHomeOffset.x, y: k.xHomeOffset.y, z: k.xHomeOffset.z,
+    }));
+  } catch (e) { /* private mode */ }
+}
+
+function loadSpindleNudge() {
+  try {
+    const key = `pentacad.spindleNudge.${app.machineId}`;
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (e) { return null; }
 }
 
 function resizeViewport() {
@@ -2636,8 +2736,16 @@ async function loadMachineModel() {
     if (t.kinematics.voxelStock) t.kinematics.voxelStock.group.visible = !!app.bp.voxelStock;
     // Hide the legacy red cone — the new tool mesh replaces it.
     if (t.toolMarker) t.toolMarker.visible = false;
+    /* Restore any user-specified spindle nudge for this machine before
+       the first frame paints. The catalogue's homeNudge stays as the
+       baseline; the user's drag-saved value overrides if present. */
+    const persisted = loadSpindleNudge();
+    if (persisted && t.kinematics.xHomeOffset) {
+      t.kinematics.xHomeOffset.set(persisted.x || 0, persisted.y || 0, persisted.z || 0);
+    }
     applyMachineState({ x: 0, y: 0, z: 0, a: 0, b: 0 });   // park to home
     applyStockVisibility();                                 // honour Show stock outline
+    refreshSpindleReadout?.();
     fitCamera();
   } else {
     t.machineGroup.add(buildMachineProxy(app.machine));
@@ -3790,6 +3898,27 @@ function wireOptions() {
     }
     saveSession();
   });
+
+  /* Adjust Spindle drag mode — toggle that lets the user pointer-down on
+     the spindle assembly and drag it to reposition. Mouse X delta updates
+     nudge.x; Mouse Y delta updates nudge.y. Result persisted to
+     localStorage so reloads keep the user's chosen position. */
+  $('bp-adjust-spindle').addEventListener('change', (e) => {
+    app.adjustSpindleMode = e.target.checked;
+    document.body.classList.toggle('pt-adjust-spindle-mode', app.adjustSpindleMode);
+    refreshSpindleReadout();
+  });
+}
+
+function refreshSpindleReadout() {
+  const el = document.getElementById('bp-spindle-readout');
+  if (!el) return;
+  const k = app.three?.kinematics;
+  const xn = k?.xHomeOffset?.x ?? 0;
+  const yn = k?.xHomeOffset?.y ?? 0;
+  const zn = k?.xHomeOffset?.z ?? 0;
+  const x = el.querySelector('[data-x]'); if (x) x.textContent = `x=${xn.toFixed(2)}`;
+  const z = el.querySelector('[data-z]'); if (z) z.textContent = `y=${yn.toFixed(2)}`;
 }
 
 /**

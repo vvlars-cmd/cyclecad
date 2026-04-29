@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Pentacad Simulator v0.5.2 — 5-axis G-code playback</title>
+<title>Pentacad Simulator v0.5.3 — 5-axis G-code playback</title>
 <meta name="description" content="Browser-native 5-axis G-code simulator for Pentamachine V1 / V2-10 / V2-50 / V1 Kickstarter / Solo. Runs offline, no install." />
 <meta name="theme-color" content="#333333" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Ctext%20y%3D%22.9em%22%20font-size%3D%2290%22%3E%F0%9F%9B%A0%EF%B8%8F%3C%2Ftext%3E%3C%2Fsvg%3E" />
@@ -880,6 +880,107 @@ input, textarea { font-family: inherit; color: inherit; }
 .pt-tutorial-btn.secondary { background: #E0E0E0; color: var(--pt-text); }
 .pt-tutorial-btn.secondary:hover { background: rgb(214, 214, 214); }
 
+/* ── Try Me! first-visit gesture overlay ──
+   Centered card explaining the simulator's basic gestures + entry
+   points to a new user. Penta exposes the same copy in their bundle.
+   Gated via localStorage[PENTACAD_TRYME_SEEN_KEY]. */
+.pt-trymeb {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 9750;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pt-trymeb[hidden] { display: none; }
+.pt-trymeb-card {
+  background: #FFFFFF;
+  border-radius: var(--pt-radius-lg);
+  box-shadow: var(--pt-elev-8);
+  padding: 28px 32px 18px 32px;
+  width: 360px;
+  max-width: calc(100vw - 64px);
+  min-height: 280px;
+  position: relative;
+}
+.pt-trymeb-step { display: none; }
+.pt-trymeb-step.is-active { display: block; }
+.pt-trymeb-step h3 {
+  margin: 0 0 6px 0;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--pt-text);
+}
+.pt-trymeb-lead {
+  margin: 0 0 10px 0;
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--pt-green-dark);
+  letter-spacing: 0.5px;
+}
+.pt-trymeb-step p {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--pt-text);
+}
+.pt-trymeb-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 90px;
+  margin: 16px 0 6px 0;
+}
+.pt-trymeb-actions {
+  position: absolute;
+  bottom: 14px;
+  left: 32px;
+  right: 32px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.pt-trymeb-dots {
+  flex: 1;
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+.pt-trymeb-dots span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.18);
+}
+.pt-trymeb-dots span.is-current { background: var(--pt-green); }
+.pt-trymeb-skip {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pt-text-2);
+  padding: 6px 8px;
+}
+.pt-trymeb-skip:hover { color: var(--pt-text); }
+.pt-trymeb-next {
+  height: 32px;
+  padding: 6px 16px;
+  background: var(--pt-green);
+  color: #FFFFFF;
+  border: none;
+  border-radius: var(--pt-radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 120ms;
+}
+.pt-trymeb-next:hover { background: var(--pt-green-dark); }
+
 /* ── Toast (transient feedback) ── */
 .pt-toast {
   position: fixed;
@@ -929,7 +1030,7 @@ input, textarea { font-family: inherit; color: inherit; }
     </svg>
   </a>
   <p class="pt-title">
-    <a href="https://www.pentamachine.com" target="_blank" rel="noopener" class="pt-title-link" id="pt-title-link">Pentacad Simulator v0.5.2</a>
+    <a href="https://www.pentamachine.com" target="_blank" rel="noopener" class="pt-title-link" id="pt-title-link">Pentacad Simulator v0.5.3</a>
   </p>
 
   <div class="pt-appbar-actions">
@@ -1192,8 +1293,9 @@ input, textarea { font-family: inherit; color: inherit; }
       <div><kbd>Esc</kbd></div><div>close dialog / menu</div>
     </div>
 
-    <div style="display: flex; gap: 8px; align-items: center; justify-content: flex-end; margin-top: 12px;">
-      <button class="pt-modal-close secondary" id="help-tutorial">Start Tutorial</button>
+    <div style="display: flex; gap: 8px; align-items: center; justify-content: flex-end; margin-top: 12px; flex-wrap: wrap;">
+      <button class="pt-modal-close secondary" id="help-tryme">Try Me!</button>
+      <button class="pt-modal-close secondary" id="help-feature-overview">Feature Overview</button>
       <button class="pt-modal-close" id="help-close">Close</button>
     </div>
   </div>
@@ -1219,14 +1321,57 @@ input, textarea { font-family: inherit; color: inherit; }
           fill="none" stroke="#03B188" stroke-width="2.5" />
   </svg>
   <div class="pt-tutorial-card" id="tutorial-card" role="status" aria-live="polite">
-    <h3 class="pt-tutorial-title" id="tutorial-title">Penta Simulator Tutorial</h3>
+    <h3 class="pt-tutorial-title" id="tutorial-title">Feature Overview</h3>
     <p class="pt-tutorial-body" id="tutorial-body">
-      Welcome — this short walk-through shows the four controls you'll use most.
+      Explore — play around with the simulator. This short tour shows the controls you'll use most.
     </p>
     <div class="pt-tutorial-actions">
       <span class="pt-tutorial-step" id="tutorial-step">Step 1 of 5</span>
       <button class="pt-tutorial-btn secondary" id="tutorial-skip">Exit Demo</button>
       <button class="pt-tutorial-btn" id="tutorial-next">Next</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────── TRY ME! FIRST-VISIT ONBOARDING ─────────────── -->
+<!--
+  Centered card shown on first visit, walking the user through the
+  basic gestures + entry points. Penta's bundle exposes the same
+  copy: "Touch to start.", "Swipe — Touch and drag to rotate your
+  view.", "Pinch — Use two fingers to zoom.", followed by Feature
+  Overview / Explore CTAs. Gated via localStorage so a returning
+  user doesn't see it again. Manual relaunch from the Help modal.
+-->
+<div class="pt-trymeb" id="tryme" hidden>
+  <div class="pt-trymeb-card">
+    <div class="pt-trymeb-step is-active" data-step="0">
+      <h3>Try Me!</h3>
+      <p class="pt-trymeb-lead">Touch to start.</p>
+      <p>This is a quick walk-through of how to interact with the simulator.</p>
+    </div>
+    <div class="pt-trymeb-step" data-step="1">
+      <h3>Swipe</h3>
+      <p>Touch and drag to rotate your view.</p>
+      <div class="pt-trymeb-icon" aria-hidden="true">
+        <svg viewBox="0 0 80 60" width="120" height="80"><path d="M8 30 Q40 6 72 30" fill="none" stroke="#03B188" stroke-width="3" stroke-linecap="round"/><circle cx="8" cy="30" r="6" fill="#03B188"/><circle cx="72" cy="30" r="6" fill="#03B188"/></svg>
+      </div>
+    </div>
+    <div class="pt-trymeb-step" data-step="2">
+      <h3>Pinch</h3>
+      <p>Use two fingers to zoom.</p>
+      <div class="pt-trymeb-icon" aria-hidden="true">
+        <svg viewBox="0 0 80 60" width="120" height="80"><circle cx="22" cy="30" r="7" fill="#03B188"/><circle cx="58" cy="30" r="7" fill="#03B188"/><line x1="32" y1="30" x2="48" y2="30" stroke="#03B188" stroke-width="3" stroke-linecap="round"/></svg>
+      </div>
+    </div>
+    <div class="pt-trymeb-step" data-step="3">
+      <h3>Feature Overview</h3>
+      <p class="pt-trymeb-lead">Explore</p>
+      <p>Play around with the simulator! Drop a G-code file anywhere, or pick an example from the GCode pane.</p>
+    </div>
+    <div class="pt-trymeb-actions">
+      <button class="pt-trymeb-skip" id="tryme-skip">Skip</button>
+      <span class="pt-trymeb-dots" id="tryme-dots"></span>
+      <button class="pt-trymeb-next" id="tryme-next">Next</button>
     </div>
   </div>
 </div>
@@ -1644,6 +1789,42 @@ function mountMonaco() {
               if (next === app.gcode) return;
               loadGcodeFromMonaco(next);
             }, 200);
+          });
+
+          /* Custom Monaco action — "Replace selection with TCPC code".
+             Wraps the selected lines with G43.4 (RTCP / Tool Center Point
+             Compensation enable) at the start and G49 (TLO cancel) at
+             the end. Penta exposes the same command in its Monaco
+             instance. Available via:
+               - Cmd/Ctrl+Shift+T keybinding
+               - Right-click context menu (group: 1_modification)
+               - Cmd/Ctrl+Shift+P command palette */
+          monaco.editor.addAction({
+            id: 'pt.replace-selection-with-tcpc-code',
+            label: 'Replace selection with TCPC code',
+            keybindings: [monaco.lib.KeyMod.CtrlCmd | monaco.lib.KeyMod.Shift | monaco.lib.KeyCode.KeyT],
+            contextMenuGroupId: '1_modification',
+            contextMenuOrder: 1,
+            run: (ed) => {
+              const sel = ed.getSelection();
+              if (!sel) return;
+              const model = ed.getModel();
+              if (!model) return;
+              const startLine = sel.startLineNumber;
+              const endLine   = sel.endLineNumber;
+              const lines = [];
+              for (let ln = startLine; ln <= endLine; ln++) {
+                lines.push(model.getLineContent(ln));
+              }
+              /* Wrap with G43.4 (RTCP enable) ... G49 (cancel). Insert as
+               * full-line replacements so column alignment stays clean. */
+              const replacement = ['G43.4 ( TCPC enable )',
+                                   ...lines,
+                                   'G49   ( TCPC cancel )'].join('\n');
+              const range = new monaco.lib.Range(startLine, 1, endLine, model.getLineMaxColumn(endLine));
+              ed.executeEdits('pt.tcpc', [{ range, text: replacement, forceMoveMarkers: true }]);
+              ed.focus();
+            },
           });
           /* Hide the regex fallback once Monaco is up. */
           const fallback = document.getElementById('editor-pre');
@@ -2260,11 +2441,18 @@ async function loadMachineModel() {
     t.machineGroup.add(obj);
     setupGlbKinematics(obj, s);
     applyToolHolderVisibility();
-    // Attach the cutter to the spindle group so it rides X/Y/Z motion, and
-    // the green stock outline to the B-platter so it tilts with A and spins
-    // with B — matching how sim.pentamachine.com presents the work area.
+    /* Pentamachine GLBs ship LONG + SHORT + colet meshes that ARE the
+       holder + cutter geometry (and they're now parented to `z` after
+       setupGlbKinematics). Building our own procedural tool on top of
+       that produces the perpendicular black-cylinder-inside-trunnion
+       bug the user reported — two tools fighting for the same spindle.
+       Only build the procedural fallback when the GLB has no holders
+       at all (proxy / older machines). */
+    const hasGlbHolders = !!(t.kinematics && (t.kinematics.LONG || t.kinematics.SHORT));
     const spindleParent = t.kinematics?.z || t.kinematics?.x;
-    t.kinematics.toolMesh  = buildAndAttachToolMesh(spindleParent);
+    if (!hasGlbHolders) {
+      t.kinematics.toolMesh = buildAndAttachToolMesh(spindleParent);
+    }
     t.kinematics.stockMesh = buildAndAttachStockIndicator(t.kinematics.b, app.machine);
     // Hide the legacy red cone — the new tool mesh replaces it.
     if (t.toolMarker) t.toolMarker.visible = false;
@@ -3869,9 +4057,15 @@ function wireHelp() {
   $('btn-help').addEventListener('click', () => m.classList.add('is-open'));
   $('help-close').addEventListener('click', () => m.classList.remove('is-open'));
   m.addEventListener('click', e => { if (e.target === m) m.classList.remove('is-open'); });
-  $('help-tutorial').addEventListener('click', () => {
+  /* Feature Overview = relaunch the coachmark tour. Penta uses this label. */
+  $('help-feature-overview').addEventListener('click', () => {
     m.classList.remove('is-open');
     startTutorial();
+  });
+  /* Try Me! = relaunch the gesture overlay. */
+  $('help-tryme').addEventListener('click', () => {
+    m.classList.remove('is-open');
+    startTryMe();
   });
 }
 
@@ -4008,6 +4202,68 @@ function wireTutorial() {
   $('tutorial-skip').addEventListener('click', endTutorial);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// "Try Me!" first-visit gesture overlay (Penta-style)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const TRYME_STORAGE_KEY = 'pentacad.tryme.seen.v1';
+const TRYME_STEPS = 4;
+let tryMeStep = 0;
+
+function startTryMe() {
+  tryMeStep = 0;
+  $('tryme').hidden = false;
+  paintTryMeStep();
+}
+
+function endTryMe(markSeen) {
+  $('tryme').hidden = true;
+  if (markSeen) {
+    try { localStorage.setItem(TRYME_STORAGE_KEY, '1'); }
+    catch (e) { /* private mode */ }
+  }
+}
+
+function paintTryMeStep() {
+  /* Show the active step + update dots + change button label on the
+     final step so the CTA reads "Got it" rather than "Next". */
+  const card = $('tryme');
+  card.querySelectorAll('.pt-trymeb-step').forEach((el) => {
+    el.classList.toggle('is-active', String(tryMeStep) === el.getAttribute('data-step'));
+  });
+  const dots = $('tryme-dots');
+  dots.innerHTML = '';
+  for (let i = 0; i < TRYME_STEPS; i++) {
+    const s = document.createElement('span');
+    if (i === tryMeStep) s.classList.add('is-current');
+    dots.appendChild(s);
+  }
+  $('tryme-next').textContent = (tryMeStep === TRYME_STEPS - 1) ? 'Got it' : 'Next';
+}
+
+function nextTryMeStep() {
+  tryMeStep++;
+  if (tryMeStep >= TRYME_STEPS) endTryMe(true);
+  else paintTryMeStep();
+}
+
+function wireTryMe() {
+  $('tryme-next').addEventListener('click', nextTryMeStep);
+  $('tryme-skip').addEventListener('click', () => endTryMe(true));
+  $('tryme').addEventListener('click', (e) => {
+    if (e.target === $('tryme')) endTryMe(true);   // backdrop click dismisses
+  });
+}
+
+/** Show Try Me! exactly once per browser unless the user explicitly relaunches. */
+function maybeAutoStartTryMe() {
+  try {
+    if (localStorage.getItem(TRYME_STORAGE_KEY) === '1') return;
+  } catch (e) { /* read failure — fall through and show the overlay */ }
+  /* Wait one frame so the rest of the page paints before we draw on top. */
+  requestAnimationFrame(() => startTryMe());
+}
+
 function wireShare() {
   $('btn-share').addEventListener('click', async () => {
     try {
@@ -4036,6 +4292,7 @@ function wireKeyboard() {
         $('help-modal').classList.remove('is-open');
         $('machine-menu').classList.remove('is-open');
         if (tutorialStep >= 0) endTutorial();
+        if (!$('tryme').hidden) endTryMe(true);
         break;
       default:
         if ((e.metaKey || e.ctrlKey) && (e.key === 'o' || e.key === 'O')) {
@@ -4098,6 +4355,7 @@ async function boot() {
   wireExamples();
   wireHelp();
   wireTutorial();
+  wireTryMe();
   wireShare();
   wireKeyboard();
 
@@ -4124,6 +4382,10 @@ async function boot() {
   mountMonaco().then((ed) => {
     if (ed) ed.setValue(app.gcode || '');
   });
+
+  /* First-visit "Try Me!" overlay — Penta shows this once per browser.
+     Skipped automatically for returning users via localStorage. */
+  maybeAutoStartTryMe();
 }
 
 // Expose the live app state on window so we can probe it via DevTools or

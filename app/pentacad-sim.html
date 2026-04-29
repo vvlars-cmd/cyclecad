@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Pentacad Simulator v0.5.4 — 5-axis G-code playback</title>
+<title>Pentacad Simulator v0.5.5 — 5-axis G-code playback</title>
 <meta name="description" content="Browser-native 5-axis G-code simulator for Pentamachine V1 / V2-10 / V2-50 / V1 Kickstarter / Solo. Runs offline, no install." />
 <meta name="theme-color" content="#333333" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Ctext%20y%3D%22.9em%22%20font-size%3D%2290%22%3E%F0%9F%9B%A0%EF%B8%8F%3C%2Ftext%3E%3C%2Fsvg%3E" />
@@ -1030,7 +1030,7 @@ input, textarea { font-family: inherit; color: inherit; }
     </svg>
   </a>
   <p class="pt-title">
-    <a href="https://www.pentamachine.com" target="_blank" rel="noopener" class="pt-title-link" id="pt-title-link">Pentacad Simulator v0.5.4</a>
+    <a href="https://www.pentamachine.com" target="_blank" rel="noopener" class="pt-title-link" id="pt-title-link">Pentacad Simulator v0.5.5</a>
   </p>
 
   <div class="pt-appbar-actions">
@@ -2101,12 +2101,13 @@ function initViewport() {
   scene.background = new THREE.Color(0xFFFFFF);
 
   const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 5000);
-  /* Default ISO position mirrors Penta's view direction — camera on
-     the LEFT-TOP-FRONT of the machine so the user sees the trunnion's
-     bore opening (with bolt circle) and the spindle housing separated
-     on the right. The previous (28, 22, 34) put us on the RIGHT side,
-     showing the trunnion's solid back and obscuring the bore. */
-  camera.position.set(-28, 22, 34);
+  /* Default ISO position matches Penta's view direction — camera on
+     the LEFT-FRONT-BACK side. The B-platter bbox (Z = -28..-13 with
+     trunnion housing extending to Z = +27 on one side and only -43 on
+     the other) confirms the bore opens on the -Z side: that's where
+     the platter face is exposed. Camera at +Z showed the trunnion's
+     solid back; (-X, +Y, -Z) shows the bolt-circle bore directly. */
+  camera.position.set(-28, 22, -34);
 
   // TrackballControls instead of OrbitControls so the camera can rotate
   // FREELY in every direction — including flipping past the top / bottom
@@ -2128,15 +2129,16 @@ function initViewport() {
   controls.dynamicDampingFactor = 0.15;
   controls.noPan = false;
 
-  /* Lights — tuned to match sim.pentamachine.com which renders the
-     machine near-black (#1A1A1A). v0.4 had ambient 1.4 + hemi 0.55 that
-     washed everything to grey. We drop ambient + hemi sharply and
-     reweight the key directional so authored dark surfaces stay dark
-     while the silhouette is still readable on white. */
-  const ambient = new THREE.AmbientLight(0xFFFFFF, 0.45);
-  const key = new THREE.DirectionalLight(0xFFFFFF, 0.85);
+  /* Lights — tuned aggressively low to match sim.pentamachine.com which
+     renders the machine near pitch-black (~#0A0A0A). Earlier passes at
+     ambient 0.45 / key 0.85 / hemi 0.30 still left the surfaces grey
+     because of the GLB's authored material colour. This pass drops
+     ambient and hemi to roughly 50% of the v0.5.1 values; the key
+     directional keeps just enough specular to read the silhouette. */
+  const ambient = new THREE.AmbientLight(0xFFFFFF, 0.22);
+  const key = new THREE.DirectionalLight(0xFFFFFF, 0.55);
   key.position.set(8, 25, 10);
-  const hemi = new THREE.HemisphereLight(0xFFFFFF, 0x404040, 0.30);
+  const hemi = new THREE.HemisphereLight(0xFFFFFF, 0x202020, 0.12);
   scene.add(ambient, key, hemi);
 
   // Root group — units inch, scale x10 for legibility
@@ -2905,11 +2907,12 @@ function fitCamera() {
   }
 
   const dist = frameSize / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2)) * 1.6;
-  /* Mirror of v0.4's (0.55, 0.45, 0.7). Camera sits on the LEFT-TOP-FRONT
-     side of the machine so the trunnion bore + bolt-circle face the camera,
-     and the spindle housing reads as a separate block on the right —
-     matching how sim.pentamachine.com frames the V2-10 / V2-50 by default. */
-  const dir = new THREE.Vector3(-0.55, 0.45, 0.7).normalize();
+  /* ISO direction matches the boot default. Camera on the LEFT-FRONT-BACK
+     so the trunnion bore + bolt-circle face the camera. Verified live via
+     Chrome MCP: the B-platter bbox lands at Z = -28..-13, the trunnion
+     housing extends to Z = +27 on one side and -43 on the other, which
+     means the bore opens on the -Z side. */
+  const dir = new THREE.Vector3(-0.55, 0.45, -0.7).normalize();
   camera.position.copy(center).add(dir.multiplyScalar(dist));
   controls.target.copy(center);
   controls.update();
@@ -3787,9 +3790,9 @@ function setCameraParent(name) {
     const t = app.three.controls.target;
     const dist = c.position.distanceTo(t);
     // Iso direction matching the boot default (28, 22, 34) normalised.
-    /* Iso direction matches the boot default in initViewport — mirrored
-       to LEFT-TOP-FRONT so the trunnion bore faces the camera. */
-    const isoDir = new THREE.Vector3(-28, 22, 34).normalize();
+    /* Iso direction matches the boot default in initViewport — LEFT-
+       FRONT-BACK so the trunnion bore faces the camera. */
+    const isoDir = new THREE.Vector3(-28, 22, -34).normalize();
     c.position.copy(t).add(isoDir.multiplyScalar(dist));
     app.three.controls.update();
   }

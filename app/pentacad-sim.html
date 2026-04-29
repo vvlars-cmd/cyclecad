@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Pentacad Simulator v0.5.8 — 5-axis G-code playback</title>
+<title>Pentacad Simulator v0.5.9 — 5-axis G-code playback</title>
 <meta name="description" content="Browser-native 5-axis G-code simulator for Pentamachine V1 / V2-10 / V2-50 / V1 Kickstarter / Solo. Runs offline, no install." />
 <meta name="theme-color" content="#333333" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Ctext%20y%3D%22.9em%22%20font-size%3D%2290%22%3E%F0%9F%9B%A0%EF%B8%8F%3C%2Ftext%3E%3C%2Fsvg%3E" />
@@ -1030,7 +1030,7 @@ input, textarea { font-family: inherit; color: inherit; }
     </svg>
   </a>
   <p class="pt-title">
-    <a href="https://www.pentamachine.com" target="_blank" rel="noopener" class="pt-title-link" id="pt-title-link">Pentacad Simulator v0.5.8</a>
+    <a href="https://www.pentamachine.com" target="_blank" rel="noopener" class="pt-title-link" id="pt-title-link">Pentacad Simulator v0.5.9</a>
   </p>
 
   <div class="pt-appbar-actions">
@@ -1502,11 +1502,14 @@ const MACHINES = {
     envelope: { x: [-2.5, 2.5], y: [-2.5, 2.5], z: [-3.5, 0.0], a: [-25, 135], b: [-360, 360] },
     stock:    { x: 1.75, y: 1.75, z: 1.0 },
     home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
-    /* `homeNudge.x = [0, 0, +10]` drops the X-carriage along world -Y by ~10
-       world units to close the visible gap between its bottom and the
-       base's top. Base is rotated +90° around X so local +Z maps to
-       world -Y; offsetting x's local Z by +10 = world -Y by 10. */
-    homeNudge:{ x: [0, 0, 10], y: [0, 0, 0], z: [0, 0, 0] }
+    /* homeNudge values are interpreted in Base's local frame, which
+       gets multiplied by all parent scales (machineGlb ~1.5 × root 10
+       = ~15× per unit). v0.5.6 set z = +10 thinking that meant 10
+       world units of drop; actually it was 150 world units, dragging
+       the spindle below the floor. v0.5.9 zeros all values — the GLB's
+       authored Y already places the spindle at trunnion height. Tune
+       via `PentacadSimApp.nudge('x', dx, dy, dz)` if needed. */
+    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
   },
   'v2-50': {
     id: 'v2-50',
@@ -1515,7 +1518,7 @@ const MACHINES = {
     envelope: { x: [-3.0, 3.0], y: [-2.5, 2.5], z: [-3.5, 0.0], a: [-25, 135], b: [-360, 360] },
     stock:    { x: 2.0, y: 2.0, z: 1.25 },
     home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
-    homeNudge:{ x: [0, 0, 12], y: [0, 0, 0], z: [0, 0, 0] }
+    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
   }
 };
 

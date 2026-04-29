@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Pentacad Simulator v0.5.9 — 5-axis G-code playback</title>
+<title>Pentacad Simulator v0.5.10 — 5-axis G-code playback</title>
 <meta name="description" content="Browser-native 5-axis G-code simulator for Pentamachine V1 / V2-10 / V2-50 / V1 Kickstarter / Solo. Runs offline, no install." />
 <meta name="theme-color" content="#333333" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Ctext%20y%3D%22.9em%22%20font-size%3D%2290%22%3E%F0%9F%9B%A0%EF%B8%8F%3C%2Ftext%3E%3C%2Fsvg%3E" />
@@ -1030,7 +1030,7 @@ input, textarea { font-family: inherit; color: inherit; }
     </svg>
   </a>
   <p class="pt-title">
-    <a href="https://www.pentamachine.com" target="_blank" rel="noopener" class="pt-title-link" id="pt-title-link">Pentacad Simulator v0.5.9</a>
+    <a href="https://www.pentamachine.com" target="_blank" rel="noopener" class="pt-title-link" id="pt-title-link">Pentacad Simulator v0.5.10</a>
   </p>
 
   <div class="pt-appbar-actions">
@@ -3056,16 +3056,33 @@ function applyMachineState(pos) {
   const SCALE = (app.kinScale || 0.0276) * (k.glbScale || 1);
   const axes = app.kinAxes || DEFAULT_KIN_AXES;
 
+  /* Reset every kinematic mesh's full position to its authored home each
+     frame, then layer commanded motion on the active axis, then add any
+     homeNudge offset.
+
+     v0.5.6 — v0.5.9 had a subtle bug: the previous loop only reset
+     position[worldAxis] (the axis driven by commanded motion) and left
+     the other two coordinates untouched. The trailing homeNudge += loop
+     then accumulated each frame on the axes the SET didn't reach. With
+     a non-zero homeNudge.x.x, the spindle's x.position drifted
+     monotonically each frame (verified live: nudge_x_1=15, nudge_x_2=45,
+     nudge_x_3=90, nudge_x_4=150 — non-linear because each frame added
+     `off.x` again). The fix below resets all three coordinates to home
+     before applying motion + nudge so values are stable across frames. */
+  for (const m of ['x', 'y', 'z']) {
+    const node = k[m];
+    const home = k[`${m}_home`];
+    if (!node || !home) continue;
+    node.position.copy(home);
+  }
+
   for (const machineAxis of ['X', 'Y', 'Z']) {
     const [meshKey, worldAxis, sign] = axes[machineAxis];
     const obj = k[meshKey];
-    const home = k[`${meshKey}_home`];
-    if (!obj || !home) continue;
-    obj.position[worldAxis] = home[worldAxis] + cmd[machineAxis] * SCALE * sign;
+    if (!obj) continue;
+    obj.position[worldAxis] += cmd[machineAxis] * SCALE * sign;
   }
 
-  // Apply per-mesh home-position nudges so the user can dial in the
-  // visible alignment of x / y / z meshes after load — see PentacadSimApp.nudge().
   for (const m of ['x', 'y', 'z']) {
     const node = k[m];
     const off  = k[m + 'HomeOffset'];

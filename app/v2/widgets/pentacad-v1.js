@@ -39,7 +39,7 @@
    editor, tutorial overlay, future-only time-window mode, feed/rapid colour
    pickers, smooth-camera toggle) we want the wrapper to re-fetch rather
    than serve a Penta-stale cached copy. Bump on every meaningful v1 update. */
-const V1_URL  = 'https://cyclecad.com/app/pentacad-sim.html?v=v0_5_7';
+const V1_URL  = 'https://cyclecad.com/app/pentacad-sim.html?v=v0_5_8';
 const V1_BASE = 'https://cyclecad.com/app';
 
 const FONTS_HREF = 'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Source+Code+Pro:wght@400;500&display=swap';

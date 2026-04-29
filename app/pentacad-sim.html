@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Pentacad Simulator v0.5.7 — 5-axis G-code playback</title>
+<title>Pentacad Simulator v0.5.8 — 5-axis G-code playback</title>
 <meta name="description" content="Browser-native 5-axis G-code simulator for Pentamachine V1 / V2-10 / V2-50 / V1 Kickstarter / Solo. Runs offline, no install." />
 <meta name="theme-color" content="#333333" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Ctext%20y%3D%22.9em%22%20font-size%3D%2290%22%3E%F0%9F%9B%A0%EF%B8%8F%3C%2Ftext%3E%3C%2Fsvg%3E" />
@@ -1030,7 +1030,7 @@ input, textarea { font-family: inherit; color: inherit; }
     </svg>
   </a>
   <p class="pt-title">
-    <a href="https://www.pentamachine.com" target="_blank" rel="noopener" class="pt-title-link" id="pt-title-link">Pentacad Simulator v0.5.7</a>
+    <a href="https://www.pentamachine.com" target="_blank" rel="noopener" class="pt-title-link" id="pt-title-link">Pentacad Simulator v0.5.8</a>
   </p>
 
   <div class="pt-appbar-actions">
@@ -1159,7 +1159,7 @@ input, textarea { font-family: inherit; color: inherit; }
     <div class="pt-backplot" id="backplot">
       <h3 class="pt-backplot-title">Back Plot</h3>
       <label class="pt-bp-check">
-        <input type="checkbox" id="bp-show-between" checked />
+        <input type="checkbox" id="bp-show-between" />
         <span>Show between lines</span>
       </label>
       <div class="pt-bp-field"><label>From</label><input type="number" id="bp-from" value="1" min="1" /></div>
@@ -1196,10 +1196,10 @@ input, textarea { font-family: inherit; color: inherit; }
         <input type="checkbox" id="bp-smooth-cam" checked />
         <span>Smooth camera transitions</span>
       </label>
-      <!-- Show stock outline — opt-in green wireframe box on the B-platter.
-           Penta doesn't show one by default; v0.4 always did. -->
+      <!-- Show stock outline — green wireframe box on the B-platter.
+           Penta shows this by default (visible at home in their sim). -->
       <label class="pt-bp-check">
-        <input type="checkbox" id="bp-show-stock" />
+        <input type="checkbox" id="bp-show-stock" checked />
         <span>Show stock outline</span>
       </label>
       <!-- Always show — keep the entire toolpath visible regardless of
@@ -1550,7 +1550,11 @@ const app = {
    *   showPast  — kept for v0_4 storage compatibility; now derived from timeMode.
    */
   bp: {
-    showBetween: true,
+    /* Default OFF so the full toolpath renders on first paint. v0.4 had
+       this on with from=1/to=1 which trimmed everything except line 1 —
+       the orange feed line never showed up unless the user expanded the
+       range. Penta's default is "show all moves" — we now match. */
+    showBetween: false,
     from: 1,
     to: 1,
     autoUpdate: true,
@@ -1561,9 +1565,10 @@ const app = {
     showPast: false,
     feedColor: '#ED6C02',
     rapidColor: '#236e24',
-    /* Stock outline — opt-in. Penta renders no outline by default; users
-       turn it on if they need a visual anchor for the workpiece bounds. */
-    showStock: false,
+    /* Stock outline — Penta DOES show a green stock indicator by default
+       (visible in sim.pentamachine.com's home view). v0.5.7 had it OFF;
+       v0.5.8 defaults ON to match Penta. */
+    showStock: true,
     /* Always show — Penta toggle that bypasses the line-range trim so the
        full toolpath is rendered regardless of the From/To values. */
     alwaysShow: false,
@@ -2823,6 +2828,31 @@ function setupGlbKinematics(machineGlb, glbScale) {
     if (obj) k[`${name}_homeRot`] = obj.rotation.clone();
   }
   app.three.kinematics = k;
+
+  /* CRITICAL kinematic fix: re-parent the X-rail meshes (x_1, x_2) out
+     of the `x` group up to Base. On a real Pocket NC the rails are
+     STATIC frame structure — they don't move. Only the spindle carriage
+     (the `z` group, which carries the spindle motor + tool holders)
+     translates along them when commanded X changes.
+
+     The Pentamachine GLBs author x_1 and x_2 as children of `x`, so
+     translating `x` for commanded X motion drags the rails along too.
+     User-visible result: the entire structure shifts side-to-side
+     instead of just the spindle carriage. Sachin's complaint:
+     "the spindle motor moves on the axis, in our sim the AXIS moves".
+
+     Fix: pull x_1 and x_2 out into Base. They keep their world position
+     via Object3D.attach(). After this, only `z` (and its LONG/SHORT
+     children) responds to commanded X — matches Penta's behavior. */
+  const baseGroup = machineGlb.getObjectByName('Base');
+  if (baseGroup && k.x) {
+    for (const railName of ['x_1', 'x_2']) {
+      const rail = machineGlb.getObjectByName(railName);
+      if (rail && rail.parent === k.x) {
+        baseGroup.attach(rail);
+      }
+    }
+  }
 
   // Attach a translucent green stock indicator to the B-platter so the
   // user has a visual anchor for the workpiece. It inherits A + B so it

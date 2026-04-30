@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Pentacad Simulator v0.5.15 — 5-axis G-code playback</title>
+<title>Pentacad Simulator v0.5.16 — 5-axis G-code playback</title>
 <meta name="description" content="Browser-native 5-axis G-code simulator for Pentamachine V1 / V2-10 / V2-50 / V1 Kickstarter / Solo. Runs offline, no install." />
 <meta name="theme-color" content="#333333" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Ctext%20y%3D%22.9em%22%20font-size%3D%2290%22%3E%F0%9F%9B%A0%EF%B8%8F%3C%2Ftext%3E%3C%2Fsvg%3E" />
@@ -1043,7 +1043,7 @@ body.pt-adjust-spindle-mode .pt-viewport-canvas { cursor: move; }
     </svg>
   </a>
   <p class="pt-title">
-    <a href="https://www.pentamachine.com" target="_blank" rel="noopener" class="pt-title-link" id="pt-title-link">Pentacad Simulator v0.5.15</a>
+    <a href="https://www.pentamachine.com" target="_blank" rel="noopener" class="pt-title-link" id="pt-title-link">Pentacad Simulator v0.5.16</a>
   </p>
 
   <div class="pt-appbar-actions">
@@ -1499,7 +1499,7 @@ const MACHINES = {
     envelope: { x: [-2.0, 2.0], y: [-2.0, 2.0], z: [-3.0, 0.0], a: [-90, 90], b: [-360, 360] },
     stock:    { x: 1.5, y: 1.5, z: 0.75 },
     home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
-    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
+    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 4, 0] }
   },
   'v1': {
     id: 'v1',
@@ -1508,7 +1508,7 @@ const MACHINES = {
     envelope: { x: [-2.5, 2.5], y: [-2.0, 2.0], z: [-3.5, 0.0], a: [-25, 135], b: [-360, 360] },
     stock:    { x: 1.5, y: 1.5, z: 1.0 },
     home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
-    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
+    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 4, 0] }
   },
   'v1kickstarter': {
     id: 'v1kickstarter',
@@ -1517,7 +1517,7 @@ const MACHINES = {
     envelope: { x: [-2.5, 2.5], y: [-2.0, 2.0], z: [-3.5, 0.0], a: [-25, 135], b: [-360, 360] },
     stock:    { x: 1.5, y: 1.5, z: 1.0 },
     home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
-    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
+    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 4, 0] }
   },
   'v2-10': {
     id: 'v2-10',
@@ -1534,14 +1534,17 @@ const MACHINES = {
     envelope: { x: [-2.0, 2.55], y: [-2.5, 2.5], z: [-3.55, 0.0], a: [-25, 135], b: [-9999, 9999] },
     stock:    { x: 1.75, y: 1.75, z: 1.0 },
     home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
-    /* homeNudge zeroed by default — v0.5.11 baked nudge.x=4.5 thinking
-       it'd put the spindle right next to the trunnion, but the parent-
-       scale chain (root×10 × machineGlb×1.5 = ~15×) made it ×3 the
-       intended distance and the spindle ended up off-screen. Default
-       at 0 keeps the GLB's authored geometry; users dial in their own
-       offset via the "Adjust spindle position (drag)" toggle in the
-       Back Plot panel — the result is persisted per-machine. */
-    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
+    /* homeNudge.z = [0, 4, 0] — static spindle offset along world +Z by
+       ~60 units. Discovered v0.5.16 from reverse-engineering Penta's
+       v2-10/v2-50 React component:
+         <mesh geometry={l.z.geometry} position-z={6.26 + t[2]} ... />
+       Penta applies +6.26 (in their inch-frame) on the spindle's world
+       Z. In our hierarchy z is inside x inside Base which has a +π/2
+       X-rotation, so local +Y maps to world +Z. The local-Y value 4
+       (with the parent scale chain ~15× per local unit) lands the
+       spindle ~60 world units past the trunnion's far edge — matching
+       Penta's visible spindle/trunnion separation. */
+    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 4, 0] }
   },
   'v2-50': {
     id: 'v2-50',
@@ -1552,7 +1555,7 @@ const MACHINES = {
     envelope: { x: [-2.0, 2.55], y: [-2.5, 2.5], z: [-3.55, 0.0], a: [-25, 135], b: [-9999, 9999] },
     stock:    { x: 2.0, y: 2.0, z: 1.25 },
     home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
-    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
+    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 4, 0] }
   }
 };
 
@@ -3249,15 +3252,25 @@ function fitCamera() {
   if (!app.three) return;
   const { camera, controls, root, kinematics } = app.three;
 
-  /* Frame on the B-platter (the user's work area). Same as v0.4..v0.5.9.
-     If the user's nudge pushes the spindle out of frame, they can orbit
-     to see it. Simple > clever here — past attempts to auto-include
-     the spindle in the frame produced wonky angles. */
+  /* Frame on the B-platter (the user's work area), but shift target
+     toward the spindle's world position so the spindle's Z offset
+     (homeNudge.z[1] = 4 from v0.5.16, which puts it at world Z=+60)
+     stays in frame. The platter is at world Z≈-6, the spindle at Z≈+60;
+     biasing the target half-way between them centers the framing on
+     the work area + the cutter together. Frame size larger than v0.5.x
+     so both fit comfortably. */
   let center = new THREE.Vector3();
-  let frameSize = 14;            // inch — slightly larger than the trunnion
+  let frameSize = 80;            // wider — accommodates Z-offset spindle
   if (kinematics && kinematics.b) {
     kinematics.b.getWorldPosition(center);
     center.y += 1.5;             // bias above platter so camera isn't nose-to-disc
+    /* Bias toward the spindle's world Z if it's offset. Average platter Z
+       and spindle Z so both stay in frame. */
+    if (kinematics.z) {
+      const sp = new THREE.Vector3();
+      kinematics.z.getWorldPosition(sp);
+      center.z = (center.z + sp.z) / 2;
+    }
   } else {
     const box = new THREE.Box3().setFromObject(root);
     if (box.isEmpty()) return;

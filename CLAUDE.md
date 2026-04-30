@@ -1,6 +1,21 @@
 # Memory — cycleCAD
 
-> **Latest handoff: `HANDOFF-2026-04-25-pentacad-sim.md`** — read first if continuing.
+> **Latest handoff: `~/cyclecad/cycleCAD-Suite/HANDOFF-2026-04-30.md`** — read first if continuing.
+> Predecessors: night handoff (kinematic-axis-mapping deep-dive) and autonomous-2026-04-29 handoff.
+
+## Session 2026-04-30 — Pentacad sim v0.5.17 (revert v0.5.16 Z offset; hide toolpath preview)
+
+Three fixes shipped to `app/pentacad-sim.html`:
+
+1. **Reverted `homeNudge.z = [0, 4, 0]`** → `[0, 0, 0]` for V2-10 / V2-50 / V1 / V1 Kickstarter / Solo. The overnight v0.5.16 attempt to mirror Penta's `position-z = 6.26 + t[2]` JSX couldn't survive our scale chain — pushed spindle into trunnion instead of pulling it back along the rail.
+2. **Hid the static toolpath preview by default** — `app.bp.showToolpathPreview` defaults to `false`. `rebuildToolpath()` early-returns when it's off (and time-window mode is off). Removes the orange grid square user reported.
+3. **Added Back Plot toggle "Show toolpath preview"** for users who want the legacy behaviour.
+
+Title bumped v0.5.16 → v0.5.17 in `<title>` and the visible header link.
+
+Wrapper at `~/cyclecad/cycleCAD-Suite/widgets/pentacad-v1.js` got V1_URL bumped to `?v=v0_5_17`.
+
+183/183 integration tests still green. Full post-mortem + push command in `~/cyclecad/cycleCAD-Suite/HANDOFF-2026-04-30.md`.
 
 ## Me
 SACHIN (vvlars@googlemail.com, GitHub: vvlars-cmd). Building cycleCAD — open-source browser-based parametric 3D CAD modeler. Also maintains ExplodeView (separate repo). Company: cycleWASH (bicycle washing machines).

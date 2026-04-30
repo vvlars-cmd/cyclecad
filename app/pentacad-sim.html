@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Pentacad Simulator v0.5.16 — 5-axis G-code playback</title>
+<title>Pentacad Simulator v0.5.17 — 5-axis G-code playback</title>
 <meta name="description" content="Browser-native 5-axis G-code simulator for Pentamachine V1 / V2-10 / V2-50 / V1 Kickstarter / Solo. Runs offline, no install." />
 <meta name="theme-color" content="#333333" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Ctext%20y%3D%22.9em%22%20font-size%3D%2290%22%3E%F0%9F%9B%A0%EF%B8%8F%3C%2Ftext%3E%3C%2Fsvg%3E" />
@@ -1043,7 +1043,7 @@ body.pt-adjust-spindle-mode .pt-viewport-canvas { cursor: move; }
     </svg>
   </a>
   <p class="pt-title">
-    <a href="https://www.pentamachine.com" target="_blank" rel="noopener" class="pt-title-link" id="pt-title-link">Pentacad Simulator v0.5.16</a>
+    <a href="https://www.pentamachine.com" target="_blank" rel="noopener" class="pt-title-link" id="pt-title-link">Pentacad Simulator v0.5.17</a>
   </p>
 
   <div class="pt-appbar-actions">
@@ -1230,6 +1230,14 @@ body.pt-adjust-spindle-mode .pt-viewport-canvas { cursor: move; }
       <label class="pt-bp-check">
         <input type="checkbox" id="bp-voxel-stock" />
         <span>Voxel stock removal</span>
+      </label>
+      <!-- Toolpath preview — when ON, the full feed/rapid polylines render
+           in 3D before playback (an orange/green grid square). Penta does
+           NOT show this at rest, so v0.5.17 defaults this OFF. The active
+           tool marker still moves during playback regardless. -->
+      <label class="pt-bp-check">
+        <input type="checkbox" id="bp-show-toolpath-preview" />
+        <span>Show toolpath preview</span>
       </label>
       <!-- Adjust Spindle drag mode — when ON, the user can pointer-down
            on the spindle assembly and drag it horizontally / vertically
@@ -1499,7 +1507,7 @@ const MACHINES = {
     envelope: { x: [-2.0, 2.0], y: [-2.0, 2.0], z: [-3.0, 0.0], a: [-90, 90], b: [-360, 360] },
     stock:    { x: 1.5, y: 1.5, z: 0.75 },
     home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
-    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 4, 0] }
+    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
   },
   'v1': {
     id: 'v1',
@@ -1508,7 +1516,7 @@ const MACHINES = {
     envelope: { x: [-2.5, 2.5], y: [-2.0, 2.0], z: [-3.5, 0.0], a: [-25, 135], b: [-360, 360] },
     stock:    { x: 1.5, y: 1.5, z: 1.0 },
     home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
-    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 4, 0] }
+    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
   },
   'v1kickstarter': {
     id: 'v1kickstarter',
@@ -1517,7 +1525,7 @@ const MACHINES = {
     envelope: { x: [-2.5, 2.5], y: [-2.0, 2.0], z: [-3.5, 0.0], a: [-25, 135], b: [-360, 360] },
     stock:    { x: 1.5, y: 1.5, z: 1.0 },
     home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
-    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 4, 0] }
+    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
   },
   'v2-10': {
     id: 'v2-10',
@@ -1534,17 +1542,13 @@ const MACHINES = {
     envelope: { x: [-2.0, 2.55], y: [-2.5, 2.5], z: [-3.55, 0.0], a: [-25, 135], b: [-9999, 9999] },
     stock:    { x: 1.75, y: 1.75, z: 1.0 },
     home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
-    /* homeNudge.z = [0, 4, 0] — static spindle offset along world +Z by
-       ~60 units. Discovered v0.5.16 from reverse-engineering Penta's
-       v2-10/v2-50 React component:
-         <mesh geometry={l.z.geometry} position-z={6.26 + t[2]} ... />
-       Penta applies +6.26 (in their inch-frame) on the spindle's world
-       Z. In our hierarchy z is inside x inside Base which has a +π/2
-       X-rotation, so local +Y maps to world +Z. The local-Y value 4
-       (with the parent scale chain ~15× per local unit) lands the
-       spindle ~60 world units past the trunnion's far edge — matching
-       Penta's visible spindle/trunnion separation. */
-    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 4, 0] }
+    /* homeNudge reverted to all zeros in v0.5.17. The v0.5.16 attempt at
+       homeNudge.z = [0, 4, 0] was based on Penta's `position-z = 6.26`
+       JSX, but applied through our scale chain it pushed the spindle into
+       the trunnion instead of pulling it back along the rail. The
+       authoritative fix is the kinematic-axis-mapping rewrite (see
+       HANDOFF-NIGHT-2026-04-29.md §1) — until then, no static nudge. */
+    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
   },
   'v2-50': {
     id: 'v2-50',
@@ -1555,7 +1559,7 @@ const MACHINES = {
     envelope: { x: [-2.0, 2.55], y: [-2.5, 2.5], z: [-3.55, 0.0], a: [-25, 135], b: [-9999, 9999] },
     stock:    { x: 2.0, y: 2.0, z: 1.25 },
     home:     { x: 0, y: 0, z: 0, a: 0, b: 0 },
-    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 4, 0] }
+    homeNudge:{ x: [0, 0, 0], y: [0, 0, 0], z: [0, 0, 0] }
   }
 };
 
@@ -1613,7 +1617,13 @@ const app = {
        full toolpath is rendered regardless of the From/To values. */
     alwaysShow: false,
     /* Voxel stock removal — opt-in real material removal during playback. */
-    voxelStock: false
+    voxelStock: false,
+    /* Toolpath preview — render the full feed/rapid polylines in 3D before
+       playback. v0.5.16 and earlier had this implicitly on. Penta's default
+       view does NOT show the orange/green grid square at rest — only during
+       playback do you see the active path. v0.5.17 hides the static preview
+       by default and exposes a toggle for users who want it. */
+    showToolpathPreview: false
   },
   /** Per-tool overrides set by SUMMARY tab inputs. Keyed by tool number. */
   toolOverrides: {},
@@ -3299,6 +3309,12 @@ function rebuildToolpath() {
   if (!app.three) return;
   const tp = app.three.toolpathGroup;
   tp.clear();
+  /* v0.5.17 — when the Back Plot "Show toolpath preview" toggle is OFF,
+     bail out after clearing. The active tool marker still moves during
+     playback (it's a separate mesh), and time-window playback rebuilds
+     this on each tick so live trails still work. The static preview at
+     rest is what was showing the orange grid square in screenshots. */
+  if (!app.bp.showToolpathPreview && !app.bp.timeWindow) return;
   const moves = app.moves || [];
   if (moves.length === 0) return;
 
@@ -3913,6 +3929,19 @@ function wireOptions() {
     }
     saveSession();
   });
+
+  /* Show toolpath preview toggle — when ON the full feed/rapid polylines
+     render in 3D as a static preview. Default OFF in v0.5.17 to match
+     Penta's home view (no orange grid square at rest). */
+  const tpPreviewEl = $('bp-show-toolpath-preview');
+  if (tpPreviewEl) {
+    tpPreviewEl.checked = !!app.bp.showToolpathPreview;
+    tpPreviewEl.addEventListener('change', (e) => {
+      app.bp.showToolpathPreview = e.target.checked;
+      rebuildToolpath();
+      saveSession();
+    });
+  }
 
   /* Adjust Spindle drag mode — toggle that lets the user pointer-down on
      the spindle assembly and drag it to reposition. Mouse X delta updates
